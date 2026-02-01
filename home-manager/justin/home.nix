@@ -6,6 +6,7 @@
 }:
 
 {
+  services.gnome-keyring.enable = true;
 
   home.username = "justin";
   home.homeDirectory = "/home/justin";
@@ -18,15 +19,19 @@
   home.file.".config/niri".source = ../../configs/niri;
   home.file.".config/waybar".source = ../../configs/waybar;
   home.file.".config/ghostty".source = ../../configs/ghostty;
-  home.packages = with pkgs; [
-    waybar
-    niri
-    nixfmt-rfc-style
-  ];
+
   home.pointerCursor = {
     name = "capitaine-cursors";
     package = pkgs.capitaine-cursors;
     size = 60;
+  };
+  gtk = {
+    enable = true;
+    #Icon Theme
+    iconTheme = {
+      package = pkgs.adwaita-icon-theme;
+      name = "Adwaita";
+    };
   };
 
   imports = [

@@ -4,6 +4,11 @@
   #stylix.image = ../../wallpapers/wallpaper.jpg;
   stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/chicago-night.yaml";
   stylix.polarity = "dark";
+
+
+
+
+
 }
 #{ pkgs, lib, ... }:
 #let

@@ -16,8 +16,8 @@
   ];
 
   imports = [
-    ./programs/spicetify.nix
-    ./programs/nixcord.nix
-    ../configs/stylix/config.nix
+    ../programs/spicetify.nix
+    ../programs/nixcord.nix
+    ../../configs/stylix/config.nix
   ];
 }

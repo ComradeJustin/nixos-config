@@ -55,15 +55,21 @@
             modules = [
 
               # Main system
-              ./base-system/configuration.nix
+              ./main/configuration.nix
 
               # Groups of programs
-              ./modules/fonts.nix
-              ./modules/programs.nix
-              ./modules/cli-packages.nix
-              ./modules/services.nix
+              ./modules/core/fonts.nix
+              ./modules/core/programs.nix
+              ./modules/core/cli-packages.nix
+              ./modules/core/services.nix
 
-              # Other
+              # Current WM and its collection of configs
+              ./modules/extras/niri-system.nix
+
+              # Extra Set of programs 
+              ./modules/extras/gaming.nix
+              ./hosts/nixpc/gpu.nix
+              ./modules/services/portals.nix
               stylix.nixosModules.stylix
               home-manager.nixosModules.home-manager
               inputs.spicetify-nix.nixosModules.default
