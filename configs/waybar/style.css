@@ -1,0 +1,150 @@
+@define-color bg #333333;
+@define-color fg #CCCCCC;
+@define-color hl #1b1b1b;
+
+
+* {
+  font-family: Hurmit Nerd Font Propo, noto-fonts-cjk, SymbolsNerdFontMono;
+  font-size: 13px;
+  min-height: 0;
+}
+
+#waybar {
+  background: transparent;
+  color: @fg;
+  margin: 0px;
+  font-weight: 500;
+}
+
+#battery {
+  background-color: @bg;
+  padding: 0.3rem 0.7rem;
+  margin: 5px 0px;
+  border-radius: 0;
+  box-shadow: none;
+  min-width: 0;
+  border: none;
+
+}
+
+#pulseaudio {
+  background-color: @bg;
+  padding: 0.3rem 0.7rem;
+  margin: 5px 0px;
+  border-radius: 0;
+  box-shadow: none;
+  min-width: 0;
+  border: none;
+}
+
+
+#pulseaudio,
+#custom-archlogo,
+#battery,
+#network,
+#clock,
+#cpu,
+#memory,
+#workspaces,
+#idle_inhibitor,
+# #clock {
+  background-color: @bg;
+  padding: 0.3rem 0.7rem;
+  margin: 5px 0px;
+  border-radius: 6px;
+  /* This module is always rounded */
+  min-width: 0;
+
+}
+
+#clock {
+  color: @fg;
+  font-weight: 500;
+}
+
+#clock:hover {
+  background-color: @hl;
+  /* Brighter highlight */
+}
+
+#pulseaudio:hover,
+
+
+#memory {
+  color: @fg;
+}
+
+#memory:hover,
+#cpu {
+  color: @fg;
+}
+
+#cpu:hover #pulseaudio {
+  color: @fg;
+}
+
+#battery:hover {
+  background-color: @hl;
+}
+
+#battery {
+  color: @fg;
+}
+
+#network:hover {
+  background-color: @hl;
+
+}
+
+#pulseaudio:hover {
+  background-color: @hl
+}
+
+#custom-archlogo:hover {
+  background-color: @hl
+}
+
+#idle_inhibitor:hover {
+  background-color: @hl
+}
+
+#cpu:hover {
+  background-color: @hl
+}
+
+#memory:hover {
+  background-color: @hl
+}
+
+
+#network {
+  color: @fg;
+}
+
+#network.disconnected {
+  color: #676767;
+}
+
+#workspaces button {
+  color: @fg;
+  border-radius: 5px;
+  /* Workspaces buttons are always rounded */
+  padding: 0;
+  border-radius: 9px;
+  margin-top: 3px;
+  margin-bottom: 3px;
+  margin-left: 3px;
+  padding-left: 3px;
+  padding-right: 3px;
+  margin-right: 3px;
+  background: transparent;
+  transition: all 0.2s ease-in-out;
+  border: none;
+  outline: none;
+}
+
+#workspaces button.active {
+  color: @fg;
+  background-color: @hl;
+  box-shadow: inset 0 0 0 1px rgba(153, 209, 219, 0.2);
+}
