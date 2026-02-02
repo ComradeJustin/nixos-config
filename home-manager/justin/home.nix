@@ -15,13 +15,14 @@
   programs.bash = {
     enable = true;
   };
-    programs.ghostty.enable = true;
+  programs.ghostty.enable = true;
 
   home.file.".config/niri".source = ../../configs/niri;
   home.file.".config/waybar".source = ../../configs/waybar;
   # home.file.".config/ghostty".source = ../../configs/ghostty;
 
 
+  
   gtk = {
     enable = true;
     #Icon Theme
@@ -30,9 +31,11 @@
       name = "Adwaita";
     };
   };
-  
+
   imports = [
     ../../modules/programs/git.nix
+    ../../modules/programs/rofi.nix
+    ../../modules/programs/hyprpaper.nix
   ];
 
 }
