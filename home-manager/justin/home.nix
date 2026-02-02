@@ -35,7 +35,6 @@
   imports = [
     ../../modules/programs/git.nix
     ../../modules/programs/rofi.nix
-    ../../modules/programs/hyprpaper.nix
   ];
 
 }

@@ -211,11 +211,11 @@ layout {
 	    //off
 	
         width 3
-        active-color "#676767"
-        inactive-color "#333333"
+        active-color "#5a524c"
+        inactive-color 	"#202020"
 
         // Color of the border around windows that request your attention.
-        urgent-color "#9b0000"
+        urgent-color "#ea6962"
 
         // Gradients can use a few different interpolation color spaces.
         // For example, this is a pastel rainbow gradient via in="oklch longer hue".
@@ -259,7 +259,7 @@ layout {
         offset x=0 y=5
      
         // You can also change the shadow color and opacity.
-        color "#0007"
+        color 	"#202020"
     }
 
     // Struts shrink the area occupied by windows, similarly to layer-shell panels.
@@ -279,8 +279,8 @@ layout {
 // Note that running niri as a session supports xdg-desktop-autostart,
 // which may be more convenient to use.
 // See the binds section below for more spawn examples.
-layer-rule{
-	match namespace="^wallpaper$"
+layer-rule {
+	match namespace="^awww-daemonoverview$"
  	place-within-backdrop true
 }
 
@@ -296,9 +296,11 @@ spawn-at-startup "waybar"
 // spawn-at-startup "swaync"
 
 // spawn-at-startup "hypridle"
-spawn-at-startup "hyprpaper"
-spawn-at-startup "awww-daemon"
-spawn-at-startup "awww restore"
+
+spawn-at-startup "awww-daemon" "-n" "overview"
+spawn-at-startup "awww-daemon" "-n" "bg"
+spawn-at-startup "awww" "restore" "-n" "bg"
+spawn-at-startup "awww" "restore" "-n" "overview"
 //spawn-at-startup "conky" "-d"
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
@@ -398,8 +400,8 @@ recent-windows {
     open-delay-ms 150
 
     highlight {
-        active-color "#999999ff"
-        urgent-color "#ff9999ff"
+        active-color "#bdae93"
+        urgent-color "#ea6962"
         padding 30
         corner-radius 0
     }

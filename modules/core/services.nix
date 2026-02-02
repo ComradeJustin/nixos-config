@@ -9,7 +9,7 @@
   environment.systemPackages = [
     inputs.awww.packages.${pkgs.stdenv.hostPlatform.system}.awww
     pkgs.dunst
-     pkgs.rofi
+    pkgs.rofi
   ];
   # Services
   services.gvfs.enable = true;
