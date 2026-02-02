@@ -13,6 +13,8 @@
   # Non steam games
 
   environment.systemPackages = [
+    # Minecraft
     pkgs.prismlauncher
+
   ];
 }

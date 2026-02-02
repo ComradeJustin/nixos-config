@@ -1,7 +1,6 @@
 {
   description = "New Nixos System";
   inputs = {
-
     # For discord
     nixcord = {
       url = "github:FlameFlag/nixcord";
@@ -66,14 +65,19 @@
               # Current WM and its collection of configs
               ./modules/extras/niri-system.nix
 
-              # Extra Set of programs 
+              # Extra Set of programs
               ./modules/extras/gaming.nix
               ./hosts/nixpc/gpu.nix
               ./modules/services/portals.nix
+              # Theme
               stylix.nixosModules.stylix
-              home-manager.nixosModules.home-manager
-              inputs.spicetify-nix.nixosModules.default
               
+              # Home manager
+              home-manager.nixosModules.home-manager
+
+              # Spotify
+              inputs.spicetify-nix.nixosModules.default
+
               {
 
                 home-manager = {
