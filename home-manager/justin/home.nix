@@ -15,16 +15,13 @@
   programs.bash = {
     enable = true;
   };
+    programs.ghostty.enable = true;
 
   home.file.".config/niri".source = ../../configs/niri;
   home.file.".config/waybar".source = ../../configs/waybar;
-  home.file.".config/ghostty".source = ../../configs/ghostty;
+  # home.file.".config/ghostty".source = ../../configs/ghostty;
 
-  home.pointerCursor = {
-    name = "capitaine-cursors";
-    package = pkgs.capitaine-cursors;
-    size = 60;
-  };
+
   gtk = {
     enable = true;
     #Icon Theme
@@ -33,7 +30,7 @@
       name = "Adwaita";
     };
   };
-
+  
   imports = [
     ../../modules/programs/git.nix
   ];
