@@ -3,7 +3,7 @@
   inputs = {
     # nixpkgs-stable.url = "nixpkgs/nixos-25.11";
     nixpkgs.url = "nixpkgs/nixos-unstable"; # Uses unstable for everything
-    
+
     # For discord
     nixcord = {
       url = "github:FlameFlag/nixcord";
@@ -71,6 +71,7 @@
               # Extra Set of programs
               ./modules/extras/gaming.nix
               ./hosts/nixpc/gpu.nix
+              ./hosts/nixpc/networking.nix
               ./modules/services/portals.nix
               # Theme
               stylix.nixosModules.stylix
