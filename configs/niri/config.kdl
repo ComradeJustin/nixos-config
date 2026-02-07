@@ -127,7 +127,7 @@ output "DP-2" {
 // https://yalter.github.io/niri/Configuration:-Layout
 layout {
     // Set gaps around windows in logical pixels.
-    gaps 25
+    gaps 24
 
     // When to center a column when changing focus, options are:
     // - "never", default behavior, focusing an off-screen column will keep at the left
@@ -259,7 +259,7 @@ layout {
         offset x=0 y=5
      
         // You can also change the shadow color and opacity.
-        color 	"#202020"
+        color 	"#0f0f0f"
     }
 
     // Struts shrink the area occupied by windows, similarly to layer-shell panels.

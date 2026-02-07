@@ -1,6 +1,9 @@
 {
   description = "New Nixos System";
   inputs = {
+    # nixpkgs-stable.url = "nixpkgs/nixos-25.11";
+    nixpkgs.url = "nixpkgs/nixos-unstable"; # Uses unstable for everything
+    
     # For discord
     nixcord = {
       url = "github:FlameFlag/nixcord";
@@ -16,14 +19,14 @@
     awww.url = "git+https://codeberg.org/LGFae/awww";
     # For Stylix
     stylix = {
-      url = "github:nix-community/stylix/release-25.11";
+      url = "github:nix-community/stylix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # For Home manager
-    nixpkgs.url = "nixpkgs/nixos-25.11";
+
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.11";
+      url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -71,7 +74,7 @@
               ./modules/services/portals.nix
               # Theme
               stylix.nixosModules.stylix
-              
+
               # Home manager
               home-manager.nixosModules.home-manager
 
