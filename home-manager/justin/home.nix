@@ -17,6 +17,7 @@
   };
   programs.ghostty.enable = true;
 
+  # Allows me to set up config files.
   home.file.".config/niri".source = ../../configs/niri;
   home.file.".config/waybar".source = ../../configs/waybar;
   # home.file.".config/ghostty".source = ../../configs/ghostty;

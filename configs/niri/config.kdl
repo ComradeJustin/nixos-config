@@ -119,13 +119,19 @@ output "DP-2" {
 
 
 
-
+overview {
+    workspace-shadow {
+        off
+    }
+}
 
 
 // Settings that influence how windows are positioned and sized.
 // Find more information on the wiki:
 // https://yalter.github.io/niri/Configuration:-Layout
 layout {
+
+    background-color "transparent"
     // Set gaps around windows in logical pixels.
     gaps 24
 
@@ -275,6 +281,7 @@ layout {
     }
 }
 
+
 // Add lines like this to spawn processes at startup.
 // Note that running niri as a session supports xdg-desktop-autostart,
 // which may be more convenient to use.
@@ -292,15 +299,21 @@ environment {
 
 // This line starts waybar, a commonly used bar for Wayland compositors.
 spawn-at-startup "waybar"
-// spawn-at-startup "elephant"
+
+
+
 // spawn-at-startup "swaync"
 
 // spawn-at-startup "hypridle"
 
 spawn-at-startup "awww-daemon" "-n" "overview"
-spawn-at-startup "awww-daemon" "-n" "bg"
-spawn-at-startup "awww" "restore" "-n" "bg"
 spawn-at-startup "awww" "restore" "-n" "overview"
+spawn-at-startup "systemctl" "--user" "start" "hyprpolkitagent"
+
+
+
+
+
 //spawn-at-startup "conky" "-d"
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"

@@ -9,7 +9,6 @@
 
   environment.systemPackages = [
     inputs.awww.packages.${pkgs.stdenv.hostPlatform.system}.awww
-    pkgs.dunst
     pkgs.wiremix
     pkgs.rofi
   ];

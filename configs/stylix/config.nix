@@ -31,6 +31,7 @@
       name = "Noto Color Emoji";
     };
   };
+  
 }
 
 #{ pkgs, lib, ... }:

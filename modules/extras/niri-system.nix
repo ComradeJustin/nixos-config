@@ -9,5 +9,6 @@
     waybar
     niri
     nixfmt
+    dunst
   ];
 }
