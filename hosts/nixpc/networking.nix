@@ -5,5 +5,5 @@
   ...
 }:
 {
-  networking.hostName = "Nixpc";
+  networking.hostName = "nixpc";
 }

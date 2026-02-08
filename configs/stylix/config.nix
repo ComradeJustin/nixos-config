@@ -12,18 +12,18 @@
   stylix.fonts = {
 
     serif = {
-      package = pkgs.dejavu_fonts;
-      name = "DejaVu Serif";
+      package = pkgs.bodoni-moda;
+      name = "Bodoni Moda Medium";
     };
 
     sansSerif = {
-      package = pkgs.dejavu_fonts;
-      name = "DejaVu Sans";
+      package = pkgs.jost;
+      name = "Jost* 600 Semi";
     };
 
     monospace = {
-      package = pkgs.nerd-fonts.hurmit;
-      name = "Hurmit Nerd Font Mono";
+      package = pkgs.nerd-fonts.jetbrains-mono;
+      name = "JetBrainsMono NF SemiBold";
     };
 
     emoji = {

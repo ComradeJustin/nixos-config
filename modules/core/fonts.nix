@@ -5,14 +5,13 @@
   ...
 }:
 {
-  environment.systemPackages = with pkgs; [
+  # Fonts
+  fonts.packages = with pkgs; [
     noto-fonts-cjk-sans
-  ];
-  # NerdFonts
-  fonts.packages = with pkgs.nerd-fonts; [
-    hurmit
-    hack
-    fira-code
+    nerd-fonts.hurmit
+    nerd-fonts.hack
+    nerd-fonts.fira-code
+
   ];
 
 }
