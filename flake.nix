@@ -119,6 +119,7 @@
               ./modules/extras/niri-system.nix
 
               # Extra Set of programs
+              ./modules/extras/displaymanagement.nix
               ./modules/extras/fingerprint.nix
               ./hosts/nixlaptop/networking.nix
               ./modules/services/portals.nix
