@@ -58,7 +58,7 @@
 
               # Main system
               ./main/configuration.nix
-
+              ./hosts/nixpc/hardware-configuration.nix
               # Groups of programs
               ./modules/core/fonts.nix
               ./modules/core/programs.nix
@@ -108,7 +108,7 @@
 
               # Main system
               ./main/configuration.nix
-
+              ./hosts/nixlaptop/hardware-configuration.nix
               # Groups of programs
               ./modules/core/fonts.nix
               ./modules/core/programs.nix

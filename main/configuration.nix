@@ -11,9 +11,7 @@
 
 {
 
-  imports = [
-    ../hosts/nixpc/hardware-configuration.nix
-  ];
+
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.limine.enable = true;
