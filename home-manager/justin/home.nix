@@ -35,8 +35,13 @@
       name = "Adwaita";
     };
   };
+  stylix.targets.vscode.profileNames = [
+    "Default"
+    "default"
+  ];
 
   imports = [
+
     ../../modules/programs/git.nix
     ../../modules/programs/rofi.nix
   ];

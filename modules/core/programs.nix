@@ -6,7 +6,7 @@
 }:
 {
 
-  programs.niri.enable = true;
+
   programs.firefox.enable = true;
   environment.systemPackages = with pkgs;[
     ghostty

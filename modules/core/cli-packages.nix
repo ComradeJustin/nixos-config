@@ -7,7 +7,7 @@
 {
   environment.systemPackages = with pkgs; [
     vim
-    wget  
+    wget
     git
     neovim
     nitch
@@ -16,7 +16,10 @@
     btop
     gtk4
     xwayland-satellite
+    ffmpeg
+    gcc
+    cava
+    quickshell
   ];
-
 
 }
