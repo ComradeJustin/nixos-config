@@ -93,6 +93,54 @@
               }
             ];
           };
+        nixlaptop =
+          let
+            hostname = "nixlaptop";
+          in
+          nixpkgs.lib.nixosSystem {
+            specialArgs = {
+              inherit inputs;
+            };
+
+            system = "x86_64-linux";
+            # Basically a replacement to Configuration.nix
+            modules = [
+
+              # Main system
+              ./main/configuration.nix
+
+              # Groups of programs
+              ./modules/core/fonts.nix
+              ./modules/core/programs.nix
+              ./modules/core/cli-packages.nix
+              ./modules/core/services.nix
+
+              # Current WM and its collection of configs
+              ./modules/extras/niri-system.nix
+
+              # Extra Set of programs
+              ./hosts/nixlaptop/networking.nix
+              ./modules/services/portals.nix
+              # Theme
+              stylix.nixosModules.stylix
+
+              # Home manager
+              home-manager.nixosModules.home-manager
+
+              # Spotify
+              inputs.spicetify-nix.nixosModules.default
+
+              {
+
+                home-manager = {
+                  useGlobalPkgs = true;
+                  useUserPackages = true;
+                  users.justin = import ./home-manager/justin/home.nix;
+                  backupFileExtension = "backup";
+                };
+              }
+            ];
+          };
 
       };
     };
