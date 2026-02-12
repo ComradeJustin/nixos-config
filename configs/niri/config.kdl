@@ -36,7 +36,7 @@ input {
         // drag false
         // drag-lock
         natural-scroll
-         accel-speed 0.0
+        accel-speed 0.0
         accel-profile "flat"
         // scroll-method "two-finger"
         // disabled-on-external-mouse
@@ -53,8 +53,8 @@ input {
     trackpoint {
         // off
         // natural-scroll
-        // accel-speed 0.2
-        // accel-profile "flat"
+        accel-speed 0.0
+        accel-profile "flat"
         // scroll-method "on-button-down"
         // scroll-button 273
         // scroll-button-lock
