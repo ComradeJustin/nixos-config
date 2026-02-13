@@ -11,5 +11,7 @@
     nixfmt
     dunst
     brightnessctl
+    wev
   ];
+  
 }

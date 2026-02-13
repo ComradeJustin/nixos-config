@@ -31,8 +31,8 @@
     enable = true;
     #Icon Theme
     iconTheme = {
-      package = pkgs.adwaita-icon-theme;
-      name = "Adwaita";
+      package = pkgs.la-capitaine-icon-theme;
+      name = "la-capitaine-icon-theme";
     };
   };
   stylix.targets.vscode.profileNames = [

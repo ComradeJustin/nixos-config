@@ -107,6 +107,12 @@ input {
     position x=1280 y=0
 }
 
+output "eDP-1" {
+    scale 1
+    
+}
+
+
 //main 
 output "DP-2" {
     focus-at-startup
@@ -259,10 +265,10 @@ layout {
         softness 30
 
         // Spread expands the shadow.
-        spread 5
+        spread 4
 
         // Offset moves the shadow relative to the window.
-        offset x=0 y=5
+        offset x=0 y=3
      
         // You can also change the shadow color and opacity.
         color 	"#0f0f0f"
@@ -292,9 +298,10 @@ layer-rule {
 }
 
 environment {
- GTK_THEME "Adwaita:dark";
+ GTK_THEME "Adwaita:dark"
  ELECTRON_OZONE_PLATFORM_HINT "auto"
- 
+ XCURSOR_SIZE  "32"
+ _JAVA_AWT_WM_NONREPARENTING "1"
 }
 
 // This line starts waybar, a commonly used bar for Wayland compositors.
@@ -346,7 +353,7 @@ animations {
     // off
 
     // Slow down all animations by this factor. Values below 1 speed them up instead.
-    // slowdown 3.0
+    slowdown 1
 }
 
 // Window rules let you adjust behavior for individual windows.
@@ -466,6 +473,11 @@ binds {
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
     // For example, this is a standard bind to toggle the screen reader (orca).
     Super+Alt+S allow-when-locked=true hotkey-overlay-title=null { spawn-sh "pkill orca || exec orca"; }
+
+    // Extra stuff, such as custom config for f keys
+    XF86Display repeat=false { toggle-overview; }
+    
+
 
     // Example volume keys mappings for PipeWire & WirePlumber.
     // The allow-when-locked=true property makes them work even when the session is locked.
