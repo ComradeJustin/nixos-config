@@ -134,6 +134,9 @@
               
               # Extra programming stuff
               ./modules/extras/compscijava.nix
+
+              # Modules that are being tested to be implemented
+              ./modules/test/ags.nix
               {
 
                 home-manager = {

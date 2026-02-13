@@ -12,6 +12,7 @@
     dunst
     brightnessctl
     wev
+    
   ];
   
 }

@@ -12,7 +12,7 @@
 {
 
 
-
+  services.xserver.libinput.touchpad.tapping = false;
   # Use the systemd-boot EFI boot loader.
   boot.loader.limine.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
