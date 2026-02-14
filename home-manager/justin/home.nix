@@ -22,10 +22,6 @@
   home.file.".config/waybar".source = ../../configs/waybar;
   # home.file.".config/ghostty".source = ../../configs/ghostty;
 
-  home.pointerCursor = {
-    x11.enable = true;
-    gtk.enable = true;
-  };
 
   gtk = {
     enable = true;
