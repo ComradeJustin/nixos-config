@@ -6,10 +6,6 @@
 }:
 {
   environment.systemPackages = with pkgs; [
-    ags
-    astal.astal4
-    astal.astal3
-    astal.io
-    gtk4-layer-shell
+    quickshell
   ];
 }

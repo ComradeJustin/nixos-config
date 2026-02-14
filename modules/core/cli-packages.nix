@@ -19,7 +19,6 @@
     ffmpeg
     gcc
     cava
-    quickshell
   ];
 
 }
