@@ -15,6 +15,7 @@
   environment.systemPackages = [
     # Minecraft
     pkgs.prismlauncher
+    pkgs.gamescope
 
   ];
 }

@@ -12,7 +12,7 @@
     dunst
     brightnessctl
     wev
-    
+    wineWowPackages.waylandFull
   ];
-  
+
 }
