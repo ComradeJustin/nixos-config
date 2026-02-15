@@ -82,6 +82,9 @@
               # Spotify
               inputs.spicetify-nix.nixosModules.default
 
+              # Extra programming stuff
+              ./modules/extras/compscijava.nix
+
               {
 
                 home-manager = {
