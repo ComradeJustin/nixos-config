@@ -13,5 +13,5 @@
     nerd-fonts.fira-code
   ];
 
-
+  
 }

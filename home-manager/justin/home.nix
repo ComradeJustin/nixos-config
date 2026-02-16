@@ -21,6 +21,7 @@
   home.file.".config/niri".source = ../../configs/niri;
   home.file.".config/waybar".source = ../../configs/waybar;
   home.file.".config/quickshell".source = ../../configs/quickshell;
+  home.file.".config/hypr".source = ../../configs/hypr;
   # home.file.".config/ghostty".source = ../../configs/ghostty;
 
 
