@@ -41,6 +41,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # San Francisco Fonts | Apple Fonts
+    apple-fonts.url = "github:Lyndeno/apple-fonts.nix";
+    apple-fonts.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs =
     {
@@ -51,6 +54,7 @@
       spicetify-nix,
       quickshell,
       qml-niri,
+      apple-fonts,
       ...
     }@inputs:
     {
@@ -155,6 +159,7 @@
 
               # Modules that are being tested to be implemented
               ./modules/test/quickshell.nix
+              ./modules/test/lockscreen.nix
               {
 
                 home-manager = {
