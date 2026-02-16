@@ -13,6 +13,7 @@
     brightnessctl
     wev
     wineWowPackages.waylandFull
+    playerctl
   ];
 
 }

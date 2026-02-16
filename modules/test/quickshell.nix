@@ -6,6 +6,6 @@
 }:
 {
   environment.systemPackages = with pkgs; [
-    quickshell
+    inputs.qml-niri.packages.${pkgs.system}.quickshell
   ];
 }

@@ -1,20 +1,22 @@
-import Quickshell // for PanelWindow
-import QtQuick // for Text
+import QtQuick
+import QtQuick.Layouts
+import Quickshell
+import Quickshell.Wayland
+import Niri 0.1
+import "./modules/bar/"
 
-PanelWindow {
-  anchors {
-    top: true
-    left: true
-    right: true
-  }
-
-  implicitHeight: 30
-
-  Text {
-    // center the bar in its parent component (the window)
-    anchors.centerIn: parent
-
-    text: "hello world"
+ShellRoot{
+    id: root
     
-  }
+    Niri {
+        id: niri
+        Component.onCompleted: connect()
+
+        onConnected: console.info("Connected to niri")
+        onErrorOccurred: function(error) {
+            console.error("Niri error:", error)
+        }
+    }
+
+    LazyLoader{ active: true; component: Bar{} }
 }

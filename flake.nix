@@ -23,6 +23,17 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    quickshell = {
+      url = "git+https://git.outfoxxed.me/outfoxxed/quickshell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    qml-niri = {
+      url = "github:imiric/qml-niri/main";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.quickshell.follows = "quickshell";
+    };
+
     # For Home manager
 
     home-manager = {
@@ -38,6 +49,8 @@
       home-manager,
       stylix,
       spicetify-nix,
+      quickshell,
+      qml-niri,
       ...
     }@inputs:
     {
@@ -85,6 +98,8 @@
               # Extra programming stuff
               ./modules/extras/compscijava.nix
 
+              # Testing stuff to be implemented
+              ./modules/test/quickshell.nix
               {
 
                 home-manager = {
@@ -134,7 +149,7 @@
 
               # Spotify
               inputs.spicetify-nix.nixosModules.default
-              
+
               # Extra programming stuff
               ./modules/extras/compscijava.nix
 
