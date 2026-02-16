@@ -14,7 +14,7 @@ Rectangle {
             left: parent.left
             verticalCenter: parent.verticalCenter
         }
-        height: 24
+        height: 25
         width: rowLayout.implicitWidth + 50
         radius: 12
         color: "#222222"
@@ -26,15 +26,15 @@ Rectangle {
         anchors {
             left: parent.left
             verticalCenter: parent.verticalCenter
-            leftMargin: 10
+            leftMargin: 20
         }
-        spacing: 10
+        spacing: 8
 
         Repeater {
             model: niri.workspaces
 
             Rectangle {
-                visible: index < 5
+                visible: index < 6
                 width: model.isFocused ? 20 : 10
 
                 height: 10

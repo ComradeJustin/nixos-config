@@ -12,7 +12,7 @@ Rectangle {
         anchors {
             verticalCenter: parent.verticalCenter
         }
-        text: Qt.formatDateTime(clock.date, "hh:mm dd MMM, yyyy")
+        text: Qt.formatDateTime(clock.date, "hh:mm dd MMM")
         color: '#ffffff'
         font.family: "Jost* 600 Semi"
         font.pixelSize: 16
