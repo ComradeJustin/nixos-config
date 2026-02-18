@@ -133,7 +133,7 @@
               # Main system
               ./main/configuration.nix
               ./hosts/nixlaptop/hardware-configuration.nix
-              
+              ./hosts/nixlaptop/laptop.nix
               # Groups of programs
               ./modules/core/fonts.nix
               ./modules/core/programs.nix
