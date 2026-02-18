@@ -413,10 +413,15 @@ window-rule {
 window-rule {
     geometry-corner-radius 0
     clip-to-geometry true
-    opacity 0.975
-    draw-border-with-background false
 }
 
+window-rule {
+    match app-id=r#"ghostty"#
+    match app-id=r#"Spotify"#
+    match app-id=r#"code"#
+    opacity 0.95
+    draw-border-with-background false
+}
 // alt tab
 recent-windows {
     // off
