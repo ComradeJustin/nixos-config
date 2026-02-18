@@ -40,6 +40,8 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Anime client
+    lobster.url = "github:justchokingaround/lobster";
 
     # San Francisco Fonts | Apple Fonts
     apple-fonts.url = "github:Lyndeno/apple-fonts.nix";
@@ -131,7 +133,7 @@
               # Main system
               ./main/configuration.nix
               ./hosts/nixlaptop/hardware-configuration.nix
-              ./hosts/nixlaptop/laptop.nix
+              
               # Groups of programs
               ./modules/core/fonts.nix
               ./modules/core/programs.nix

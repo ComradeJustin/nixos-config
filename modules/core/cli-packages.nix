@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   ...
 }:
 {
@@ -19,7 +20,10 @@
     ffmpeg
     gcc
     cava
+    fzf
+    ani-cli
     unzip
+    inputs.lobster.packages.${pkgs.system}.lobster
   ];
 
 }
