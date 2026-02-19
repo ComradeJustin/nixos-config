@@ -22,8 +22,8 @@
     };
 
     monospace = {
-      package = pkgs.nerd-fonts.jetbrains-mono;
-      name = "JetBrainsMono NF SemiBold";
+      package = pkgs.nerd-fonts.commit-mono;
+      name = "CommitMono Nerd Font";
     };
 
     emoji = {

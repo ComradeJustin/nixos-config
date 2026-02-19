@@ -6,6 +6,7 @@ RowLayout {
   anchors.centerIn: parent
   property real percentage: Math.floor(UPower.displayDevice.percentage * 100)
   property string icon: isCharging()
+  property string output: isLaptop()
   property var batteryIcons: [
     "󰂎",
     "󰁺",
@@ -45,9 +46,17 @@ RowLayout {
     else return batteryIcons[index] + " "
   }
 
+  function isLaptop() {
+    if (UPower.displayDevice.isLaptopBattery == true) {
+        return icon + percentage + "%"
+    }
+    else {
+        return ""
+    }
+  } 
   Text {
     anchors.centerIn: parent
     color: '#ffffff'
-    text: icon + percentage + "%"
+    text: output
   }
 }
