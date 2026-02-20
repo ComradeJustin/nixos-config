@@ -25,9 +25,9 @@ Rectangle {
                 }
                 text: {
                     if (muted || volume === 0) return "󰝟  " + volume + "%"
-                    if (volume < 33) return "󰕿 " + volume + "%"
-                    if (volume < 66) return " 󰖀 " + volume + "%"
-                    return "󰕾 " + volume + "%"
+                    if (volume < 33) return "󰕿  " + volume + "%"
+                    if (volume < 66) return " 󰖀  " + volume + "%"
+                    return "󰕾  " + volume + "%"
                 }
 
                 color: '#ffffff'

@@ -23,7 +23,7 @@
 
     monospace = {
       package = pkgs.nerd-fonts.commit-mono;
-      name = "CommitMono Nerd Font";
+      name = "CommitMono Nerd Font Mono";
     };
 
     emoji = {
@@ -33,6 +33,7 @@
   };
   
 }
+
 
 #{ pkgs, lib, ... }:
 #let
