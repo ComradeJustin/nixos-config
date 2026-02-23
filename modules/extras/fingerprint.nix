@@ -17,6 +17,7 @@
     login.fprintAuth = true;
     sudo.fprintAuth = true;
     polkit.fprintAuth = true;
+    #hyprpolkitagent.fprintAuth = true;
     
   };
 

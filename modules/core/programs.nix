@@ -6,13 +6,14 @@
 }:
 {
 
-
+  programs.ssh.enableAskPassword = false;
   programs.firefox.enable = true;
-  environment.systemPackages = with pkgs;[
+  environment.systemPackages = with pkgs; [
     ghostty
     vscode
     waybar
     nautilus
+    cliphist
   ];
 
   imports = [

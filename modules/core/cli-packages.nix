@@ -10,7 +10,6 @@
     vim
     wget
     git
-    neovim
     nitch
     lazygit
     fastfetch

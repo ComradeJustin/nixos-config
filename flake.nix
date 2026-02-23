@@ -46,6 +46,15 @@
     # San Francisco Fonts | Apple Fonts
     apple-fonts.url = "github:Lyndeno/apple-fonts.nix";
     apple-fonts.inputs.nixpkgs.follows = "nixpkgs";
+
+    # Nixos hardware
+    nixos-hardware = {
+      url = "github:NixOS/nixos-hardware";
+    };
+    nixvim = {
+      url = "github:nix-community/nixvim";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs =
     {
@@ -57,6 +66,8 @@
       quickshell,
       qml-niri,
       apple-fonts,
+      nixos-hardware,
+      nixvim,
       ...
     }@inputs:
     {
@@ -134,6 +145,7 @@
               ./main/configuration.nix
               ./hosts/nixlaptop/hardware-configuration.nix
               ./hosts/nixlaptop/laptop.nix
+              nixos-hardware.nixosModules.lenovo-thinkpad-t14-intel-gen1
               # Groups of programs
               ./modules/core/fonts.nix
               ./modules/core/programs.nix
@@ -157,6 +169,9 @@
               # Spotify
               inputs.spicetify-nix.nixosModules.default
 
+              # Neovim 
+              inputs.nixvim.nixosModules.nixvim
+              ./modules/programs/nixvim.nix
               # Extra programming stuff
               ./modules/extras/compscijava.nix
 

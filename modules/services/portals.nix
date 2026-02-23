@@ -11,7 +11,7 @@
   ];
   services.gnome.gnome-keyring.enable = true;
   security.polkit.enable = true;
-  security.pam.services.hyprpolkitagent.fprintAuth = true;
+  
   environment.systemPackages = [
     pkgs.seahorse
     pkgs.hyprpolkitagent

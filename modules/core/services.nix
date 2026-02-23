@@ -11,6 +11,7 @@
     inputs.awww.packages.${pkgs.stdenv.hostPlatform.system}.awww
     pkgs.wiremix
     pkgs.rofi
+    pkgs.cliphist
   ];
   # Services
   services.flatpak.enable = true;
