@@ -8,13 +8,13 @@ Rectangle {
         precision: SystemClock.Seconds
     }
     Text {
+        property string date: "  " + Qt.formatDateTime(clock.date, "dddd dd MMM")
 
-        property string time: " " +Qt.formatDateTime(clock.date, " hh:mm:ss")
         id: timeBlock
         anchors {
             verticalCenter: parent.verticalCenter
         }
-        text: time
+        text: date
         color: '#ffffff'
         font.family: "Jost* 600 Semi"
         font.pixelSize: 16

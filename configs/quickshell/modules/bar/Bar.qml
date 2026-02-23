@@ -77,11 +77,14 @@ PanelWindow {
                 right: parent.right
                 rightMargin: 25
             }
-            Loader { active: true; sourceComponent: Battery {} }
+
+            Loader { active: true; sourceComponent: Date {} }
             Item { Layout.preferredWidth: 5 }
             Loader { active: true; sourceComponent: Audio {} }
             Item { Layout.preferredWidth: 5 }
             Loader { active: true; sourceComponent: Network {} }
+            Item { Layout.preferredWidth: 5 }
+            Loader { active: true; sourceComponent: Battery {} }
 
         }
     }

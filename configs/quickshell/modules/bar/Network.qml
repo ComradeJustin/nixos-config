@@ -13,10 +13,10 @@ Item {
         {
             if (Networking.devices.values[0].connected == true)
             {
-                return ""
+                return " "
             }
             else {
-                return "󰤮"
+                return " 󰤮"
                 //return String(Networking.devices.values[0].signalStrength)
             }
 
