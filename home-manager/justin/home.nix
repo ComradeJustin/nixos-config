@@ -12,9 +12,33 @@
   home.homeDirectory = "/home/justin";
   home.stateVersion = "25.11";
   programs.git.enable = true;
-  programs.bash = {
+  programs.nushell = {
+    enable = true;
+    extraConfig = ''
+      $env.config = {
+        show_banner: false,
+        completions: {
+          case_sensitive: false # case-sensitive completions
+          quick: false        # set to false to prevent auto-selecting completions
+          partial: false        # set to false to prevent partial filling of the prompt
+          algorithm: "fuzzy"    # prefix or fuzzy
+          external: {
+            # set to false to prevent nushell looking into $env.PATH to find more suggestions
+            enable: true 
+            # set to lower can improve completion performance at the cost of omitting some options
+            max_results: 100 
+          }
+        }
+      } '';
+  };
+
+  programs.carapace.enable = true;
+  programs.carapace.enableNushellIntegration = true;
+  # Starship prompt
+  programs.starship = {
     enable = true;
   };
+
   programs.ghostty.enable = true;
 
   # Allows me to set up config files.

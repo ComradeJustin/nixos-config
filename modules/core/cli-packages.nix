@@ -6,7 +6,10 @@
   ...
 }:
 {
+
   environment.systemPackages = with pkgs; [
+    nushell
+    carapace
     vim
     wget
     git

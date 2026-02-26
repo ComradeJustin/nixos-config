@@ -39,10 +39,11 @@
   # Defines A user
   users.users.justin = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "wireshark" ]; # Enable ‘sudo’ for the user.
+    extraGroups = [ "wheel" "wireshark" "networkmanager"]; # Enable ‘sudo’ for the user.
     packages = with pkgs; [
       tree
     ];
+    shell = pkgs.nushell; 
   };
 
   nixpkgs.config.allowUnfree = true;
