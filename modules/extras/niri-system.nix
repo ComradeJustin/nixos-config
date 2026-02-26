@@ -1,12 +1,15 @@
 {
+  config,
   inputs,
   lib,
   pkgs,
   ...
 }:
 {
-  programs.niri.enable = true;
+
+ 
   environment.systemPackages = with pkgs; [
+    inputs.niri-beta.packages.${pkgs.system}.niri
     waybar
     nixfmt
     dunst

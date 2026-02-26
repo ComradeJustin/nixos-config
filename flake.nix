@@ -51,8 +51,19 @@
     nixos-hardware = {
       url = "github:NixOS/nixos-hardware";
     };
+
+
+
+    # VIM
     nixvim = {
       url = "github:nix-community/nixvim";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+
+    #Window manager beta
+    niri-beta = {
+      url = "github:niri-wm/niri/wip/branch";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -68,6 +79,7 @@
       apple-fonts,
       nixos-hardware,
       nixvim,
+      niri-beta,
       ...
     }@inputs:
     {
@@ -97,6 +109,7 @@
 
               # Current WM and its collection of configs
               ./modules/extras/niri-system.nix
+              
 
               # Extra Set of programs
               ./modules/extras/gaming.nix

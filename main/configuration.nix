@@ -39,7 +39,7 @@
   # Defines A user
   users.users.justin = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
+    extraGroups = [ "wheel" "wireshark" ]; # Enable ‘sudo’ for the user.
     packages = with pkgs; [
       tree
     ];

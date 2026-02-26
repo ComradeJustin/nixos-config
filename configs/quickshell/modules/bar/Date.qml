@@ -8,7 +8,7 @@ Rectangle {
         precision: SystemClock.Seconds
     }
     Text {
-        property string date: "  " + Qt.formatDateTime(clock.date, "dddd dd MMM")
+        property string date: "  " + Qt.formatDateTime(clock.date, "ddd dd MMM")
 
         id: timeBlock
         anchors {
