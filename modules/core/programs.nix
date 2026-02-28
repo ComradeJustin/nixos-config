@@ -2,6 +2,7 @@
 
   lib,
   pkgs,
+  inputs,
   ...
 }:
 {
@@ -16,6 +17,7 @@
     nautilus
     wireshark
     cliphist
+    inputs.spotatui.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
   imports = [

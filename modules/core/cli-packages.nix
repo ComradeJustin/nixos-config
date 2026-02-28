@@ -27,5 +27,7 @@
     unzip
     inputs.lobster.packages.${pkgs.system}.lobster
   ];
+  # Non steam games
+  services.flatpak.enable = true;
 
 }

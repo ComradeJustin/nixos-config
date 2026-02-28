@@ -4,7 +4,10 @@
   inputs,
   ...
 }:
+let
+  link = config.lib.file.mkOutOfStoreSymlink;
 
+in
 {
   services.gnome-keyring.enable = true;
 
@@ -42,10 +45,25 @@
   programs.ghostty.enable = true;
 
   # Allows me to set up config files.
-  home.file.".config/niri".source = ../../configs/niri;
-  home.file.".config/waybar".source = ../../configs/waybar;
-  home.file.".config/quickshell".source = ../../configs/quickshell;
-  home.file.".config/hypr".source = ../../configs/hypr;
+  xdg.configFile = {
+
+    "niri" = {
+      source = link "${config.home.homeDirectory}/nixos-config/configs/niri";
+      recursive = true;
+    };
+    "waybar" = {
+      source = link "${config.home.homeDirectory}/nixos-config/configs/waybar";
+      recursive = true;
+    };
+    "quickshell" = {
+      source = link "${config.home.homeDirectory}/nixos-config/configs/quickshell";
+      recursive = true;
+    };
+    "hypr" = {
+      source = link "${config.home.homeDirectory}/nixos-config/configs/hypr";
+      recursive = true;
+    };
+  };
   # home.file.".config/ghostty".source = ../../configs/ghostty;
 
   gtk = {

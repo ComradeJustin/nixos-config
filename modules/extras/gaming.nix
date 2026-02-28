@@ -10,9 +10,7 @@
     enable = true;
   };
 
-  # Non steam games
-  services.flatpak.enable = true;
-  
+
   environment.systemPackages = [
     # Minecraft
     pkgs.prismlauncher
