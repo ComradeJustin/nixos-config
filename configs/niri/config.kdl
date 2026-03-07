@@ -325,6 +325,7 @@ spawn-at-startup "quickshell"
 spawn-at-startup "awww-daemon"
 spawn-at-startup "awww" "restore"
 spawn-at-startup "systemctl" "--user" "start" "hyprpolkitagent"
+spawn-at-startup "wl-paste" "--watch" "cliphist" "store"
 
 
 
@@ -410,14 +411,17 @@ window-rule {
     // Use this instead if you want them visible on third-party screenshot tools.
     // block-out-from "screencast"
 }
-
+blur {
+   passes 3        // more passes = stronger blur (default: 3)
+   offset 4.5     
+}
 // Example: enable rounded corners for all windows.
 // (This example rule is commented out with a "/-" in front.)
 window-rule {
     background-effect {
         blur true
         xray true
-        noise 0.1
+        noise 0.02
         saturation 1
     }
     geometry-corner-radius 0
@@ -425,7 +429,6 @@ window-rule {
 }
 
 window-rule {
-
     match app-id=r#"ghostty"#
     match app-id=r#"Spotify"#
     match app-id=r#"code"#

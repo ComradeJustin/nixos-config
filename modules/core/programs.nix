@@ -16,8 +16,11 @@
     waybar
     nautilus
     wireshark
+    nmap
     cliphist
+    wl-clipboard
     inputs.spotatui.packages.${pkgs.stdenv.hostPlatform.system}.default
+    krita
   ];
 
   imports = [

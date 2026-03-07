@@ -80,10 +80,11 @@ PanelWindow {
             Loader { active: true; sourceComponent: Network {} }
             Item { Layout.preferredWidth: 10 }
             Loader { active: true; sourceComponent: Date {} }
-            Item { Layout.preferredWidth: 5 }
+            Item { Layout.preferredWidth: 10 }
             Loader { active: true; sourceComponent: Battery {} }
+            Item { Layout.preferredWidth: 10 }
             Loader { active: true; sourceComponent: Audio {} }
-            Item { Layout.preferredWidth: 5 }
+            Item { Layout.preferredWidth: 10 }
 
         }
     }
