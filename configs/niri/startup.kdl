@@ -1,0 +1,14 @@
+environment {
+ GTK_THEME "Adwaita:dark"
+ ELECTRON_OZONE_PLATFORM_HINT "auto"
+ _JAVA_AWT_WM_NONREPARENTING "1"
+}
+//spawn-at-startup "waybar"
+// Spawning quickshell
+spawn-at-startup "quickshell"
+// spawn-at-startup "swaync"
+// spawn-at-startup "hypridle"
+spawn-at-startup "awww-daemon"
+spawn-at-startup "awww" "restore"
+spawn-at-startup "systemctl" "--user" "start" "hyprpolkitagent"
+spawn-at-startup "wl-paste" "--watch" "cliphist" "store"

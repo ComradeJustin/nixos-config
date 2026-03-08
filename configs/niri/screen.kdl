@@ -1,0 +1,27 @@
+// laptop
+output "eDP-1" {
+    scale 1
+    
+}
+
+
+
+
+//configs for my desktop
+//main 
+output "DP-2" {
+    focus-at-startup
+    position x=0 y=0
+    scale 1
+}
+// Right
+ output "HDMI-A-1" {
+    position x=1920 y=0
+    scale 1
+}
+
+overview {
+    workspace-shadow {
+        off
+    }
+}
