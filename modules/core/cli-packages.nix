@@ -8,6 +8,8 @@
 {
 
   environment.systemPackages = with pkgs; [
+    jq
+    libnotify
     nushell
     carapace
     vim

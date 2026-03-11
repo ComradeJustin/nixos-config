@@ -12,7 +12,6 @@
     inputs.niri-beta.packages.${pkgs.system}.niri
     waybar
     nixfmt
-    dunst
     brightnessctl
     wev
     wineWowPackages.waylandFull

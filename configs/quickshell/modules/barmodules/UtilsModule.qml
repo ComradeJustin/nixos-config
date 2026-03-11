@@ -1,0 +1,22 @@
+import QtQuick
+import QtQuick.Layouts
+import "../.." as Root
+
+Item {
+    id: root
+    implicitWidth: row.implicitWidth
+    implicitHeight: row.implicitHeight
+
+    Root.Theme { id: theme }
+
+    Row {
+        id: row
+        spacing: theme.barSpacing
+        anchors.verticalCenter: parent.verticalCenter
+
+        ResourceModule {}
+        AudioModule {}
+        NetworkModule {}
+        BatteryModule {}
+    }
+}
