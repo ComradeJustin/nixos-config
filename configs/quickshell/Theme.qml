@@ -81,6 +81,8 @@ QtObject {
     readonly property color  notifBody:        base04
     readonly property color  notifAppName:     base03
     readonly property color  notifUrgentBorder: base08
+    readonly property int    notifHistWidth:    380
+    readonly property int    notifHistMaxHeight: 500
 
     // Icons
     readonly property string iconCpu:       "󰻠"
@@ -114,6 +116,9 @@ QtObject {
     readonly property string iconMediaPlay: "󰐊"
     readonly property string iconMediaPause:"󰏤"
     readonly property string iconNixos:     ""
+    readonly property string iconBell:      "󰂚"
+    readonly property string iconBellBadge: "󰂞"
+    readonly property string iconTrash:     "󰆴"
 
     // Cava visualizer
     readonly property int    cavaWidth:     200

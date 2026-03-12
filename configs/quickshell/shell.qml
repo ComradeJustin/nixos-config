@@ -2,7 +2,7 @@ import Quickshell
 import "modules" as Modules
 
 ShellRoot {
-    Modules.Bar {}
+    Modules.Notifications { id: notifs }
     Modules.Osd {}
-    Modules.Notifications {}
+    Modules.Bar { notifRef: notifs }
 }

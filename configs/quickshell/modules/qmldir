@@ -8,3 +8,4 @@ NetworkModule 1.0 NetworkModule.qml
 BatteryModule 1.0 BatteryModule.qml
 MediaModule 1.0 MediaModule.qml
 NixosIcon 1.0 NixosIcon.qml
+NotifIcon 1.0 NotifIcon.qml

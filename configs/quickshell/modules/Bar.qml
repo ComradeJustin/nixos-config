@@ -14,6 +14,7 @@ Scope {
     property bool isHidden: false
     property bool zoneReleased: false
     property bool showCava: false
+    property var notifRef: null
 
     onIsHiddenChanged: {
         if (isHidden) {
@@ -105,6 +106,7 @@ Scope {
                     spacing: theme.barSpacing
 
                     BarModules.UtilsModule {}
+                    BarModules.NotifIcon { notifRef: barScope.notifRef }
                 }
             }
         }
