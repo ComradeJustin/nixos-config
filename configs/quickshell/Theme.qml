@@ -62,6 +62,7 @@ QtObject {
     readonly property int osdFontSize: 14
     readonly property int osdRadius:  16
     readonly property int osdTimeout: 1500
+    readonly property int osdFadeMs: 300
 
     // Notifications
     readonly property int    notifWidth:       360
@@ -108,4 +109,18 @@ QtObject {
     readonly property string iconPlug:      "󰚥"
     readonly property string iconCal:       "󰃶"
     readonly property string iconClock:     "󰥔"
+    readonly property string iconHeadphone: "󰋋"
+    readonly property string iconSpeaker:   "󰓃"
+    readonly property string iconMediaPlay: "󰐊"
+    readonly property string iconMediaPause:"󰏤"
+    readonly property string iconNixos:     ""
+
+    // Cava visualizer
+    readonly property int    cavaWidth:     200
+    readonly property int    cavaHeight:    120
+    readonly property int    cavaBars:      24
+    readonly property int    cavaRadius:    12
+    readonly property color  cavaBackground: barBackground
+    readonly property color  cavaBarColor:  base0D
+    readonly property color  cavaBarPeak:   base0E
 }

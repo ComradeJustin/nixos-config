@@ -15,34 +15,47 @@ Item {
     property bool charging: false
     property bool pluggedIn: false
 
+    property color activeColor: root.pluggedIn
+        ? theme.textCharging
+        : (root.capacity >= 0 && root.capacity <= 15
+           ? theme.textCritical : theme.textPrimary)
+
     Row {
         id: row
         spacing: 4
+        anchors.verticalCenter: parent.verticalCenter
 
+        // ── Battery icon ──
         Text {
             text: {
-                if (root.capacity < 0) return theme.iconBatNone + " --";
-                let icon;
-                if (root.charging)            icon = theme.iconBatChg;
-                else if (root.capacity > 80)  icon = theme.iconBat100;
-                else if (root.capacity > 60)  icon = theme.iconBat80;
-                else if (root.capacity > 40)  icon = theme.iconBat60;
-                else if (root.capacity > 20)  icon = theme.iconBat40;
-                else                          icon = theme.iconBat20;
-                let label = icon + " " + root.capacity + "%";
-                if (root.charging) label += " ⚡";
-                else if (root.pluggedIn) label += " " + theme.iconPlug;
-                return label;
+                if (root.capacity < 0) return theme.iconBatNone;
+                if (root.charging)            return theme.iconBatChg;
+                if (root.capacity > 80)       return theme.iconBat100;
+                if (root.capacity > 60)       return theme.iconBat80;
+                if (root.capacity > 40)       return theme.iconBat60;
+                if (root.capacity > 20)       return theme.iconBat40;
+                return theme.iconBat20;
             }
-            color: root.pluggedIn
-                   ? theme.textCharging
-                   : (root.capacity >= 0 && root.capacity <= 15
-                      ? theme.textCritical : theme.textPrimary)
-            font {
-                family: theme.fontFamily
-                pixelSize: theme.fontSize
-                bold: theme.fontBold
-            }
+            color: root.activeColor
+            font { family: theme.fontFamily; pixelSize: theme.iconSize }
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        // ── Percentage ──
+        Text {
+            text: root.capacity >= 0 ? root.capacity + "%" : "--"
+            color: root.activeColor
+            font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        // ── Plug indicator (only when plugged in, not actively charging) ──
+        Text {
+            visible: root.pluggedIn && !root.charging
+            text: theme.iconPlug
+            color: theme.textCharging
+            font { family: theme.fontFamily; pixelSize: theme.iconSize }
+            anchors.verticalCenter: parent.verticalCenter
         }
     }
 

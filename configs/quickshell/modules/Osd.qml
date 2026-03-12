@@ -27,29 +27,51 @@ PanelWindow {
     property int    curVolume: -1
     property bool   curMuted: false
     property int    curBrightness: -1
-    property string activeMode: ""
+    property string curDevice: ""
+    property string activeMode: ""   // "volume" | "brightness" | "device"
+    property string deviceLabel: ""
 
+    // ── Show / hide with fade ──
     function show(mode) {
         activeMode = mode;
         visible = true;
+        content.opacity = 1;
+        fadeOut.stop();
         hideTimer.restart();
     }
 
     Timer {
         id: hideTimer
         interval: theme.osdTimeout
-        onTriggered: osd.visible = false
+        onTriggered: fadeOut.start()
     }
 
+    NumberAnimation {
+        id: fadeOut
+        target: content
+        property: "opacity"
+        from: 1
+        to: 0
+        duration: theme.osdFadeMs
+        easing.type: Easing.InCubic
+
+        onFinished: osd.visible = false
+    }
+
+    // ── Visual ──
     Rectangle {
+        id: content
         anchors.fill: parent
         radius: theme.osdRadius
         color: theme.osdBackground
+        opacity: 1
 
         Row {
             anchors.centerIn: parent
             spacing: 14
+            visible: osd.activeMode !== "device"
 
+            // Icon
             Text {
                 text: {
                     if (osd.activeMode === "brightness") {
@@ -69,6 +91,7 @@ PanelWindow {
                 anchors.verticalCenter: parent.verticalCenter
             }
 
+            // Progress bar
             Rectangle {
                 width: 140
                 height: 8
@@ -94,6 +117,7 @@ PanelWindow {
                 }
             }
 
+            // Percentage
             Text {
                 text: {
                     let pct = osd.activeMode === "brightness"
@@ -108,9 +132,37 @@ PanelWindow {
                 anchors.verticalCenter: parent.verticalCenter
             }
         }
+
+        // ── Device switch display ──
+        Row {
+            anchors.centerIn: parent
+            spacing: 10
+            visible: osd.activeMode === "device"
+
+            Text {
+                text: {
+                    let name = osd.deviceLabel.toLowerCase();
+                    if (name.indexOf("headphone") !== -1 || name.indexOf("headset") !== -1)
+                        return theme.iconHeadphone;
+                    return theme.iconSpeaker;
+                }
+                color: theme.osdAccent
+                font { family: theme.fontFamily; pixelSize: theme.osdIconSize }
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Text {
+                text: osd.deviceLabel || "Audio Device"
+                color: theme.textPrimary
+                font { family: theme.fontFamily; pixelSize: theme.osdFontSize }
+                anchors.verticalCenter: parent.verticalCenter
+                elide: Text.ElideRight
+                width: Math.min(implicitWidth, theme.osdWidth - 80)
+            }
+        }
     }
 
-    // ── Volume: fast poll via wpctl ──
+    // ── Volume poll ──
     Process {
         id: volProc
         command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]
@@ -142,7 +194,41 @@ PanelWindow {
         onTriggered: volProc.running = true
     }
 
-    // ── Brightness: fast poll (no event API for brightnessctl) ──
+    // ── Device name poll ──
+    Process {
+        id: devProc
+        command: [
+            "bash", "-c",
+            "wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null | " +
+            "grep -oP 'node\\.description\\s*=\\s*\"\\K[^\"]+' || echo ''"
+        ]
+        running: true
+
+        stdout: SplitParser {
+            onRead: data => {
+                let name = data.trim();
+                if (name.length === 0) return;
+
+                let wasDevice = osd.curDevice;
+                osd.curDevice = name;
+                osd.deviceLabel = name;
+
+                // Show OSD on device change (skip initial read)
+                if (wasDevice.length > 0 && wasDevice !== name)
+                    osd.show("device");
+            }
+        }
+
+        onExited: devPollTimer.start()
+    }
+
+    Timer {
+        id: devPollTimer
+        interval: 500
+        onTriggered: devProc.running = true
+    }
+
+    // ── Brightness poll ──
     Process {
         id: briProc
         command: [

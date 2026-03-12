@@ -13,14 +13,13 @@ Scope {
 
     property bool isHidden: false
     property bool zoneReleased: false
+    property bool showCava: false
 
     onIsHiddenChanged: {
         if (isHidden) {
-            // Slide out first, then release zone after animation
             zoneRestoreTimer.stop();
             zoneReleaseTimer.start();
         } else {
-            // Slide in first, then restore zone after animation
             zoneReleaseTimer.stop();
             zoneRestoreTimer.start();
         }
@@ -38,6 +37,9 @@ Scope {
         onTriggered: barScope.zoneReleased = false
     }
 
+    // ══════════════════════════════════
+    // ── Bar panel ──
+    // ══════════════════════════════════
     PanelWindow {
         id: panel
 
@@ -71,37 +73,189 @@ Scope {
                     NumberAnimation { duration: 200; easing.type: Easing.InOutCubic }
                 }
 
+                // ── Left ──
                 RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: theme.barPadding
-                    anchors.rightMargin: theme.barPadding
-                    spacing: 0
-
-                    RowLayout {
-                        Layout.alignment: Qt.AlignLeft
-                        spacing: theme.barSpacing
-
-                        BarModules.WorkspaceModule {}
-                        BarModules.TimeModule {}
-                        BarModules.WindowModule {}
+                    anchors {
+                        left: parent.left
+                        leftMargin: theme.barPadding
+                        verticalCenter: parent.verticalCenter
                     }
+                    spacing: theme.barSpacing
 
-                    Item { Layout.fillWidth: true }
+                    BarModules.NixosIcon {}
+                    BarModules.WorkspaceModule {}
+                    BarModules.TimeModule {}
+                    BarModules.WindowModule {}
+                }
 
-                    RowLayout {
-                        Layout.alignment: Qt.AlignRight
-                        spacing: theme.barSpacing
+                // ── Center (media) — absolute center, independent of sides ──
+                BarModules.MediaModule {
+                    id: mediaModule
+                    anchors.centerIn: parent
+                    onCavaToggled: barScope.showCava = !barScope.showCava
+                }
 
-                        BarModules.UtilsModule {}
+                // ── Right ──
+                RowLayout {
+                    anchors {
+                        right: parent.right
+                        rightMargin: theme.barPadding
+                        verticalCenter: parent.verticalCenter
                     }
+                    spacing: theme.barSpacing
+
+                    BarModules.UtilsModule {}
                 }
             }
         }
     }
 
+    // ══════════════════════════════════
+    // ── Cava visualizer popup ──
+    // ══════════════════════════════════
+    property bool cavaWanted: barScope.showCava && !barScope.isHidden
+
+    onCavaWantedChanged: {
+        if (cavaWanted) {
+            cavaSlideOut.stop();
+            cavaPanel.visible = true;
+            cavaSlideIn.start();
+        } else {
+            cavaSlideIn.stop();
+            cavaSlideOut.start();
+        }
+    }
+
+    NumberAnimation {
+        id: cavaSlideIn
+        target: cavaRect
+        property: "y"
+        from: -theme.cavaHeight
+        to: 0
+        duration: 200
+        easing.type: Easing.OutCubic
+    }
+
+    NumberAnimation {
+        id: cavaSlideOut
+        target: cavaRect
+        property: "y"
+        from: 0
+        to: -theme.cavaHeight
+        duration: 200
+        easing.type: Easing.InCubic
+        onFinished: cavaPanel.visible = false
+    }
+
+    PanelWindow {
+        id: cavaPanel
+
+        visible: false
+
+        anchors {
+            top: true
+        }
+        implicitWidth: theme.cavaWidth
+        margins.top: theme.barHeight + 6
+        implicitHeight: theme.cavaHeight
+
+        WlrLayershell.namespace: "quickshell-cava"
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+        exclusionMode: ExclusionMode.Ignore
+
+        color: "transparent"
+
+        Item {
+            anchors.fill: parent
+            clip: true
+
+            Rectangle {
+                id: cavaRect
+                width: parent.width
+                height: theme.cavaHeight
+                y: -theme.cavaHeight
+                radius: theme.cavaRadius
+                color: theme.cavaBackground
+
+                property var bars: []
+
+                Row {
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 8
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: 2
+
+                    Repeater {
+                        model: theme.cavaBars
+
+                        Rectangle {
+                            width: Math.max(2, (theme.cavaWidth - (theme.cavaBars - 1) * 2 - 16) / theme.cavaBars)
+                            height: {
+                                let vals = cavaRect.bars;
+                                let maxH = theme.cavaHeight - 16;
+                                if (!vals || index >= vals.length) return 2;
+                                return Math.max(2, vals[index] * maxH);
+                            }
+                            radius: width / 2
+                            anchors.bottom: parent.bottom
+                            color: {
+                                let vals = cavaRect.bars;
+                                if (vals && index < vals.length && vals[index] > 0.7)
+                                    return theme.cavaBarPeak;
+                                return theme.cavaBarColor;
+                            }
+
+                            Behavior on height {
+                                NumberAnimation { duration: 50; easing.type: Easing.OutQuad }
+                            }
+                        }
+                    }
+                }
+
+                Process {
+                    id: cavaProc
+                    command: [
+                        "bash", "-c",
+                        "cava -p /dev/stdin <<'CAVAEOF'\n" +
+                        "[general]\n" +
+                        "bars = " + theme.cavaBars + "\n" +
+                        "framerate = 30\n" +
+                        "[output]\n" +
+                        "method = raw\n" +
+                        "raw_target = /dev/stdout\n" +
+                        "data_format = ascii\n" +
+                        "ascii_max_range = 100\n" +
+                        "CAVAEOF"
+                    ]
+                    running: true
+
+                    stdout: SplitParser {
+                        splitMarker: "\n"
+                        onRead: data => {
+                            let parts = data.trim().split(";").filter(s => s.length > 0);
+                            let vals = [];
+                            for (let i = 0; i < parts.length; i++) {
+                                let v = parseInt(parts[i]);
+                                vals.push(isNaN(v) ? 0 : v / 100);
+                            }
+                            if (vals.length > 0)
+                                cavaRect.bars = vals;
+                        }
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: barScope.showCava = false
+                }
+            }
+        }
+    }
+
+    // ══════════════════════════════════
     // ── Fullscreen detection ──
-    // Compares focused window size to output size.
-    // If the window covers the full output, treat as fullscreen.
+    // ══════════════════════════════════
     Process {
         id: fsProc
         command: [
