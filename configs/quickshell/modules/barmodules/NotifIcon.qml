@@ -14,6 +14,7 @@ Item {
     property var notifRef: null
     property int unread: notifRef ? notifRef.unreadCount : 0
     property bool historyOpen: notifRef ? notifRef.showHistory : false
+    property bool isDnd: notifRef ? notifRef.dnd : false
 
     Item {
         id: iconContainer
@@ -23,18 +24,21 @@ Item {
 
         Text {
             id: bellIcon
-            text: root.unread > 0 ? theme.iconBellBadge : theme.iconBell
-            color: root.historyOpen ? theme.textAccent
+            text: root.isDnd ? theme.iconDnd
+                : root.unread > 0 ? theme.iconBellBadge
+                : theme.iconBell
+            color: root.isDnd ? theme.textWarning
+                 : root.historyOpen ? theme.textAccent
                  : root.unread > 0 ? theme.textWarning
                  : theme.textPrimary
             font { family: theme.fontFamily; pixelSize: theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }
 
-        // ── Unread count badge ──
+        // ── Unread count badge (hidden during DND) ──
         Rectangle {
             id: badge
-            visible: root.unread > 0
+            visible: root.unread > 0 && !root.isDnd
             width: Math.max(14, badgeText.implicitWidth + 6)
             height: 14
             radius: 7

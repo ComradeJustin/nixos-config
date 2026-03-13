@@ -119,34 +119,8 @@ Scope {
 
     onCavaWantedChanged: {
         if (cavaWanted) {
-            cavaSlideOut.stop();
             cavaPanel.visible = true;
-            cavaSlideIn.start();
-        } else {
-            cavaSlideIn.stop();
-            cavaSlideOut.start();
         }
-    }
-
-    NumberAnimation {
-        id: cavaSlideIn
-        target: cavaRect
-        property: "y"
-        from: -theme.cavaHeight
-        to: 0
-        duration: 200
-        easing.type: Easing.OutCubic
-    }
-
-    NumberAnimation {
-        id: cavaSlideOut
-        target: cavaRect
-        property: "y"
-        from: 0
-        to: -theme.cavaHeight
-        duration: 200
-        easing.type: Easing.InCubic
-        onFinished: cavaPanel.visible = false
     }
 
     PanelWindow {
@@ -158,8 +132,8 @@ Scope {
             top: true
         }
         implicitWidth: theme.cavaWidth
-        margins.top: theme.barHeight + 6
-        implicitHeight: theme.cavaHeight
+        margins.top: theme.barHeight
+        implicitHeight: theme.cavaHeight + 6
 
         WlrLayershell.namespace: "quickshell-cava"
         WlrLayershell.layer: WlrLayer.Overlay
@@ -176,9 +150,19 @@ Scope {
                 id: cavaRect
                 width: parent.width
                 height: theme.cavaHeight
-                y: -theme.cavaHeight
                 radius: theme.cavaRadius
                 color: theme.cavaBackground
+
+                y: barScope.cavaWanted ? 6 : -(theme.cavaHeight + 6)
+
+                Behavior on y {
+                    NumberAnimation { duration: 200; easing.type: Easing.InOutCubic }
+                }
+
+                onYChanged: {
+                    if (!barScope.cavaWanted && y <= -(theme.cavaHeight + 5))
+                        cavaPanel.visible = false;
+                }
 
                 property var bars: []
 

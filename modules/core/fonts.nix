@@ -11,6 +11,8 @@
     nerd-fonts.hurmit
     nerd-fonts.hack
     nerd-fonts.fira-code
+    nerd-fonts.monoid
+    cozette
   ];
 
   

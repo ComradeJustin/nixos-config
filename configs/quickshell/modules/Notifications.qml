@@ -12,14 +12,21 @@ Scope {
 
     // ── Exposed state ──
     property bool showHistory: false
-    property int unreadCount: historyModel.count
+    property bool dnd: false
+    property int unreadCount: 0
 
     function toggleHistory() {
         showHistory = !showHistory;
+        if (showHistory) {
+            historyPanel.visible = true;
+            // Mark all as read
+            unreadCount = 0;
+        }
     }
 
     function clearHistory() {
         historyModel.clear();
+        unreadCount = 0;
     }
 
     // ── Shared models ──
@@ -53,16 +60,16 @@ Scope {
                 "timeout":    timeout
             };
 
-            // Add to popup (cap visible)
-            if (popupModel.count >= theme.notifMaxVisible) {
-                let oldest = popupModel.get(0);
-                if (oldest && oldest.notifRef)
-                    oldest.notifRef.expire();
-                popupModel.remove(0);
+            if (!notifScope.dnd || entry.urgent) {
+                if (popupModel.count >= theme.notifMaxVisible) {
+                    let oldest = popupModel.get(0);
+                    if (oldest && oldest.notifRef)
+                        oldest.notifRef.expire();
+                    popupModel.remove(0);
+                }
+                popupModel.append(entry);
             }
-            popupModel.append(entry);
 
-            // Add to history (cap at 50)
             historyModel.insert(0, {
                 "appName":   entry.appName,
                 "summary":   entry.summary,
@@ -72,6 +79,10 @@ Scope {
             });
             if (historyModel.count > 50)
                 historyModel.remove(50, historyModel.count - 50);
+
+            // Increment unread unless user is reading history
+            if (!notifScope.showHistory)
+                notifScope.unreadCount++;
         }
     }
 
@@ -88,20 +99,25 @@ Scope {
 
         anchors { top: true; right: true }
         margins.top: theme.notifMarginTop + theme.barHeight
-        margins.right: theme.notifMarginRight
 
-        implicitWidth: theme.notifWidth
+        // Panel flush with screen edge so cards slide from true edge
+        implicitWidth: theme.notifWidth + theme.notifMarginRight
         implicitHeight: popupColumn.implicitHeight
         color: "transparent"
         visible: popupModel.count > 0
 
         Column {
             id: popupColumn
-            width: theme.notifWidth
+            width: parent.width
             spacing: theme.notifSpacing
 
             Repeater {
                 model: popupModel
+
+                Item {
+                    width: theme.notifWidth + theme.notifMarginRight
+                    height: card.height
+                    clip: true
 
                 Rectangle {
                     id: card
@@ -113,7 +129,8 @@ Scope {
                     border.width: model.urgent ? 2 : 0
                     opacity: 1
 
-                    x: theme.notifWidth
+                    // Start off-screen right, slide to final position with margin
+                    x: theme.notifWidth + theme.notifMarginRight
                     Component.onCompleted: {
                         x = 0;
                         dismissTimer.interval = model.timeout;
@@ -214,23 +231,26 @@ Scope {
                         }
                     }
                 }
+                }
             }
         }
     }
 
     // ══════════════════════════════════
-    // ── History panel (top-right, togglable) ──
+    // ── History panel ──
     // ══════════════════════════════════
     PanelWindow {
         id: historyPanel
 
-        visible: notifScope.showHistory
+        visible: false
 
         anchors { top: true; right: true }
-        margins.top: theme.barHeight + 6
+        // Flush with bar — no gap, slide handles spacing
+        margins.top: theme.barHeight
         margins.right: theme.notifMarginRight
         implicitWidth: theme.notifHistWidth
-        implicitHeight: Math.min(historyContent.implicitHeight, theme.notifHistMaxHeight)
+        // Fixed height so clip area is always big enough for slide
+        implicitHeight: theme.notifHistMaxHeight
 
         WlrLayershell.namespace: "quickshell-notif-history"
         WlrLayershell.layer: WlrLayer.Overlay
@@ -239,158 +259,214 @@ Scope {
 
         color: "transparent"
 
-        Rectangle {
+        Item {
             anchors.fill: parent
-            radius: theme.notifRadius
-            color: theme.barBackground
+            clip: true
 
-            Column {
-                id: historyContent
+            Rectangle {
+                id: histRect
                 width: parent.width
-                spacing: 0
+                height: historyInner.implicitHeight
+                radius: theme.notifRadius
+                color: theme.barBackground
 
-                // ── Header ──
-                RowLayout {
-                    width: parent.width
-                    height: 36
+                // Slide from behind bar to 6px below bar edge
+                y: notifScope.showHistory ? 6 : -(height + 6)
 
-                    Text {
-                        text: "Notifications"
-                        color: theme.textPrimary
-                        font { family: theme.fontFamily; pixelSize: theme.notifTitleSize; bold: true }
-                        Layout.fillWidth: true
-                        Layout.leftMargin: theme.notifPadding
-                        verticalAlignment: Text.AlignVCenter
+                Behavior on y {
+                    NumberAnimation { duration: 250; easing.type: Easing.InOutCubic }
+                }
+
+                // Hide panel after slide-out completes
+                onYChanged: {
+                    if (!notifScope.showHistory && y <= -(height + 5)) {
+                        historyPanel.visible = false;
                     }
+                }
 
-                    // ── Clear button ──
-                    Text {
-                        text: theme.iconTrash
-                        color: historyModel.count > 0 ? theme.textDimmed : "transparent"
-                        font { family: theme.fontFamily; pixelSize: theme.iconSize }
-                        Layout.rightMargin: theme.notifPadding
-                        verticalAlignment: Text.AlignVCenter
+                Column {
+                    id: historyInner
+                    width: parent.width
+                    spacing: 0
 
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: notifScope.clearHistory()
+                    // ── Header ──
+                    RowLayout {
+                        width: parent.width
+                        height: 36
+
+                        Text {
+                            text: "Notifications"
+                            color: theme.textPrimary
+                            font { family: theme.fontFamily; pixelSize: theme.notifTitleSize; bold: true }
+                            Layout.fillWidth: true
+                            Layout.leftMargin: theme.notifPadding
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        // ── DND toggle ──
+                        Text {
+                            text: notifScope.dnd ? theme.iconDnd : theme.iconDndOff
+                            color: notifScope.dnd ? theme.textWarning : theme.textDimmed
+                            font { family: theme.fontFamily; pixelSize: theme.iconSize }
+                            Layout.rightMargin: 4
+                            verticalAlignment: Text.AlignVCenter
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: notifScope.dnd = !notifScope.dnd
+                            }
+                        }
+
+                        // ── Clear button ──
+                        Text {
+                            text: theme.iconTrash
+                            color: historyModel.count > 0 ? theme.textDimmed : "transparent"
+                            font { family: theme.fontFamily; pixelSize: theme.iconSize }
+                            Layout.rightMargin: theme.notifPadding
+                            verticalAlignment: Text.AlignVCenter
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: notifScope.clearHistory()
+                            }
                         }
                     }
-                }
 
-                // ── Separator ──
-                Rectangle {
-                    width: parent.width - theme.notifPadding * 2
-                    height: 1
-                    color: theme.textDimmed
-                    opacity: 0.3
-                    anchors.horizontalCenter: parent.horizontalCenter
-                }
+                    // ── Separator ──
+                    Rectangle {
+                        width: parent.width - theme.notifPadding * 2
+                        height: 1
+                        color: theme.textDimmed
+                        opacity: 0.3
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
 
-                // ── Empty state ──
-                Text {
-                    visible: historyModel.count === 0
-                    text: "No notifications"
-                    color: theme.textDimmed
-                    font { family: theme.fontFamily; pixelSize: theme.notifBodySize }
-                    width: parent.width
-                    height: 60
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-
-                // ── History items ──
-                Flickable {
-                    visible: historyModel.count > 0
-                    width: parent.width
-                    height: Math.min(historyCol.implicitHeight, theme.notifHistMaxHeight - 44)
-                    contentHeight: historyCol.implicitHeight
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
-
-                    Column {
-                        id: historyCol
+                    // ── DND banner ──
+                    Rectangle {
+                        visible: notifScope.dnd
                         width: parent.width
-                        spacing: 2
+                        height: 28
+                        color: "transparent"
 
-                        Repeater {
-                            model: historyModel
+                        Rectangle {
+                            anchors.fill: parent
+                            color: theme.textWarning
+                            opacity: 0.15
+                        }
 
-                            Rectangle {
-                                width: historyCol.width
-                                height: histRow.implicitHeight + theme.notifPadding
-                                color: "transparent"
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Do Not Disturb is on"
+                            color: theme.textWarning
+                            font { family: theme.fontFamily; pixelSize: 11 }
+                        }
+                    }
 
-                                RowLayout {
-                                    id: histRow
-                                    anchors {
-                                        left: parent.left; right: parent.right
-                                        verticalCenter: parent.verticalCenter
-                                        margins: theme.notifPadding
-                                    }
-                                    spacing: 10
+                    // ── Empty state ──
+                    Text {
+                        visible: historyModel.count === 0
+                        text: "No notifications"
+                        color: theme.textDimmed
+                        font { family: theme.fontFamily; pixelSize: theme.notifBodySize }
+                        width: parent.width
+                        height: 60
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
 
-                                    Image {
-                                        source: {
-                                            let p = model.imagePath;
-                                            if (!p || p === "") return "";
-                                            if (p.indexOf("://") !== -1) return p;
-                                            if (p.startsWith("/")) return "file://" + p;
-                                            return "image://icon/" + p;
-                                        }
-                                        sourceSize.width: 24
-                                        sourceSize.height: 24
-                                        Layout.preferredWidth: 24
-                                        Layout.preferredHeight: 24
-                                        Layout.alignment: Qt.AlignTop
-                                        visible: status === Image.Ready
-                                        smooth: true
-                                    }
+                    // ── History items ──
+                    Flickable {
+                        visible: historyModel.count > 0
+                        width: parent.width
+                        height: Math.min(historyCol.implicitHeight, theme.notifHistMaxHeight - 80)
+                        contentHeight: historyCol.implicitHeight
+                        clip: true
+                        boundsBehavior: Flickable.StopAtBounds
 
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 1
+                        Column {
+                            id: historyCol
+                            width: parent.width
+                            spacing: 2
 
-                                        Text {
-                                            text: model.appName
-                                            color: theme.notifAppName
-                                            font { family: theme.fontFamily; pixelSize: 10 }
-                                            visible: model.appName !== ""
-                                            Layout.fillWidth: true
-                                            elide: Text.ElideRight
-                                        }
+                            Repeater {
+                                model: historyModel
 
-                                        Text {
-                                            text: model.summary
-                                            color: theme.notifTitle
-                                            font { family: theme.fontFamily; pixelSize: theme.notifBodySize; bold: true }
-                                            Layout.fillWidth: true
-                                            elide: Text.ElideRight
-                                        }
-
-                                        Text {
-                                            text: model.body
-                                            color: theme.notifBody
-                                            font { family: theme.fontFamily; pixelSize: 11 }
-                                            Layout.fillWidth: true
-                                            wrapMode: Text.Wrap
-                                            maximumLineCount: 2
-                                            elide: Text.ElideRight
-                                            visible: model.body !== ""
-                                            textFormat: Text.PlainText
-                                        }
-                                    }
-                                }
-
-                                // Subtle divider
                                 Rectangle {
-                                    anchors.bottom: parent.bottom
-                                    width: parent.width - theme.notifPadding * 2
-                                    height: 1
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    color: theme.textDimmed
-                                    opacity: 0.15
+                                    width: historyCol.width
+                                    height: histRow.implicitHeight + theme.notifPadding
+                                    color: "transparent"
+
+                                    RowLayout {
+                                        id: histRow
+                                        anchors {
+                                            left: parent.left; right: parent.right
+                                            verticalCenter: parent.verticalCenter
+                                            margins: theme.notifPadding
+                                        }
+                                        spacing: 10
+
+                                        Image {
+                                            source: {
+                                                let p = model.imagePath;
+                                                if (!p || p === "") return "";
+                                                if (p.indexOf("://") !== -1) return p;
+                                                if (p.startsWith("/")) return "file://" + p;
+                                                return "image://icon/" + p;
+                                            }
+                                            sourceSize.width: 24
+                                            sourceSize.height: 24
+                                            Layout.preferredWidth: 24
+                                            Layout.preferredHeight: 24
+                                            Layout.alignment: Qt.AlignTop
+                                            visible: status === Image.Ready
+                                            smooth: true
+                                        }
+
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 1
+
+                                            Text {
+                                                text: model.appName
+                                                color: theme.notifAppName
+                                                font { family: theme.fontFamily; pixelSize: 10 }
+                                                visible: model.appName !== ""
+                                                Layout.fillWidth: true
+                                                elide: Text.ElideRight
+                                            }
+
+                                            Text {
+                                                text: model.summary
+                                                color: theme.notifTitle
+                                                font { family: theme.fontFamily; pixelSize: theme.notifBodySize; bold: true }
+                                                Layout.fillWidth: true
+                                                elide: Text.ElideRight
+                                            }
+
+                                            Text {
+                                                text: model.body
+                                                color: theme.notifBody
+                                                font { family: theme.fontFamily; pixelSize: 11 }
+                                                Layout.fillWidth: true
+                                                wrapMode: Text.Wrap
+                                                maximumLineCount: 2
+                                                elide: Text.ElideRight
+                                                visible: model.body !== ""
+                                                textFormat: Text.PlainText
+                                            }
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        anchors.bottom: parent.bottom
+                                        width: parent.width - theme.notifPadding * 2
+                                        height: 1
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        color: theme.textDimmed
+                                        opacity: 0.15
+                                    }
                                 }
                             }
                         }

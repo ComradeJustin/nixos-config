@@ -16,6 +16,7 @@ binds {
     // Suggested binds for running programs: terminal, app launcher, screen locker.
     Mod+Return hotkey-overlay-title="Open a Terminal: ghostty" { spawn "ghostty"; }
     Mod+Space hotkey-overlay-title="Run an Application: rofi" { spawn "rofi" "-show" "drun"; }
+    Mod+D { spawn "qs" "ipc" "call" "quickshell-bar" "launcher"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: hyprlock" { spawn "hyprlock"; }
     //Alt+Tab {spawn "~/.config/niri/hotkeyscripts/alttab.sh";} 
     Mod+B hotkey-overlay-title="Run firefox" { spawn "firefox";}

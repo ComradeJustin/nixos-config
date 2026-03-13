@@ -45,9 +45,9 @@ QtObject {
     readonly property color wsPillBg:      base01
 
     // Font
-    readonly property string fontFamily: "monospace"
-    readonly property int    fontSize:   13
-    readonly property int    iconSize:   17
+    readonly property string fontFamily: "CommitMono Nerd Font Mono"
+    readonly property int    fontSize:   14
+    readonly property int    iconSize:   20
     readonly property bool   fontBold:   false
 
     // Bar geometry
@@ -86,7 +86,7 @@ QtObject {
 
     // Icons
     readonly property string iconCpu:       "󰻠"
-    readonly property string iconRam:       ""
+    readonly property string iconRam:       ""
     readonly property string iconVolHigh:   "󰕾"
     readonly property string iconVolMid:    "󰖀"
     readonly property string iconVolLow:    "󰕿"
@@ -115,10 +115,12 @@ QtObject {
     readonly property string iconSpeaker:   "󰓃"
     readonly property string iconMediaPlay: "󰐊"
     readonly property string iconMediaPause:"󰏤"
-    readonly property string iconNixos:     ""
+    readonly property string iconNixos:     ""
     readonly property string iconBell:      "󰂚"
     readonly property string iconBellBadge: "󰂞"
     readonly property string iconTrash:     "󰆴"
+    readonly property string iconDnd:       "󰂛"
+    readonly property string iconDndOff:    "󰂚"
 
     // Cava visualizer
     readonly property int    cavaWidth:     200
