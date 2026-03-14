@@ -45,8 +45,8 @@ QtObject {
     readonly property color wsPillBg:      base01
 
     // Font
-    readonly property string fontFamily: "CommitMono Nerd Font Mono"
-    readonly property int    fontSize:   15
+    readonly property string fontFamily: "monospace"
+    readonly property int    fontSize:   13
     readonly property int    iconSize:   17
     readonly property bool   fontBold:   false
 
@@ -86,7 +86,7 @@ QtObject {
 
     // Icons
     readonly property string iconCpu:       "󰻠"
-    readonly property string iconRam:       ""
+    readonly property string iconRam:       ""
     readonly property string iconVolHigh:   "󰕾"
     readonly property string iconVolMid:    "󰖀"
     readonly property string iconVolLow:    "󰕿"
@@ -115,7 +115,7 @@ QtObject {
     readonly property string iconSpeaker:   "󰓃"
     readonly property string iconMediaPlay: "󰐊"
     readonly property string iconMediaPause:"󰏤"
-    readonly property string iconNixos:     "󱄅"
+    readonly property string iconNixos:     ""
     readonly property string iconBell:      "󰂚"
     readonly property string iconBellBadge: "󰂞"
     readonly property string iconTrash:     "󰆴"
@@ -138,12 +138,15 @@ QtObject {
     readonly property string iconLaunch:       "󰍃"
     readonly property color  scrimColor:       Qt.rgba(0, 0, 0, 0.35)
 
-    // Cava visualizer
-    readonly property int    cavaWidth:     200
-    readonly property int    cavaHeight:    120
+    // Cava / Media popup
+    readonly property int    cavaWidth:     320
+    readonly property int    cavaHeight:    200
     readonly property int    cavaBars:      24
     readonly property int    cavaRadius:    12
     readonly property color  cavaBackground: barBackground
     readonly property color  cavaBarColor:  base0D
     readonly property color  cavaBarPeak:   base0E
+    readonly property int    cavaArtSize:   64
+    readonly property string iconPrev:      "󰒮"
+    readonly property string iconNext:      "󰒭"
 }

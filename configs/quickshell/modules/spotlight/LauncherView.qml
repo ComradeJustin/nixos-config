@@ -63,17 +63,22 @@ Item {
         id: cacheProc
         command: [
             "bash", "-c",
-            "find /run/current-system/sw/share/applications " +
-            "$HOME/.local/share/applications " +
-            "$HOME/.nix-profile/share/applications " +
-            "/usr/share/applications " +
-            "-name '*.desktop' 2>/dev/null | sort -u | while IFS= read -r f; do " +
+            "IFS=':'; " +
+            "paths=\"$XDG_DATA_DIRS:$HOME/.local/share:/run/current-system/sw/share:/usr/share\"; " +
+            "for dir in $paths; do " +
+            "  [ -d \"$dir/applications\" ] && echo \"$dir/applications\"; " +
+            "done | sort -u | while IFS= read -r d; do " +
+            "  find \"$d\" -maxdepth 2 -name '*.desktop' 2>/dev/null; " +
+            "done | sort -u | while IFS= read -r f; do " +
             "  name=$(grep -m1 '^Name=' \"$f\" | cut -d= -f2-); " +
             "  icon=$(grep -m1 '^Icon=' \"$f\" | cut -d= -f2-); " +
             "  exec=$(grep -m1 '^Exec=' \"$f\" | cut -d= -f2- | sed 's/ %[fFuUdDnNickvm]//g'); " +
             "  nodisplay=$(grep -m1 '^NoDisplay=' \"$f\" | cut -d= -f2-); " +
+            "  type=$(grep -m1 '^Type=' \"$f\" | cut -d= -f2-); " +
             "  [ \"$nodisplay\" = 'true' ] && continue; " +
+            "  [ \"$type\" != 'Application' ] && [ -n \"$type\" ] && continue; " +
             "  [ -z \"$name\" ] && continue; " +
+            "  [ -z \"$exec\" ] && continue; " +
             "  echo \"$name\t$icon\t$exec\"; " +
             "done | sort -t$'\\t' -k1,1f -u"
         ]
