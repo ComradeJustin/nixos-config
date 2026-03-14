@@ -46,8 +46,8 @@ QtObject {
 
     // Font
     readonly property string fontFamily: "CommitMono Nerd Font Mono"
-    readonly property int    fontSize:   14
-    readonly property int    iconSize:   20
+    readonly property int    fontSize:   15
+    readonly property int    iconSize:   17
     readonly property bool   fontBold:   false
 
     // Bar geometry
@@ -115,12 +115,28 @@ QtObject {
     readonly property string iconSpeaker:   "󰓃"
     readonly property string iconMediaPlay: "󰐊"
     readonly property string iconMediaPause:"󰏤"
-    readonly property string iconNixos:     ""
+    readonly property string iconNixos:     "󱄅"
     readonly property string iconBell:      "󰂚"
     readonly property string iconBellBadge: "󰂞"
     readonly property string iconTrash:     "󰆴"
     readonly property string iconDnd:       "󰂛"
     readonly property string iconDndOff:    "󰂚"
+    readonly property string iconClipboard: "󰅍"
+
+    // Clipboard
+    readonly property int    clipWidth:      420
+    readonly property int    clipMaxHeight:  460
+    readonly property int    clipMaxItems:   30
+    readonly property int    clipThumbSize:  48
+
+    // App Launcher
+    readonly property int    launchWidth:      500
+    readonly property int    launchMaxHeight:  460
+    readonly property int    launchIconSize:   36
+    readonly property int    launchItemHeight: 44
+    readonly property string iconSearch:       "󰍉"
+    readonly property string iconLaunch:       "󰍃"
+    readonly property color  scrimColor:       Qt.rgba(0, 0, 0, 0.35)
 
     // Cava visualizer
     readonly property int    cavaWidth:     200
