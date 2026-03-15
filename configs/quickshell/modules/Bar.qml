@@ -12,20 +12,21 @@ Scope {
     Root.Theme { id: theme }
 
     property bool isHidden: false
-    property bool zoneReleased: false
     property bool showCava: false
     property var notifRef: null
     property var playerService: null
     property var powerService: null
     property var audioService: null
     property var powerMenuRef: null
+    property var wifiService: null
 
     onIsHiddenChanged: {
         if (isHidden) {
-            zoneRestoreTimer.stop();
+            // Start slide-out, then hide panel after animation
             zoneReleaseTimer.start();
         } else {
-            zoneReleaseTimer.stop();
+            // Show panel first, then slide in
+            panel.visible = true;
             zoneRestoreTimer.start();
         }
     }
@@ -33,13 +34,13 @@ Scope {
     Timer {
         id: zoneReleaseTimer
         interval: 220
-        onTriggered: barScope.zoneReleased = true
+        onTriggered: panel.visible = false
     }
 
     Timer {
         id: zoneRestoreTimer
         interval: 220
-        onTriggered: barScope.zoneReleased = false
+        onTriggered: {} // animation already playing from visible=true
     }
 
     // ══════════════════════════════════
@@ -59,7 +60,7 @@ Scope {
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         exclusionMode: ExclusionMode.Normal
-        exclusiveZone: barScope.zoneReleased ? 0 : theme.barHeight
+        exclusiveZone: barScope.isHidden ? 0 : theme.barHeight
 
         color: "transparent"
 
@@ -123,6 +124,7 @@ Scope {
                         id: utilsModule
                         anchors.verticalCenter: parent.verticalCenter
                         audioService: barScope.audioService
+                        wifiService: barScope.wifiService
                     }
                     BarModules.GearIcon {
                         anchors.verticalCenter: parent.verticalCenter

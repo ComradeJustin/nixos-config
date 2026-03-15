@@ -9,6 +9,7 @@ Item {
     Root.Theme { id: theme }
 
     property var audioService: null
+    property var wifiService: null
 
     Row {
         id: row
@@ -17,7 +18,7 @@ Item {
 
         ResourceModule {}
         AudioModule { audioService: root.audioService }
-        NetworkModule {}
+        NetworkModule { wifiService: root.wifiService }
         BatteryModule {}
     }
 }

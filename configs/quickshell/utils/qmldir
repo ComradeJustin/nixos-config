@@ -2,3 +2,4 @@ AudioService 1.0 AudioService.qml
 PlayerService 1.0 PlayerService.qml
 PowerService 1.0 PowerService.qml
 NotifService 1.0 NotifService.qml
+WifiService 1.0 WifiService.qml

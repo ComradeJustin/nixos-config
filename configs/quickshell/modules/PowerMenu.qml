@@ -30,11 +30,13 @@ Scope {
         }
     }
 
+    signal lockRequested()
+
     function execute(action) {
         showing = false;
+        if (action === "lock") { lockRequested(); return }
         if (!powerService) return;
-        if (action === "lock") powerService.lock();
-        else if (action === "suspend") powerService.suspend();
+        if (action === "suspend") powerService.suspend();
         else if (action === "logout") powerService.logout();
         else if (action === "reboot") powerService.reboot();
         else if (action === "shutdown") powerService.shutdown();

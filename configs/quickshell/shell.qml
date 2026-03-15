@@ -1,5 +1,6 @@
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
 import "modules" as Modules
 import "utils" as Utils
 
@@ -8,9 +9,20 @@ ShellRoot {
     Utils.PlayerService { id: playerSvc }
     Utils.PowerService { id: powerSvc }
     Utils.NotifService { id: notifSvc }
+    Utils.WifiService { id: wifiSvc }
 
-    Modules.PowerMenu { id: pmModule; powerService: powerSvc }
-    Modules.ControlCenter { id: ccModule; audioService: audioSvc; powerMenuRef: pmModule; notifService: notifSvc }
+    Modules.PowerMenu {
+        id: pmModule
+        powerService: powerSvc
+        onLockRequested: lock()
+    }
+    Modules.ControlCenter {
+        id: ccModule
+        audioService: audioSvc
+        powerMenuRef: pmModule
+        notifService: notifSvc
+        wifiService: wifiSvc
+    }
     Modules.Spotlight { id: spotModule }
     Modules.Osd {}
     Modules.Bar {
@@ -19,15 +31,36 @@ ShellRoot {
         powerService: powerSvc
         audioService: audioSvc
         powerMenuRef: pmModule
+        wifiService: wifiSvc
+    }
+
+    // ── Session Lock ──
+    property bool screenLocked: false
+
+    WlSessionLock {
+        id: sessionLock
+        locked: screenLocked
+
+        WlSessionLockSurface {
+            Modules.LockScreen {
+                anchors.fill: parent
+                onUnlocked: screenLocked = false
+            }
+        }
+    }
+
+    function lock() {
+        screenLocked = true;
     }
 
     IpcHandler {
         target: "quickshell-bar"
 
-        function launcher(): string { spotModule.toggle("launcher"); return "ok"; }
-        function clipboard(): string { spotModule.toggle("clipboard"); return "ok"; }
-        function wallpaper(): string { spotModule.toggle("wallpaper"); return "ok"; }
-        function controlcenter(): string { ccModule.toggle(); return "ok"; }
-        function powermenu(): string { pmModule.toggle(); return "ok"; }
+        function launcher(): string { spotModule.toggle("launcher"); return "ok" }
+        function clipboard(): string { spotModule.toggle("clipboard"); return "ok" }
+        function wallpaper(): string { spotModule.toggle("wallpaper"); return "ok" }
+        function controlcenter(): string { ccModule.toggle(); return "ok" }
+        function powermenu(): string { pmModule.toggle(); return "ok" }
+        function lockscreen(): string { lock(); return "ok" }
     }
 }

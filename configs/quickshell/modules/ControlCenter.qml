@@ -1,6 +1,5 @@
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 import ".." as Root
@@ -17,42 +16,19 @@ Scope {
     property var audioService: null
     property var powerMenuRef: null
     property var notifService: null
+    property var wifiService: null
 
     function toggle() {
         showing = !showing;
         if (showing) {
             ccPanel.visible = true;
             if (notifService) notifService.unreadCount = 0;
-            wifiScanProc.running = true;
+            if (wifiService) wifiService.scan();
             if (audioService) { audioService.refreshApps(); audioService.refreshDevices(); }
             if (notifService) notifService.rebuildStacks();
         }
     }
     function toggleHistory() { toggle(); }
-
-    // ── WiFi ──
-    ListModel { id: wifiModel }
-    property string wifiSsid: ""
-    property bool wifiConnected: false
-    property bool wifiEnabled: true
-
-    Process {
-        id: wifiScanProc
-        command: ["bash", "-c", "nmcli -t -f ACTIVE,SSID,SIGNAL,SECURITY dev wifi list --rescan auto 2>/dev/null | while IFS=: read -r active ssid sig sec; do [ -z \"$ssid\" ] && continue; echo \"$active\t$ssid\t$sig\t$sec\"; done | sort -t$'\\t' -k1,1r -k3,3nr"]
-        stdout: SplitParser {
-            onRead: data => {
-                let p = data.split("\t");
-                if (p.length < 4) return;
-                wifiModel.append({ "wifiActive": p[0] === "yes", "wifiSsid": p[1], "wifiSignal": parseInt(p[2]) || 0, "wifiSecurity": p[3] || "" });
-                if (p[0] === "yes") { cc.wifiSsid = p[1]; cc.wifiConnected = true; }
-            }
-        }
-        onStarted: { wifiModel.clear(); cc.wifiConnected = false; cc.wifiSsid = ""; }
-    }
-    Process { id: wifiConnProc; property string ssid: ""; command: ["nmcli", "dev", "wifi", "connect", ssid] }
-    Process { id: wifiDiscProc; command: ["nmcli", "dev", "disconnect", "wlan0"] }
-    Process { id: wifiToggleProc; property bool on: true; command: ["nmcli", "radio", "wifi", on ? "on" : "off"] }
-    Timer { id: wifiRefresh; interval: 3000; onTriggered: wifiScanProc.running = true }
 
     Timer {
         interval: 2000
@@ -274,9 +250,9 @@ Scope {
 
                         Rectangle {
                             width: 48; height: 48; radius: 24
-                            color: cc.wifiConnected ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.25) : theme.ccSectionBg
-                            Text { anchors.centerIn: parent; text: cc.wifiConnected ? theme.iconWifiHi : theme.iconWifiOff; color: cc.wifiConnected ? theme.textAccent : theme.textDimmed; font { family: theme.fontFamily; pixelSize: 20 } }
-                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { cc.wifiEnabled = !cc.wifiEnabled; cc.wifiConnected = false; wifiToggleProc.on = cc.wifiEnabled; wifiToggleProc.running = true; wifiRefresh.start(); } }
+                            color: (cc.wifiService && cc.wifiService.connected) ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.25) : theme.ccSectionBg
+                            Text { anchors.centerIn: parent; text: (cc.wifiService && cc.wifiService.connected) ? theme.iconWifiHi : theme.iconWifiOff; color: (cc.wifiService && cc.wifiService.connected) ? theme.textAccent : theme.textDimmed; font { family: theme.fontFamily; pixelSize: 20 } }
+                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.wifiService) cc.wifiService.toggle(); } }
                         }
 
                         Rectangle {
@@ -321,7 +297,7 @@ Scope {
                                     onClicked: {
                                         cc.activeTab = modelData.tab;
                                         if (modelData.tab === "volume" && cc.audioService) { cc.audioService.refreshApps(); cc.audioService.refreshDevices(); }
-                                        if (modelData.tab === "wifi") wifiScanProc.running = true;
+                                        if (modelData.tab === "wifi") if (cc.wifiService) cc.wifiService.scan();
                                     }
                                 }
                             }
@@ -620,7 +596,7 @@ Scope {
                                 id: wifiTabCol; width: parent.width; spacing: 4
 
                                 Rectangle {
-                                    visible: cc.wifiConnected; width: parent.width; height: 44; radius: 8; color: theme.ccSectionBg
+                                    visible: (cc.wifiService && cc.wifiService.connected); width: parent.width; height: 44; radius: 8; color: theme.ccSectionBg
                                     Row {
                                         anchors { verticalCenter: parent.verticalCenter; left: parent.left; leftMargin: 12 }
                                          spacing: 10
@@ -628,19 +604,19 @@ Scope {
                                          anchors.verticalCenter: parent.verticalCenter }
                                         Column {
                                             anchors.verticalCenter: parent.verticalCenter
-                                            Text { text: cc.wifiSsid; color: theme.textAccent; font { family: theme.fontFamily; pixelSize: 13; bold: true } }
+                                            Text { text: (cc.wifiService ? cc.wifiService.ssid : ""); color: theme.textAccent; font { family: theme.fontFamily; pixelSize: 13; bold: true } }
                                             Text { text: "Connected"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 11 } }
                                         }
                                     }
                                 }
 
-                                Item { width: 1; height: cc.wifiConnected ? 4 : 0 }
+                                Item { width: 1; height: (cc.wifiService && cc.wifiService.connected) ? 4 : 0 }
 
-                                Text { visible: wifiModel.count === 0; text: "Scanning…"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 13 }
+                                Text { visible: (cc.wifiService ? cc.wifiService.networks.count : 0) === 0; text: "Scanning…"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 13 }
                                  width: parent.width; height: 50; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
 
                                 Repeater {
-                                    model: wifiModel
+                                    model: cc.wifiService ? cc.wifiService.networks : null
                                     Rectangle {
                                         width: wifiTabCol.width; height: 36; radius: 6
                                         color: wfMouse.containsMouse ? Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.06) : "transparent"
@@ -652,7 +628,7 @@ Scope {
                                             Text { text: model.wifiSsid; color: model.wifiActive ? theme.textAccent : theme.textPrimary; font { family: theme.fontFamily; pixelSize: 13; bold: model.wifiActive }
                                              anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; width: parent.width - 30 }
                                         }
-                                        MouseArea { id: wfMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (model.wifiActive) wifiDiscProc.running = true; else { wifiConnProc.ssid = model.wifiSsid; wifiConnProc.running = true; } wifiRefresh.start(); } }
+                                        MouseArea { id: wfMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.wifiService) { if (model.wifiActive) cc.wifiService.disconnect(); else cc.wifiService.connectTo(model.wifiSsid); } } }
                                     }
                                 }
                             }
