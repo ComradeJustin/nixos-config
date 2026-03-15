@@ -9,13 +9,14 @@ import "spotlight" as Views
 // Toggle via IPC:
 //   qs ipc call quickshell-bar launcher
 //   qs ipc call quickshell-bar clipboard
+//   qs ipc call quickshell-bar wallpaper
 Scope {
     id: spot
 
     Root.Theme { id: theme }
 
     property bool showing: false
-    property string activeView: "launcher"  // "launcher" | "clipboard"
+    property string activeView: "launcher"  // "launcher" | "clipboard" | "wallpaper"
 
     function open(view) {
         activeView = view;
@@ -24,11 +25,13 @@ Scope {
 
         if (view === "launcher") {
             launcherView.resetSearch();
-            searchInput.forceActiveFocus();
         } else if (view === "clipboard") {
             clipboardView.refresh();
-            searchInput.forceActiveFocus();
+        } else if (view === "wallpaper") {
+            wallpaperView.resetSearch();
+            wallpaperView.refresh();
         }
+        searchInput.forceActiveFocus();
     }
 
     function close() {
@@ -40,6 +43,19 @@ Scope {
             close();
         else
             open(view);
+    }
+
+    // Box width varies per view
+    property int boxWidth: {
+        if (activeView === "wallpaper") return theme.wpWidth;
+        if (activeView === "launcher") return theme.launchWidth;
+        return theme.clipWidth;
+    }
+
+    // Max height varies per view
+    property int boxMaxHeight: {
+        if (activeView === "wallpaper") return theme.wpMaxHeight;
+        return theme.launchMaxHeight;
     }
 
     // ══════════════════════════════════
@@ -69,8 +85,8 @@ Scope {
         // ── Centered box ──
         Rectangle {
             id: box
-            width: spot.activeView === "launcher" ? theme.launchWidth : theme.clipWidth
-            height: Math.min(boxContent.implicitHeight, theme.launchMaxHeight)
+            width: spot.boxWidth
+            height: Math.min(boxContent.implicitHeight, spot.boxMaxHeight)
             anchors.centerIn: parent
             radius: theme.notifRadius
             color: theme.barBackground
@@ -120,12 +136,20 @@ Scope {
                                 launcherView.searchText = text;
                                 launcherView.selectedIndex = 0;
                                 launcherView.updateFilter();
+                            } else if (spot.activeView === "wallpaper") {
+                                wallpaperView.searchText = text;
+                                wallpaperView.selectedIndex = 0;
+                                wallpaperView.updateFilter();
                             }
                         }
 
                         Text {
                             anchors.fill: parent
-                            text: spot.activeView === "launcher" ? "Search applications…" : "Clipboard history"
+                            text: {
+                                if (spot.activeView === "launcher") return "Search applications…";
+                                if (spot.activeView === "wallpaper") return "Search wallpapers…";
+                                return "Clipboard history";
+                            }
                             color: theme.textDimmed; font: parent.font
                             visible: parent.text.length === 0
                             verticalAlignment: Text.AlignVCenter
@@ -146,21 +170,43 @@ Scope {
                         Keys.onReturnPressed: {
                             if (spot.activeView === "launcher")
                                 launcherView.launchSelected();
+                            else if (spot.activeView === "wallpaper")
+                                wallpaperView.applySelected();
                         }
 
                         Keys.onDownPressed: {
                             if (spot.activeView === "launcher")
                                 launcherView.moveDown();
+                            else if (spot.activeView === "wallpaper")
+                                wallpaperView.moveDown();
                         }
 
                         Keys.onUpPressed: {
                             if (spot.activeView === "launcher")
                                 launcherView.moveUp();
+                            else if (spot.activeView === "wallpaper")
+                                wallpaperView.moveUp();
+                        }
+
+                        Keys.onLeftPressed: function(event) {
+                            if (spot.activeView === "wallpaper")
+                                wallpaperView.moveLeft();
+                            else
+                                event.accepted = false;
+                        }
+
+                        Keys.onRightPressed: function(event) {
+                            if (spot.activeView === "wallpaper")
+                                wallpaperView.moveRight();
+                            else
+                                event.accepted = false;
                         }
 
                         Keys.onTabPressed: {
                             if (spot.activeView === "launcher") {
                                 launcherView.moveDown();
+                            } else if (spot.activeView === "wallpaper") {
+                                wallpaperView.moveRight();
                             }
                         }
                     }
@@ -170,6 +216,7 @@ Scope {
                         Layout.rightMargin: theme.notifPadding
                         spacing: 4
 
+                        // Launcher tab
                         Rectangle {
                             width: 28; height: 28; radius: 6
                             color: spot.activeView === "launcher"
@@ -177,12 +224,14 @@ Scope {
                                 : "transparent"
                             Text {
                                 anchors.centerIn: parent
-                                text: theme.iconLaunch; color: spot.activeView === "launcher" ? theme.textAccent : theme.textDimmed
+                                text: theme.iconLaunch
+                                color: spot.activeView === "launcher" ? theme.textAccent : theme.textDimmed
                                 font { family: theme.fontFamily; pixelSize: theme.iconSize - 2 }
                             }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: spot.open("launcher") }
                         }
 
+                        // Clipboard tab
                         Rectangle {
                             width: 28; height: 28; radius: 6
                             color: spot.activeView === "clipboard"
@@ -190,10 +239,26 @@ Scope {
                                 : "transparent"
                             Text {
                                 anchors.centerIn: parent
-                                text: theme.iconClipboard; color: spot.activeView === "clipboard" ? theme.textAccent : theme.textDimmed
+                                text: theme.iconClipboard
+                                color: spot.activeView === "clipboard" ? theme.textAccent : theme.textDimmed
                                 font { family: theme.fontFamily; pixelSize: theme.iconSize - 2 }
                             }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: spot.open("clipboard") }
+                        }
+
+                        // Wallpaper tab
+                        Rectangle {
+                            width: 28; height: 28; radius: 6
+                            color: spot.activeView === "wallpaper"
+                                ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.15)
+                                : "transparent"
+                            Text {
+                                anchors.centerIn: parent
+                                text: theme.iconWallpaper
+                                color: spot.activeView === "wallpaper" ? theme.textAccent : theme.textDimmed
+                                font { family: theme.fontFamily; pixelSize: theme.iconSize - 2 }
+                            }
+                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: spot.open("wallpaper") }
                         }
                     }
                 }
@@ -217,6 +282,13 @@ Scope {
                     visible: spot.activeView === "clipboard"
                     width: parent.width
                     onItemSelected: spot.close()
+                }
+
+                Views.WallpaperView {
+                    id: wallpaperView
+                    visible: spot.activeView === "wallpaper"
+                    width: parent.width
+                    onWallpaperSet: spot.close()
                 }
             }
         }

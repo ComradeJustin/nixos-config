@@ -41,8 +41,15 @@ Item {
         if (filteredIndices.length === 0) return;
         let idx = filteredIndices[selectedIndex];
         let item = appModel.get(idx);
-        execProc.cmd = item.appExec;
-        execProc.running = true;
+
+        if (item.appDbusId && item.appDbusId.length > 0) {
+            dbusProc.appId = item.appDbusId;
+            dbusProc.objPath = "/" + item.appDbusId.replace(/\./g, "/");
+            dbusProc.running = true;
+        } else {
+            execProc.cmd = item.appExec;
+            execProc.running = true;
+        }
         launched();
     }
 
@@ -58,7 +65,8 @@ Item {
 
     ListModel { id: appModel }
 
-    // Cache on startup
+    // Cache on startup — resolves binary to full nix store path
+    // For DBusActivatable apps, stores the app ID for D-Bus activation
     Process {
         id: cacheProc
         command: [
@@ -72,14 +80,28 @@ Item {
             "done | sort -u | while IFS= read -r f; do " +
             "  name=$(grep -m1 '^Name=' \"$f\" | cut -d= -f2-); " +
             "  icon=$(grep -m1 '^Icon=' \"$f\" | cut -d= -f2-); " +
-            "  exec=$(grep -m1 '^Exec=' \"$f\" | cut -d= -f2- | sed 's/ %[fFuUdDnNickvm]//g'); " +
+            "  exec_line=$(grep -m1 '^Exec=' \"$f\" | cut -d= -f2- | sed 's/ %[fFuUdDnNickvm]//g'); " +
             "  nodisplay=$(grep -m1 '^NoDisplay=' \"$f\" | cut -d= -f2-); " +
             "  type=$(grep -m1 '^Type=' \"$f\" | cut -d= -f2-); " +
+            "  dbus=$(grep -m1 '^DBusActivatable=' \"$f\" | cut -d= -f2-); " +
             "  [ \"$nodisplay\" = 'true' ] && continue; " +
             "  [ \"$type\" != 'Application' ] && [ -n \"$type\" ] && continue; " +
             "  [ -z \"$name\" ] && continue; " +
-            "  [ -z \"$exec\" ] && continue; " +
-            "  echo \"$name\t$icon\t$exec\"; " +
+            "  [ -z \"$exec_line\" ] && continue; " +
+            "  bin=\"${exec_line%% *}\"; " +
+            "  args=\"${exec_line#\"$bin\"}\"; " +
+            "  found=$(command -v \"$bin\" 2>/dev/null || echo \"$bin\"); " +
+            "  if [ -L \"$found\" ]; then " +
+            "    full=$(realpath \"$found\" 2>/dev/null || echo \"$found\"); " +
+            "  else " +
+            "    full=\"$found\"; " +
+            "  fi; " +
+            "  resolved=\"${full}${args}\"; " +
+            "  appid=''; " +
+            "  if [ \"$dbus\" = 'true' ]; then " +
+            "    appid=$(basename \"$f\" .desktop); " +
+            "  fi; " +
+            "  echo \"$name\t$icon\t$resolved\t$appid\"; " +
             "done | sort -t$'\\t' -k1,1f -u"
         ]
         running: true
@@ -89,19 +111,35 @@ Item {
                 let parts = data.split("\t");
                 if (parts.length < 3) return;
                 appModel.append({
-                    "appName": parts[0] || "",
-                    "appIcon": parts[1] || "",
-                    "appExec": parts[2] || ""
+                    "appName":  parts[0] || "",
+                    "appIcon":  parts[1] || "",
+                    "appExec":  parts[2] || "",
+                    "appDbusId": parts[3] || ""
                 });
             }
         }
         onExited: root.updateFilter()
     }
 
+    // For DBusActivatable apps: gdbus Activate (same as rofi)
+    Process {
+        id: dbusProc
+        property string appId: ""
+        property string objPath: ""
+        command: [
+            "gdbus", "call", "--session",
+            "--dest", appId,
+            "--object-path", objPath,
+            "--method", "org.freedesktop.Application.Activate",
+            "[]"
+        ]
+    }
+
+    // For regular apps: run exec line directly
     Process {
         id: execProc
         property string cmd: ""
-        command: ["bash", "-c", "exec " + cmd + " &"]
+        command: ["bash", "-c", cmd + " &>/dev/null &"]
     }
 
     Column {

@@ -3,15 +3,11 @@ import Quickshell.Io
 import "modules" as Modules
 
 ShellRoot {
-    Modules.Notifications { id: notifModule }
+    Modules.ControlCenter { id: ccModule }
     Modules.Spotlight { id: spotModule }
     Modules.Osd {}
-    Modules.Bar { notifRef: notifModule }
+    Modules.Bar { notifRef: ccModule }
 
-    // ── IPC handler for keybind-triggered popups ──
-    // In niri config.kdl:
-    //   Mod+D { spawn "qs" "-p" "/path/to/config" "ipc" "call" "quickshell-bar" "launcher"; }
-    //   Mod+V { spawn "qs" "-p" "/path/to/config" "ipc" "call" "quickshell-bar" "clipboard"; }
     IpcHandler {
         target: "quickshell-bar"
 
@@ -22,6 +18,16 @@ ShellRoot {
 
         function clipboard(): string {
             spotModule.toggle("clipboard");
+            return "ok";
+        }
+
+        function wallpaper(): string {
+            spotModule.toggle("wallpaper");
+            return "ok";
+        }
+
+        function controlcenter(): string {
+            ccModule.toggle();
             return "ok";
         }
     }

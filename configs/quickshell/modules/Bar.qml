@@ -111,7 +111,13 @@ Scope {
                     }
                     spacing: theme.barSpacing
 
-                    BarModules.UtilsModule { anchors.verticalCenter: parent.verticalCenter }
+                    BarModules.UtilsModule {
+                        id: utilsModule
+                        anchors.verticalCenter: parent.verticalCenter
+                        onWifiClicked: {
+                            if (barScope.notifRef) barScope.notifRef.toggle();
+                        }
+                    }
                     BarModules.NotifIcon { notifRef: barScope.notifRef; anchors.verticalCenter: parent.verticalCenter }
                 }
             }
@@ -119,9 +125,32 @@ Scope {
     }
 
     // ══════════════════════════════════
-    // ── Media popup (album art + controls + cava) ──
+    // ── Media popup (album art + controls + progress + cava bg) ──
     // ══════════════════════════════════
     property bool cavaWanted: barScope.showCava && !barScope.isHidden
+    property real trackPos: 0
+    property real trackLen: 0
+
+    // position and length are in SECONDS with ms precision
+    function formatTime(secs) {
+        if (secs <= 0) return "0:00";
+        let s = Math.floor(secs);
+        let m = Math.floor(s / 60);
+        s = s % 60;
+        return m + ":" + (s < 10 ? "0" : "") + s;
+    }
+
+    Timer {
+        interval: 1000; repeat: true; running: barScope.cavaWanted && mediaModule.player != null
+        onTriggered: {
+            if (mediaModule.player) {
+                // Must call positionChanged() to force position update
+                mediaModule.player.positionChanged();
+                barScope.trackPos = mediaModule.player.position ?? 0;
+                barScope.trackLen = mediaModule.player.length ?? 0;
+            }
+        }
+    }
 
     onCavaWantedChanged: {
         if (cavaWanted) {
@@ -168,150 +197,168 @@ Scope {
                         cavaPanel.visible = false;
                 }
 
-                // ── Top section: album art + info + controls ──
-                Row {
-                    id: mediaInfo
-                    anchors {
-                        top: parent.top
-                        topMargin: 10
-                        left: parent.left
-                        leftMargin: 12
-                        right: parent.right
-                        rightMargin: 12
-                    }
-                    spacing: 10
-
-                    // ── Album art ──
-                    Rectangle {
-                        width: theme.cavaArtSize
-                        height: theme.cavaArtSize
-                        radius: 8
-                        color: artImg.status === Image.Ready ? "transparent" : Qt.rgba(theme.textDimmed.r, theme.textDimmed.g, theme.textDimmed.b, 0.2)
-                        clip: true
-
-                        Image {
-                            id: artImg
-                            anchors.fill: parent
-                            source: {
-                                let url = mediaModule.player?.trackArtUrl ?? "";
-                                if (url.length === 0) return "";
-                                // trackArtUrl is already a valid URL (file:// or https://)
-                                return url;
-                            }
-                            fillMode: Image.PreserveAspectCrop
-                            smooth: true
-                            visible: status === Image.Ready
-                        }
-
-                        // Fallback icon
-                        Text {
-                            anchors.centerIn: parent
-                            text: theme.iconMediaPlay
-                            color: theme.textDimmed
-                            font { family: theme.fontFamily; pixelSize: 24 }
-                            visible: artImg.status !== Image.Ready
-                        }
-                    }
-
-                    // ── Track info + controls ──
-                    Column {
-                        width: parent.width - theme.cavaArtSize - 22
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 4
-
-                        Text {
-                            text: mediaModule.player?.trackTitle ?? ""
-                            color: theme.textPrimary
-                            font { family: theme.fontFamily; pixelSize: theme.notifTitleSize; bold: true }
-                            width: parent.width
-                            elide: Text.ElideRight
-                        }
-
-                        Text {
-                            text: mediaModule.player?.trackArtist ?? ""
-                            color: theme.textDimmed
-                            font { family: theme.fontFamily; pixelSize: theme.notifBodySize }
-                            width: parent.width
-                            elide: Text.ElideRight
-                            visible: (mediaModule.player?.trackArtist ?? "").length > 0
-                        }
-
-                        // ── Playback controls ──
-                        Row {
-                            spacing: 16
-
-                            Text {
-                                text: theme.iconPrev
-                                color: theme.textPrimary
-                                font { family: theme.fontFamily; pixelSize: 18 }
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: { if (mediaModule.player?.canGoPrevious) mediaModule.player.previous(); }
-                                }
-                            }
-
-                            Text {
-                                text: mediaModule.isPlaying ? theme.iconMediaPause : theme.iconMediaPlay
-                                color: theme.textAccent
-                                font { family: theme.fontFamily; pixelSize: 22 }
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: { if (mediaModule.player?.canTogglePlaying) mediaModule.player.isPlaying = !mediaModule.player.isPlaying; }
-                                }
-                            }
-
-                            Text {
-                                text: theme.iconNext
-                                color: theme.textPrimary
-                                font { family: theme.fontFamily; pixelSize: 18 }
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: { if (mediaModule.player?.canGoNext) mediaModule.player.next(); }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // ── Cava bars at the bottom ──
+                // ── Cava bars as background ──
                 Row {
                     anchors.bottom: parent.bottom
-                    anchors.bottomMargin: 8
+                    anchors.bottomMargin: 4
                     anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: 2
+                    spacing: 1
+                    opacity: 0.15
 
                     Repeater {
                         model: theme.cavaBars
-
                         Rectangle {
-                            width: Math.max(2, (theme.cavaWidth - (theme.cavaBars - 1) * 2 - 24) / theme.cavaBars)
+                            width: Math.max(1, (theme.cavaWidth - theme.cavaBars - 20) / theme.cavaBars)
                             height: {
                                 let vals = cavaRect.bars;
-                                let maxH = theme.cavaHeight - mediaInfo.height - 26;
-                                if (maxH < 10) maxH = 10;
-                                if (!vals || index >= vals.length) return 2;
-                                return Math.max(2, vals[index] * maxH);
+                                if (!vals || index >= vals.length) return 1;
+                                return Math.max(1, vals[index] * (theme.cavaHeight - 10));
                             }
                             radius: width / 2
                             anchors.bottom: parent.bottom
-                            color: {
-                                let vals = cavaRect.bars;
-                                if (vals && index < vals.length && vals[index] > 0.7)
-                                    return theme.cavaBarPeak;
-                                return theme.cavaBarColor;
-                            }
-
-                            Behavior on height {
-                                NumberAnimation { duration: 50; easing.type: Easing.OutQuad }
-                            }
+                            color: cavaRect.bars && index < cavaRect.bars.length && cavaRect.bars[index] > 0.7 ? theme.cavaBarPeak : theme.cavaBarColor
+                            Behavior on height { NumberAnimation { duration: 50 } }
                         }
                     }
                 }
 
                 property var bars: []
+
+                // ── Content on top of cava ──
+                Column {
+                    id: mediaContent
+                    anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12 }
+                    spacing: 6
+
+                    // Art + info
+                    Row {
+                        width: parent.width
+                        spacing: 10
+
+                        Rectangle {
+                            width: theme.cavaArtSize; height: theme.cavaArtSize
+                            radius: 10; clip: true
+                            color: Qt.rgba(theme.textDimmed.r, theme.textDimmed.g, theme.textDimmed.b, 0.2)
+
+                            Image {
+                                id: artImg
+                                anchors.fill: parent
+                                source: mediaModule.player?.trackArtUrl ?? ""
+                                fillMode: Image.PreserveAspectCrop
+                                smooth: true; asynchronous: true
+                                visible: status === Image.Ready
+                            }
+                            Text {
+                                anchors.centerIn: parent
+                                text: theme.iconMediaPlay; color: theme.textDimmed
+                                font { family: theme.fontFamily; pixelSize: 24 }
+                                visible: artImg.status !== Image.Ready
+                            }
+                        }
+
+                        Column {
+                            width: parent.width - theme.cavaArtSize - 10
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 2
+
+                            Text {
+                                text: mediaModule.player?.trackTitle ?? ""
+                                color: theme.textPrimary
+                                font { family: theme.fontFamily; pixelSize: 13; bold: true }
+                                width: parent.width; elide: Text.ElideRight
+                            }
+                            Text {
+                                text: mediaModule.player?.trackArtist ?? ""
+                                color: theme.textDimmed
+                                font { family: theme.fontFamily; pixelSize: 11 }
+                                width: parent.width; elide: Text.ElideRight
+                                visible: (mediaModule.player?.trackArtist ?? "").length > 0
+                            }
+                        }
+                    }
+
+                    // Progress bar
+                    Item {
+                        width: parent.width; height: 14
+                        Rectangle {
+                            anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
+                            height: 3; radius: 2; color: theme.textDimmed; opacity: 0.3
+                        }
+                        Rectangle {
+                            anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                            height: 3; radius: 2; color: theme.textAccent
+                            width: barScope.trackLen > 0 ? parent.width * (barScope.trackPos / barScope.trackLen) : 0
+                        }
+                        Rectangle {
+                            width: 8; height: 8; radius: 4; color: theme.textAccent
+                            y: (parent.height - 8) / 2
+                            x: barScope.trackLen > 0 ? (parent.width - 8) * (barScope.trackPos / barScope.trackLen) : 0
+                        }
+                    }
+
+                    // Time labels
+                    Item {
+                        width: parent.width; height: 12
+                        Text {
+                            anchors.left: parent.left
+                            text: barScope.formatTime(barScope.trackPos)
+                            color: theme.textDimmed
+                            font { family: theme.fontFamily; pixelSize: 10 }
+                        }
+                        Text {
+                            anchors.right: parent.right
+                            text: barScope.formatTime(barScope.trackLen)
+                            color: theme.textDimmed
+                            font { family: theme.fontFamily; pixelSize: 10 }
+                        }
+                    }
+
+                    // Controls: prev — play/pause circle — next
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: 20
+                        height: 36
+
+                        Text {
+                            text: theme.iconPrev
+                            color: theme.textPrimary
+                            font { family: theme.fontFamily; pixelSize: 18 }
+                            anchors.verticalCenter: parent.verticalCenter
+                            MouseArea {
+                                anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                onClicked: { if (mediaModule.player?.canGoPrevious) mediaModule.player.previous(); }
+                            }
+                        }
+
+                        Rectangle {
+                            width: 36; height: 36; radius: 18
+                            color: theme.textAccent
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: mediaModule.isPlaying ? theme.iconMediaPause : theme.iconMediaPlay
+                                color: theme.barBackground
+                                font { family: theme.fontFamily; pixelSize: 18 }
+                            }
+                            MouseArea {
+                                anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                onClicked: { if (mediaModule.player?.canTogglePlaying) mediaModule.player.isPlaying = !mediaModule.player.isPlaying; }
+                            }
+                        }
+
+                        Text {
+                            text: theme.iconNext
+                            color: theme.textPrimary
+                            font { family: theme.fontFamily; pixelSize: 18 }
+                            anchors.verticalCenter: parent.verticalCenter
+                            MouseArea {
+                                anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                onClicked: { if (mediaModule.player?.canGoNext) mediaModule.player.next(); }
+                            }
+                        }
+                    }
+                }
 
                 Process {
                     id: cavaProc
@@ -346,8 +393,7 @@ Scope {
                 }
 
                 MouseArea {
-                    anchors.fill: parent
-                    anchors.topMargin: mediaInfo.height + 16
+                    anchors.fill: parent; z: -1
                     onClicked: barScope.showCava = false
                 }
             }

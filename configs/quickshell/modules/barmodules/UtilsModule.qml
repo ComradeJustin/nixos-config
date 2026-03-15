@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
 import "../.." as Root
 
 Item {
@@ -9,6 +8,8 @@ Item {
 
     Root.Theme { id: theme }
 
+    signal wifiClicked()
+
     Row {
         id: row
         spacing: theme.barSpacing
@@ -16,7 +17,7 @@ Item {
 
         ResourceModule {}
         AudioModule {}
-        NetworkModule {}
+        NetworkModule { onClicked: root.wifiClicked() }
         BatteryModule {}
     }
 }

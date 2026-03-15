@@ -138,9 +138,36 @@ QtObject {
     readonly property string iconLaunch:       "󰍃"
     readonly property color  scrimColor:       Qt.rgba(0, 0, 0, 0.35)
 
+    // Wifi popup
+    readonly property int    wifiWidth:        300
+    readonly property int    wifiMaxHeight:    380
+    readonly property int    wifiItemHeight:   36
+    readonly property string iconWifiLock:     "󰤪"
+
+    // Wallpaper selector
+    readonly property int    wpWidth:          560
+    readonly property int    wpMaxHeight:      480
+    readonly property int    wpThumbWidth:     160
+    readonly property int    wpThumbHeight:    100
+    readonly property int    wpSpacing:        8
+    readonly property string wpDirectory:      "~/nixos-config/assets/wallpapers"
+    readonly property string iconWallpaper:    "󰸉"
+
+    // Control Center
+    readonly property int    ccWidth:         380
+    readonly property int    ccPadding:       14
+    readonly property int    ccSectionRadius: 12
+    readonly property color  ccSectionBg:     base01
+    readonly property int    ccArtSize:       80
+    readonly property string iconSkipBack:    "󰒮"
+    readonly property string iconSkipFwd:     "󰒭"
+    readonly property string iconPlay:        "󰐊"
+    readonly property string iconPause:       "󰏤"
+    readonly property string iconCC:          "󱊖"
+
     // Cava / Media popup
     readonly property int    cavaWidth:     320
-    readonly property int    cavaHeight:    200
+    readonly property int    cavaHeight:    240
     readonly property int    cavaBars:      24
     readonly property int    cavaRadius:    12
     readonly property color  cavaBackground: barBackground

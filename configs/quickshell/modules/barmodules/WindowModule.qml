@@ -1,18 +1,13 @@
 import QtQuick
-import QtQuick.Layouts
 import Niri 0.1
 import "../.." as Root
 
-// Shows focused window with "AppName - Title" format.
-// Overflowing text scrolls like the media module.
 Item {
     id: root
-    implicitWidth: row.implicitWidth
-    implicitHeight: theme.barHeight
 
     Root.Theme { id: theme }
 
-    property int maxTextWidth: 180
+    property int fixedTextWidth: 180
     property real scrollSpeed: 30
 
     Niri {
@@ -23,102 +18,104 @@ Item {
         }
     }
 
-    property string appId:       niri.focusedWindow?.appId ?? ""
     property string windowTitle: niri.focusedWindow?.title ?? ""
     property string windowIcon:  niri.focusedWindow?.iconPath ?? ""
 
-    // Format: "AppName - Title"
-    property string displayText: {
-        if (windowTitle.length === 0) return "";
-        let app = appId;
-        // Clean up app ID: "com.mitchellh.ghostty" -> "Ghostty"
-        if (app.indexOf(".") !== -1) {
-            let parts = app.split(".");
-            app = parts[parts.length - 1];
-        }
-        // Capitalize first letter
-        if (app.length > 0)
-            app = app.charAt(0).toUpperCase() + app.substring(1);
+    visible: windowTitle.length > 0
 
-        if (app.length > 0 && windowTitle.indexOf(app) === -1)
-            return app + " — " + windowTitle;
-        return windowTitle;
+    property bool hasIcon: windowIcon.length > 0
+    property bool needsScroll: innerText.contentWidth > fixedTextWidth
+
+    implicitWidth: visible ? (hasIcon ? theme.iconSize + 6 : 0) + fixedTextWidth : 0
+    implicitHeight: theme.barHeight
+
+    Image {
+        id: winIcon
+        anchors {
+            left: parent.left
+            verticalCenter: parent.verticalCenter
+        }
+        source: root.hasIcon ? "file://" + root.windowIcon : ""
+        sourceSize.width: theme.iconSize
+        sourceSize.height: theme.iconSize
+        width: theme.iconSize
+        height: theme.iconSize
+        visible: root.hasIcon
+        smooth: true
     }
 
-    visible: displayText.length > 0
-
-    Row {
-        id: row
-        spacing: 6
-        anchors.verticalCenter: parent.verticalCenter
+    // Clip container — same height as bar, clips overflow
+    Item {
+        id: textContainer
+        anchors {
+            left: root.hasIcon ? winIcon.right : parent.left
+            leftMargin: root.hasIcon ? 6 : 0
+        }
+        width: root.fixedTextWidth
         height: theme.barHeight
+        y: 0
+        clip: true
 
-        Image {
-            source: root.windowIcon.length > 0 ? "file://" + root.windowIcon : ""
-            sourceSize.width: theme.iconSize
-            sourceSize.height: theme.iconSize
-            width: theme.iconSize
-            height: theme.iconSize
-            visible: root.windowIcon.length > 0
-            smooth: true
+        // Static text — same centering as TimeModule etc.
+        Text {
             anchors.verticalCenter: parent.verticalCenter
+            width: parent.width
+            text: root.windowTitle
+            color: theme.textDimmed
+            font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
+            elide: Text.ElideRight
+            visible: !root.needsScroll
         }
 
-        Item {
-            id: textContainer
-            width: Math.min(innerText.implicitWidth, root.maxTextWidth)
-            height: theme.barHeight
-            clip: true
+        // Scrolling — Row centered vertically, animated horizontally
+        Row {
+            id: scrollRow
             anchors.verticalCenter: parent.verticalCenter
+            visible: root.needsScroll
 
-            property bool needsScroll: innerText.implicitWidth > root.maxTextWidth
-
-            Row {
-                id: scrollRow
-                x: 0
-                height: theme.barHeight
-
-                Text {
-                    id: innerText
-                    text: root.displayText
-                    color: theme.textDimmed
-                    font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
-                    height: theme.barHeight
-                    verticalAlignment: Text.AlignVCenter
-                }
-
-                Item { width: 40; height: 1; visible: textContainer.needsScroll }
-
-                Text {
-                    text: root.displayText
-                    color: theme.textDimmed
-                    font: innerText.font
-                    height: theme.barHeight
-                    verticalAlignment: Text.AlignVCenter
-                    visible: textContainer.needsScroll
-                }
+            Text {
+                id: innerText
+                text: root.windowTitle
+                color: theme.textDimmed
+                font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
             }
 
-            NumberAnimation {
-                id: scrollAnim
-                target: scrollRow
-                property: "x"
-                from: 0
-                to: -(innerText.implicitWidth + 40)
-                duration: (innerText.implicitWidth + 40) / root.scrollSpeed * 1000
-                loops: Animation.Infinite
-                running: textContainer.needsScroll
-            }
+            Item { width: 40; height: 1 }
 
-            Connections {
-                target: root
-                function onDisplayTextChanged() {
-                    scrollAnim.stop();
-                    scrollRow.x = 0;
-                    if (textContainer.needsScroll)
-                        scrollAnim.start();
-                }
+            Text {
+                text: root.windowTitle
+                color: theme.textDimmed
+                font: innerText.font
             }
+        }
+
+        NumberAnimation {
+            id: scrollAnim
+            target: scrollRow
+            property: "x"
+            from: 0
+            loops: Animation.Infinite
+            running: false
+        }
+
+        function restartScroll() {
+            scrollAnim.stop();
+            scrollRow.x = 0;
+            if (root.needsScroll) {
+                let w = innerText.contentWidth + 40;
+                scrollAnim.to = -w;
+                scrollAnim.duration = w / root.scrollSpeed * 1000;
+                scrollAnim.start();
+            }
+        }
+
+        Connections {
+            target: root
+            function onWindowTitleChanged() { textContainer.restartScroll(); }
+        }
+        Connections {
+            target: innerText
+            function onContentWidthChanged() { textContainer.restartScroll(); }
         }
     }
 }

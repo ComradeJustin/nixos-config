@@ -2,6 +2,7 @@ environment {
  GTK_THEME "Adwaita:dark"
  ELECTRON_OZONE_PLATFORM_HINT "auto"
  _JAVA_AWT_WM_NONREPARENTING "1"
+ XDG_CURRENT_DESKTOP "GNOME"
 }
 //spawn-at-startup "waybar"
 // Spawning quickshell

@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
 import Quickshell.Io
 import "../.." as Root
 
@@ -14,6 +13,8 @@ Item {
     property string ssid: ""
     property int signal: -1
     property bool connected: false
+
+    signal clicked()
 
     Row {
         id: row
@@ -44,6 +45,12 @@ Item {
             font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
             anchors.verticalCenter: parent.verticalCenter
         }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.clicked()
     }
 
     Process {

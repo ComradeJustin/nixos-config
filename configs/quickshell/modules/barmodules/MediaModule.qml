@@ -1,18 +1,13 @@
 import QtQuick
-import QtQuick.Layouts
 import Quickshell.Services.Mpris
 import "../.." as Root
 
-// Media player indicator with scrolling text.
-// Click to toggle cava visualizer (handled by parent).
 Item {
     id: root
-    implicitWidth: row.implicitWidth
-    implicitHeight: theme.barHeight
 
     Root.Theme { id: theme }
 
-    property int maxTextWidth: 200
+    property int fixedTextWidth: 200
     property real scrollSpeed: 30
 
     signal cavaToggled()
@@ -38,104 +33,107 @@ Item {
     }
 
     visible: mediaText.length > 0
+    property bool needsScroll: innerText.contentWidth > fixedTextWidth
 
-    Row {
-        id: row
-        spacing: 6
-        anchors.verticalCenter: parent.verticalCenter
+    implicitWidth: visible ? playIcon.width + 6 + fixedTextWidth : 0
+    implicitHeight: theme.barHeight
+
+    Text {
+        id: playIcon
+        anchors {
+            left: parent.left
+            verticalCenter: parent.verticalCenter
+        }
+        text: root.isPlaying ? theme.iconMediaPlay : theme.iconMediaPause
+        color: theme.textAccent
+        font { family: theme.fontFamily; pixelSize: theme.iconSize }
+
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                if (root.player && root.player.canTogglePlaying)
+                    root.player.isPlaying = !root.player.isPlaying;
+            }
+        }
+    }
+
+    Item {
+        id: textContainer
+        anchors {
+            left: playIcon.right
+            leftMargin: 6
+        }
+        width: root.fixedTextWidth
         height: theme.barHeight
+        y: 0
+        clip: true
 
-        // ── Play/pause icon ──
         Text {
-            text: root.isPlaying ? theme.iconMediaPlay : theme.iconMediaPause
-            color: theme.textAccent
-            font { family: theme.fontFamily; pixelSize: theme.iconSize }
-            height: theme.barHeight
-            verticalAlignment: Text.AlignVCenter
+            anchors.verticalCenter: parent.verticalCenter
+            width: parent.width
+            text: root.mediaText
+            color: theme.textDimmed
+            font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
+            elide: Text.ElideRight
+            visible: !root.needsScroll
+        }
 
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    if (root.player && root.player.canTogglePlaying)
-                        root.player.isPlaying = !root.player.isPlaying;
-                }
+        Row {
+            id: scrollRow
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.needsScroll
+
+            Text {
+                id: innerText
+                text: root.mediaText
+                color: theme.textDimmed
+                font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
+            }
+
+            Item { width: 40; height: 1 }
+
+            Text {
+                text: root.mediaText
+                color: theme.textDimmed
+                font: innerText.font
             }
         }
 
-        // ── Scrolling text area ──
-        Item {
-            id: textContainer
-            width: Math.min(innerText.implicitWidth, root.maxTextWidth)
-            height: theme.barHeight
-            clip: true
+        NumberAnimation {
+            id: scrollAnim
+            target: scrollRow
+            property: "x"
+            from: 0
+            loops: Animation.Infinite
+            running: false
+        }
 
-            property bool needsScroll: innerText.implicitWidth > root.maxTextWidth
-
-            Row {
-                id: scrollRow
-                x: 0
-                height: theme.barHeight
-
-                Text {
-                    id: innerText
-                    text: root.mediaText
-                    color: theme.textDimmed
-                    font {
-                        family: theme.fontFamily
-                        pixelSize: theme.fontSize
-                        bold: theme.fontBold
-                    }
-                    height: theme.barHeight
-                    verticalAlignment: Text.AlignVCenter
-                }
-
-                Item { width: 40; height: 1; visible: textContainer.needsScroll }
-
-                Text {
-                    text: root.mediaText
-                    color: theme.textDimmed
-                    font: innerText.font
-                    height: theme.barHeight
-                    verticalAlignment: Text.AlignVCenter
-                    visible: textContainer.needsScroll
-                }
+        function restartScroll() {
+            scrollAnim.stop();
+            scrollRow.x = 0;
+            if (root.needsScroll && root.isPlaying) {
+                let w = innerText.contentWidth + 40;
+                scrollAnim.to = -w;
+                scrollAnim.duration = w / root.scrollSpeed * 1000;
+                scrollAnim.start();
             }
+        }
 
-            NumberAnimation {
-                id: scrollAnim
-                target: scrollRow
-                property: "x"
-                from: 0
-                to: -(innerText.implicitWidth + 40)
-                duration: (innerText.implicitWidth + 40) / root.scrollSpeed * 1000
-                loops: Animation.Infinite
-                running: textContainer.needsScroll && root.isPlaying
-            }
+        Connections {
+            target: root
+            function onMediaTextChanged() { textContainer.restartScroll(); }
+            function onIsPlayingChanged() { textContainer.restartScroll(); }
+        }
+        Connections {
+            target: innerText
+            function onContentWidthChanged() { textContainer.restartScroll(); }
+        }
 
-            Connections {
-                target: root
-                function onMediaTextChanged() {
-                    scrollAnim.stop();
-                    scrollRow.x = 0;
-                    if (textContainer.needsScroll && root.isPlaying)
-                        scrollAnim.start();
-                }
-                function onIsPlayingChanged() {
-                    if (!root.isPlaying) {
-                        scrollAnim.stop();
-                        scrollRow.x = 0;
-                    } else if (textContainer.needsScroll) {
-                        scrollAnim.start();
-                    }
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.cavaToggled()
-            }
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.cavaToggled()
         }
     }
 }

@@ -1,12 +1,12 @@
 import QtQuick
-import QtQuick.Layouts
 import Quickshell.Io
 import "../.." as Root
 
 Item {
     id: root
-    implicitWidth: row.implicitWidth
+    implicitWidth: hasBattery ? row.implicitWidth : 0
     implicitHeight: row.implicitHeight
+    visible: hasBattery
 
     Root.Theme { id: theme }
 
@@ -14,6 +14,7 @@ Item {
     property int capacity: -1
     property bool charging: false
     property bool pluggedIn: false
+    property bool hasBattery: false
 
     property color activeColor: root.pluggedIn
         ? theme.textCharging
@@ -25,7 +26,6 @@ Item {
         spacing: 4
         anchors.verticalCenter: parent.verticalCenter
 
-        // ── Battery icon ──
         Text {
             text: {
                 if (root.capacity < 0) return theme.iconBatNone;
@@ -41,7 +41,6 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
         }
 
-        // ── Percentage ──
         Text {
             text: root.capacity >= 0 ? root.capacity + "%" : "--"
             color: root.activeColor
@@ -49,7 +48,6 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
         }
 
-        // ── Plug indicator (only when plugged in, not actively charging) ──
         Text {
             visible: root.pluggedIn && !root.charging
             text: theme.iconPlug
@@ -59,10 +57,23 @@ Item {
         }
     }
 
+    // Check if battery device exists
+    Process {
+        id: detectProc
+        command: ["test", "-d", "/sys/class/power_supply/" + root.device]
+        running: true
+        onExited: function(exitCode) {
+            root.hasBattery = (exitCode === 0);
+            if (root.hasBattery) {
+                capProc.running = true;
+                statusProc.running = true;
+            }
+        }
+    }
+
     Process {
         id: capProc
         command: ["cat", "/sys/class/power_supply/" + root.device + "/capacity"]
-        running: true
 
         stdout: SplitParser {
             onRead: data => {
@@ -77,7 +88,6 @@ Item {
     Process {
         id: statusProc
         command: ["cat", "/sys/class/power_supply/" + root.device + "/status"]
-        running: true
 
         stdout: SplitParser {
             onRead: data => {
@@ -91,8 +101,10 @@ Item {
         id: pollTimer
         interval: 5000
         onTriggered: {
-            capProc.running = true;
-            statusProc.running = true;
+            if (root.hasBattery) {
+                capProc.running = true;
+                statusProc.running = true;
+            }
         }
     }
 }

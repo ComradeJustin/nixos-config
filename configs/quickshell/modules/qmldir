@@ -1,2 +1,4 @@
-ClipboardView 1.0 ClipboardView.qml
-LauncherView 1.0 LauncherView.qml
+Bar 1.0 Bar.qml
+Osd 1.0 Osd.qml
+ControlCenter 1.0 ControlCenter.qml
+Spotlight 1.0 Spotlight.qml

@@ -13,6 +13,8 @@
     nerd-fonts.fira-code
     nerd-fonts.monoid
     cozette
+    sarasa-gothic 
+    nerd-fonts.jetbrains-mono
   ];
 
   
