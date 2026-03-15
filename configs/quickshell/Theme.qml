@@ -93,7 +93,7 @@ QtObject {
 
     // Icons
     readonly property string iconCpu:       "󰻠"
-    readonly property string iconRam:       ""
+    readonly property string iconRam:       ""
     readonly property string iconVolHigh:   "󰕾"
     readonly property string iconVolMid:    "󰖀"
     readonly property string iconVolLow:    "󰕿"

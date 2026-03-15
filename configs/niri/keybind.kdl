@@ -17,8 +17,9 @@ binds {
     Mod+Return hotkey-overlay-title="Open a Terminal: ghostty" { spawn "ghostty"; }
     Mod+D { spawn "qs"  "ipc" "call" "quickshell-bar" "clipboard"; }
     Mod+Space { spawn "qs"  "ipc" "call" "quickshell-bar" "launcher"; }
-
-
+    Mod+P { spawn "qs"  "ipc" "call" "quickshell-bar" "wallpaper"; }
+    Mod+Escape { spawn "qs"  "ipc" "call" "quickshell-bar" "powermenu"; }
+    Mod+N { spawn "qs"  "ipc" "call" "quickshell-bar" "controlcenter"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: hyprlock" { spawn "hyprlock"; }
     //Alt+Tab {spawn "~/.config/niri/hotkeyscripts/alttab.sh";} 
     Mod+B hotkey-overlay-title="Run firefox" { spawn "firefox";}
@@ -55,7 +56,6 @@ binds {
     Mod+O repeat=false { toggle-overview; }
 
     Mod+W repeat=false { close-window; }
-    Mod+Escape repeat=false {spawn "wlogout";}
     Mod+Left  { focus-column-left; }
     Mod+Down  { focus-window-down; }
     Mod+Up    { focus-window-up; }
