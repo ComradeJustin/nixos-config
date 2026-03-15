@@ -24,25 +24,31 @@ QtObject {
     readonly property color base0F: "#d65d0e"  // Brown
 
     // ── Semantic aliases (edit these to remap base16 roles) ──
-    readonly property color barBackground: base00
-    readonly property color textPrimary:   base05
-    readonly property color textDimmed:    base03
-    readonly property color textCritical:  base08
-    readonly property color textCharging:  base0B
-    readonly property color textWarning:   base0A
-    readonly property color textAccent:    base0D
-    readonly property color textInfo:      base0C
+    // base00-07: background to foreground gradient (dark → light)
+    // base08-0F: accent colors
+    readonly property color barBackground: base00    // base00: Default Background
+    readonly property color textPrimary:   base05    // base05: Default Foreground
+    readonly property color textDimmed:    base04    // base04: Dark Foreground (status bars)
+    readonly property color textSubtle:    base03    // base03: Comments, Invisibles
+    readonly property color textCritical:  base08    // base08: Variables, Red
+    readonly property color textOrange:    base09    // base09: Integers, Constants, Orange
+    readonly property color textWarning:   base0A    // base0A: Classes, Yellow
+    readonly property color textCharging:  base0B    // base0B: Strings, Green
+    readonly property color textInfo:      base0C    // base0C: Support, Cyan
+    readonly property color textAccent:    base0D    // base0D: Functions, Blue
+    readonly property color textKeyword:   base0E    // base0E: Keywords, Purple
+    readonly property color textDeprecated: base0F   // base0F: Deprecated, Brown
 
     // OSD
-    readonly property color osdBackground: base01
+    readonly property color osdBackground: base01    // base01: Lighter Background
     readonly property color osdAccent:     base0D
-    readonly property color osdBarBg:      base02
+    readonly property color osdBarBg:      base02    // base02: Selection Background
 
     // Workspace
     readonly property color wsFocused:     base05
-    readonly property color wsActive:      base04
-    readonly property color wsDimmed:      base03
-    readonly property color wsPillBg:      base01
+    readonly property color wsActive:      base04    // base04: Dark Foreground (status bars)
+    readonly property color wsDimmed:      base03    // base03: inactive workspace dots
+    readonly property color wsPillBg:      base01    // base01: Lighter Background
 
     // Font
     readonly property string fontFamily: "monospace"
@@ -76,11 +82,12 @@ QtObject {
     readonly property int    notifTitleSize:   13
     readonly property int    notifBodySize:    12
     readonly property int    notifIconSize:    36
-    readonly property color  notifBackground:  base01
-    readonly property color  notifTitle:       base06
-    readonly property color  notifBody:        base04
-    readonly property color  notifAppName:     base03
-    readonly property color  notifUrgentBorder: base08
+    readonly property color  notifBackground:  base01  // base01: Lighter Background
+    readonly property color  notifTitle:       base06  // base06: Light Foreground
+    readonly property color  notifBody:        base04  // base04: Dark Foreground
+    readonly property color  notifAppName:     base03  // base03: subtle/dim
+    readonly property color  notifUrgentBorder: base08 // base08: Red
+    readonly property color  selectionBg:      base02  // base02: Selection Background
     readonly property int    notifHistWidth:    380
     readonly property int    notifHistMaxHeight: 500
 
@@ -116,6 +123,8 @@ QtObject {
     readonly property string iconMediaPlay: "󰐊"
     readonly property string iconMediaPause:"󰏤"
     readonly property string iconNixos:     ""
+    readonly property string iconPower:    "⏻"
+    readonly property string iconGear:     "󰒓"
     readonly property string iconBell:      "󰂚"
     readonly property string iconBellBadge: "󰂞"
     readonly property string iconTrash:     "󰆴"
@@ -157,7 +166,7 @@ QtObject {
     readonly property int    ccWidth:         380
     readonly property int    ccPadding:       14
     readonly property int    ccSectionRadius: 12
-    readonly property color  ccSectionBg:     base01
+    readonly property color  ccSectionBg:     base01  // base01: Lighter Background
     readonly property int    ccArtSize:       80
     readonly property string iconSkipBack:    "󰒮"
     readonly property string iconSkipFwd:     "󰒭"
@@ -171,9 +180,16 @@ QtObject {
     readonly property int    cavaBars:      24
     readonly property int    cavaRadius:    12
     readonly property color  cavaBackground: barBackground
-    readonly property color  cavaBarColor:  base0D
-    readonly property color  cavaBarPeak:   base0E
+    readonly property color  cavaBarColor:  base0D  // base0D: Functions, Blue
+    readonly property color  cavaBarPeak:   base0E  // base0E: Keywords, Purple
     readonly property int    cavaArtSize:   64
     readonly property string iconPrev:      "󰒮"
     readonly property string iconNext:      "󰒭"
+
+    // Power menu
+    readonly property string iconLock:      "󰌾"
+    readonly property string iconLogout:    "󰍃"
+    readonly property string iconSuspend:   "󰤄"
+    readonly property string iconReboot:    "󰜉"
+    readonly property string iconShutdown:  "󰐥"
 }

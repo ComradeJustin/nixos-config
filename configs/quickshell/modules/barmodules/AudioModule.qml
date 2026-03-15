@@ -1,6 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
-import Quickshell.Io
 import "../.." as Root
 
 Item {
@@ -10,20 +8,19 @@ Item {
 
     Root.Theme { id: theme }
 
-    property int volume: -1
-    property bool muted: false
+    property var audioService: null
+    property int volume: audioService ? audioService.volume : -1
+    property bool muted: audioService ? audioService.muted : false
 
     Row {
-        id: row
-        spacing: 4
-        anchors.verticalCenter: parent.verticalCenter
+        id: row; spacing: 4; anchors.verticalCenter: parent.verticalCenter
 
         Text {
             text: {
                 if (root.volume < 0 || root.muted) return theme.iconVolMute;
-                if (root.volume > 60)  return theme.iconVolHigh;
-                if (root.volume > 30)  return theme.iconVolMid;
-                if (root.volume > 0)   return theme.iconVolLow;
+                if (root.volume > 60) return theme.iconVolHigh;
+                if (root.volume > 30) return theme.iconVolMid;
+                if (root.volume > 0) return theme.iconVolLow;
                 return theme.iconVolMute;
             }
             color: root.muted ? theme.textDimmed : theme.textPrimary
@@ -41,30 +38,5 @@ Item {
             font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
             anchors.verticalCenter: parent.verticalCenter
         }
-    }
-
-    Process {
-        id: proc
-        command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]
-        running: true
-
-        stdout: SplitParser {
-            onRead: data => {
-                root.muted = data.indexOf("[MUTED]") !== -1;
-                let parts = data.split(" ");
-                if (parts.length >= 2) {
-                    let frac = parseFloat(parts[1]);
-                    if (!isNaN(frac)) root.volume = Math.round(frac * 100);
-                }
-            }
-        }
-
-        onExited: pollTimer.start()
-    }
-
-    Timer {
-        id: pollTimer
-        interval: 100
-        onTriggered: proc.running = true
     }
 }

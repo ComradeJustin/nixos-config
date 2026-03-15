@@ -4,16 +4,16 @@ import "../.." as Root
 Item {
     id: root
     implicitWidth: icon.implicitWidth
-    implicitHeight: theme.barHeight
+    implicitHeight: icon.implicitHeight
 
     Root.Theme { id: theme }
 
-    property var clipRef: null
-    property bool isOpen: clipRef ? clipRef.showClipboard : false
+    property bool isOpen: false
+    signal clicked()
 
     Text {
         id: icon
-        text: theme.iconClipboard
+        text: theme.iconGear
         color: root.isOpen ? theme.textAccent : theme.textPrimary
         font { family: theme.fontFamily; pixelSize: theme.iconSize }
         anchors.verticalCenter: parent.verticalCenter
@@ -22,8 +22,6 @@ Item {
     MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
-        onClicked: {
-            if (root.clipRef) root.clipRef.toggle();
-        }
+        onClicked: root.clicked()
     }
 }

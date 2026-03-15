@@ -8,7 +8,7 @@ Item {
 
     Root.Theme { id: theme }
 
-    signal wifiClicked()
+    property var audioService: null
 
     Row {
         id: row
@@ -16,8 +16,8 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
 
         ResourceModule {}
-        AudioModule {}
-        NetworkModule { onClicked: root.wifiClicked() }
+        AudioModule { audioService: root.audioService }
+        NetworkModule {}
         BatteryModule {}
     }
 }
