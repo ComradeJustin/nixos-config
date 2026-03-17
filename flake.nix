@@ -191,6 +191,7 @@
               # Modules that are being tested to be implemented
               ./modules/test/quickshell.nix
               ./modules/test/lockscreen.nix
+              ./modules/test/claude.nix
               {
 
                 home-manager = {
