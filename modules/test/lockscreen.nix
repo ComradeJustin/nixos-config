@@ -6,10 +6,9 @@
 }:
 
 {
-  programs.hyprlock.enable = true;
-  services.hypridle.enable = true;
+  environment.systemPackages = [ pkgs.swayidle ];
 
   fonts.packages = with pkgs; [
-    inputs.apple-fonts.packages.${pkgs.system}.sf-pro-nerd
+    inputs.apple-fonts.packages.${pkgs.stdenv.hostPlatform.system}.sf-pro-nerd
   ];
 }

@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Pam
 import Quickshell.Wayland
 import QtQuick
@@ -13,11 +14,18 @@ Item {
 
     signal unlocked()
 
-    property string statusText: "Authenticating..."
+    property string statusText: ""
     property bool showError: false
-    property bool showPassword: false
+    property bool authDone: false
+    property bool isAuthenticating: false
+    // true once PAM has asked for a password at least once
+    property bool passwordMode: false
+    property var playerService: null
+    property string pendingPassword: ""
+    property bool pamWaitingForResponse: false
+    property int wakeSignal: 0
+    onWakeSignalChanged: if (wakeSignal > 0) resetToFingerprint()
 
-    // ── PAM handles everything: fprintd first, then password fallback ──
     PamContext {
         id: pam
         config: "login"
@@ -27,138 +35,303 @@ Item {
             var needsResponse = pam.responseRequired;
             var isErr = pam.messageIsError;
 
-            console.log("PAM: msg='" + msg + "' responseRequired=" + needsResponse + " isError=" + isErr + " active=" + pam.active);
+            console.log("PAM msg='" + msg + "' needsResp=" + needsResponse + " isErr=" + isErr);
 
             if (needsResponse) {
-                lock.showPassword = true;
+                // PAM wants a password - but delay showing password UI to give fingerprint a chance
+                lock.pamWaitingForResponse = true;
                 lock.showError = false;
-                lock.statusText = "Enter password";
-                passInput.text = "";
-                focusTimer.start();
+
+                // Only auto-submit if we have an explicitly queued password
+                if (lock.pendingPassword.length > 0) {
+                    var pw = lock.pendingPassword;
+                    lock.pendingPassword = "";
+                    lock.statusText = "Authenticating...";
+                    lock.isAuthenticating = true;
+                    lock.passwordMode = true;
+                    pam.respond(pw);
+                } else if (lock.passwordMode) {
+                    // Already in password mode, show prompt
+                    lock.isAuthenticating = false;
+                    lock.statusText = "Enter password";
+                    focusTimer.start();
+                } else {
+                    // Delay entering password mode to allow fingerprint to work
+                    passwordModeDelay.start();
+                }
+            } else if (!lock.passwordMode && msg.length > 0) {
+                // Only process info messages before password mode
+                var lower = msg.toLowerCase();
+                if (lower.indexOf("no-match") !== -1 || lower.indexOf("no match") !== -1
+                    || lower.indexOf("not match") !== -1 || lower.indexOf("verify-no-match") !== -1
+                    || lower.indexOf("failed") !== -1 || lower.indexOf("mismatch") !== -1) {
+                    lock.statusText = "Fingerprint not recognized";
+                    lock.showError = true;
+                    fingerShake.start();
+                    fingerErrorReset.start();
+                } else if (lower.indexOf("finger") !== -1 || lower.indexOf("swipe") !== -1
+                           || lower.indexOf("place") !== -1 || lower.indexOf("scan") !== -1) {
+                    lock.statusText = "Swipe fingerprint to unlock";
+                    lock.showError = false;
+                }
+            }
+            // If passwordMode is true, ignore all non-response messages
+        }
+
+        onCompleted: function(result) {
+            console.log("PAM completed: result=" + result);
+            lock.isAuthenticating = false;
+            if (lock.authDone) return;
+
+            // PamResult is a number enum: 0 = success, anything else = failure
+            if (result === 0) {
+                lock.authDone = true;
+                lock.pamWaitingForResponse = false;
+                passwordModeDelay.stop();
+                lock.statusText = "Welcome back";
+                lock.showError = false;
+                unlockAnim.start();
             } else {
-                if (msg.length > 0) {
-                    if (msg.indexOf("finger") !== -1 || msg.indexOf("Finger") !== -1 || msg.indexOf("swipe") !== -1 || msg.indexOf("Place") !== -1) {
-                        lock.statusText = "Swipe fingerprint to unlock";
-                        lock.showPassword = false;
-                    } else if (isErr) {
-                        lock.statusText = msg;
-                        lock.showError = true;
-                        errorResetTimer.start();
-                    } else {
-                        lock.statusText = msg;
-                    }
+                // Authentication failed
+                if (lock.pendingPassword.length > 0) {
+                    // We have a queued password - this was fingerprint failure, not password
+                    // Restart PAM quickly to get to password prompt
+                    lock.statusText = "Tap fingerprint to continue...";
+                    lock.showError = false;
+                    lock.isAuthenticating = true;
+                    pamRestartDelay.start();
+                } else if (lock.passwordMode) {
+                    lock.statusText = "Wrong password — try again";
+                    lock.showError = true;
+                    // Don't clear input - let user keep typing
+                    pwRestart.start();
+                } else {
+                    lock.statusText = "Fingerprint not recognized";
+                    lock.showError = true;
+                    fingerShake.start();
+                    fingerRestart.start();
                 }
             }
         }
 
-        // PamResult may not have .success — dump everything to find the right property
-        onCompleted: function(result) {
-            console.log("PAM completed: result=" + result + " type=" + typeof result);
-            try { console.log("PAM result keys: " + JSON.stringify(result)); } catch(e) {}
-            try { console.log("PAM result.success=" + result.success); } catch(e) {}
-            try { console.log("PAM result.type=" + result.type); } catch(e) {}
-
-            // Try multiple ways to detect success
-            var ok = false;
-            if (result === true) ok = true;
-            else if (result && result.success === true) ok = true;
-            else if (result && result.type === 0) ok = true;  // PamResult enum?
-            else if (result && ("" + result).indexOf("success") !== -1) ok = true;
-
-            console.log("PAM auth ok=" + ok);
-
-            if (ok) {
-                lock.statusText = "Welcome back";
-                lock.showError = false;
-                lock.showPassword = false;
-                unlockTimer.start();
-            } else {
-                lock.statusText = "Authentication failed";
-                lock.showError = true;
-                lock.showPassword = false;
-                passInput.text = "";
-                restartTimer.start();
-            }
-        }
-
         onError: function(err) {
-            console.log("PAM error: " + err + " type=" + typeof err);
-            try { console.log("PAM error detail: " + JSON.stringify(err)); } catch(e) {}
-            lock.statusText = "Authentication error";
+            console.log("PAM system error: " + err);
+            lock.isAuthenticating = false;
+            if (lock.authDone) return;
+            lock.statusText = "Auth error — retrying";
             lock.showError = true;
-            lock.showPassword = false;
-            restartTimer.start();
+            fingerRestart.start();
         }
-    }
-
-    // Delay focus to ensure TextInput is visible first
-    Timer {
-        id: focusTimer
-        interval: 50
-        onTriggered: passInput.forceActiveFocus()
     }
 
     function startAuth() {
         lock.showError = false;
-        lock.showPassword = false;
-        lock.statusText = "Swipe fingerprint to unlock";
+        lock.authDone = false;
+        lock.isAuthenticating = false;
+        lock.pamWaitingForResponse = false;
+        passwordModeDelay.stop();
+        // Don't reset passwordMode — once in password mode, stay there
+        if (!lock.passwordMode) {
+            lock.statusText = "Swipe fingerprint to unlock";
+        } else {
+            lock.statusText = "Enter password";
+            passInput.text = "";
+            focusTimer.start();
+        }
         if (pam.active) pam.abort();
         pam.start();
     }
 
+    function resetToFingerprint() {
+        // Called on wake from suspend - reset to fingerprint mode
+        lock.passwordMode = false;
+        lock.pendingPassword = "";
+        passInput.text = "";
+        lock.statusText = "Swipe fingerprint to unlock";
+        lock.showError = false;
+        // Give fprintd time to reinitialize after wake before starting PAM
+        fprintdWakeDelay.start();
+    }
+
+    Timer {
+        id: fprintdWakeDelay
+        interval: 1000  // 1 second delay for fprintd to wake up
+        onTriggered: startAuth()
+    }
+
     function submitPassword() {
+        if (lock.isAuthenticating) return;
+
+        // Cancel any pending restart timer
+        pwRestart.stop();
+
         var pw = passInput.text;
         passInput.text = "";
         if (pw.length === 0) return;
 
-        console.log("submitPassword: active=" + pam.active + " responseRequired=" + pam.responseRequired + " pwLen=" + pw.length);
+        lock.showError = false;
+        lock.isAuthenticating = true;
 
         if (pam.active && pam.responseRequired) {
+            // PAM is ready for password, submit immediately
             lock.statusText = "Authenticating...";
-            lock.showError = false;
             pam.respond(pw);
+        } else if (pam.active) {
+            // PAM is active but in fingerprint phase - queue password and wait
+            lock.statusText = "Tap fingerprint to continue...";
+            lock.pendingPassword = pw;
+            // Don't abort - wait for PAM to move to password phase
         } else {
-            console.log("submitPassword: PAM not ready! active=" + pam.active + " responseRequired=" + pam.responseRequired);
-            lock.statusText = "Not ready — try again";
-            lock.showError = true;
-            errorResetTimer.start();
+            // PAM not active, start it with queued password
+            lock.statusText = "Authenticating...";
+            lock.pendingPassword = pw;
+            pamRestartDelay.start();
         }
     }
 
-    Component.onCompleted: startAuth()
+    Component.onCompleted: {
+        // Small delay to ensure PAM is ready before prompting
+        pamStartupDelay.start();
+    }
 
+    // ── Timers ──
+    Timer { id: focusTimer; interval: 50; onTriggered: passInput.forceActiveFocus() }
+    Timer { id: errorReset; interval: 1500; onTriggered: lock.showError = false }
+    Timer { id: pamStartupDelay; interval: 150; onTriggered: startAuth() }
     Timer {
-        id: unlockTimer
-        interval: 200
-        onTriggered: lock.unlocked()
+        id: passwordModeDelay
+        interval: 1500  // Give fingerprint 1.5 seconds before showing password UI
+        onTriggered: {
+            if (lock.pamWaitingForResponse && !lock.authDone) {
+                lock.passwordMode = true;
+                lock.statusText = "Enter password";
+                lock.isAuthenticating = false;
+                focusTimer.start();
+            }
+        }
     }
 
     Timer {
-        id: restartTimer
-        interval: 2000
+        id: fingerErrorReset
+        interval: 800
+        onTriggered: {
+            lock.showError = false;
+            if (!lock.passwordMode) lock.statusText = "Swipe fingerprint to unlock";
+        }
+    }
+
+    Timer {
+        id: fingerRestart
+        interval: 500
         onTriggered: lock.startAuth()
     }
 
     Timer {
-        id: errorResetTimer
+        id: pwRestart
         interval: 1500
         onTriggered: {
             lock.showError = false;
+            lock.authDone = false;
+            lock.isAuthenticating = false;
+            lock.statusText = "Enter password";
+            // Don't clear passInput.text - preserve what user typed
+            focusTimer.start();
+
+            // Only restart PAM if no password is pending
+            if (lock.pendingPassword.length === 0) {
+                if (pam.active) pam.abort();
+                pamRestartDelay.start();
+            }
         }
     }
 
-    // ══════════════════════════════════
-    // ── Visual layout ──
-    // ══════════════════════════════════
-    Rectangle {
-        anchors.fill: parent
-        color: theme.base00
+    Timer {
+        id: pamRestartDelay
+        interval: 100
+        onTriggered: pam.start()
+    }
 
-        // Clock
-        Column {
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: parent.height * 0.2
-            spacing: 4
+    // ══════════════════════════════════
+    // ── Visual ──
+    // ══════════════════════════════════
+    Item {
+        id: lockVisual
+        anchors.fill: parent
+
+        // Background image
+        Image {
+            id: lockBgImage
+            anchors.fill: parent
+            source: "file://" + theme.lockBackground
+            fillMode: Image.PreserveAspectCrop
+            visible: status === Image.Ready
+        }
+
+        // Fallback solid color
+        Rectangle {
+            anchors.fill: parent
+            color: theme.base00
+            visible: parent.children[0].status !== Image.Ready
+        }
+
+        // Dim overlay for readability
+        Rectangle {
+            anchors.fill: parent
+            color: Qt.rgba(0, 0, 0, 0.2)
+        }
+
+        // Content wrapper - this gets animated, not the background
+        Item {
+            id: lockContent
+            anchors.fill: parent
+            scale: 1
+            opacity: 1
+
+            // Unlock animation: fade out + scale up content only
+            ParallelAnimation {
+                id: unlockAnim
+
+                NumberAnimation {
+                    target: lockContent
+                    property: "opacity"
+                    to: 0
+                    duration: 350
+                    easing.type: Easing.OutCubic
+                }
+
+                NumberAnimation {
+                    target: lockContent
+                    property: "scale"
+                    to: 1.03
+                    duration: 350
+                    easing.type: Easing.OutCubic
+                }
+
+                onFinished: lock.unlocked()
+            }
+
+            // User icon
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: parent.height * 0.08
+                width: 80
+                height: 80
+                radius: 40
+                color: Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.1)
+
+                Text {
+                    anchors.centerIn: parent
+                    text: theme.iconUser
+                    color: theme.textDimmed
+                    font { family: theme.fontFamily; pixelSize: 40 }
+                }
+            }
+
+            // Clock
+            Column {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: parent.height * 0.22
+                spacing: 4
 
             Text {
                 id: clockText
@@ -197,38 +370,62 @@ Item {
             onTriggered: { clockText.tick++; dateText.tick++ }
         }
 
-        // Center content
-        Column {
-            anchors.centerIn: parent
-            spacing: 16
-            width: 320
+        // Login prompt - with backdrop for readability
+        Rectangle {
+            id: promptBackdrop
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: parent.height * 0.08
+            width: centerColumn.width + 48
+            height: centerColumn.height + 40
+            radius: 20
+            color: Qt.rgba(theme.base00.r, theme.base00.g, theme.base00.b, 0.75)
 
-            // Fingerprint icon (visible when waiting for finger)
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "󰈷"
-                color: lock.showError ? theme.textCritical : theme.textAccent
-                font { family: theme.fontFamily; pixelSize: 64 }
-                visible: !lock.showPassword
+            Column {
+                id: centerColumn
+                anchors.centerIn: parent
+                spacing: 16
+                width: 320
+
+                // Fingerprint icon — only before password mode
+                Text {
+                    id: fingerIcon
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: "󰈷"
+                    color: lock.showError ? theme.textCritical : theme.textAccent
+                    font { family: theme.fontFamily; pixelSize: 64 }
+                    visible: !lock.passwordMode
+
+                transform: Translate { id: fingerShakeTranslate; x: 0 }
+
+                SequentialAnimation {
+                    id: fingerShake
+                    NumberAnimation { target: fingerShakeTranslate; property: "x"; to: -12; duration: 50 }
+                    NumberAnimation { target: fingerShakeTranslate; property: "x"; to: 12; duration: 50 }
+                    NumberAnimation { target: fingerShakeTranslate; property: "x"; to: -8; duration: 50 }
+                    NumberAnimation { target: fingerShakeTranslate; property: "x"; to: 8; duration: 50 }
+                    NumberAnimation { target: fingerShakeTranslate; property: "x"; to: -4; duration: 50 }
+                    NumberAnimation { target: fingerShakeTranslate; property: "x"; to: 0; duration: 50 }
+                }
 
                 SequentialAnimation on opacity {
-                    running: !lock.showPassword && !lock.showError
+                    running: !lock.passwordMode && !lock.showError
                     loops: Animation.Infinite
                     NumberAnimation { to: 0.3; duration: 900; easing.type: Easing.InOutSine }
                     NumberAnimation { to: 1.0; duration: 900; easing.type: Easing.InOutSine }
                 }
             }
 
-            // Lock icon (visible in password mode)
+            // Lock icon — password mode
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "󰌾"
                 color: lock.showError ? theme.textCritical : theme.textDimmed
                 font { family: theme.fontFamily; pixelSize: 36 }
-                visible: lock.showPassword
+                visible: lock.passwordMode
             }
 
-            // Status text
+            // Status
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: lock.statusText
@@ -236,12 +433,37 @@ Item {
                 font { family: theme.fontFamily; pixelSize: 14 }
             }
 
-            // Password input (only visible when PAM asks for it)
+            // Switch to password option
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Use password"
+                color: theme.textAccent
+                font { family: theme.fontFamily; pixelSize: 12; underline: switchMouse.containsMouse }
+                visible: !lock.passwordMode
+                opacity: 0.8
+
+                MouseArea {
+                    id: switchMouse
+                    anchors.fill: parent
+                    anchors.margins: -8
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+                    onClicked: {
+                        passwordModeDelay.stop();
+                        lock.passwordMode = true;
+                        lock.statusText = "Enter password";
+                        lock.isAuthenticating = false;
+                        focusTimer.start();
+                    }
+                }
+            }
+
+            // Password input — always visible in password mode
             Rectangle {
                 width: parent.width
                 height: 44
                 radius: 22
-                visible: lock.showPassword
+                visible: lock.passwordMode
                 color: Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.08)
                 border.color: passInput.activeFocus
                     ? theme.textAccent
@@ -261,15 +483,16 @@ Item {
                     TextInput {
                         id: passInput
                         Layout.fillWidth: true
-                        color: theme.textPrimary
+                        color: lock.isAuthenticating ? theme.textDimmed : theme.textPrimary
                         font { family: theme.fontFamily; pixelSize: 14 }
                         echoMode: TextInput.Password
                         clip: true
                         verticalAlignment: TextInput.AlignVCenter
+                        readOnly: lock.isAuthenticating
 
                         Text {
                             anchors.fill: parent
-                            text: "Password"
+                            text: lock.isAuthenticating ? "" : "Password"
                             color: theme.textDimmed
                             font: parent.font
                             visible: parent.text.length === 0
@@ -294,6 +517,73 @@ Item {
                     }
                 }
             }
+            }
         }
+
+        // ── Music display above prompt ──
+        Row {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: promptBackdrop.top
+            anchors.bottomMargin: 20
+            spacing: 12
+            visible: lock.playerService && lock.playerService.hasMedia
+
+            // Album art
+            Rectangle {
+                width: 48
+                height: 48
+                radius: 8
+                color: theme.base01
+                clip: true
+
+                Image {
+                    id: lockAlbumArt
+                    anchors.fill: parent
+                    source: lock.playerService ? lock.playerService.trackArtUrl : ""
+                    fillMode: Image.PreserveAspectCrop
+                    visible: status === Image.Ready
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    text: theme.iconMusic
+                    color: theme.textDimmed
+                    font { family: theme.fontFamily; pixelSize: 20 }
+                    visible: lockAlbumArt.status !== Image.Ready
+                }
+            }
+
+            // Track info
+            Column {
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 2
+
+                Text {
+                    text: lock.playerService ? lock.playerService.trackTitle : ""
+                    color: theme.textPrimary
+                    font { family: theme.fontFamily; pixelSize: 14; bold: true }
+                    elide: Text.ElideRight
+                    width: Math.min(implicitWidth, 250)
+                }
+
+                Text {
+                    text: lock.playerService ? lock.playerService.trackArtist : ""
+                    color: theme.textDimmed
+                    font { family: theme.fontFamily; pixelSize: 12 }
+                    elide: Text.ElideRight
+                    width: Math.min(implicitWidth, 250)
+                    visible: text.length > 0
+                }
+            }
+
+            // Play/pause indicator
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: (lock.playerService && lock.playerService.isPlaying) ? theme.iconMediaPause : theme.iconMediaPlay
+                color: theme.textAccent
+                font { family: theme.fontFamily; pixelSize: 20 }
+            }
+        }
+    } // lockContent Item
     }
 }

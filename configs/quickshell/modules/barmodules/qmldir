@@ -10,3 +10,4 @@ MediaModule 1.0 MediaModule.qml
 PowerIcon 1.0 PowerIcon.qml
 NotifIcon 1.0 NotifIcon.qml
 GearIcon 1.0 GearIcon.qml
+WeatherModule 1.0 WeatherModule.qml

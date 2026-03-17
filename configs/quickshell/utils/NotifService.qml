@@ -94,13 +94,20 @@ Scope {
         root.unreadCount = root.unreadCount + 1;
 
         if (!root.dnd || urg === NotificationUrgency.Critical) {
+            var newExpiry = Date.now() + dur;
             var pArr = root.popupItems.slice();
+            // Reset expiry for all existing popups from same app
+            for (var pi = 0; pi < pArr.length; pi++) {
+                if (pArr[pi].appName === appName) {
+                    pArr[pi].expiry = newExpiry;
+                }
+            }
             pArr.unshift({
                 appName: appName,
                 summary: summary,
                 body: body,
                 imagePath: displayImg,
-                expiry: Date.now() + dur
+                expiry: newExpiry
             });
             root.popupItems = pArr;
             root.rebuildPopupStacks();
@@ -177,13 +184,17 @@ Scope {
 
                     // Add popup
                     var dur = root.timeout;
+                    var newExpiry = Date.now() + dur;
                     var pArr = root.popupItems.slice();
+                    for (var pi = 0; pi < pArr.length; pi++) {
+                        if (pArr[pi].appName === appName) pArr[pi].expiry = newExpiry;
+                    }
                     pArr.unshift({
                         appName: appName,
                         summary: summary,
                         body: body,
                         imagePath: displayImg,
-                        expiry: Date.now() + dur
+                        expiry: newExpiry
                     });
                     root.popupItems = pArr;
                     root.rebuildPopupStacks();
@@ -213,10 +224,11 @@ Scope {
             groups[key].push(p);
         }
 
-        // Remove stacks for apps no longer present
+        // Mark stacks for apps no longer present as dismissing (don't remove yet)
         for (var r = popupStacks.count - 1; r >= 0; r--) {
-            if (!groups[popupStacks.get(r).appName]) {
-                popupStacks.remove(r);
+            var entry = popupStacks.get(r);
+            if (!groups[entry.appName] && !entry.dismissing) {
+                popupStacks.setProperty(r, "dismissing", true);
             }
         }
 
@@ -230,11 +242,11 @@ Scope {
 
             for (var k = 0; k < popupStacks.count; k++) {
                 if (popupStacks.get(k).appName === gKey) {
-                    // Update in-place — no delegate destruction
                     popupStacks.setProperty(k, "summary", list[0].summary);
                     popupStacks.setProperty(k, "body", list[0].body);
                     popupStacks.setProperty(k, "imagePath", list[0].imagePath);
                     popupStacks.setProperty(k, "count", list.length);
+                    popupStacks.setProperty(k, "dismissing", false);
                     found = true;
                     break;
                 }
@@ -246,19 +258,30 @@ Scope {
                     "summary": list[0].summary,
                     "body": list[0].body,
                     "imagePath": list[0].imagePath,
-                    "count": list.length
+                    "count": list.length,
+                    "dismissing": false
                 });
             }
             shown = shown + 1;
         }
     }
 
-    function dismissPopupApp(appName) {
-        root.popupItems = root.popupItems.filter(function(x) { return x.appName !== appName; });
-        // Remove from stacks directly
+    // Called from QML after fade-out animation finishes
+    function removePopupApp(appName) {
         for (var i = popupStacks.count - 1; i >= 0; i--) {
             if (popupStacks.get(i).appName === appName) {
                 popupStacks.remove(i);
+                break;
+            }
+        }
+    }
+
+    function dismissPopupApp(appName) {
+        root.popupItems = root.popupItems.filter(function(x) { return x.appName !== appName; });
+        // Mark as dismissing — delegate will animate out then call removePopupApp
+        for (var i = popupStacks.count - 1; i >= 0; i--) {
+            if (popupStacks.get(i).appName === appName) {
+                popupStacks.setProperty(i, "dismissing", true);
                 break;
             }
         }

@@ -98,6 +98,7 @@ Scope {
                     }
                     BarModules.WorkspaceModule { anchors.verticalCenter: parent.verticalCenter }
                     BarModules.TimeModule { anchors.verticalCenter: parent.verticalCenter }
+                    BarModules.WeatherModule { anchors.verticalCenter: parent.verticalCenter }
                     BarModules.WindowModule { anchors.verticalCenter: parent.verticalCenter }
                 }
 

@@ -98,14 +98,29 @@ Item {
             running: false
         }
 
+        property real lastWidth: 0
+
         function restartScroll() {
-            scrollAnim.stop();
-            scrollRow.x = 0;
+            let w = innerText.contentWidth + 40;
             if (root.needsScroll) {
-                let w = innerText.contentWidth + 40;
+                if (scrollAnim.running && Math.abs(lastWidth - w) < 1) {
+                    // Width unchanged, keep scrolling
+                    return;
+                }
+                scrollAnim.stop();
+                // Preserve relative position if width similar
+                if (lastWidth > 0 && Math.abs(lastWidth - w) < 50) {
+                    scrollRow.x = scrollRow.x * (w / lastWidth);
+                    scrollRow.x = Math.max(-w, Math.min(0, scrollRow.x));
+                } else {
+                    scrollRow.x = 0;
+                }
+                lastWidth = w;
                 scrollAnim.to = -w;
                 scrollAnim.duration = w / root.scrollSpeed * 1000;
                 scrollAnim.start();
+            } else {
+                scrollAnim.stop(); scrollRow.x = 0; lastWidth = 0;
             }
         }
 

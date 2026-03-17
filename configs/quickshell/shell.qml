@@ -36,6 +36,7 @@ ShellRoot {
 
     // ── Session Lock ──
     property bool screenLocked: false
+    property int wakeCounter: 0
 
     WlSessionLock {
         id: sessionLock
@@ -44,6 +45,8 @@ ShellRoot {
         WlSessionLockSurface {
             Modules.LockScreen {
                 anchors.fill: parent
+                playerService: playerSvc
+                wakeSignal: wakeCounter
                 onUnlocked: screenLocked = false
             }
         }
@@ -62,5 +65,6 @@ ShellRoot {
         function controlcenter(): string { ccModule.toggle(); return "ok" }
         function powermenu(): string { pmModule.toggle(); return "ok" }
         function lockscreen(): string { lock(); return "ok" }
+        function wakelock(): string { if (screenLocked) wakeCounter++; return "ok" }
     }
 }

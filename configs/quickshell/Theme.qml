@@ -192,4 +192,20 @@ QtObject {
     readonly property string iconSuspend:   "󰤄"
     readonly property string iconReboot:    "󰜉"
     readonly property string iconShutdown:  "󰐥"
+
+    // Weather
+    readonly property string iconWeatherSunny:   "󰖙"
+    readonly property string iconWeatherCloudy:  "󰖐"
+    readonly property string iconWeatherPartly:  "󰖕"
+    readonly property string iconWeatherRain:    "󰖗"
+    readonly property string iconWeatherSnow:    "󰖘"
+    readonly property string iconWeatherStorm:   "󰖓"
+    readonly property string iconWeatherFog:     "󰖑"
+    readonly property string iconWeatherNight:   "󰖔"
+    readonly property string iconWeatherDefault: "󰖐"
+
+    // Lock screen
+    readonly property string iconUser:           "󰀄"
+    readonly property string iconMusic:          "󰎆"
+    readonly property string lockBackground:     "/home/justin/nixos-config/assets/wallpapers/cloud.jpg"
 }

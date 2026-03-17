@@ -60,9 +60,50 @@ Scope {
                 model: cc.notifService ? cc.notifService.popupStacks : null
 
                 Item {
+                    id: toastItem
                     width: toastCol.width
                     height: toastCard.height
                     clip: true
+                    opacity: 0
+
+                    property string appKey: model.appName
+
+                    Component.onCompleted: {
+                        toastCard.x = toastItem.width;
+                        if (model.dismissing) {
+                            toastItem.opacity = 0;
+                        } else {
+                            appearAnim.start();
+                        }
+                    }
+
+                    // ── Appear ──
+                    ParallelAnimation {
+                        id: appearAnim
+                        NumberAnimation { target: toastCard; property: "x"; to: 0; duration: 250; easing.type: Easing.OutCubic }
+                        NumberAnimation { target: toastItem; property: "opacity"; to: 1; duration: 200; easing.type: Easing.OutCubic }
+                    }
+
+                    // ── Dismiss ──
+                    NumberAnimation {
+                        id: dismissAnim
+                        target: toastItem
+                        property: "opacity"
+                        to: 0
+                        duration: 300
+                        easing.type: Easing.InCubic
+                        onFinished: {
+                            if (cc.notifService) cc.notifService.removePopupApp(toastItem.appKey);
+                        }
+                    }
+
+                    // Watch dismissing flag via local property
+                    property bool isDismissing: model.dismissing
+                    onIsDismissingChanged: {
+                        if (isDismissing && !dismissAnim.running) {
+                            dismissAnim.start();
+                        }
+                    }
 
                     Rectangle {
                         id: toastCard
@@ -70,9 +111,6 @@ Scope {
                         height: toastInner.implicitHeight + theme.notifPadding * 2
                         radius: theme.notifRadius
                         color: theme.notifBackground
-                        x: 0
-                        Component.onCompleted: { x = parent.width; x = 0; }
-                        Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
                         RowLayout {
                             id: toastInner
@@ -166,18 +204,12 @@ Scope {
                             }
                         }
 
-                        // Swipe to dismiss
+                        // Click to dismiss
                         MouseArea {
                             anchors.fill: parent
-                            property real startX: 0
-                            onPressed: function(mouse) { startX = mouse.x; }
-                            onPositionChanged: function(mouse) { if (pressed) toastCard.x = mouse.x - startX; }
-                            onReleased: {
-                                if (Math.abs(toastCard.x) > toastCard.width * 0.3) {
-                                    if (cc.notifService) cc.notifService.dismissPopupApp(model.appName);
-                                } else {
-                                    toastCard.x = 0;
-                                }
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (cc.notifService) cc.notifService.dismissPopupApp(model.appName);
                             }
                         }
                     }
