@@ -1,27 +1,33 @@
 import QtQuick
+import Quickshell
 
 // ── Base16 Theme ──
-// Swap any base00–base0F value to re-theme the entire bar.
-// Default: Gruvbox Dark Hard
+// Colors are read from environment variables set by Stylix (BASE00-BASE0F)
+// Change theme in modules/theming/stylix.nix, rebuild, and colors sync automatically
 // See: https://github.com/chriskempson/base16/blob/main/styling.md
 QtObject {
-    // ── Base16 palette ──
-    readonly property color base00: "#1d2021"  // Default Background
-    readonly property color base01: "#3c3836"  // Lighter Background (status bars)
-    readonly property color base02: "#504945"  // Selection Background
-    readonly property color base03: "#665c54"  // Comments, Invisibles, Line Highlighting
-    readonly property color base04: "#bdae93"  // Dark Foreground (status bars)
-    readonly property color base05: "#d5c4a1"  // Default Foreground
-    readonly property color base06: "#ebdbb2"  // Light Foreground
-    readonly property color base07: "#fbf1c7"  // Light Background
-    readonly property color base08: "#fb4934"  // Red
-    readonly property color base09: "#fe8019"  // Orange
-    readonly property color base0A: "#fabd2f"  // Yellow
-    readonly property color base0B: "#b8bb26"  // Green
-    readonly property color base0C: "#8ec07c"  // Cyan
-    readonly property color base0D: "#83a598"  // Blue
-    readonly property color base0E: "#d3869b"  // Purple
-    readonly property color base0F: "#d65d0e"  // Brown
+    // ── Paths (derived from environment) ──
+    readonly property string homeDir: Quickshell.env("HOME") || "/home/justin"
+    readonly property string configBase: homeDir + "/nixos-config"
+
+    // ── Base16 palette (from Stylix environment variables) ──
+    // Fallbacks are Gruvbox Dark Hard if env vars not set
+    readonly property color base00: Quickshell.env("BASE00") || "#1d2021"  // Default Background
+    readonly property color base01: Quickshell.env("BASE01") || "#3c3836"  // Lighter Background
+    readonly property color base02: Quickshell.env("BASE02") || "#504945"  // Selection Background
+    readonly property color base03: Quickshell.env("BASE03") || "#665c54"  // Comments, Invisibles
+    readonly property color base04: Quickshell.env("BASE04") || "#bdae93"  // Dark Foreground
+    readonly property color base05: Quickshell.env("BASE05") || "#d5c4a1"  // Default Foreground
+    readonly property color base06: Quickshell.env("BASE06") || "#ebdbb2"  // Light Foreground
+    readonly property color base07: Quickshell.env("BASE07") || "#fbf1c7"  // Light Background
+    readonly property color base08: Quickshell.env("BASE08") || "#fb4934"  // Red
+    readonly property color base09: Quickshell.env("BASE09") || "#fe8019"  // Orange
+    readonly property color base0A: Quickshell.env("BASE0A") || "#fabd2f"  // Yellow
+    readonly property color base0B: Quickshell.env("BASE0B") || "#b8bb26"  // Green
+    readonly property color base0C: Quickshell.env("BASE0C") || "#8ec07c"  // Cyan
+    readonly property color base0D: Quickshell.env("BASE0D") || "#83a598"  // Blue
+    readonly property color base0E: Quickshell.env("BASE0E") || "#d3869b"  // Purple
+    readonly property color base0F: Quickshell.env("BASE0F") || "#d65d0e"  // Brown
 
     // ── Semantic aliases (edit these to remap base16 roles) ──
     // base00-07: background to foreground gradient (dark → light)
@@ -159,7 +165,7 @@ QtObject {
     readonly property int    wpThumbWidth:     160
     readonly property int    wpThumbHeight:    100
     readonly property int    wpSpacing:        8
-    readonly property string wpDirectory:      "~/nixos-config/assets/wallpapers"
+    readonly property string wpDirectory:      configBase + "/assets/wallpapers"
     readonly property string iconWallpaper:    "󰸉"
 
     // Control Center
@@ -207,5 +213,5 @@ QtObject {
     // Lock screen
     readonly property string iconUser:           "󰀄"
     readonly property string iconMusic:          "󰎆"
-    readonly property string lockBackground:     "/home/justin/nixos-config/assets/wallpapers/cloud.jpg"
+    readonly property string lockBackground:     configBase + "/assets/wallpapers/cloud.jpg"
 }

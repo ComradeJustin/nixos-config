@@ -11,5 +11,5 @@ spawn-at-startup "quickshell"
 spawn-at-startup "swayidle" "-w" "timeout" "150" "brightnessctl -s set 10%" "resume" "brightnessctl -r" "timeout" "180" "loginctl lock-session" "resume" "qs ipc call quickshell-bar wakelock" "timeout" "1800" "systemctl suspend" "before-sleep" "loginctl lock-session" "after-resume" "sleep 1; qs ipc call quickshell-bar wakelock" "lock" "pidof quickshell && qs ipc call quickshell-bar lockscreen"
 spawn-at-startup "awww-daemon"
 spawn-at-startup "awww" "restore"
-spawn-at-startup "systemctl" "--user" "start" "hyprpolkitagent"
+// polkit-gnome agent starts via systemd user service (see portals.nix)
 spawn-at-startup "wl-paste" "--watch" "cliphist" "store"

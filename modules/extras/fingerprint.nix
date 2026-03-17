@@ -1,26 +1,18 @@
+{ config, lib, pkgs, ... }:
 {
-  inputs,
-  lib,
-  pkgs,
-  ...
-}:
-{
-  # fingerprint reader
+  options.modules.fingerprint.enable = lib.mkEnableOption "fingerprint reader support (Goodix 550A)";
 
-  environment.systemPackages = with pkgs; [
-    fprintd
-  ];
-  services.fprintd.enable = true;
-  services.fprintd.tod.driver = pkgs.libfprint-2-tod1-goodix-550a;
+  config = lib.mkIf config.modules.fingerprint.enable {
+    environment.systemPackages = [ pkgs.fprintd ];
 
-  security.pam.services = {
-    login.fprintAuth = true;
-    sudo.fprintAuth = true;
-    polkit.fprintAuth = true;
-    #hyprpolkitagent.fprintAuth = true;
+    services.fprintd.enable = true;
+    services.fprintd.tod.driver = pkgs.libfprint-2-tod1-goodix-550a;
 
-  };
-  security.pam.services.quickshell-bar = {
-    fprintAuth = true;
+    security.pam.services = {
+      login.fprintAuth = true;
+      sudo.fprintAuth = true;
+      polkit.fprintAuth = true;
+      quickshell-bar.fprintAuth = true;
+    };
   };
 }

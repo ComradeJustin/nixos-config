@@ -162,6 +162,26 @@ PanelWindow {
         }
     }
 
+    // ── Adaptive polling: fast when OSD visible, slow when idle ──
+    property int fastPollInterval: 100
+    property int slowPollInterval: 500
+    property bool recentlyActive: false
+
+    Timer {
+        id: activityCooldown
+        interval: 2000
+        onTriggered: osd.recentlyActive = false
+    }
+
+    function markActive() {
+        recentlyActive = true;
+        activityCooldown.restart();
+    }
+
+    function getPollInterval() {
+        return (osd.visible || osd.recentlyActive) ? fastPollInterval : slowPollInterval;
+    }
+
     // ── Volume poll ──
     Process {
         id: volProc
@@ -180,8 +200,10 @@ PanelWindow {
                     if (!isNaN(frac)) osd.curVolume = Math.round(frac * 100);
                 }
 
-                if (wasVol >= 0 && (osd.curVolume !== wasVol || osd.curMuted !== wasMuted))
+                if (wasVol >= 0 && (osd.curVolume !== wasVol || osd.curMuted !== wasMuted)) {
+                    osd.markActive();
                     osd.show("volume");
+                }
             }
         }
 
@@ -190,7 +212,7 @@ PanelWindow {
 
     Timer {
         id: volPollTimer
-        interval: 50
+        interval: osd.getPollInterval()
         onTriggered: volProc.running = true
     }
 
@@ -224,7 +246,7 @@ PanelWindow {
 
     Timer {
         id: devPollTimer
-        interval: 500
+        interval: 800  // Device changes are rare, poll slowly
         onTriggered: devProc.running = true
     }
 
@@ -244,8 +266,10 @@ PanelWindow {
                 let val = parseInt(data);
                 if (!isNaN(val)) osd.curBrightness = val;
 
-                if (wasBri >= 0 && osd.curBrightness !== wasBri)
+                if (wasBri >= 0 && osd.curBrightness !== wasBri) {
+                    osd.markActive();
                     osd.show("brightness");
+                }
             }
         }
 
@@ -254,7 +278,7 @@ PanelWindow {
 
     Timer {
         id: briPollTimer
-        interval: 80
+        interval: osd.getPollInterval()
         onTriggered: briProc.running = true
     }
 }

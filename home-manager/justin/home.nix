@@ -59,10 +59,6 @@ in
       source = link "${config.home.homeDirectory}/nixos-config/configs/quickshell";
       recursive = true;
     };
-    "hypr" = {
-      source = link "${config.home.homeDirectory}/nixos-config/configs/hypr";
-      recursive = true;
-    };
   };
   # home.file.".config/ghostty".source = ../../configs/ghostty;
 

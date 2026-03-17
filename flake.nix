@@ -1,23 +1,20 @@
 {
   description = "New Nixos System";
   inputs = {
-    # nixpkgs-stable.url = "nixpkgs/nixos-25.11";
-    nixpkgs.url = "nixpkgs/nixos-unstable"; # Uses unstable for everything
+    nixpkgs.url = "nixpkgs/nixos-unstable";
 
-    # For discord
     nixcord = {
       url = "github:FlameFlag/nixcord";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # For Spicetify
+
     spicetify-nix = {
       url = "github:Gerg-L/spicetify-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # For Wallpapers:
 
     awww.url = "git+https://codeberg.org/LGFae/awww";
-    # For Stylix
+
     stylix = {
       url = "github:nix-community/stylix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -34,39 +31,34 @@
       inputs.quickshell.follows = "quickshell";
     };
 
-    # For Home manager
-
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # Anime client
+
     lobster.url = "github:justchokingaround/lobster";
 
-    # San Francisco Fonts | Apple Fonts
     apple-fonts.url = "github:Lyndeno/apple-fonts.nix";
     apple-fonts.inputs.nixpkgs.follows = "nixpkgs";
 
-    # Nixos hardware
-    nixos-hardware = {
-      url = "github:NixOS/nixos-hardware";
-    };
+    nixos-hardware.url = "github:NixOS/nixos-hardware";
 
-    # VIM
     nixvim = {
       url = "github:nix-community/nixvim";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
     spotatui = {
       url = "github:LargeModGames/spotatui";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    #Window manager beta
+
     niri-beta = {
       url = "github:niri-wm/niri/wip/branch";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
+
   outputs =
     {
       self,
@@ -83,128 +75,64 @@
       spotatui,
       ...
     }@inputs:
+    let
+      # Shared modules used by all hosts
+      sharedModules = [
+        ./main/configuration.nix
+        ./modules/core
+        ./modules/extras
+        ./modules/services
+        ./modules/theming
+        stylix.nixosModules.stylix
+        home-manager.nixosModules.home-manager
+        inputs.spicetify-nix.nixosModules.default
+        inputs.nixvim.nixosModules.nixvim
+        ./modules/programs/nixvim.nix
+        {
+          home-manager = {
+            useGlobalPkgs = true;
+            useUserPackages = true;
+            users.justin = import ./home-manager/justin/home.nix;
+            backupFileExtension = "backup";
+          };
+          # Desktop environment (enabled for all hosts)
+          modules.niri.enable = true;
+          modules.quickshell.enable = true;
+          modules.lockscreen.enable = true;
+          modules.compscijava.enable = true;
+        }
+      ];
+
+      # Helper function to create a host configuration
+      mkHost = { hostModules }:
+        nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = { inherit inputs; };
+          modules = sharedModules ++ hostModules;
+        };
+    in
     {
-
       nixosConfigurations = {
-        nixpc =
-          let
-            hostname = "nixpc";
-          in
-          nixpkgs.lib.nixosSystem {
-            specialArgs = {
-              inherit inputs;
-            };
+        nixpc = mkHost {
+          hostModules = [
+            ./hosts/nixpc/hardware-configuration.nix
+            ./hosts/nixpc/gpu.nix
+            ./hosts/nixpc/networking.nix
+            { modules.gaming.enable = true; }
+          ];
+        };
 
-            system = "x86_64-linux";
-            # Basically a replacement to Configuration.nix
-            modules = [
-
-              # Main system
-              ./main/configuration.nix
-              ./hosts/nixpc/hardware-configuration.nix
-              # Groups of programs
-              ./modules/core/fonts.nix
-              ./modules/core/programs.nix
-              ./modules/core/cli-packages.nix
-              ./modules/core/services.nix
-
-              # Current WM and its collection of configs
-              ./modules/extras/niri-system.nix
-
-              # Extra Set of programs
-              ./modules/extras/gaming.nix
-              ./hosts/nixpc/gpu.nix
-              ./hosts/nixpc/networking.nix
-              ./modules/services/portals.nix
-              # Theme
-              stylix.nixosModules.stylix
-
-              # Home manager
-              home-manager.nixosModules.home-manager
-
-              # Spotify
-              inputs.spicetify-nix.nixosModules.default
-
-              # Extra programming stuff
-              ./modules/extras/compscijava.nix
-
-              # Testing stuff to be implemented
-              ./modules/test/quickshell.nix
-              {
-
-                home-manager = {
-                  useGlobalPkgs = true;
-                  useUserPackages = true;
-                  users.justin = import ./home-manager/justin/home.nix;
-                  backupFileExtension = "backup";
-                };
-              }
-            ];
-          };
-        nixlaptop =
-          let
-            hostname = "nixlaptop";
-          in
-          nixpkgs.lib.nixosSystem {
-            specialArgs = {
-              inherit inputs;
-            };
-
-            system = "x86_64-linux";
-            # Basically a replacement to Configuration.nix
-            modules = [
-
-              # Main system
-              ./main/configuration.nix
-              ./hosts/nixlaptop/hardware-configuration.nix
-              ./hosts/nixlaptop/laptop.nix
-              nixos-hardware.nixosModules.lenovo-thinkpad-t14-intel-gen1
-              # Groups of programs
-              ./modules/core/fonts.nix
-              ./modules/core/programs.nix
-              ./modules/core/cli-packages.nix
-              ./modules/core/services.nix
-
-              # Current WM and its collection of configs
-              ./modules/extras/niri-system.nix
-
-              # Extra Set of programs
-              ./modules/extras/displaymanagement.nix
-              ./modules/extras/fingerprint.nix
-              ./hosts/nixlaptop/networking.nix
-              ./modules/services/portals.nix
-              # Theme
-              stylix.nixosModules.stylix
-
-              # Home manager
-              home-manager.nixosModules.home-manager
-
-              # Spotify
-              inputs.spicetify-nix.nixosModules.default
-
-              # Neovim
-              inputs.nixvim.nixosModules.nixvim
-              ./modules/programs/nixvim.nix
-              # Extra programming stuff
-              ./modules/extras/compscijava.nix
-
-              # Modules that are being tested to be implemented
-              ./modules/test/quickshell.nix
-              ./modules/test/lockscreen.nix
-              ./modules/test/claude.nix
-              {
-
-                home-manager = {
-                  useGlobalPkgs = true;
-                  useUserPackages = true;
-                  users.justin = import ./home-manager/justin/home.nix;
-                  backupFileExtension = "backup";
-                };
-              }
-            ];
-          };
-
+        nixlaptop = mkHost {
+          hostModules = [
+            ./hosts/nixlaptop/hardware-configuration.nix
+            ./hosts/nixlaptop/laptop.nix
+            ./hosts/nixlaptop/networking.nix
+            nixos-hardware.nixosModules.lenovo-thinkpad-t14-intel-gen1
+            {
+              modules.fingerprint.enable = true;
+            }
+          ];
+        };
       };
     };
-
 }

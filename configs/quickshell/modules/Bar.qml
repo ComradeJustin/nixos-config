@@ -410,7 +410,7 @@ Scope {
 
     Timer {
         id: fsPollTimer
-        interval: 200
+        interval: 350  // Fullscreen detection doesn't need to be instant
         onTriggered: fsProc.running = true
     }
 }

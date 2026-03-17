@@ -1,11 +1,11 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
 }:
 {
-  # Fonts
   fonts.packages = with pkgs; [
     noto-fonts-cjk-sans
     nerd-fonts.hurmit
@@ -13,9 +13,8 @@
     nerd-fonts.fira-code
     nerd-fonts.monoid
     cozette
-    sarasa-gothic 
+    sarasa-gothic
     nerd-fonts.jetbrains-mono
+    inputs.apple-fonts.packages.${pkgs.stdenv.hostPlatform.system}.sf-pro-nerd
   ];
-
-  
 }

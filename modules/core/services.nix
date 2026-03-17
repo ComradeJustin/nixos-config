@@ -6,17 +6,11 @@
   ...
 }:
 {
-
   environment.systemPackages = [
-    inputs.awww.packages.${pkgs.stdenv.hostPlatform.system}.awww
-    pkgs.wiremix
-    pkgs.rofi
-    pkgs.cliphist
+    pkgs.wiremix  # PipeWire mixer
   ];
-  # Services
-  services.flatpak.enable = true;
 
-  services.gvfs.enable = true;
+  services.flatpak.enable = true;
   services.greetd = {
     enable = true;
     settings = {

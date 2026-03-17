@@ -1,20 +1,14 @@
+{ config, lib, pkgs, ... }:
 {
-  inputs,
-  lib,
-  pkgs,
-  ...
-}:
-{
-  # Steam games
-  programs.steam = {
-    enable = true;
+  options.modules.gaming.enable = lib.mkEnableOption "gaming packages (Steam, Prismlauncher, Gamescope, Wine)";
+
+  config = lib.mkIf config.modules.gaming.enable {
+    programs.steam.enable = true;
+
+    environment.systemPackages = with pkgs; [
+      prismlauncher
+      gamescope
+      wineWowPackages.waylandFull
+    ];
   };
-
-
-  environment.systemPackages = [
-    # Minecraft
-    pkgs.prismlauncher
-    pkgs.gamescope
-
-  ];
 }
