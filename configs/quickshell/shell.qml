@@ -10,6 +10,7 @@ ShellRoot {
     Utils.PowerService { id: powerSvc }
     Utils.NotifService { id: notifSvc }
     Utils.WifiService { id: wifiSvc }
+    Utils.BluetoothService { id: btSvc }
 
     Modules.PowerMenu {
         id: pmModule
@@ -22,6 +23,7 @@ ShellRoot {
         powerMenuRef: pmModule
         notifService: notifSvc
         wifiService: wifiSvc
+        bluetoothService: btSvc
     }
     Modules.Spotlight { id: spotModule }
     Modules.Osd {}
@@ -32,6 +34,7 @@ ShellRoot {
         audioService: audioSvc
         powerMenuRef: pmModule
         wifiService: wifiSvc
+        bluetoothService: btSvc
     }
 
     // ── Session Lock ──

@@ -136,10 +136,11 @@ Item {
     }
 
     // For regular apps: run exec line directly
+    // SECURITY: Use positional parameter to prevent command injection
     Process {
         id: execProc
         property string cmd: ""
-        command: ["bash", "-c", cmd + " &>/dev/null &"]
+        command: ["sh", "-c", "$1 &>/dev/null &", "--", cmd]
     }
 
     Column {

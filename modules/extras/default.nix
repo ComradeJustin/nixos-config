@@ -11,5 +11,6 @@
     ./niri-system.nix
     ./quickshell.nix
     ./lockscreen.nix
+    ./bluetooth.nix
   ];
 }

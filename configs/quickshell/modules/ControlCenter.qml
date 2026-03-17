@@ -17,6 +17,7 @@ Scope {
     property var powerMenuRef: null
     property var notifService: null
     property var wifiService: null
+    property var bluetoothService: null
 
     function toggle() {
         showing = !showing;
@@ -24,6 +25,7 @@ Scope {
             ccPanel.visible = true;
             if (notifService) notifService.unreadCount = 0;
             if (wifiService) wifiService.scan();
+            if (bluetoothService) bluetoothService.scan();
             if (audioService) { audioService.refreshApps(); audioService.refreshDevices(); }
             if (notifService) notifService.rebuildStacks();
         }
@@ -302,6 +304,15 @@ Scope {
                             Text { anchors.centerIn: parent; text: parent.isMuted ? theme.iconVolMute : theme.iconVolHigh; color: parent.isMuted ? theme.textCritical : theme.textDimmed; font { family: theme.fontFamily; pixelSize: 20 } }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.audioService) cc.audioService.toggleMute(); } }
                         }
+
+                        Rectangle {
+                            width: 48; height: 48; radius: 24
+                            property bool isBtOn: cc.bluetoothService ? cc.bluetoothService.enabled : false
+                            property bool isBtConn: cc.bluetoothService ? cc.bluetoothService.connected : false
+                            color: isBtConn ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.25) : (isBtOn ? Qt.rgba(theme.textInfo.r, theme.textInfo.g, theme.textInfo.b, 0.15) : theme.ccSectionBg)
+                            Text { anchors.centerIn: parent; text: parent.isBtConn ? theme.iconBtConnected : (parent.isBtOn ? theme.iconBtOn : theme.iconBtOff); color: parent.isBtConn ? theme.textAccent : (parent.isBtOn ? theme.textInfo : theme.textDimmed); font { family: theme.fontFamily; pixelSize: 20 } }
+                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.bluetoothService) cc.bluetoothService.toggle(); } }
+                        }
                     }
 
                     // ── Tab bar ──
@@ -310,13 +321,14 @@ Scope {
 
                         Repeater {
                             model: [
-                                { tab: "notifications", icon: theme.iconBell, label: "Notifications" },
+                                { tab: "notifications", icon: theme.iconBell, label: "Notifs" },
                                 { tab: "volume", icon: theme.iconVolHigh, label: "Volume" },
-                                { tab: "wifi", icon: theme.iconWifiHi, label: "Wi-Fi" }
+                                { tab: "wifi", icon: theme.iconWifiHi, label: "Wi-Fi" },
+                                { tab: "bluetooth", icon: theme.iconBtOn, label: "BT" }
                             ]
 
                             Rectangle {
-                                width: parent.width / 3; height: 38; color: "transparent"
+                                width: parent.width / 4; height: 38; color: "transparent"
 
                                 Column {
                                     anchors.centerIn: parent; spacing: 2
@@ -329,7 +341,8 @@ Scope {
                                     onClicked: {
                                         cc.activeTab = modelData.tab;
                                         if (modelData.tab === "volume" && cc.audioService) { cc.audioService.refreshApps(); cc.audioService.refreshDevices(); }
-                                        if (modelData.tab === "wifi") if (cc.wifiService) cc.wifiService.scan();
+                                        if (modelData.tab === "wifi" && cc.wifiService) cc.wifiService.scan();
+                                        if (modelData.tab === "bluetooth" && cc.bluetoothService) cc.bluetoothService.scan();
                                     }
                                 }
                             }
@@ -661,6 +674,132 @@ Scope {
                                              anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; width: parent.width - 30 }
                                         }
                                         MouseArea { id: wfMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.wifiService) { if (model.wifiActive) cc.wifiService.disconnect(); else cc.wifiService.connectTo(model.wifiSsid); } } }
+                                    }
+                                }
+                            }
+                        }
+
+                        // ── Bluetooth ──
+                        Flickable {
+                            anchors.fill: parent; visible: cc.activeTab === "bluetooth"
+                            contentHeight: btTabCol.implicitHeight; clip: true; boundsBehavior: Flickable.StopAtBounds
+
+                            Column {
+                                id: btTabCol; width: parent.width; spacing: 4
+
+                                // Connected device card
+                                Rectangle {
+                                    visible: (cc.bluetoothService && cc.bluetoothService.connected); width: parent.width; height: 44; radius: 8; color: theme.ccSectionBg
+                                    Row {
+                                        anchors { verticalCenter: parent.verticalCenter; left: parent.left; leftMargin: 12 }
+                                        spacing: 10
+                                        Text { text: theme.iconBtConnected; color: theme.textAccent; font { family: theme.fontFamily; pixelSize: 18 }
+                                        anchors.verticalCenter: parent.verticalCenter }
+                                        Column {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            Text { text: (cc.bluetoothService ? cc.bluetoothService.connectedDevice : ""); color: theme.textAccent; font { family: theme.fontFamily; pixelSize: 13; bold: true } }
+                                            Text { text: "Connected"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 11 } }
+                                        }
+                                    }
+                                }
+
+                                Item { width: 1; height: (cc.bluetoothService && cc.bluetoothService.connected) ? 4 : 0 }
+
+                                // Scanning indicator
+                                Text { visible: cc.bluetoothService ? cc.bluetoothService.scanning : false; text: "Scanning…"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 13 }
+                                width: parent.width; height: 40; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+
+                                // No devices
+                                Text { visible: (cc.bluetoothService ? cc.bluetoothService.devices.count : 0) === 0 && !(cc.bluetoothService && cc.bluetoothService.scanning); text: "No devices found"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 13 }
+                                width: parent.width; height: 50; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+
+                                // Paired devices header
+                                Text { visible: cc.bluetoothService ? cc.bluetoothService.devices.count > 0 : false; text: "Paired Devices"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 12 }
+                                leftPadding: 4 }
+
+                                Repeater {
+                                    model: cc.bluetoothService ? cc.bluetoothService.devices : null
+                                    Rectangle {
+                                        visible: model.btPaired
+                                        width: btTabCol.width; height: visible ? 36 : 0; radius: 6
+                                        color: btMouse.containsMouse ? Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.06) : "transparent"
+                                        Row {
+                                            anchors { verticalCenter: parent.verticalCenter; left: parent.left; leftMargin: 12; right: parent.right; rightMargin: 12 }
+                                            spacing: 10
+                                            Text {
+                                                text: model.btConnected ? theme.iconBtConnected : theme.iconBtOn
+                                                color: model.btConnected ? theme.textAccent : theme.textDimmed
+                                                font { family: theme.fontFamily; pixelSize: 16 }
+                                                anchors.verticalCenter: parent.verticalCenter
+                                            }
+                                            Text {
+                                                text: model.btName
+                                                color: model.btConnected ? theme.textAccent : theme.textPrimary
+                                                font { family: theme.fontFamily; pixelSize: 13; bold: model.btConnected }
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                elide: Text.ElideRight
+                                                width: parent.width - 30
+                                            }
+                                        }
+                                        MouseArea {
+                                            id: btMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                if (cc.bluetoothService) {
+                                                    if (model.btConnected) cc.bluetoothService.disconnect(model.btMac);
+                                                    else cc.bluetoothService.connect(model.btMac);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Discovered devices header
+                                Text {
+                                    property int discoveredCount: {
+                                        if (!cc.bluetoothService) return 0;
+                                        var count = 0;
+                                        for (var i = 0; i < cc.bluetoothService.devices.count; i++) {
+                                            if (!cc.bluetoothService.devices.get(i).btPaired) count++;
+                                        }
+                                        return count;
+                                    }
+                                    visible: discoveredCount > 0
+                                    text: "Available Devices"
+                                    color: theme.textDimmed
+                                    font { family: theme.fontFamily; pixelSize: 12 }
+                                    leftPadding: 4; topPadding: 8
+                                }
+
+                                Repeater {
+                                    model: cc.bluetoothService ? cc.bluetoothService.devices : null
+                                    Rectangle {
+                                        visible: !model.btPaired
+                                        width: btTabCol.width; height: visible ? 36 : 0; radius: 6
+                                        color: btDiscMouse.containsMouse ? Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.06) : "transparent"
+                                        Row {
+                                            anchors { verticalCenter: parent.verticalCenter; left: parent.left; leftMargin: 12; right: parent.right; rightMargin: 12 }
+                                            spacing: 10
+                                            Text {
+                                                text: theme.iconBtOff
+                                                color: theme.textDimmed
+                                                font { family: theme.fontFamily; pixelSize: 16 }
+                                                anchors.verticalCenter: parent.verticalCenter
+                                            }
+                                            Text {
+                                                text: model.btName
+                                                color: theme.textPrimary
+                                                font { family: theme.fontFamily; pixelSize: 13 }
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                elide: Text.ElideRight
+                                                width: parent.width - 30
+                                            }
+                                        }
+                                        MouseArea {
+                                            id: btDiscMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                if (cc.bluetoothService) cc.bluetoothService.pair(model.btMac);
+                                            }
+                                        }
                                     }
                                 }
                             }

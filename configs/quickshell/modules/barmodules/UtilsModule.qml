@@ -10,6 +10,7 @@ Item {
 
     property var audioService: null
     property var wifiService: null
+    property var bluetoothService: null
 
     Row {
         id: row
@@ -19,6 +20,7 @@ Item {
         ResourceModule {}
         AudioModule { audioService: root.audioService }
         NetworkModule { wifiService: root.wifiService }
+        BluetoothModule { bluetoothService: root.bluetoothService }
         BatteryModule {}
     }
 }

@@ -3,3 +3,4 @@ PlayerService 1.0 PlayerService.qml
 PowerService 1.0 PowerService.qml
 NotifService 1.0 NotifService.qml
 WifiService 1.0 WifiService.qml
+BluetoothService 1.0 BluetoothService.qml

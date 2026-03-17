@@ -19,6 +19,7 @@ Scope {
     property var audioService: null
     property var powerMenuRef: null
     property var wifiService: null
+    property var bluetoothService: null
 
     onIsHiddenChanged: {
         if (isHidden) {
@@ -126,6 +127,7 @@ Scope {
                         anchors.verticalCenter: parent.verticalCenter
                         audioService: barScope.audioService
                         wifiService: barScope.wifiService
+                        bluetoothService: barScope.bluetoothService
                     }
                     BarModules.GearIcon {
                         anchors.verticalCenter: parent.verticalCenter

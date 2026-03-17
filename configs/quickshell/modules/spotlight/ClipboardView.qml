@@ -49,7 +49,8 @@ Item {
         thumbBusy = true;
         let item = thumbQueue.shift();
         thumbProc.targetIndex = item.index;
-        thumbProc.command = ["bash", "-c", "f=/tmp/qs-clip-thumb-" + item.id + ".png; cliphist decode " + item.id + " > \"$f\" 2>/dev/null && echo \"$f\" || echo ''"];
+        // SECURITY: Use positional parameter to prevent command injection from clipboard IDs
+        thumbProc.command = ["sh", "-c", "f=/tmp/qs-clip-thumb-\"$1\".png; cliphist decode \"$1\" > \"$f\" 2>/dev/null && echo \"$f\" || echo ''", "--", item.id];
         thumbProc.running = true;
     }
     Process {
@@ -59,7 +60,8 @@ Item {
         }
         onExited: { root.thumbBusy = false; root.processThumbQueue(); }
     }
-    Process { id: copyProc; property string clipId: ""; command: ["bash", "-c", "cliphist decode " + clipId + " | wl-copy"] }
+    // SECURITY: Use positional parameter to prevent command injection
+    Process { id: copyProc; property string clipId: ""; command: ["sh", "-c", "cliphist decode \"$1\" | wl-copy", "--", clipId] }
     Process { id: clearProc; command: ["cliphist", "wipe"] }
 
     Column {

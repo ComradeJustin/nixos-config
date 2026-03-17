@@ -138,6 +138,11 @@ QtObject {
     readonly property string iconDndOff:    "󰂚"
     readonly property string iconClipboard: "󰅍"
 
+    // Bluetooth
+    readonly property string iconBtOn:        "󰂯"
+    readonly property string iconBtOff:       "󰂲"
+    readonly property string iconBtConnected: "󰂱"
+
     // Clipboard
     readonly property int    clipWidth:      420
     readonly property int    clipMaxHeight:  460
