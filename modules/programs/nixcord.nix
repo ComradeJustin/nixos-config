@@ -24,8 +24,7 @@
           # Theming - Vencord uses CSS theming
           # Stylix can generate themes via stylix.targets.vesktop.enable = true
           config = {
-            useQuickCss = true;
-            # Plugins use PascalCase names - configure in Vencord settings UI
+
           };
         };
       }

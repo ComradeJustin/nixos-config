@@ -1,15 +1,20 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   stylix.enable = true;
   # autoEnable stays true (default) - we disable slow targets explicitly
   stylix.base16Scheme = ../../assets/colour-schemes/utilitarian.yaml;
-  stylix.image = ../../assets/wallpapers/cloud.jpg;
   stylix.polarity = "dark";
 
   stylix.cursor.package = pkgs.capitaine-cursors;
   stylix.cursor.name = "capitaine-cursors";
   stylix.cursor.size = 32;
-
+  stylix.targets.nixvim.enable = false;
+  
   # Utilitarian font stack - form follows function
   stylix.fonts = {
     serif = {
