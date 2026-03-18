@@ -26,6 +26,7 @@
     nitch
 
     # Development
+    tmux
     gcc
     ffmpeg
     nixfmt-rfc-style

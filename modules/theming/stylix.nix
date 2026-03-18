@@ -7,7 +7,7 @@
 {
   stylix.enable = true;
   # autoEnable stays true (default) - we disable slow targets explicitly
-  stylix.base16Scheme = ../../assets/colour-schemes/utilitarian.yaml;
+  stylix.base16Scheme = ../../assets/colour-schemes/cozy-gruvbox.yaml;
   stylix.polarity = "dark";
 
   stylix.cursor.package = pkgs.capitaine-cursors;
@@ -23,8 +23,8 @@
     };
 
     sansSerif = {
-      package = pkgs.inter;
-      name = "Inter";
+      package = pkgs.jost;
+      name = "Jost*";
     };
 
     monospace = {

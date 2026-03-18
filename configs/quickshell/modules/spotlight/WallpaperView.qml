@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import "../.." as Root
 
@@ -23,12 +24,17 @@ Item {
 
     // Called when the view opens
     function refresh() {
-        // Only scan once — wallpapers don't change at runtime
         if (!scanned)
             scanProc.running = true;
         else
             updateFilter();
         currentProc.running = true;
+    }
+
+    // Force a rescan (called by filesystem watcher)
+    function forceRescan() {
+        scanned = false;
+        scanProc.running = true;
     }
 
     function updateFilter() {
@@ -145,6 +151,34 @@ Item {
             "--transition-duration", "1"
         ]
         onExited: { root.currentWallpaper = wallpaper; }
+    }
+
+    // Watch wallpaper directory for changes (live detection)
+    Process {
+        id: watchProc
+        property string expandedDir: root.wallpaperDir.replace("~", Quickshell.env("HOME") || "/home/justin")
+        command: [
+            "inotifywait", "-m", "-q",
+            "-e", "create", "-e", "delete", "-e", "moved_to", "-e", "moved_from",
+            "--format", "%e",
+            expandedDir
+        ]
+        running: true
+
+        stdout: SplitParser {
+            onRead: data => {
+                if (!rescanTimer.running) {
+                    rescanTimer.start();
+                }
+            }
+        }
+    }
+
+    // Debounce timer to avoid excessive rescans
+    Timer {
+        id: rescanTimer
+        interval: 500
+        onTriggered: root.forceRescan()
     }
 
     Column {
