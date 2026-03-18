@@ -1,0 +1,22 @@
+system: "base16"
+name: "Utilitarian"
+slug: "utilitarian"
+author: "Justin"
+variant: "dark"
+palette:
+  base00: "#1a1a1a"  # Pure dark background
+  base01: "#262626"  # Lighter background
+  base02: "#404040"  # Selection
+  base03: "#666666"  # Comments
+  base04: "#999999"  # Dark foreground
+  base05: "#d4d4d4"  # Default foreground
+  base06: "#e8e8e8"  # Light foreground
+  base07: "#ffffff"  # Lightest
+  base08: "#f44747"  # Red - Errors
+  base09: "#d7ba7d"  # Orange - Constants
+  base0A: "#dcdcaa"  # Yellow - Classes
+  base0B: "#6a9955"  # Green - Strings
+  base0C: "#4ec9b0"  # Cyan - Support
+  base0D: "#569cd6"  # Blue - Functions (PRIMARY ACCENT)
+  base0E: "#c586c0"  # Purple - Keywords
+  base0F: "#ce9178"  # Brown - Deprecated
