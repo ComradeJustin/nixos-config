@@ -36,13 +36,13 @@ Item {
 
         Text {
             text: {
-                if (!root.bluetoothService || !root.bluetoothService.enabled) return "off";
+                if (!root.bluetoothService || !root.bluetoothService.enabled) return "BT OFF";
                 if (root.bluetoothService.connected) {
                     // Truncate long device names
                     var name = root.bluetoothService.connectedDevice;
-                    return name.length > 12 ? name.substring(0, 10) + "…" : name;
+                    return name.length > 10 ? name.substring(0, 8) + "…" : name;
                 }
-                return "on";
+                return "BT ON";
             }
             color: {
                 if (!root.bluetoothService || !root.bluetoothService.enabled) return theme.textDimmed;

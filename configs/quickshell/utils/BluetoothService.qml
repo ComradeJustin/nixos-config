@@ -16,6 +16,7 @@ Scope {
 
     // ── Internal state ──
     property bool scanning: false
+    property bool hasScanned: false  // Track if we've done initial scan
 
     Component.onCompleted: statusProc.running = true
 
@@ -75,60 +76,68 @@ Scope {
         onTriggered: statusProc.running = true
     }
 
-    // ── Full device scan (CC bluetooth tab) ──
-    function scan() {
+    // ── Device scan (CC bluetooth tab) - Only paired devices ──
+    function scan(force) {
+        // Don't rescan if we already have data, unless forced
+        if (root.hasScanned && !force && root.devices.count > 0) return;
         root.scanning = true;
         scanProc.running = true;
     }
+
+    // Internal property to collect all output before parsing
+    property string scanBuffer: ""
 
     Process {
         id: scanProc
         command: [
             "bash", "-c",
             "if ! command -v bluetoothctl &>/dev/null; then exit; fi; " +
-            // Start discovery briefly
-            "bluetoothctl --timeout 3 scan on &>/dev/null & " +
-            "sleep 2; " +
-            // Get paired devices
-            "bluetoothctl devices Paired 2>/dev/null | while read -r _ mac name; do " +
+            // Only get PAIRED devices - no discovery scan needed
+            "bluetoothctl devices Paired 2>/dev/null | while IFS= read -r line; do " +
+            "  mac=$(echo \"$line\" | awk '{print $2}'); " +
             "  [ -z \"$mac\" ] && continue; " +
+            // Get the name from bluetoothctl info (more reliable than devices output)
             "  info=$(bluetoothctl info \"$mac\" 2>/dev/null); " +
+            "  name=$(echo \"$info\" | grep -m1 'Name:' | cut -d: -f2- | sed 's/^[[:space:]]*//'); " +
+            // Fallback to device list name if info doesn't have it
+            "  [ -z \"$name\" ] && name=$(echo \"$line\" | cut -d' ' -f3-); " +
             "  conn=$(echo \"$info\" | grep -q 'Connected: yes' && echo yes || echo no); " +
             "  type=$(echo \"$info\" | grep -i 'Icon:' | awk '{print $2}'); " +
             "  [ -z \"$type\" ] && type='other'; " +
-            "  echo \"paired\t$mac\t$name\t$conn\t$type\"; " +
-            "done; " +
-            // Get discovered (not paired) devices
-            "bluetoothctl devices 2>/dev/null | while read -r _ mac name; do " +
-            "  [ -z \"$mac\" ] && continue; " +
-            "  bluetoothctl devices Paired 2>/dev/null | grep -q \"$mac\" && continue; " +
-            "  info=$(bluetoothctl info \"$mac\" 2>/dev/null); " +
-            "  type=$(echo \"$info\" | grep -i 'Icon:' | awk '{print $2}'); " +
-            "  [ -z \"$type\" ] && type='other'; " +
-            "  echo \"discovered\t$mac\t$name\tno\t$type\"; " +
+            "  echo \"$mac\t$name\t$conn\t$type\"; " +
             "done"
         ]
 
+        onStarted: {
+            root.scanBuffer = "";
+        }
+
         stdout: SplitParser {
             onRead: data => {
-                var p = data.split("\t");
-                if (p.length < 5) return;
-                root.devices.append({
-                    "btPaired": p[0] === "paired",
-                    "btMac": p[1],
-                    "btName": p[2],
-                    "btConnected": p[3] === "yes",
-                    "btType": p[4]
-                });
+                // Collect all lines into buffer
+                root.scanBuffer += data + "\n";
             }
         }
 
-        onStarted: {
-            root.devices.clear();
-        }
-
         onExited: {
+            // Parse all devices at once for instant UI update
+            root.devices.clear();
+            var lines = root.scanBuffer.trim().split("\n");
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i].trim();
+                if (line.length === 0) continue;
+                var p = line.split("\t");
+                if (p.length < 4) continue;
+                root.devices.append({
+                    "btPaired": true,
+                    "btMac": p[0],
+                    "btName": p[1] || p[0],  // Fallback to MAC if name empty
+                    "btConnected": p[2] === "yes",
+                    "btType": p[3]
+                });
+            }
             root.scanning = false;
+            root.hasScanned = true;
         }
     }
 
@@ -201,6 +210,10 @@ Scope {
     Timer {
         id: refreshAfter
         interval: 2000
-        onTriggered: { scanProc.running = true; statusProc.running = true; }
+        onTriggered: {
+            root.hasScanned = false;  // Force rescan after actions
+            scanProc.running = true;
+            statusProc.running = true;
+        }
     }
 }

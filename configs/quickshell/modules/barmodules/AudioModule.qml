@@ -30,9 +30,9 @@ Item {
 
         Text {
             text: {
-                if (root.volume < 0) return "--";
-                if (root.muted) return "mute";
-                return root.volume + "%";
+                if (root.volume < 0) return "VOL --";
+                if (root.muted) return "MUTE";
+                return "VOL " + root.volume + "%";
             }
             color: root.muted ? theme.textDimmed : theme.textPrimary
             font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }

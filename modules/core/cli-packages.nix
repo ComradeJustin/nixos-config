@@ -30,6 +30,7 @@
     ffmpeg
     nixfmt-rfc-style
     nodejs
+    python3
 
     # Notifications
     glib

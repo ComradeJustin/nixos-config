@@ -5,8 +5,8 @@ import "../.." as Root
 
 Item {
     id: root
-    implicitWidth: bg.width
-    implicitHeight: bg.height
+    implicitWidth: wsRow.implicitWidth
+    implicitHeight: wsRow.implicitHeight
 
     Root.Theme { id: theme }
 
@@ -24,41 +24,31 @@ Item {
         }
     }
 
-    Rectangle {
-        id: bg
-        width: wsRow.implicitWidth + 24
-        height: theme.barHeight - 6
-        anchors.verticalCenter: parent.verticalCenter
-        radius: 12
-        color: theme.wsPillBg
-        opacity: 0.5
-    }
-
+    // Minimal workspace indicators - fixed size dots with opacity states
     Row {
         id: wsRow
-        anchors.centerIn: bg
-        spacing: 8
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: 10
 
         Repeater {
             model: niri.workspaces
 
             Rectangle {
-                width: model.isFocused ? 20 : 10
-                height: 10
-                radius: 10
-                color: model.isFocused ? theme.wsFocused
-                     : model.isActive  ? theme.wsActive
-                     :                   theme.wsDimmed
+                width: 6
+                height: 6
+                radius: 0  // Brutalist: fully square
+                color: theme.textPrimary
+                opacity: model.isFocused ? 1.0
+                       : model.isActive  ? 0.5
+                       :                   0.2
 
-                Behavior on width {
-                    NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
-                }
-                Behavior on color {
-                    ColorAnimation { duration: 150 }
+                Behavior on opacity {
+                    NumberAnimation { duration: 100; easing.type: Easing.OutQuad }
                 }
 
                 MouseArea {
                     anchors.fill: parent
+                    anchors.margins: -4  // Larger hit area
                     cursorShape: Qt.PointingHandCursor
                     onClicked: niri.focusWorkspaceById(model.id)
                 }

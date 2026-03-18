@@ -29,7 +29,7 @@ Item {
         }
 
         Text {
-            text: root.cpuPercent >= 0 ? root.cpuPercent + "%" : "--"
+            text: root.cpuPercent >= 0 ? "CPU " + root.cpuPercent + "%" : "CPU --"
             color: root.cpuPercent >= 90 ? theme.textCritical : theme.textPrimary
             font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
             anchors.verticalCenter: parent.verticalCenter
@@ -46,8 +46,8 @@ Item {
 
         Text {
             text: {
-                if (root.ramUsedGb < 0) return "--";
-                return root.ramUsedGb.toFixed(1) + "/" + root.ramTotalGb.toFixed(1) + " GB";
+                if (root.ramUsedGb < 0) return "MEM --";
+                return "MEM " + root.ramUsedGb.toFixed(1) + "G";
             }
             color: theme.textPrimary
             font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }

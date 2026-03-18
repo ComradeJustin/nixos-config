@@ -62,8 +62,10 @@ PanelWindow {
     Rectangle {
         id: content
         anchors.fill: parent
-        radius: theme.osdRadius
+        radius: 0  // Brutalist: square
         color: theme.osdBackground
+        border.width: theme.borderWidth
+        border.color: theme.borderColor
         opacity: 1
 
         Row {
@@ -91,12 +93,14 @@ PanelWindow {
                 anchors.verticalCenter: parent.verticalCenter
             }
 
-            // Progress bar
+            // Progress bar (brutalist: square)
             Rectangle {
                 width: 140
-                height: 8
-                radius: 4
+                height: 4
+                radius: 0
                 color: theme.osdBarBg
+                border.width: 1
+                border.color: theme.borderColor
                 anchors.verticalCenter: parent.verticalCenter
 
                 Rectangle {
@@ -108,7 +112,7 @@ PanelWindow {
                         return parent.width * pct / 100;
                     }
                     height: parent.height
-                    radius: parent.radius
+                    radius: 0
                     color: theme.osdAccent
 
                     Behavior on width {

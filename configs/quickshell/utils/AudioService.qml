@@ -36,7 +36,7 @@ Scope {
             }
         }
         appSetProc.idx = idx;
-        appSetProc.vol = v;
+        appSetProc.vol = v / 100;  // wpctl uses 0.0-1.0 scale
         appSetProc.running = true;
     }
 
@@ -75,27 +75,24 @@ Scope {
     Process { id: setProc; property int vol: 0; command: ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", vol + "%"] }
     Process { id: muteProc; command: ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"] }
 
-    // ── Per-app volume ──
+    // ── Per-app volume (PipeWire native) ──
     Process {
         id: appScanProc
         command: ["bash", "-c",
-            "pactl list sink-inputs 2>/dev/null | awk '\n" +
-            "  /Sink Input #/ { idx=$3; sub(/#/,\"\",idx) }\n" +
-            "  /application.name/ { name=$0; sub(/.*= \"/,\"\",name); sub(/\"$/,\"\",name) }\n" +
-            "  /application.icon_name/ { icon=$0; sub(/.*= \"/,\"\",icon); sub(/\"$/,\"\",icon) }\n" +
-            "  /Volume:/ && idx { vol=$0; match(vol,/([0-9]+)%/,m); pct=m[1]; print idx \"\\t\" name \"\\t\" icon \"\\t\" pct; idx=\"\" }\n" +
-            "'"
+            "pw-dump 2>/dev/null | jq -r '.[] | select(.info.props.\"media.class\" == \"Stream/Output/Audio\") | " +
+            "[.id, (.info.props.\"application.name\" // \"Unknown\"), (.info.props.\"application.icon_name\" // \"\"), " +
+            "(((.info.params.Props[0]?.volume // 1) * 100) | floor)] | @tsv'"
         ]
         stdout: SplitParser {
             onRead: data => {
                 let p = data.split("\t");
                 if (p.length < 4) return;
-                root.appStreams.append({ "appIdx": p[0], "appName": p[1] || "Unknown", "appIcon": p[2] || "", "appVol": parseInt(p[3]) || 0 });
+                root.appStreams.append({ "appIdx": p[0], "appName": p[1] || "Unknown", "appIcon": p[2] || "", "appVol": parseInt(p[3]) || 100 });
             }
         }
         onStarted: root.appStreams.clear()
     }
-    Process { id: appSetProc; property string idx: ""; property int vol: 0; command: ["pactl", "set-sink-input-volume", idx, vol + "%"] }
+    Process { id: appSetProc; property string idx: ""; property real vol: 0; command: ["wpctl", "set-volume", idx, vol.toString()] }
 
     // ── Output devices (sinks) ──
     Process {

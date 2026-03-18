@@ -1,11 +1,11 @@
 import QtQuick
 import Quickshell
 
-// ── New Utilitarianism Theme ──
-// Design philosophy: Form follows function - every element serves a purpose
+// ── Industrial Brutalism Theme ──
+// Design philosophy: Raw structure, exposed elements, monospace typography
+// NO rounded corners, visible borders, technical readout aesthetic
 // Colors from Stylix environment variables (BASE00-BASE0F)
-// Grid system: 8px base unit for consistent spacing
-// See: https://github.com/chriskempson/base16/blob/main/styling.md
+// Grid system: 8px base unit for rigid alignment
 QtObject {
     // ── Paths (derived from environment) ──
     readonly property string homeDir: Quickshell.env("HOME") || "/home/justin"
@@ -42,13 +42,13 @@ QtObject {
     readonly property color textWarning:   base0A    // base0A: Classes, Yellow
     readonly property color textCharging:  base0B    // base0B: Strings, Green
     readonly property color textInfo:      base0C    // base0C: Support, Cyan
-    readonly property color textAccent:    base0D    // base0D: Functions, Blue
+    readonly property color textAccent:    base0B    // Sage green - single primary accent
     readonly property color textKeyword:   base0E    // base0E: Keywords, Purple
     readonly property color textDeprecated: base0F   // base0F: Deprecated, Brown
 
     // OSD
     readonly property color osdBackground: base01    // base01: Lighter Background
-    readonly property color osdAccent:     base0D
+    readonly property color osdAccent:     base0B    // Sage green accent
     readonly property color osdBarBg:      base02    // base02: Selection Background
 
     // Workspace
@@ -60,16 +60,21 @@ QtObject {
     // ── Grid System ──
     readonly property int unit: 8  // Base unit for all spacing (8px grid)
 
-    // ── Typography ──
-    // Inter for UI, JetBrains Mono for data/code
-    readonly property string fontFamily: "Inter"
+    // ── Typography (Brutalist: monospace everywhere) ──
+    readonly property string fontFamily: "JetBrains Mono"
     readonly property string fontMono:   "JetBrains Mono"
     readonly property string fontIcons:  "JetBrains Mono Nerd Font"
-    readonly property int    fontSize:       12   // Body text
-    readonly property int    fontSizeSmall:  10   // Labels, captions
-    readonly property int    fontSizeLarge:  14   // Headers
+    readonly property int    fontSize:       11   // Body text (slightly smaller for density)
+    readonly property int    fontSizeSmall:  9    // Labels, captions
+    readonly property int    fontSizeLarge:  13   // Headers
     readonly property int    iconSize:       16   // 2 units - grid aligned
     readonly property bool   fontBold:       false
+
+    // ── Brutalist Borders ──
+    readonly property int   borderWidth:      1
+    readonly property int   borderWidthThick: 2
+    readonly property color borderColor:      base03    // Visible but not harsh
+    readonly property color borderActive:     textAccent // Sage green for active
 
     // ── Bar Geometry (grid-aligned) ──
     readonly property int barHeight:  32   // 4 units
@@ -78,10 +83,10 @@ QtObject {
 
     // ── OSD Geometry (grid-aligned) ──
     readonly property int osdWidth:    256  // 32 units
-    readonly property int osdHeight:   56   // 7 units
-    readonly property int osdIconSize: 24   // 3 units
-    readonly property int osdFontSize: 12
-    readonly property int osdRadius:   8    // 1 unit - industrial sharp corners
+    readonly property int osdHeight:   48   // 6 units - thinner
+    readonly property int osdIconSize: 20   // Slightly smaller
+    readonly property int osdFontSize: 11
+    readonly property int osdRadius:   0    // Brutalist: no rounded corners
     readonly property int osdTimeout:  1500
     readonly property int osdFadeMs:   200
 
@@ -89,7 +94,7 @@ QtObject {
     readonly property int    notifWidth:       360  // 45 units
     readonly property int    notifMaxVisible:  5
     readonly property int    notifTimeout:     5000
-    readonly property int    notifRadius:      8    // 1 unit - industrial
+    readonly property int    notifRadius:      0    // Brutalist: no rounded corners
     readonly property int    notifSpacing:     8    // 1 unit
     readonly property int    notifPadding:     16   // 2 units
     readonly property int    notifMarginTop:   8    // 1 unit
@@ -185,7 +190,7 @@ QtObject {
     // ── Control Center (grid-aligned) ──
     readonly property int    ccWidth:         384  // 48 units
     readonly property int    ccPadding:       16   // 2 units
-    readonly property int    ccSectionRadius: 8    // 1 unit - industrial
+    readonly property int    ccSectionRadius: 0    // Brutalist: no rounded corners
     readonly property color  ccSectionBg:     base01
     readonly property int    ccArtSize:       80   // 10 units
     readonly property string iconSkipBack:    "󰒮"
@@ -198,10 +203,10 @@ QtObject {
     readonly property int    cavaWidth:     320  // 40 units
     readonly property int    cavaHeight:    240  // 30 units
     readonly property int    cavaBars:      24
-    readonly property int    cavaRadius:    8    // 1 unit - industrial
+    readonly property int    cavaRadius:    0    // Brutalist: no rounded corners
     readonly property color  cavaBackground: barBackground
-    readonly property color  cavaBarColor:  base0D  // base0D: Functions, Blue
-    readonly property color  cavaBarPeak:   base0E  // base0E: Keywords, Purple
+    readonly property color  cavaBarColor:  base0B  // Sage green accent
+    readonly property color  cavaBarPeak:   base06  // Light gray for peaks
     readonly property int    cavaArtSize:   64
     readonly property string iconPrev:      "󰒮"
     readonly property string iconNext:      "󰒭"

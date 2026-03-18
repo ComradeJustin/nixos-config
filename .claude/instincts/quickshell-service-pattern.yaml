@@ -1,0 +1,49 @@
+---
+id: quickshell-service-architecture
+trigger: "when creating a new QuickShell service in utils/"
+confidence: 0.9
+domain: qml
+source: local-repo-analysis
+---
+
+# Use QuickShell Service Pattern
+
+## Action
+Create services as Scope components with Process polling:
+
+```qml
+import Quickshell
+import Quickshell.Io
+import QtQuick
+
+Scope {
+    id: root
+
+    property bool connected: false
+    property var items: ListModel {}
+
+    Component.onCompleted: statusProc.running = true
+
+    Process {
+        id: statusProc
+        command: ["bash", "-c", "..."]
+        stdout: SplitParser {
+            onRead: data => { /* parse */ }
+        }
+        onExited: pollTimer.start()
+    }
+
+    Timer { id: pollTimer; interval: 10000; onTriggered: statusProc.running = true }
+
+    function refresh() { statusProc.running = true; }
+}
+```
+
+## Checklist
+1. Create in `configs/quickshell/utils/FeatureService.qml`
+2. Register in `utils/qmldir`
+3. Instantiate in `shell.qml`
+4. Use array-based Process commands (never string interpolation)
+
+## Evidence
+- All services (Audio, Wifi, Bluetooth, Player, Notif) follow this pattern

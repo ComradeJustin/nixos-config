@@ -2,7 +2,7 @@ layout {
 
     background-color "transparent"
     // Set gaps around windows in logical pixels.
-    gaps 24
+    gaps 16
 
     // When to center a column when changing focus, options are:
     // - "never", default behavior, focusing an off-screen column will keep at the left
@@ -45,16 +45,13 @@ layout {
 	
     // You can also add a border. It's similar to the focus ring, but always visible.
     border {
-        // The settings are the same as for the focus ring.
-        // If you enable the border, you probably want to disable the focus ring.
-        
-        // on
-        width 3
-        active-color "#5a524c"
-        inactive-color 	"#202020"
+        // Monochrome brutalist borders
+        width 2
+        active-color "#b1b1b1"
+        inactive-color "#252525"
 
-        // Color of the border around windows that request your attention.
-        urgent-color "#ea6962"
+        // Muted red for urgent (matches theme base08)
+        urgent-color "#8c5454"
 
 
         // Gradients can use a few different interpolation color spaces.
@@ -65,17 +62,13 @@ layout {
 
     // You can enable drop shadows for windows.
     shadow {
-        // enables shadows
+        // Harder brutalist shadows
         on
         draw-behind-window false
-        // Softness controls the shadow blur radius.
-        softness 20
-        // Spread expands the shadow.
-        spread 2
-        // Offset moves the shadow relative to the window.
-        offset x=0 y=3
-        // You can also change the shadow color and opacity.
-        color 	"#0f0f0f"
+        softness 8
+        spread 1
+        offset x=0 y=2
+        color "#0a0a0a"
     }
 
     struts {

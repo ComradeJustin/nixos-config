@@ -174,8 +174,10 @@ Scope {
                 id: cavaRect
                 width: parent.width
                 height: theme.cavaHeight
-                radius: theme.cavaRadius
+                radius: 0  // Brutalist: square
                 color: theme.cavaBackground
+                border.width: theme.borderWidth
+                border.color: theme.borderColor
 
                 y: barScope.cavaWanted ? 6 : -(theme.cavaHeight + 6)
 
@@ -211,7 +213,7 @@ Scope {
                                 if (!vals || index >= vals.length) return 1;
                                 return Math.max(1, vals[index] * (theme.cavaHeight - 10));
                             }
-                            radius: width / 2
+                            radius: 0  // Brutalist: square bars
                             anchors.bottom: parent.bottom
                             color: {
                                 let vals = barScope.ps ? barScope.ps.cavaBars : [];
@@ -233,8 +235,10 @@ Scope {
 
                         Rectangle {
                             width: theme.cavaArtSize; height: theme.cavaArtSize
-                            radius: 10; clip: true
+                            radius: 0; clip: true  // Brutalist: square
                             color: Qt.rgba(theme.textDimmed.r, theme.textDimmed.g, theme.textDimmed.b, 0.2)
+                            border.width: theme.borderWidth
+                            border.color: theme.borderColor
 
                             Image {
                                 id: artImg; anchors.fill: parent
@@ -269,10 +273,10 @@ Scope {
                         }
                     }
 
-                    // Seekable progress bar
+                    // Seekable progress bar (thin, industrial)
                     Item {
                         id: seekBar
-                        width: parent.width; height: 18
+                        width: parent.width; height: 16
                         property real pos: barScope.ps ? barScope.ps.position : 0
                         property real len: barScope.ps ? barScope.ps.length : 0
                         property real ratio: len > 0 ? pos / len : 0
@@ -281,17 +285,17 @@ Scope {
 
                         Rectangle {
                             anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
-                            height: 4; radius: 2; color: theme.textDimmed; opacity: 0.3
+                            height: 3; radius: 0; color: theme.textDimmed; opacity: 0.3
                         }
                         Rectangle {
                             anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                            height: 4; radius: 2; color: theme.textAccent
+                            height: 3; radius: 0; color: theme.textAccent
                             width: parent.width * (seekBar.dragging ? seekBar.dragRatio : seekBar.ratio)
                         }
                         Rectangle {
-                            width: 12; height: 12; radius: 6; color: theme.textAccent
-                            y: (parent.height - 12) / 2
-                            x: (parent.width - 12) * (seekBar.dragging ? seekBar.dragRatio : seekBar.ratio)
+                            width: 10; height: 10; radius: 0; color: theme.textAccent
+                            y: (parent.height - 10) / 2
+                            x: (parent.width - 10) * (seekBar.dragging ? seekBar.dragRatio : seekBar.ratio)
                         }
 
                         MouseArea {
@@ -339,7 +343,7 @@ Scope {
                         }
 
                         Rectangle {
-                            width: 36; height: 36; radius: 18; color: theme.textAccent
+                            width: 36; height: 36; radius: 0; color: theme.textAccent
                             anchors.verticalCenter: parent.verticalCenter
                             Text {
                                 anchors.centerIn: parent

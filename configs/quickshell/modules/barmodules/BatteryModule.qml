@@ -42,7 +42,7 @@ Item {
         }
 
         Text {
-            text: root.capacity >= 0 ? root.capacity + "%" : "--"
+            text: root.capacity >= 0 ? "BAT " + root.capacity + "%" : "BAT --"
             color: root.activeColor
             font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
             anchors.verticalCenter: parent.verticalCenter

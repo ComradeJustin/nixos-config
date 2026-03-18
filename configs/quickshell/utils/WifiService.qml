@@ -81,25 +81,26 @@ Scope {
 
     Process {
         id: scanProc
+        // Deduplicate by SSID in awk: keep first occurrence (active or strongest signal after sort)
         command: [
             "bash", "-c",
             "nmcli -t -f ACTIVE,SSID,SIGNAL,SECURITY dev wifi list --rescan auto 2>/dev/null | " +
-            "while IFS=: read -r active ssid sig sec; do " +
-            "  [ -z \"$ssid\" ] && continue; " +
-            "  echo \"$active\t$ssid\t$sig\t$sec\"; " +
-            "done | sort -t$'\\t' -k1,1r -k3,3nr"
+            "awk -F: '$2!=\"\" {printf \"%s\\t%s\\t%s\\t%s\\n\",$1,$2,$3,$4}' | " +
+            "sort -t'	' -k1,1r -k3,3nr | " +
+            "awk -F'\\t' '!seen[$2]++ {print}'"
         ]
         stdout: SplitParser {
             onRead: data => {
                 var p = data.split("\t");
                 if (p.length < 4) return;
+                var isActive = p[0] === "yes";
                 root.networks.append({
-                    "wifiActive": p[0] === "yes",
+                    "wifiActive": isActive,
                     "wifiSsid": p[1],
                     "wifiSignal": parseInt(p[2]) || 0,
                     "wifiSecurity": p[3] || ""
                 });
-                if (p[0] === "yes") {
+                if (isActive) {
                     root.ssid = p[1];
                     root.connected = true;
                 }

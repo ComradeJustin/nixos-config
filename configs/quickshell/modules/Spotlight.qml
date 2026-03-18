@@ -82,14 +82,16 @@ Scope {
             MouseArea { anchors.fill: parent; onClicked: spot.close() }
         }
 
-        // ── Centered box ──
+        // ── Centered box (brutalist) ──
         Rectangle {
             id: box
             width: spot.boxWidth
             height: Math.min(boxContent.implicitHeight, spot.boxMaxHeight)
             anchors.centerIn: parent
-            radius: theme.notifRadius
+            radius: 0
             color: theme.barBackground
+            border.width: theme.borderWidth
+            border.color: theme.borderColor
 
             scale: spot.showing ? 1 : 0.95
             opacity: spot.showing ? 1 : 0
@@ -211,52 +213,61 @@ Scope {
                         }
                     }
 
-                    // ── Tab switcher ──
+                    // ── Tab switcher (underline indicator) ──
                     Row {
                         Layout.rightMargin: theme.notifPadding
-                        spacing: 4
+                        spacing: 8
 
                         // Launcher tab
-                        Rectangle {
-                            width: 28; height: 28; radius: 6
-                            color: spot.activeView === "launcher"
-                                ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.15)
-                                : "transparent"
+                        Item {
+                            width: 24; height: 28
                             Text {
                                 anchors.centerIn: parent
                                 text: theme.iconLaunch
                                 color: spot.activeView === "launcher" ? theme.textAccent : theme.textDimmed
                                 font { family: theme.fontFamily; pixelSize: theme.iconSize - 2 }
                             }
+                            Rectangle {
+                                anchors.bottom: parent.bottom
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                width: 16; height: 2
+                                color: spot.activeView === "launcher" ? theme.textAccent : "transparent"
+                            }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: spot.open("launcher") }
                         }
 
                         // Clipboard tab
-                        Rectangle {
-                            width: 28; height: 28; radius: 6
-                            color: spot.activeView === "clipboard"
-                                ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.15)
-                                : "transparent"
+                        Item {
+                            width: 24; height: 28
                             Text {
                                 anchors.centerIn: parent
                                 text: theme.iconClipboard
                                 color: spot.activeView === "clipboard" ? theme.textAccent : theme.textDimmed
                                 font { family: theme.fontFamily; pixelSize: theme.iconSize - 2 }
                             }
+                            Rectangle {
+                                anchors.bottom: parent.bottom
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                width: 16; height: 2
+                                color: spot.activeView === "clipboard" ? theme.textAccent : "transparent"
+                            }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: spot.open("clipboard") }
                         }
 
                         // Wallpaper tab
-                        Rectangle {
-                            width: 28; height: 28; radius: 6
-                            color: spot.activeView === "wallpaper"
-                                ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.15)
-                                : "transparent"
+                        Item {
+                            width: 24; height: 28
                             Text {
                                 anchors.centerIn: parent
                                 text: theme.iconWallpaper
                                 color: spot.activeView === "wallpaper" ? theme.textAccent : theme.textDimmed
                                 font { family: theme.fontFamily; pixelSize: theme.iconSize - 2 }
+                            }
+                            Rectangle {
+                                anchors.bottom: parent.bottom
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                width: 16; height: 2
+                                color: spot.activeView === "wallpaper" ? theme.textAccent : "transparent"
                             }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: spot.open("wallpaper") }
                         }

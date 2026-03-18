@@ -31,8 +31,8 @@ Item {
 
         Text {
             text: {
-                if (!root.wifiService || !root.wifiService.connected) return "off";
-                if (root.wifiService.iface === "ethernet") return "eth";
+                if (!root.wifiService || !root.wifiService.connected) return "NET OFF";
+                if (root.wifiService.iface === "ethernet") return "ETH";
                 return root.wifiService.ssid;
             }
             color: (root.wifiService && root.wifiService.connected) ? theme.textPrimary : theme.textDimmed

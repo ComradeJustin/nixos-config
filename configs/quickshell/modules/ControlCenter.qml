@@ -25,7 +25,7 @@ Scope {
             ccPanel.visible = true;
             if (notifService) notifService.unreadCount = 0;
             if (wifiService) wifiService.scan();
-            if (bluetoothService) bluetoothService.scan();
+            if (bluetoothService) bluetoothService.scan(false);  // false = don't force rescan if already loaded
             if (audioService) { audioService.refreshApps(); audioService.refreshDevices(); }
             if (notifService) notifService.rebuildStacks();
         }
@@ -111,7 +111,7 @@ Scope {
                         id: toastCard
                         width: parent.width
                         height: toastInner.implicitHeight + theme.notifPadding * 2
-                        radius: theme.notifRadius
+                        radius: 0
                         color: theme.notifBackground
 
                         RowLayout {
@@ -137,7 +137,7 @@ Scope {
 
                                 Rectangle {
                                     anchors.fill: parent
-                                    radius: 6
+                                    radius: 0
                                     color: theme.ccSectionBg
                                     visible: tNotifImg.status !== Image.Ready
 
@@ -170,7 +170,7 @@ Scope {
                                         visible: model.count > 1
                                         width: Math.max(16, tBadge.implicitWidth + 6)
                                         height: 16
-                                        radius: 8
+                                        radius: 0
                                         color: theme.textAccent
 
                                         Text {
@@ -243,7 +243,7 @@ Scope {
                 id: ccRect
                 width: theme.ccWidth
                 height: parent.height
-                radius: theme.ccSectionRadius
+                radius: 0
                 color: theme.barBackground
                 x: cc.showing ? 0 : theme.ccWidth
                 Behavior on x { NumberAnimation { duration: 250; easing.type: Easing.InOutCubic } }
@@ -258,9 +258,9 @@ Scope {
                         width: parent.width; height: 28
 
                         Text {
-                            text: "Control Center"
+                            text: "CONTROL CENTER"
                             color: theme.textPrimary
-                            font { family: theme.fontFamily; pixelSize: 14; bold: true }
+                            font { family: theme.fontFamily; pixelSize: 12; bold: true; letterSpacing: 2 }
                             anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         }
 
@@ -277,40 +277,48 @@ Scope {
                         }
                     }
 
-                    // ── Quick toggles ──
+                    // ── Quick toggles (brutalist: square with borders) ──
                     Row {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: 12; height: 48
+                        spacing: 8; height: 40
 
                         Rectangle {
-                            width: 48; height: 48; radius: 24
-                            color: (cc.wifiService && cc.wifiService.connected) ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.25) : theme.ccSectionBg
-                            Text { anchors.centerIn: parent; text: (cc.wifiService && cc.wifiService.connected) ? theme.iconWifiHi : theme.iconWifiOff; color: (cc.wifiService && cc.wifiService.connected) ? theme.textAccent : theme.textDimmed; font { family: theme.fontFamily; pixelSize: 20 } }
+                            width: 40; height: 40; radius: 0
+                            property bool isOn: cc.wifiService && cc.wifiService.connected
+                            color: isOn ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.15) : "transparent"
+                            border.width: theme.borderWidth
+                            border.color: isOn ? theme.textAccent : theme.borderColor
+                            Text { anchors.centerIn: parent; text: parent.isOn ? theme.iconWifiHi : theme.iconWifiOff; color: parent.isOn ? theme.textAccent : theme.textDimmed; font { family: theme.fontFamily; pixelSize: 16 } }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.wifiService) cc.wifiService.toggle(); } }
                         }
 
                         Rectangle {
-                            width: 48; height: 48; radius: 24
-                            property bool isDnd: cc.notifService ? cc.notifService.dnd : false
-                            color: isDnd ? Qt.rgba(theme.textWarning.r, theme.textWarning.g, theme.textWarning.b, 0.25) : theme.ccSectionBg
-                            Text { anchors.centerIn: parent; text: parent.isDnd ? theme.iconDnd : theme.iconDndOff; color: parent.isDnd ? theme.textWarning : theme.textDimmed; font { family: theme.fontFamily; pixelSize: 20 } }
+                            width: 40; height: 40; radius: 0
+                            property bool isOn: cc.notifService ? cc.notifService.dnd : false
+                            color: isOn ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.15) : "transparent"
+                            border.width: theme.borderWidth
+                            border.color: isOn ? theme.textAccent : theme.borderColor
+                            Text { anchors.centerIn: parent; text: parent.isOn ? theme.iconDnd : theme.iconDndOff; color: parent.isOn ? theme.textAccent : theme.textDimmed; font { family: theme.fontFamily; pixelSize: 16 } }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.notifService) cc.notifService.dnd = !cc.notifService.dnd; } }
                         }
 
                         Rectangle {
-                            width: 48; height: 48; radius: 24
-                            property bool isMuted: cc.audioService ? cc.audioService.muted : false
-                            color: isMuted ? Qt.rgba(theme.textCritical.r, theme.textCritical.g, theme.textCritical.b, 0.25) : theme.ccSectionBg
-                            Text { anchors.centerIn: parent; text: parent.isMuted ? theme.iconVolMute : theme.iconVolHigh; color: parent.isMuted ? theme.textCritical : theme.textDimmed; font { family: theme.fontFamily; pixelSize: 20 } }
+                            width: 40; height: 40; radius: 0
+                            property bool isOn: cc.audioService ? !cc.audioService.muted : true
+                            color: isOn ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.15) : "transparent"
+                            border.width: theme.borderWidth
+                            border.color: isOn ? theme.textAccent : theme.borderColor
+                            Text { anchors.centerIn: parent; text: parent.isOn ? theme.iconVolHigh : theme.iconVolMute; color: parent.isOn ? theme.textAccent : theme.textDimmed; font { family: theme.fontFamily; pixelSize: 16 } }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.audioService) cc.audioService.toggleMute(); } }
                         }
 
                         Rectangle {
-                            width: 48; height: 48; radius: 24
-                            property bool isBtOn: cc.bluetoothService ? cc.bluetoothService.enabled : false
-                            property bool isBtConn: cc.bluetoothService ? cc.bluetoothService.connected : false
-                            color: isBtConn ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.25) : (isBtOn ? Qt.rgba(theme.textInfo.r, theme.textInfo.g, theme.textInfo.b, 0.15) : theme.ccSectionBg)
-                            Text { anchors.centerIn: parent; text: parent.isBtConn ? theme.iconBtConnected : (parent.isBtOn ? theme.iconBtOn : theme.iconBtOff); color: parent.isBtConn ? theme.textAccent : (parent.isBtOn ? theme.textInfo : theme.textDimmed); font { family: theme.fontFamily; pixelSize: 20 } }
+                            width: 40; height: 40; radius: 0
+                            property bool isOn: cc.bluetoothService ? cc.bluetoothService.enabled : false
+                            color: isOn ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.15) : "transparent"
+                            border.width: theme.borderWidth
+                            border.color: isOn ? theme.textAccent : theme.borderColor
+                            Text { anchors.centerIn: parent; text: parent.isOn ? theme.iconBtOn : theme.iconBtOff; color: parent.isOn ? theme.textAccent : theme.textDimmed; font { family: theme.fontFamily; pixelSize: 16 } }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.bluetoothService) cc.bluetoothService.toggle(); } }
                         }
                     }
@@ -321,9 +329,9 @@ Scope {
 
                         Repeater {
                             model: [
-                                { tab: "notifications", icon: theme.iconBell, label: "Notifs" },
-                                { tab: "volume", icon: theme.iconVolHigh, label: "Volume" },
-                                { tab: "wifi", icon: theme.iconWifiHi, label: "Wi-Fi" },
+                                { tab: "notifications", icon: theme.iconBell, label: "NOTIF" },
+                                { tab: "volume", icon: theme.iconVolHigh, label: "VOL" },
+                                { tab: "wifi", icon: theme.iconWifiHi, label: "NET" },
                                 { tab: "bluetooth", icon: theme.iconBtOn, label: "BT" }
                             ]
 
@@ -342,7 +350,7 @@ Scope {
                                         cc.activeTab = modelData.tab;
                                         if (modelData.tab === "volume" && cc.audioService) { cc.audioService.refreshApps(); cc.audioService.refreshDevices(); }
                                         if (modelData.tab === "wifi" && cc.wifiService) cc.wifiService.scan();
-                                        if (modelData.tab === "bluetooth" && cc.bluetoothService) cc.bluetoothService.scan();
+                                        if (modelData.tab === "bluetooth" && cc.bluetoothService) cc.bluetoothService.scan(false);
                                     }
                                 }
                             }
@@ -368,7 +376,7 @@ Scope {
 
                                 Text {
                                     visible: cc.notifService ? cc.notifService.stacks.count === 0 : true
-                                    text: "No notifications"
+                                    text: "NO NOTIFICATIONS"
                                     color: theme.textDimmed
                                     font { family: theme.fontFamily; pixelSize: 13 }
                                     width: parent.width; height: 60
@@ -382,7 +390,7 @@ Scope {
                                         id: notifItem
                                         width: notifCol.width
                                         height: nRow.implicitHeight + 14
-                                        radius: 8
+                                        radius: 0
                                         color: nHover.containsMouse ? Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.04) : "transparent"
                                         clip: true
                                         x: 0
@@ -412,7 +420,7 @@ Scope {
 
                                                 Rectangle {
                                                     anchors.fill: parent
-                                                    radius: 6
+                                                    radius: 0
                                                     color: theme.ccSectionBg
                                                     visible: nNotifImg.status !== Image.Ready
 
@@ -438,7 +446,7 @@ Scope {
 
                                                     Rectangle {
                                                         visible: model.isHeader && model.count > 1
-                                                        width: Math.max(18, bdgTxt.implicitWidth + 8); height: 18; radius: 9
+                                                        width: Math.max(18, bdgTxt.implicitWidth + 8); height: 18; radius: 0
                                                         color: theme.textAccent
 
                                                         Text { id: bdgTxt; anchors.centerIn: parent; text: model.count; color: theme.barBackground; font { family: theme.fontFamily; pixelSize: 10; bold: true } }
@@ -499,12 +507,13 @@ Scope {
                             contentHeight: volCol.implicitHeight; clip: true; boundsBehavior: Flickable.StopAtBounds
 
                             Column {
-                                id: volCol; width: parent.width; spacing: 10
+                                id: volCol; width: parent.width; spacing: 8
 
                                 Item { width: 1; height: 2 }
 
+                                // ── Master Volume ──
                                 Rectangle {
-                                    width: parent.width; height: 56; radius: theme.ccSectionRadius; color: theme.ccSectionBg
+                                    width: parent.width; height: 56; radius: 0; color: theme.ccSectionBg
 
                                     Row {
                                         anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
@@ -519,12 +528,12 @@ Scope {
                                         }
 
                                         Item {
-                                            width: parent.width - 20 - 50 - 20; height: 24; anchors.verticalCenter: parent.verticalCenter
+                                            width: parent.width - 20 - 50 - 20; height: 20; anchors.verticalCenter: parent.verticalCenter
                                             Rectangle { anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
-                                             height: 4; radius: 2; color: theme.textDimmed; opacity: 0.3 }
+                                             height: 3; radius: 0; color: theme.textDimmed; opacity: 0.3 }
                                             Rectangle { anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                                             height: 4; radius: 2; color: theme.textAccent; width: parent.width * ((cc.audioService ? cc.audioService.volume : 0) / 100) }
-                                            Rectangle { width: 16; height: 16; radius: 8; color: theme.textAccent; y: (parent.height - 16) / 2; x: (parent.width - 16) * ((cc.audioService ? cc.audioService.volume : 0) / 100) }
+                                             height: 3; radius: 0; color: theme.textAccent; width: parent.width * ((cc.audioService ? cc.audioService.volume : 0) / 100) }
+                                            Rectangle { width: 12; height: 12; radius: 0; color: theme.textAccent; y: (parent.height - 12) / 2; x: (parent.width - 12) * ((cc.audioService ? cc.audioService.volume : 0) / 100) }
                                             MouseArea {
                                                 anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                                 onPressed: function(mouse) { if (cc.audioService) cc.audioService.setVolume(Math.round(mouse.x / parent.width * 100)); }
@@ -540,53 +549,24 @@ Scope {
                                     }
                                 }
 
-                                Text { text: "Output"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 12 }
-                                 leftPadding: 4; visible: cc.audioService ? cc.audioService.sinks.count > 0 : false }
-
-                                Repeater {
-                                    model: cc.audioService ? cc.audioService.sinks : null
-                                    Rectangle {
-                                        width: volCol.width; height: 36; radius: 8
-                                        color: model.devActive ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.1) : theme.ccSectionBg
-                                        Row {
-                                            anchors { verticalCenter: parent.verticalCenter; left: parent.left; leftMargin: 14 }
-                                             spacing: 8
-                                            Text { text: theme.iconSpeaker; color: model.devActive ? theme.textAccent : theme.textDimmed; font { family: theme.fontFamily; pixelSize: 14 }
-                                             anchors.verticalCenter: parent.verticalCenter }
-                                            Text { text: model.devDesc; color: model.devActive ? theme.textAccent : theme.textPrimary; font { family: theme.fontFamily; pixelSize: 12; bold: model.devActive }
-                                             anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; width: volCol.width - 50 }
-                                        }
-                                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.audioService) cc.audioService.setSink(model.devName); } }
-                                    }
+                                // ── Per-App Audio Mixer ──
+                                Rectangle {
+                                    width: parent.width; height: 1; color: theme.textDimmed; opacity: 0.15
+                                    visible: cc.audioService ? cc.audioService.appStreams.count > 0 : false
                                 }
 
-                                Text { text: "Input"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 12 }
-                                 leftPadding: 4; visible: cc.audioService ? cc.audioService.sources.count > 0 : false }
-
-                                Repeater {
-                                    model: cc.audioService ? cc.audioService.sources : null
-                                    Rectangle {
-                                        width: volCol.width; height: 36; radius: 8
-                                        color: model.devActive ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.1) : theme.ccSectionBg
-                                        Row {
-                                            anchors { verticalCenter: parent.verticalCenter; left: parent.left; leftMargin: 14 }
-                                             spacing: 8
-                                            Text { text: theme.iconHeadphone; color: model.devActive ? theme.textAccent : theme.textDimmed; font { family: theme.fontFamily; pixelSize: 14 }
-                                             anchors.verticalCenter: parent.verticalCenter }
-                                            Text { text: model.devDesc; color: model.devActive ? theme.textAccent : theme.textPrimary; font { family: theme.fontFamily; pixelSize: 12; bold: model.devActive }
-                                             anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; width: volCol.width - 50 }
-                                        }
-                                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.audioService) cc.audioService.setSource(model.devName); } }
-                                    }
+                                Text {
+                                    text: "APP MIXER"
+                                    color: theme.textPrimary
+                                    font { family: theme.fontFamily; pixelSize: 12; bold: true }
+                                    leftPadding: 4
+                                    visible: cc.audioService ? cc.audioService.appStreams.count > 0 : false
                                 }
-
-                                Text { text: "Applications"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 12 }
-                                 leftPadding: 4; visible: cc.audioService ? cc.audioService.appStreams.count > 0 : false }
 
                                 Repeater {
                                     model: cc.audioService ? cc.audioService.appStreams : null
                                     Rectangle {
-                                        width: volCol.width; height: 52; radius: theme.ccSectionRadius; color: theme.ccSectionBg
+                                        width: volCol.width; height: 52; radius: 0; color: theme.ccSectionBg
                                         Row {
                                             anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
                                              spacing: 10
@@ -602,12 +582,12 @@ Scope {
                                                 Row {
                                                     width: parent.width; spacing: 8
                                                     Item {
-                                                        width: parent.width - 44; height: 16
+                                                        width: parent.width - 44; height: 14
                                                         Rectangle { anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
-                                                         height: 3; radius: 2; color: theme.textDimmed; opacity: 0.3 }
+                                                         height: 3; radius: 0; color: theme.textDimmed; opacity: 0.3 }
                                                         Rectangle { anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                                                         height: 3; radius: 2; color: theme.textAccent; width: parent.width * Math.min(1, (model.appVol || 0) / 100) }
-                                                        Rectangle { width: 12; height: 12; radius: 6; color: theme.textAccent; y: (parent.height - 12) / 2; x: (parent.width - 12) * Math.min(1, (model.appVol || 0) / 100) }
+                                                         height: 3; radius: 0; color: theme.textAccent; width: parent.width * Math.min(1, (model.appVol || 0) / 100) }
+                                                        Rectangle { width: 10; height: 10; radius: 0; color: theme.textAccent; y: (parent.height - 10) / 2; x: (parent.width - 10) * Math.min(1, (model.appVol || 0) / 100) }
                                                         MouseArea {
                                                             anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                                             onPressed: function(mouse) { if (cc.audioService) cc.audioService.setAppVolume(model.appIdx, Math.round(mouse.x / parent.width * 100)); }
@@ -624,10 +604,73 @@ Scope {
 
                                 Text {
                                     visible: cc.audioService ? cc.audioService.appStreams.count === 0 : true
-                                    text: "No active audio streams"; color: theme.textDimmed
+                                    text: "NO STREAMS"
+                                    color: theme.textDimmed
                                     font { family: theme.fontFamily; pixelSize: 12 }
                                     width: parent.width; height: 40
                                     horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+                                }
+
+                                // ── Output Devices ──
+                                Rectangle {
+                                    width: parent.width; height: 1; color: theme.textDimmed; opacity: 0.15
+                                    visible: cc.audioService ? cc.audioService.sinks.count > 0 : false
+                                }
+
+                                Text {
+                                    text: "OUTPUT"
+                                    color: theme.textPrimary
+                                    font { family: theme.fontFamily; pixelSize: 12; bold: true }
+                                    leftPadding: 4
+                                    visible: cc.audioService ? cc.audioService.sinks.count > 0 : false
+                                }
+
+                                Repeater {
+                                    model: cc.audioService ? cc.audioService.sinks : null
+                                    Rectangle {
+                                        width: volCol.width; height: 36; radius: 0
+                                        color: model.devActive ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.1) : theme.ccSectionBg
+                                        Row {
+                                            anchors { verticalCenter: parent.verticalCenter; left: parent.left; leftMargin: 14 }
+                                             spacing: 8
+                                            Text { text: theme.iconSpeaker; color: model.devActive ? theme.textAccent : theme.textDimmed; font { family: theme.fontFamily; pixelSize: 14 }
+                                             anchors.verticalCenter: parent.verticalCenter }
+                                            Text { text: model.devDesc; color: model.devActive ? theme.textAccent : theme.textPrimary; font { family: theme.fontFamily; pixelSize: 12; bold: model.devActive }
+                                             anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; width: volCol.width - 50 }
+                                        }
+                                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.audioService) cc.audioService.setSink(model.devName); } }
+                                    }
+                                }
+
+                                // ── Input Devices ──
+                                Rectangle {
+                                    width: parent.width; height: 1; color: theme.textDimmed; opacity: 0.15
+                                    visible: cc.audioService ? cc.audioService.sources.count > 0 : false
+                                }
+
+                                Text {
+                                    text: "INPUT"
+                                    color: theme.textPrimary
+                                    font { family: theme.fontFamily; pixelSize: 12; bold: true }
+                                    leftPadding: 4
+                                    visible: cc.audioService ? cc.audioService.sources.count > 0 : false
+                                }
+
+                                Repeater {
+                                    model: cc.audioService ? cc.audioService.sources : null
+                                    Rectangle {
+                                        width: volCol.width; height: 36; radius: 0
+                                        color: model.devActive ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.1) : theme.ccSectionBg
+                                        Row {
+                                            anchors { verticalCenter: parent.verticalCenter; left: parent.left; leftMargin: 14 }
+                                             spacing: 8
+                                            Text { text: theme.iconHeadphone; color: model.devActive ? theme.textAccent : theme.textDimmed; font { family: theme.fontFamily; pixelSize: 14 }
+                                             anchors.verticalCenter: parent.verticalCenter }
+                                            Text { text: model.devDesc; color: model.devActive ? theme.textAccent : theme.textPrimary; font { family: theme.fontFamily; pixelSize: 12; bold: model.devActive }
+                                             anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; width: volCol.width - 50 }
+                                        }
+                                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.audioService) cc.audioService.setSource(model.devName); } }
+                                    }
                                 }
                             }
                         }
@@ -641,7 +684,7 @@ Scope {
                                 id: wifiTabCol; width: parent.width; spacing: 4
 
                                 Rectangle {
-                                    visible: (cc.wifiService && cc.wifiService.connected); width: parent.width; height: 44; radius: 8; color: theme.ccSectionBg
+                                    visible: (cc.wifiService && cc.wifiService.connected); width: parent.width; height: 44; radius: 0; color: theme.ccSectionBg
                                     Row {
                                         anchors { verticalCenter: parent.verticalCenter; left: parent.left; leftMargin: 12 }
                                          spacing: 10
@@ -650,30 +693,53 @@ Scope {
                                         Column {
                                             anchors.verticalCenter: parent.verticalCenter
                                             Text { text: (cc.wifiService ? cc.wifiService.ssid : ""); color: theme.textAccent; font { family: theme.fontFamily; pixelSize: 13; bold: true } }
-                                            Text { text: "Connected"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 11 } }
+                                            Text { text: "CONNECTED"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 10; letterSpacing: 1 } }
                                         }
                                     }
                                 }
 
-                                Item { width: 1; height: (cc.wifiService && cc.wifiService.connected) ? 4 : 0 }
+                                // Separator after connected network
+                                Rectangle {
+                                    width: parent.width; height: 1; color: theme.textDimmed; opacity: 0.15
+                                    visible: (cc.wifiService && cc.wifiService.connected)
+                                }
 
-                                Text { visible: (cc.wifiService ? cc.wifiService.networks.count : 0) === 0; text: "Scanning…"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 13 }
+                                Text { visible: (cc.wifiService ? cc.wifiService.networks.count : 0) === 0; text: "SCANNING..."; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 13 }
                                  width: parent.width; height: 50; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+
+                                // Available networks header
+                                Text {
+                                    visible: {
+                                        if (!cc.wifiService) return false;
+                                        // Count non-active networks
+                                        var count = 0;
+                                        for (var i = 0; i < cc.wifiService.networks.count; i++) {
+                                            if (!cc.wifiService.networks.get(i).wifiActive) count++;
+                                        }
+                                        return count > 0;
+                                    }
+                                    text: "AVAILABLE"
+                                    color: theme.textDimmed
+                                    font { family: theme.fontFamily; pixelSize: 12 }
+                                    leftPadding: 4
+                                }
 
                                 Repeater {
                                     model: cc.wifiService ? cc.wifiService.networks : null
                                     Rectangle {
-                                        width: wifiTabCol.width; height: 36; radius: 6
+                                        // Hide the active network since it's shown in the Connected card above
+                                        visible: !model.wifiActive
+                                        width: wifiTabCol.width; height: visible ? 36 : 0; radius: 0
                                         color: wfMouse.containsMouse ? Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.06) : "transparent"
                                         Row {
                                             anchors { verticalCenter: parent.verticalCenter; left: parent.left; leftMargin: 12; right: parent.right; rightMargin: 12 }
                                              spacing: 10
-                                            Text { text: model.wifiSignal > 75 ? theme.iconWifiHi : model.wifiSignal > 50 ? theme.iconWifiMid : model.wifiSignal > 25 ? theme.iconWifiLow : theme.iconWifiMin; color: model.wifiActive ? theme.textAccent : theme.textDimmed; font { family: theme.fontFamily; pixelSize: 16 }
+                                            Text { text: model.wifiSignal > 75 ? theme.iconWifiHi : model.wifiSignal > 50 ? theme.iconWifiMid : model.wifiSignal > 25 ? theme.iconWifiLow : theme.iconWifiMin; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 16 }
                                              anchors.verticalCenter: parent.verticalCenter }
-                                            Text { text: model.wifiSsid; color: model.wifiActive ? theme.textAccent : theme.textPrimary; font { family: theme.fontFamily; pixelSize: 13; bold: model.wifiActive }
+                                            Text { text: model.wifiSsid; color: theme.textPrimary; font { family: theme.fontFamily; pixelSize: 13 }
                                              anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; width: parent.width - 30 }
                                         }
-                                        MouseArea { id: wfMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.wifiService) { if (model.wifiActive) cc.wifiService.disconnect(); else cc.wifiService.connectTo(model.wifiSsid); } } }
+                                        MouseArea { id: wfMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.wifiService) cc.wifiService.connectTo(model.wifiSsid); } }
                                     }
                                 }
                             }
@@ -689,7 +755,7 @@ Scope {
 
                                 // Connected device card
                                 Rectangle {
-                                    visible: (cc.bluetoothService && cc.bluetoothService.connected); width: parent.width; height: 44; radius: 8; color: theme.ccSectionBg
+                                    visible: (cc.bluetoothService && cc.bluetoothService.connected); width: parent.width; height: 44; radius: 0; color: theme.ccSectionBg
                                     Row {
                                         anchors { verticalCenter: parent.verticalCenter; left: parent.left; leftMargin: 12 }
                                         spacing: 10
@@ -698,30 +764,38 @@ Scope {
                                         Column {
                                             anchors.verticalCenter: parent.verticalCenter
                                             Text { text: (cc.bluetoothService ? cc.bluetoothService.connectedDevice : ""); color: theme.textAccent; font { family: theme.fontFamily; pixelSize: 13; bold: true } }
-                                            Text { text: "Connected"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 11 } }
+                                            Text { text: "CONNECTED"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 10; letterSpacing: 1 } }
                                         }
                                     }
                                 }
 
-                                Item { width: 1; height: (cc.bluetoothService && cc.bluetoothService.connected) ? 4 : 0 }
+                                // Separator after connected device
+                                Rectangle {
+                                    width: parent.width; height: 1; color: theme.textDimmed; opacity: 0.15
+                                    visible: (cc.bluetoothService && cc.bluetoothService.connected)
+                                }
 
                                 // Scanning indicator
-                                Text { visible: cc.bluetoothService ? cc.bluetoothService.scanning : false; text: "Scanning…"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 13 }
+                                Text { visible: cc.bluetoothService ? cc.bluetoothService.scanning : false; text: "SCANNING..."; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 13 }
                                 width: parent.width; height: 40; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
 
                                 // No devices
-                                Text { visible: (cc.bluetoothService ? cc.bluetoothService.devices.count : 0) === 0 && !(cc.bluetoothService && cc.bluetoothService.scanning); text: "No devices found"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 13 }
+                                Text { visible: (cc.bluetoothService ? cc.bluetoothService.devices.count : 0) === 0 && !(cc.bluetoothService && cc.bluetoothService.scanning); text: "NO DEVICES"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 13 }
                                 width: parent.width; height: 50; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
 
-                                // Paired devices header
-                                Text { visible: cc.bluetoothService ? cc.bluetoothService.devices.count > 0 : false; text: "Paired Devices"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 12 }
-                                leftPadding: 4 }
+                                // Paired devices header - only show if there are devices
+                                Text {
+                                    visible: cc.bluetoothService ? cc.bluetoothService.devices.count > 0 : false
+                                    text: "PAIRED"
+                                    color: theme.textPrimary
+                                    font { family: theme.fontFamily; pixelSize: 12; bold: true }
+                                    leftPadding: 4
+                                }
 
                                 Repeater {
                                     model: cc.bluetoothService ? cc.bluetoothService.devices : null
                                     Rectangle {
-                                        visible: model.btPaired
-                                        width: btTabCol.width; height: visible ? 36 : 0; radius: 6
+                                        width: btTabCol.width; height: 36; radius: 0
                                         color: btMouse.containsMouse ? Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.06) : "transparent"
                                         Row {
                                             anchors { verticalCenter: parent.verticalCenter; left: parent.left; leftMargin: 12; right: parent.right; rightMargin: 12 }
@@ -753,55 +827,7 @@ Scope {
                                     }
                                 }
 
-                                // Discovered devices header
-                                Text {
-                                    property int discoveredCount: {
-                                        if (!cc.bluetoothService) return 0;
-                                        var count = 0;
-                                        for (var i = 0; i < cc.bluetoothService.devices.count; i++) {
-                                            if (!cc.bluetoothService.devices.get(i).btPaired) count++;
-                                        }
-                                        return count;
-                                    }
-                                    visible: discoveredCount > 0
-                                    text: "Available Devices"
-                                    color: theme.textDimmed
-                                    font { family: theme.fontFamily; pixelSize: 12 }
-                                    leftPadding: 4; topPadding: 8
-                                }
-
-                                Repeater {
-                                    model: cc.bluetoothService ? cc.bluetoothService.devices : null
-                                    Rectangle {
-                                        visible: !model.btPaired
-                                        width: btTabCol.width; height: visible ? 36 : 0; radius: 6
-                                        color: btDiscMouse.containsMouse ? Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.06) : "transparent"
-                                        Row {
-                                            anchors { verticalCenter: parent.verticalCenter; left: parent.left; leftMargin: 12; right: parent.right; rightMargin: 12 }
-                                            spacing: 10
-                                            Text {
-                                                text: theme.iconBtOff
-                                                color: theme.textDimmed
-                                                font { family: theme.fontFamily; pixelSize: 16 }
-                                                anchors.verticalCenter: parent.verticalCenter
-                                            }
-                                            Text {
-                                                text: model.btName
-                                                color: theme.textPrimary
-                                                font { family: theme.fontFamily; pixelSize: 13 }
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                elide: Text.ElideRight
-                                                width: parent.width - 30
-                                            }
-                                        }
-                                        MouseArea {
-                                            id: btDiscMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                            onClicked: {
-                                                if (cc.bluetoothService) cc.bluetoothService.pair(model.btMac);
-                                            }
-                                        }
-                                    }
-                                }
+                                // Note: Only paired devices are shown. Use Blueman for discovering new devices.
                             }
                         }
                     }
@@ -826,7 +852,7 @@ Scope {
                             Text {
                                 property bool isDnd: cc.notifService ? cc.notifService.dnd : false
                                 text: isDnd ? theme.iconDnd + " Silent" : theme.iconDndOff + " Silent"
-                                color: isDnd ? theme.textWarning : theme.textDimmed
+                                color: isDnd ? theme.textAccent : theme.textDimmed
                                 font { family: theme.fontFamily; pixelSize: 12 }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.notifService) cc.notifService.dnd = !cc.notifService.dnd; } }
                             }
