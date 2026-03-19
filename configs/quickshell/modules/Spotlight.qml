@@ -13,7 +13,7 @@ import "spotlight" as Views
 Scope {
     id: spot
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     property bool showing: false
     property string activeView: "launcher"  // "launcher" | "clipboard" | "wallpaper"
@@ -47,15 +47,15 @@ Scope {
 
     // Box width varies per view
     property int boxWidth: {
-        if (activeView === "wallpaper") return theme.wpWidth;
-        if (activeView === "launcher") return theme.launchWidth;
-        return theme.clipWidth;
+        if (activeView === "wallpaper") return Root.Theme.wpWidth;
+        if (activeView === "launcher") return Root.Theme.launchWidth;
+        return Root.Theme.clipWidth;
     }
 
     // Max height varies per view
     property int boxMaxHeight: {
-        if (activeView === "wallpaper") return theme.wpMaxHeight;
-        return theme.launchMaxHeight;
+        if (activeView === "wallpaper") return Root.Theme.wpMaxHeight;
+        return Root.Theme.launchMaxHeight;
     }
 
     // ══════════════════════════════════
@@ -76,22 +76,22 @@ Scope {
         // ── Scrim ──
         Rectangle {
             anchors.fill: parent
-            color: theme.scrimColor
+            color: Root.Theme.scrimColor
             opacity: spot.showing ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 150 } }
             MouseArea { anchors.fill: parent; onClicked: spot.close() }
         }
 
-        // ── Centered box (brutalist) ──
+        // ── Centered box (cozy) ──
         Rectangle {
             id: box
             width: spot.boxWidth
             height: Math.min(boxContent.implicitHeight, spot.boxMaxHeight)
             anchors.centerIn: parent
-            radius: 0
-            color: theme.barBackground
-            border.width: theme.borderWidth
-            border.color: theme.borderColor
+            radius: Root.Theme.radiusMedium
+            color: Root.Theme.barBackground
+            border.width: Root.Theme.borderWidth
+            border.color: Root.Theme.borderColor
 
             scale: spot.showing ? 1 : 0.95
             opacity: spot.showing ? 1 : 0
@@ -116,10 +116,10 @@ Scope {
                     height: 46
 
                     Text {
-                        text: theme.iconSearch
-                        color: theme.textDimmed
-                        font { family: theme.fontFamily; pixelSize: theme.iconSize }
-                        Layout.leftMargin: theme.notifPadding
+                        text: Root.Theme.iconSearch
+                        color: Root.Theme.textDimmed
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
+                        Layout.leftMargin: Root.Theme.notifPadding
                         verticalAlignment: Text.AlignVCenter
                     }
 
@@ -128,8 +128,8 @@ Scope {
                         Layout.fillWidth: true
                         Layout.leftMargin: 8
                         Layout.rightMargin: 8
-                        color: theme.textPrimary
-                        font { family: theme.fontFamily; pixelSize: 15 }
+                        color: Root.Theme.textPrimary
+                        font { family: Root.Theme.fontFamily; pixelSize: 15 }
                         clip: true; selectByMouse: true
                         verticalAlignment: TextInput.AlignVCenter
 
@@ -152,7 +152,7 @@ Scope {
                                 if (spot.activeView === "wallpaper") return "Search wallpapers…";
                                 return "Clipboard history";
                             }
-                            color: theme.textDimmed; font: parent.font
+                            color: Root.Theme.textDimmed; font: parent.font
                             visible: parent.text.length === 0
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -215,7 +215,7 @@ Scope {
 
                     // ── Tab switcher (underline indicator) ──
                     Row {
-                        Layout.rightMargin: theme.notifPadding
+                        Layout.rightMargin: Root.Theme.notifPadding
                         spacing: 8
 
                         // Launcher tab
@@ -223,15 +223,15 @@ Scope {
                             width: 24; height: 28
                             Text {
                                 anchors.centerIn: parent
-                                text: theme.iconLaunch
-                                color: spot.activeView === "launcher" ? theme.textAccent : theme.textDimmed
-                                font { family: theme.fontFamily; pixelSize: theme.iconSize - 2 }
+                                text: Root.Theme.iconLaunch
+                                color: spot.activeView === "launcher" ? Root.Theme.textAccent : Root.Theme.textDimmed
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize - 2 }
                             }
                             Rectangle {
                                 anchors.bottom: parent.bottom
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 width: 16; height: 2
-                                color: spot.activeView === "launcher" ? theme.textAccent : "transparent"
+                                color: spot.activeView === "launcher" ? Root.Theme.textAccent : "transparent"
                             }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: spot.open("launcher") }
                         }
@@ -241,15 +241,15 @@ Scope {
                             width: 24; height: 28
                             Text {
                                 anchors.centerIn: parent
-                                text: theme.iconClipboard
-                                color: spot.activeView === "clipboard" ? theme.textAccent : theme.textDimmed
-                                font { family: theme.fontFamily; pixelSize: theme.iconSize - 2 }
+                                text: Root.Theme.iconClipboard
+                                color: spot.activeView === "clipboard" ? Root.Theme.textAccent : Root.Theme.textDimmed
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize - 2 }
                             }
                             Rectangle {
                                 anchors.bottom: parent.bottom
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 width: 16; height: 2
-                                color: spot.activeView === "clipboard" ? theme.textAccent : "transparent"
+                                color: spot.activeView === "clipboard" ? Root.Theme.textAccent : "transparent"
                             }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: spot.open("clipboard") }
                         }
@@ -259,15 +259,15 @@ Scope {
                             width: 24; height: 28
                             Text {
                                 anchors.centerIn: parent
-                                text: theme.iconWallpaper
-                                color: spot.activeView === "wallpaper" ? theme.textAccent : theme.textDimmed
-                                font { family: theme.fontFamily; pixelSize: theme.iconSize - 2 }
+                                text: Root.Theme.iconWallpaper
+                                color: spot.activeView === "wallpaper" ? Root.Theme.textAccent : Root.Theme.textDimmed
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize - 2 }
                             }
                             Rectangle {
                                 anchors.bottom: parent.bottom
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 width: 16; height: 2
-                                color: spot.activeView === "wallpaper" ? theme.textAccent : "transparent"
+                                color: spot.activeView === "wallpaper" ? Root.Theme.textAccent : "transparent"
                             }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: spot.open("wallpaper") }
                         }
@@ -275,8 +275,8 @@ Scope {
                 }
 
                 Rectangle {
-                    width: parent.width - theme.notifPadding * 2; height: 1
-                    color: theme.textDimmed; opacity: 0.3
+                    width: parent.width - Root.Theme.notifPadding * 2; height: 1
+                    color: Root.Theme.textDimmed; opacity: 0.3
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
 

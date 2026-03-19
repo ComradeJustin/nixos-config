@@ -199,6 +199,56 @@ Scope {
 }
 ```
 
+### ListModel Update Without Flicker
+
+When polling external data (e.g., PipeWire streams, Bluetooth devices), avoid `model.clear()` followed by `append()` as it causes visual flicker. Instead, use smart diffing:
+
+```qml
+Scope {
+    property var items: ListModel {}
+    property var pendingItems: []  // Temporary buffer
+
+    Process {
+        id: scanProc
+        command: ["bash", "-c", "..."]
+
+        stdout: SplitParser {
+            onRead: data => {
+                // Collect into buffer, don't touch model yet
+                root.pendingItems.push({ id: data.id, name: data.name });
+            }
+        }
+
+        onStarted: root.pendingItems = []
+
+        onExited: {
+            // Smart update: only modify what changed
+            let newItems = root.pendingItems;
+
+            for (let i = 0; i < newItems.length; i++) {
+                if (i < root.items.count) {
+                    // Update existing if different
+                    let old = root.items.get(i);
+                    if (old.id !== newItems[i].id) {
+                        root.items.set(i, newItems[i]);
+                    }
+                } else {
+                    // Append new
+                    root.items.append(newItems[i]);
+                }
+            }
+
+            // Remove extras from end
+            while (root.items.count > newItems.length) {
+                root.items.remove(root.items.count - 1);
+            }
+        }
+    }
+}
+```
+
+**When to use:** Any service that polls external state and displays results in a Repeater/ListView.
+
 ### Bar Module Pattern
 
 Bar modules in `barmodules/` follow this pattern:
@@ -237,6 +287,57 @@ Item {
     }
 }
 ```
+
+### Filesystem Watching Pattern
+
+Use `inotifywait` with a Process and debounce Timer for live file detection without polling:
+
+```qml
+import Quickshell
+import Quickshell.Io
+
+Item {
+    property string watchDir: "/path/to/watch"
+
+    function forceRescan() {
+        // Re-scan the directory contents
+    }
+
+    // Watch directory for changes
+    Process {
+        id: watchProc
+        property string expandedDir: watchDir.replace("~", Quickshell.env("HOME"))
+        command: [
+            "inotifywait", "-m", "-q",
+            "-e", "create", "-e", "delete", "-e", "moved_to", "-e", "moved_from",
+            "--format", "%e",
+            expandedDir
+        ]
+        running: true
+
+        stdout: SplitParser {
+            onRead: data => {
+                if (!rescanTimer.running)
+                    rescanTimer.start();
+            }
+        }
+    }
+
+    // Debounce to avoid excessive rescans during batch operations
+    Timer {
+        id: rescanTimer
+        interval: 500
+        onTriggered: forceRescan()
+    }
+}
+```
+
+**Key points:**
+- `inotifywait -m` runs persistently (monitor mode)
+- `-q` suppresses startup messages
+- Events: `create`, `delete`, `moved_to`, `moved_from` cover most file operations
+- 500ms debounce prevents spam during bulk file operations (e.g., copying multiple files)
+- Requires `inotify-tools` package
 
 ### Command Injection Prevention
 
@@ -306,3 +407,39 @@ nix build .#nixosConfigurations.nixlaptop.config.system.build.toplevel
 # Evaluate module options
 nix eval --json '.#nixosConfigurations.nixlaptop.config.modules.quickshell.features'
 ```
+
+## Stylix Theming
+
+### Base16 Colour Scheme Format
+
+Colour schemes live in `assets/colour-schemes/*.yaml` and are referenced by `modules/theming/stylix.nix`.
+
+**Critical Format Rule:** Stylix's base16 parser is strict. Comments or blank lines BETWEEN palette entries break compilation.
+
+```yaml
+# CORRECT - no comments inside palette block
+palette:
+  base00: "#1d2021"
+  base01: "#3c3836"
+  base02: "#504945"
+
+# BROKEN - comments between entries
+palette:
+  base00: "#1d2021"
+  # This comment breaks Stylix!
+  base01: "#3c3836"
+
+# BROKEN - blank lines in palette
+palette:
+  base00: "#1d2021"
+
+  base01: "#3c3836"
+```
+
+If `nixos-rebuild` fails with Stylix errors, check for stray comments or blank lines in the palette block.
+
+### Colour Scheme Files
+
+- `cozy.yaml` - Warm Gruvbox-inspired (current default)
+- `utilitarian.yaml` - Cold minimalist theme
+- `brushtrees.yaml` - Light theme (reference)

@@ -6,16 +6,16 @@ Item {
     implicitWidth: icon.implicitWidth
     implicitHeight: icon.implicitHeight
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     property bool isOpen: false
     signal clicked()
 
     Text {
         id: icon
-        text: theme.iconGear
-        color: root.isOpen ? theme.textAccent : theme.textPrimary
-        font { family: theme.fontFamily; pixelSize: theme.iconSize }
+        text: Root.Theme.iconGear
+        color: root.isOpen ? Root.Theme.textAccent : Root.Theme.textPrimary
+        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
         anchors.verticalCenter: parent.verticalCenter
     }
 

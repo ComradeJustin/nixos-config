@@ -142,6 +142,12 @@ Scope {
     }
 
     // ── Actions ──
+
+    // SECURITY: Validate MAC address format to prevent injection
+    function isValidMac(mac) {
+        return /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(mac);
+    }
+
     function toggle() {
         root.enabled = !root.enabled;
         toggleProc.on = root.enabled;
@@ -154,24 +160,28 @@ Scope {
     }
 
     function connect(mac) {
+        if (!isValidMac(mac)) return;
         connProc.mac = mac;
         connProc.running = true;
         refreshAfter.start();
     }
 
     function disconnect(mac) {
+        if (!isValidMac(mac)) return;
         discProc.mac = mac;
         discProc.running = true;
         refreshAfter.start();
     }
 
     function pair(mac) {
+        if (!isValidMac(mac)) return;
         pairProc.mac = mac;
         pairProc.running = true;
         refreshAfter.start();
     }
 
     function remove(mac) {
+        if (!isValidMac(mac)) return;
         removeProc.mac = mac;
         removeProc.running = true;
         refreshAfter.start();

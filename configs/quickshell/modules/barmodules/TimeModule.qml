@@ -8,7 +8,7 @@ Item {
     implicitWidth: row.implicitWidth
     implicitHeight: row.implicitHeight
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     property string dateFormat: "+%a %b %d"
     property string timeFormat: "+%H:%M"
@@ -21,32 +21,32 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
 
         Text {
-            text: theme.iconCal
-            color: theme.textPrimary
-            font { family: theme.fontFamily; pixelSize: theme.iconSize }
+            text: Root.Theme.iconCal
+            color: Root.Theme.textPrimary
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }
 
         Text {
             text: root.dateText || "--"
-            color: theme.textPrimary
-            font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
+            color: Root.Theme.textPrimary
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
             anchors.verticalCenter: parent.verticalCenter
         }
 
         Item { width: 8; height: 1 }
 
         Text {
-            text: theme.iconClock
-            color: theme.textPrimary
-            font { family: theme.fontFamily; pixelSize: theme.iconSize }
+            text: Root.Theme.iconClock
+            color: Root.Theme.textPrimary
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }
 
         Text {
             text: root.timeText || "--:--"
-            color: theme.textPrimary
-            font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
+            color: Root.Theme.textPrimary
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
             anchors.verticalCenter: parent.verticalCenter
         }
     }

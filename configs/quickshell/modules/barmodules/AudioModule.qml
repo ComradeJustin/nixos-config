@@ -6,37 +6,36 @@ Item {
     implicitWidth: row.implicitWidth
     implicitHeight: row.implicitHeight
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     property var audioService: null
     property int volume: audioService ? audioService.volume : -1
     property bool muted: audioService ? audioService.muted : false
 
     Row {
-        id: row; spacing: 4; anchors.verticalCenter: parent.verticalCenter
+        id: row
+        spacing: 4
+        anchors.verticalCenter: parent.verticalCenter
 
         Text {
-            text: {
-                if (root.volume < 0 || root.muted) return theme.iconVolMute;
-                if (root.volume > 60) return theme.iconVolHigh;
-                if (root.volume > 30) return theme.iconVolMid;
-                if (root.volume > 0) return theme.iconVolLow;
-                return theme.iconVolMute;
-            }
-            color: root.muted ? theme.textDimmed : theme.textPrimary
-            font { family: theme.fontFamily; pixelSize: theme.iconSize }
+            id: volIcon
             anchors.verticalCenter: parent.verticalCenter
+            text: {
+                if (root.volume < 0 || root.muted) return Root.Theme.iconVolMute;
+                if (root.volume > 60) return Root.Theme.iconVolHigh;
+                if (root.volume > 30) return Root.Theme.iconVolMid;
+                if (root.volume > 0) return Root.Theme.iconVolLow;
+                return Root.Theme.iconVolMute;
+            }
+            color: root.muted ? Root.Theme.textDimmed : Root.Theme.textPrimary
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
         }
 
         Text {
-            text: {
-                if (root.volume < 0) return "VOL --";
-                if (root.muted) return "MUTE";
-                return "VOL " + root.volume + "%";
-            }
-            color: root.muted ? theme.textDimmed : theme.textPrimary
-            font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
             anchors.verticalCenter: parent.verticalCenter
+            text: root.volume >= 0 ? root.volume + "%" : "--"
+            color: root.muted ? Root.Theme.textDimmed : Root.Theme.textPrimary
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
         }
     }
 }

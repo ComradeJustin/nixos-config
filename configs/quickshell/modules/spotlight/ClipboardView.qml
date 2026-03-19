@@ -9,7 +9,7 @@ Item {
     implicitWidth: parent ? parent.width : 420
     implicitHeight: clipInner.implicitHeight
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     signal itemSelected()
 
@@ -33,7 +33,7 @@ Item {
                 let isImage = text.startsWith("[[ binary data");
                 let mime = "";
                 if (isImage) { let m = text.match(/binary data \d+ (.+?) \]\]/); if (m) mime = m[1]; }
-                if (clipModel.count < theme.clipMaxItems) {
+                if (clipModel.count < Root.Theme.clipMaxItems) {
                     clipModel.append({ "clipId": id, "clipText": isImage ? "" : text, "isImage": isImage, "imagePath": "", "mime": mime });
                     if (isImage) { thumbQueue.push({ id: id, index: clipModel.count - 1 }); processThumbQueue(); }
                 }
@@ -74,26 +74,26 @@ Item {
             width: parent.width; height: 32
             Item { Layout.fillWidth: true }
             Text {
-                text: theme.iconTrash
-                color: clipModel.count > 0 ? theme.textDimmed : "transparent"
-                font { family: theme.fontFamily; pixelSize: theme.iconSize }
-                Layout.rightMargin: theme.notifPadding
+                text: Root.Theme.iconTrash
+                color: clipModel.count > 0 ? Root.Theme.textDimmed : "transparent"
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
+                Layout.rightMargin: Root.Theme.notifPadding
                 verticalAlignment: Text.AlignVCenter
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { clearProc.running = true; clipModel.clear(); } }
             }
         }
 
         Rectangle {
-            width: parent.width - theme.notifPadding * 2; height: 1
-            color: theme.textDimmed; opacity: 0.3
+            width: parent.width - Root.Theme.notifPadding * 2; height: 1
+            color: Root.Theme.textDimmed; opacity: 0.3
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
         Text {
             visible: clipModel.count === 0
             text: "No clipboard history"
-            color: theme.textDimmed
-            font { family: theme.fontFamily; pixelSize: theme.notifBodySize }
+            color: Root.Theme.textDimmed
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.notifBodySize }
             width: parent.width; height: 60
             horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
         }
@@ -101,7 +101,7 @@ Item {
         Flickable {
             visible: clipModel.count > 0
             width: parent.width
-            height: Math.min(clipCol.implicitHeight, theme.clipMaxHeight - 80)
+            height: Math.min(clipCol.implicitHeight, Root.Theme.clipMaxHeight - 80)
             contentHeight: clipCol.implicitHeight
             clip: true; boundsBehavior: Flickable.StopAtBounds
 
@@ -113,36 +113,36 @@ Item {
                     Rectangle {
                         width: clipCol.width
                         height: Math.max(clipRow.implicitHeight + 12, 36)
-                        color: clipMouse.containsMouse ? Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.06) : "transparent"
+                        color: clipMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.06) : "transparent"
 
                         RowLayout {
                             id: clipRow
-                            anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: theme.notifPadding; rightMargin: theme.notifPadding }
+                            anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: Root.Theme.notifPadding; rightMargin: Root.Theme.notifPadding }
                             spacing: 10
 
                             Image {
                                 visible: model.isImage && model.imagePath !== ""
                                 source: model.imagePath !== "" ? "file://" + model.imagePath : ""
-                                sourceSize.width: theme.clipThumbSize; sourceSize.height: theme.clipThumbSize
-                                Layout.preferredWidth: theme.clipThumbSize; Layout.preferredHeight: theme.clipThumbSize
+                                sourceSize.width: Root.Theme.clipThumbSize; sourceSize.height: Root.Theme.clipThumbSize
+                                Layout.preferredWidth: Root.Theme.clipThumbSize; Layout.preferredHeight: Root.Theme.clipThumbSize
                                 fillMode: Image.PreserveAspectCrop; smooth: true
                             }
                             Rectangle {
                                 visible: model.isImage && model.imagePath === ""
-                                Layout.preferredWidth: theme.clipThumbSize; Layout.preferredHeight: theme.clipThumbSize
-                                color: theme.textDimmed; opacity: 0.2; radius: 4
-                                Text { anchors.centerIn: parent; text: "IMG"; color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 10 } }
+                                Layout.preferredWidth: Root.Theme.clipThumbSize; Layout.preferredHeight: Root.Theme.clipThumbSize
+                                color: Root.Theme.textDimmed; opacity: 0.2; radius: 4
+                                Text { anchors.centerIn: parent; text: "IMG"; color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 10 } }
                             }
                             Text {
                                 visible: !model.isImage
                                 text: { let t = (model.clipText || "").replace(/\s+/g, " "); return t.length > 100 ? t.substring(0, 100) + "…" : t; }
-                                color: theme.textPrimary
-                                font { family: theme.fontFamily; pixelSize: theme.notifBodySize }
+                                color: Root.Theme.textPrimary
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.notifBodySize }
                                 Layout.fillWidth: true; elide: Text.ElideRight; maximumLineCount: 2; wrapMode: Text.Wrap
                             }
                             Text {
                                 visible: model.isImage; text: model.mime || "image"
-                                color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 11 }
+                                color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 11 }
                                 Layout.fillWidth: true
                             }
                         }
@@ -154,9 +154,9 @@ Item {
 
                         Rectangle {
                             anchors.bottom: parent.bottom
-                            width: parent.width - theme.notifPadding * 2; height: 1
+                            width: parent.width - Root.Theme.notifPadding * 2; height: 1
                             anchors.horizontalCenter: parent.horizontalCenter
-                            color: theme.textDimmed; opacity: 0.1
+                            color: Root.Theme.textDimmed; opacity: 0.1
                         }
                     }
                 }

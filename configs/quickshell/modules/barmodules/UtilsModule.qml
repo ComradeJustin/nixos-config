@@ -6,7 +6,7 @@ Item {
     implicitWidth: row.implicitWidth
     implicitHeight: row.implicitHeight
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     property var audioService: null
     property var wifiService: null
@@ -14,7 +14,7 @@ Item {
 
     Row {
         id: row
-        spacing: theme.barSpacing
+        spacing: Root.Theme.barSpacing
         anchors.verticalCenter: parent.verticalCenter
 
         ResourceModule {}

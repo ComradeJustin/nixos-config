@@ -1,11 +1,7 @@
+pragma Singleton
 import QtQuick
 import Quickshell
 
-// ── Industrial Brutalism Theme ──
-// Design philosophy: Raw structure, exposed elements, monospace typography
-// NO rounded corners, visible borders, technical readout aesthetic
-// Colors from Stylix environment variables (BASE00-BASE0F)
-// Grid system: 8px base unit for rigid alignment
 QtObject {
     // ── Paths (derived from environment) ──
     readonly property string homeDir: Quickshell.env("HOME") || "/home/justin"
@@ -76,6 +72,15 @@ QtObject {
     readonly property color borderColor:      base03    // Visible but not harsh
     readonly property color borderActive:     textAccent // Sage green for active
 
+    // ── Cozy Radius Values (control center only, bar stays sharp) ──
+    readonly property int radiusSmall:  4     // Subtle rounding for cards
+    readonly property int radiusMedium: 8     // Cards, containers
+    readonly property int radiusLarge:  12    // Larger elements, panels
+
+    // ── Cozy Spacing (improved readability) ──
+    readonly property int ccItemPadding: 12   // More breathing room
+    readonly property int ccItemSpacing: 6    // Between items
+
     // ── Bar Geometry (grid-aligned) ──
     readonly property int barHeight:  32   // 4 units
     readonly property int barPadding: 8    // 1 unit
@@ -94,9 +99,9 @@ QtObject {
     readonly property int    notifWidth:       360  // 45 units
     readonly property int    notifMaxVisible:  5
     readonly property int    notifTimeout:     5000
-    readonly property int    notifRadius:      0    // Brutalist: no rounded corners
+    readonly property int    notifRadius:      6    // Cozy: subtle rounding
     readonly property int    notifSpacing:     8    // 1 unit
-    readonly property int    notifPadding:     16   // 2 units
+    readonly property int    notifPadding:     14   // Cozy: more breathing room
     readonly property int    notifMarginTop:   8    // 1 unit
     readonly property int    notifMarginRight: 8    // 1 unit
     readonly property int    notifTitleSize:   12
@@ -189,10 +194,16 @@ QtObject {
 
     // ── Control Center (grid-aligned) ──
     readonly property int    ccWidth:         384  // 48 units
-    readonly property int    ccPadding:       16   // 2 units
-    readonly property int    ccSectionRadius: 0    // Brutalist: no rounded corners
+    readonly property int    ccPadding:       18   // Cozy: more breathing room
+    readonly property int    ccSectionRadius: 6    // Cozy: subtle rounding
     readonly property color  ccSectionBg:     base01
+    readonly property color  ccCardBg:        Qt.rgba(base01.r, base01.g, base01.b, 0.6)  // Subtle card bg
+    readonly property color  ccIconBg:        Qt.rgba(base02.r, base02.g, base02.b, 0.5)  // Muted icon placeholder
     readonly property int    ccArtSize:       80   // 10 units
+
+    // ── Notification Item Colors (for distinguishing in control center) ──
+    readonly property color  notifItemBg:     Qt.rgba(base01.r, base01.g, base01.b, 0.4)  // Subtle bg
+    readonly property color  notifSubItemBg:  Qt.rgba(base01.r, base01.g, base01.b, 0.2)  // Even more subtle for sub-items
     readonly property string iconSkipBack:    "󰒮"
     readonly property string iconSkipFwd:     "󰒭"
     readonly property string iconPlay:        "󰐊"
@@ -201,13 +212,12 @@ QtObject {
 
     // ── Cava / Media popup (grid-aligned) ──
     readonly property int    cavaWidth:     320  // 40 units
-    readonly property int    cavaHeight:    240  // 30 units
+    readonly property int    cavaHeight:    180  // 22.5 units - compact
     readonly property int    cavaBars:      24
-    readonly property int    cavaRadius:    0    // Brutalist: no rounded corners
+    readonly property int    cavaRadius:    0    // Sharp edges for bar popup
     readonly property color  cavaBackground: barBackground
-    readonly property color  cavaBarColor:  base0B  // Sage green accent
-    readonly property color  cavaBarPeak:   base06  // Light gray for peaks
-    readonly property int    cavaArtSize:   64
+    readonly property color  cavaBarColor:  base0B  // Sage green accent (consistent)
+    readonly property int    cavaArtSize:   48   // Compact art size
     readonly property string iconPrev:      "󰒮"
     readonly property string iconNext:      "󰒭"
 
@@ -233,4 +243,13 @@ QtObject {
     readonly property string iconUser:           "󰀄"
     readonly property string iconMusic:          "󰎆"
     readonly property string lockBackground:     configBase + "/assets/wallpapers/cloud.jpg"
+
+    // ── Background Widgets ──
+    readonly property color  widgetBackground:   Qt.rgba(base00.r, base00.g, base00.b, 0.75)
+    readonly property color  widgetText:         base06
+    readonly property color  widgetTextDimmed:   base04
+    readonly property int    widgetRadius:       radiusMedium
+    readonly property int    widgetPadding:      16
+    readonly property int    widgetShadowRadius: 24
+    readonly property color  widgetShadowColor:  Qt.rgba(0, 0, 0, 0.3)
 }

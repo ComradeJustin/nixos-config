@@ -5,7 +5,7 @@ import "../.." as Root
 Item {
     id: root
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     property int fixedTextWidth: 180
     property real scrollSpeed: 30
@@ -26,8 +26,8 @@ Item {
     property bool hasIcon: windowIcon.length > 0
     property bool needsScroll: innerText.contentWidth > fixedTextWidth
 
-    implicitWidth: visible ? (hasIcon ? theme.iconSize + 6 : 0) + fixedTextWidth : 0
-    implicitHeight: theme.barHeight
+    implicitWidth: visible ? (hasIcon ? Root.Theme.iconSize + 6 : 0) + fixedTextWidth : 0
+    implicitHeight: Root.Theme.barHeight
 
     Image {
         id: winIcon
@@ -36,10 +36,10 @@ Item {
             verticalCenter: parent.verticalCenter
         }
         source: root.hasIcon ? "file://" + root.windowIcon : ""
-        sourceSize.width: theme.iconSize
-        sourceSize.height: theme.iconSize
-        width: theme.iconSize
-        height: theme.iconSize
+        sourceSize.width: Root.Theme.iconSize
+        sourceSize.height: Root.Theme.iconSize
+        width: Root.Theme.iconSize
+        height: Root.Theme.iconSize
         visible: root.hasIcon
         smooth: true
     }
@@ -52,7 +52,7 @@ Item {
             leftMargin: root.hasIcon ? 6 : 0
         }
         width: root.fixedTextWidth
-        height: theme.barHeight
+        height: Root.Theme.barHeight
         y: 0
         clip: true
 
@@ -61,8 +61,8 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width
             text: root.windowTitle
-            color: theme.textDimmed
-            font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
+            color: Root.Theme.textDimmed
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
             elide: Text.ElideRight
             visible: !root.needsScroll
         }
@@ -76,15 +76,15 @@ Item {
             Text {
                 id: innerText
                 text: root.windowTitle
-                color: theme.textDimmed
-                font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
+                color: Root.Theme.textDimmed
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
             }
 
             Item { width: 40; height: 1 }
 
             Text {
                 text: root.windowTitle
-                color: theme.textDimmed
+                color: Root.Theme.textDimmed
                 font: innerText.font
             }
         }

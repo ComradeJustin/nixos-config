@@ -8,7 +8,7 @@ Item {
     implicitHeight: row.implicitHeight
     visible: hasBattery
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     property string device: "BAT0"
     property int capacity: -1
@@ -17,9 +17,9 @@ Item {
     property bool hasBattery: false
 
     property color activeColor: root.pluggedIn
-        ? theme.textCharging
+        ? Root.Theme.textCharging
         : (root.capacity >= 0 && root.capacity <= 15
-           ? theme.textCritical : theme.textPrimary)
+           ? Root.Theme.textCritical : Root.Theme.textPrimary)
 
     Row {
         id: row
@@ -28,31 +28,31 @@ Item {
 
         Text {
             text: {
-                if (root.capacity < 0) return theme.iconBatNone;
-                if (root.charging)            return theme.iconBatChg;
-                if (root.capacity > 80)       return theme.iconBat100;
-                if (root.capacity > 60)       return theme.iconBat80;
-                if (root.capacity > 40)       return theme.iconBat60;
-                if (root.capacity > 20)       return theme.iconBat40;
-                return theme.iconBat20;
+                if (root.capacity < 0) return Root.Theme.iconBatNone;
+                if (root.charging)            return Root.Theme.iconBatChg;
+                if (root.capacity > 80)       return Root.Theme.iconBat100;
+                if (root.capacity > 60)       return Root.Theme.iconBat80;
+                if (root.capacity > 40)       return Root.Theme.iconBat60;
+                if (root.capacity > 20)       return Root.Theme.iconBat40;
+                return Root.Theme.iconBat20;
             }
             color: root.activeColor
-            font { family: theme.fontFamily; pixelSize: theme.iconSize }
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }
 
         Text {
-            text: root.capacity >= 0 ? "BAT " + root.capacity + "%" : "BAT --"
+            text: root.capacity >= 0 ? "Bat " + root.capacity + "%" : "Bat --"
             color: root.activeColor
-            font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
             anchors.verticalCenter: parent.verticalCenter
         }
 
         Text {
             visible: root.pluggedIn && !root.charging
-            text: theme.iconPlug
-            color: theme.textCharging
-            font { family: theme.fontFamily; pixelSize: theme.iconSize }
+            text: Root.Theme.iconPlug
+            color: Root.Theme.textCharging
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }
     }

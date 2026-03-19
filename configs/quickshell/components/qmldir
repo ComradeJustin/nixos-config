@@ -1,0 +1,5 @@
+module Components
+SliderBar 1.0 SliderBar.qml
+Separator 1.0 Separator.qml
+EmptyState 1.0 EmptyState.qml
+DeviceListItem 1.0 DeviceListItem.qml

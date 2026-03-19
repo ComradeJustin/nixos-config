@@ -8,7 +8,7 @@ Item {
     implicitWidth: row.implicitWidth
     implicitHeight: row.implicitHeight
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     property int cpuPercent: -1
     property real ramUsedGb: -1
@@ -22,35 +22,35 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
 
         Text {
-            text: theme.iconCpu
-            color: root.cpuPercent >= 90 ? theme.textCritical : theme.textPrimary
-            font { family: theme.fontFamily; pixelSize: theme.iconSize }
+            text: Root.Theme.iconCpu
+            color: root.cpuPercent >= 90 ? Root.Theme.textCritical : Root.Theme.textPrimary
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }
 
         Text {
-            text: root.cpuPercent >= 0 ? "CPU " + root.cpuPercent + "%" : "CPU --"
-            color: root.cpuPercent >= 90 ? theme.textCritical : theme.textPrimary
-            font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
+            text: root.cpuPercent >= 0 ? "Cpu " + root.cpuPercent + "%" : "Cpu --"
+            color: root.cpuPercent >= 90 ? Root.Theme.textCritical : Root.Theme.textPrimary
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
             anchors.verticalCenter: parent.verticalCenter
         }
 
         Item { width: 8; height: 1 }
 
         Text {
-            text: theme.iconRam
-            color: theme.textPrimary
-            font { family: theme.fontFamily; pixelSize: theme.iconSize }
+            text: Root.Theme.iconRam
+            color: Root.Theme.textPrimary
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }
 
         Text {
             text: {
-                if (root.ramUsedGb < 0) return "MEM --";
-                return "MEM " + root.ramUsedGb.toFixed(1) + "G";
+                if (root.ramUsedGb < 0) return "Mem --";
+                return "Mem " + root.ramUsedGb.toFixed(1) + "G";
             }
-            color: theme.textPrimary
-            font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
+            color: Root.Theme.textPrimary
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
             anchors.verticalCenter: parent.verticalCenter
         }
     }

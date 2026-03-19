@@ -7,7 +7,7 @@
 {
   stylix.enable = true;
   # autoEnable stays true (default) - we disable slow targets explicitly
-  stylix.base16Scheme = ../../assets/colour-schemes/cozy-gruvbox.yaml;
+  stylix.base16Scheme = ../../assets/colour-schemes/cozy.yaml;
   stylix.polarity = "dark";
 
   stylix.cursor.package = pkgs.capitaine-cursors;
@@ -15,11 +15,11 @@
   stylix.cursor.size = 32;
   stylix.targets.nixvim.enable = false;
   
-  # Utilitarian font stack - form follows function
+
   stylix.fonts = {
     serif = {
-      package = pkgs.ibm-plex;
-      name = "IBM Plex Serif";
+      package = pkgs.libre-bodoni;
+      name = "Libre Bodoni";
     };
 
     sansSerif = {
@@ -28,8 +28,8 @@
     };
 
     monospace = {
-      package = pkgs.jetbrains-mono;
-      name = "JetBrains Mono";
+      package = pkgs.nerd-fonts.jetbrains-mono;
+      name = "JetBrainsMono Nerd Font";
     };
 
     emoji = {
@@ -38,10 +38,10 @@
     };
 
     sizes = {
-      applications = 11;
-      desktop = 11;
-      popups = 11;
-      terminal = 12;
+      applications = 12;
+      desktop = 12;
+      popups = 12;
+      terminal = 13;
     };
   };
 

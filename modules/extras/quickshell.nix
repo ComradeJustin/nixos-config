@@ -57,6 +57,9 @@ in
         inputs.qml-niri.packages.${pkgs.system}.quickshell
         libsForQt5.qt5.qtgraphicaleffects
         kdePackages.qt5compat
+        # ── Wallpaper selector dependencies ──
+        inotify-tools  # Live directory watching for new wallpapers
+        imagemagick    # Thumbnail generation and caching
       ]
       # ── Audio feature ──
       ++ lib.optionals cfg.features.audio [

@@ -7,9 +7,9 @@ import "../.." as Root
 Item {
     id: root
     implicitWidth: iconContainer.implicitWidth
-    implicitHeight: theme.barHeight
+    implicitHeight: Root.Theme.barHeight
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     property var notifRef: null
     property int unread: notifRef ? notifRef.unreadCount : 0
@@ -19,19 +19,19 @@ Item {
     Item {
         id: iconContainer
         implicitWidth: bellIcon.implicitWidth + (badge.visible ? 6 : 0)
-        implicitHeight: theme.barHeight
+        implicitHeight: Root.Theme.barHeight
         anchors.verticalCenter: parent.verticalCenter
 
         Text {
             id: bellIcon
-            text: root.isDnd ? theme.iconDnd
-                : root.unread > 0 ? theme.iconBellBadge
-                : theme.iconBell
-            color: root.isDnd ? theme.textWarning
-                 : root.historyOpen ? theme.textAccent
-                 : root.unread > 0 ? theme.textWarning
-                 : theme.textPrimary
-            font { family: theme.fontFamily; pixelSize: theme.iconSize }
+            text: root.isDnd ? Root.Theme.iconDnd
+                : root.unread > 0 ? Root.Theme.iconBellBadge
+                : Root.Theme.iconBell
+            color: root.isDnd ? Root.Theme.textWarning
+                 : root.historyOpen ? Root.Theme.textAccent
+                 : root.unread > 0 ? Root.Theme.textWarning
+                 : Root.Theme.textPrimary
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }
 
@@ -42,7 +42,7 @@ Item {
             width: Math.max(14, badgeText.implicitWidth + 6)
             height: 14
             radius: 7
-            color: theme.textCritical
+            color: Root.Theme.textCritical
             anchors {
                 left: bellIcon.right
                 leftMargin: -6
@@ -53,8 +53,8 @@ Item {
             Text {
                 id: badgeText
                 text: root.unread > 99 ? "99+" : root.unread
-                color: theme.base00
-                font { family: theme.fontFamily; pixelSize: 9; bold: true }
+                color: Root.Theme.base00
+                font { family: Root.Theme.fontFamily; pixelSize: 9; bold: true }
                 anchors.centerIn: parent
             }
         }

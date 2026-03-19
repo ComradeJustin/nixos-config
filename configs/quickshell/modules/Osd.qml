@@ -1,37 +1,50 @@
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Io
 import QtQuick
 import ".." as Root
 
 PanelWindow {
     id: osd
 
-    Root.Theme { id: theme }
+    // Service references (injected from Shell.qml)
+    property var audioService: null
+    property var brightnessService: null
 
     WlrLayershell.namespace: "quickshell-osd"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     exclusionMode: ExclusionMode.Ignore
 
-    anchors {
-        bottom: true
-    }
+    anchors { bottom: true }
     margins.bottom: 120
 
-    implicitWidth: theme.osdWidth
-    implicitHeight: theme.osdHeight
+    implicitWidth: Root.Theme.osdWidth
+    implicitHeight: Root.Theme.osdHeight
     color: "transparent"
     visible: false
 
-    property int    curVolume: -1
-    property bool   curMuted: false
-    property int    curBrightness: -1
-    property string curDevice: ""
     property string activeMode: ""   // "volume" | "brightness" | "device"
-    property string deviceLabel: ""
 
-    // ── Show / hide with fade ──
+    // Computed values from services
+    readonly property int curVolume: audioService ? audioService.volume : 0
+    readonly property bool curMuted: audioService ? audioService.muted : false
+    readonly property int curBrightness: brightnessService ? brightnessService.brightness : 0
+    readonly property string deviceLabel: audioService ? audioService.activeDeviceLabel : ""
+
+    // Connect to service signals
+    Connections {
+        target: osd.audioService
+        function onVolumeUpdated(oldValue, newValue) { osd.show("volume"); }
+        function onMuteToggled(oldMuted, newMuted) { osd.show("volume"); }
+        function onDeviceSwitched(oldDevice, newDevice) { osd.show("device"); }
+    }
+
+    Connections {
+        target: osd.brightnessService
+        function onBrightnessUpdated(oldValue, newValue) { osd.show("brightness"); }
+    }
+
+    // Show / hide with fade
     function show(mode) {
         activeMode = mode;
         visible = true;
@@ -42,7 +55,7 @@ PanelWindow {
 
     Timer {
         id: hideTimer
-        interval: theme.osdTimeout
+        interval: Root.Theme.osdTimeout
         onTriggered: fadeOut.start()
     }
 
@@ -52,22 +65,22 @@ PanelWindow {
         property: "opacity"
         from: 1
         to: 0
-        duration: theme.osdFadeMs
+        duration: Root.Theme.osdFadeMs
         easing.type: Easing.InCubic
-
         onFinished: osd.visible = false
     }
 
-    // ── Visual ──
+    // Visual display
     Rectangle {
         id: content
         anchors.fill: parent
-        radius: 0  // Brutalist: square
-        color: theme.osdBackground
-        border.width: theme.borderWidth
-        border.color: theme.borderColor
+        radius: 0
+        color: Root.Theme.osdBackground
+        border.width: Root.Theme.borderWidth
+        border.color: Root.Theme.borderColor
         opacity: 1
 
+        // Volume/Brightness display
         Row {
             anchors.centerIn: parent
             spacing: 14
@@ -77,43 +90,41 @@ PanelWindow {
             Text {
                 text: {
                     if (osd.activeMode === "brightness") {
-                        if (osd.curBrightness > 66)  return theme.iconBriHigh;
-                        if (osd.curBrightness > 33)  return theme.iconBriMid;
-                        if (osd.curBrightness > 0)   return theme.iconBriLow;
-                        return theme.iconBriOff;
+                        if (osd.curBrightness > 66) return Root.Theme.iconBriHigh;
+                        if (osd.curBrightness > 33) return Root.Theme.iconBriMid;
+                        if (osd.curBrightness > 0)  return Root.Theme.iconBriLow;
+                        return Root.Theme.iconBriOff;
                     }
-                    if (osd.curMuted)                 return theme.iconVolMute;
-                    if (osd.curVolume > 60)           return theme.iconVolHigh;
-                    if (osd.curVolume > 30)           return theme.iconVolMid;
-                    if (osd.curVolume > 0)            return theme.iconVolLow;
-                    return theme.iconVolMute;
+                    if (osd.curMuted)              return Root.Theme.iconVolMute;
+                    if (osd.curVolume > 60)        return Root.Theme.iconVolHigh;
+                    if (osd.curVolume > 30)        return Root.Theme.iconVolMid;
+                    if (osd.curVolume > 0)         return Root.Theme.iconVolLow;
+                    return Root.Theme.iconVolMute;
                 }
-                color: theme.textPrimary
-                font { family: theme.fontFamily; pixelSize: theme.osdIconSize }
+                color: Root.Theme.textPrimary
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.osdIconSize }
                 anchors.verticalCenter: parent.verticalCenter
             }
 
-            // Progress bar (brutalist: square)
+            // Progress bar
             Rectangle {
                 width: 140
                 height: 4
                 radius: 0
-                color: theme.osdBarBg
+                color: Root.Theme.osdBarBg
                 border.width: 1
-                border.color: theme.borderColor
+                border.color: Root.Theme.borderColor
                 anchors.verticalCenter: parent.verticalCenter
 
                 Rectangle {
                     width: {
                         let pct = osd.activeMode === "brightness"
                                   ? osd.curBrightness : osd.curVolume;
-                        if (pct < 0) pct = 0;
-                        if (pct > 100) pct = 100;
-                        return parent.width * pct / 100;
+                        return parent.width * Math.max(0, Math.min(100, pct)) / 100;
                     }
                     height: parent.height
                     radius: 0
-                    color: theme.osdAccent
+                    color: Root.Theme.osdAccent
 
                     Behavior on width {
                         NumberAnimation { duration: 80; easing.type: Easing.OutQuad }
@@ -130,14 +141,14 @@ PanelWindow {
                     return pct >= 0 ? pct + "%" : "--";
                 }
                 width: 36
-                color: theme.textPrimary
-                font { family: theme.fontFamily; pixelSize: theme.osdFontSize }
+                color: Root.Theme.textPrimary
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.osdFontSize }
                 horizontalAlignment: Text.AlignRight
                 anchors.verticalCenter: parent.verticalCenter
             }
         }
 
-        // ── Device switch display ──
+        // Device switch display
         Row {
             anchors.centerIn: parent
             spacing: 10
@@ -147,142 +158,22 @@ PanelWindow {
                 text: {
                     let name = osd.deviceLabel.toLowerCase();
                     if (name.indexOf("headphone") !== -1 || name.indexOf("headset") !== -1)
-                        return theme.iconHeadphone;
-                    return theme.iconSpeaker;
+                        return Root.Theme.iconHeadphone;
+                    return Root.Theme.iconSpeaker;
                 }
-                color: theme.osdAccent
-                font { family: theme.fontFamily; pixelSize: theme.osdIconSize }
+                color: Root.Theme.osdAccent
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.osdIconSize }
                 anchors.verticalCenter: parent.verticalCenter
             }
 
             Text {
                 text: osd.deviceLabel || "Audio Device"
-                color: theme.textPrimary
-                font { family: theme.fontFamily; pixelSize: theme.osdFontSize }
+                color: Root.Theme.textPrimary
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.osdFontSize }
                 anchors.verticalCenter: parent.verticalCenter
                 elide: Text.ElideRight
-                width: Math.min(implicitWidth, theme.osdWidth - 80)
+                width: Math.min(implicitWidth, Root.Theme.osdWidth - 80)
             }
         }
-    }
-
-    // ── Adaptive polling: fast when OSD visible, slow when idle ──
-    property int fastPollInterval: 100
-    property int slowPollInterval: 500
-    property bool recentlyActive: false
-
-    Timer {
-        id: activityCooldown
-        interval: 2000
-        onTriggered: osd.recentlyActive = false
-    }
-
-    function markActive() {
-        recentlyActive = true;
-        activityCooldown.restart();
-    }
-
-    function getPollInterval() {
-        return (osd.visible || osd.recentlyActive) ? fastPollInterval : slowPollInterval;
-    }
-
-    // ── Volume poll ──
-    Process {
-        id: volProc
-        command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]
-        running: true
-
-        stdout: SplitParser {
-            onRead: data => {
-                let wasMuted = osd.curMuted;
-                let wasVol = osd.curVolume;
-
-                osd.curMuted = data.indexOf("[MUTED]") !== -1;
-                let parts = data.split(" ");
-                if (parts.length >= 2) {
-                    let frac = parseFloat(parts[1]);
-                    if (!isNaN(frac)) osd.curVolume = Math.round(frac * 100);
-                }
-
-                if (wasVol >= 0 && (osd.curVolume !== wasVol || osd.curMuted !== wasMuted)) {
-                    osd.markActive();
-                    osd.show("volume");
-                }
-            }
-        }
-
-        onExited: volPollTimer.start()
-    }
-
-    Timer {
-        id: volPollTimer
-        interval: osd.getPollInterval()
-        onTriggered: volProc.running = true
-    }
-
-    // ── Device name poll ──
-    Process {
-        id: devProc
-        command: [
-            "bash", "-c",
-            "wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null | " +
-            "grep -oP 'node\\.description\\s*=\\s*\"\\K[^\"]+' || echo ''"
-        ]
-        running: true
-
-        stdout: SplitParser {
-            onRead: data => {
-                let name = data.trim();
-                if (name.length === 0) return;
-
-                let wasDevice = osd.curDevice;
-                osd.curDevice = name;
-                osd.deviceLabel = name;
-
-                // Show OSD on device change (skip initial read)
-                if (wasDevice.length > 0 && wasDevice !== name)
-                    osd.show("device");
-            }
-        }
-
-        onExited: devPollTimer.start()
-    }
-
-    Timer {
-        id: devPollTimer
-        interval: 800  // Device changes are rare, poll slowly
-        onTriggered: devProc.running = true
-    }
-
-    // ── Brightness poll ──
-    Process {
-        id: briProc
-        command: [
-            "bash", "-c",
-            "cur=$(brightnessctl get 2>/dev/null) && max=$(brightnessctl max 2>/dev/null) && " +
-            "echo $((cur * 100 / max)) || echo -1"
-        ]
-        running: true
-
-        stdout: SplitParser {
-            onRead: data => {
-                let wasBri = osd.curBrightness;
-                let val = parseInt(data);
-                if (!isNaN(val)) osd.curBrightness = val;
-
-                if (wasBri >= 0 && osd.curBrightness !== wasBri) {
-                    osd.markActive();
-                    osd.show("brightness");
-                }
-            }
-        }
-
-        onExited: briPollTimer.start()
-    }
-
-    Timer {
-        id: briPollTimer
-        interval: osd.getPollInterval()
-        onTriggered: briProc.running = true
     }
 }

@@ -10,7 +10,7 @@ Item {
     id: lock
     anchors.fill: parent
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     signal unlocked()
 
@@ -262,7 +262,7 @@ Item {
         Image {
             id: lockBgImage
             anchors.fill: parent
-            source: "file://" + theme.lockBackground
+            source: "file://" + Root.Theme.lockBackground
             fillMode: Image.PreserveAspectCrop
             visible: status === Image.Ready
         }
@@ -270,7 +270,7 @@ Item {
         // Fallback solid color
         Rectangle {
             anchors.fill: parent
-            color: theme.base00
+            color: Root.Theme.base00
             visible: parent.children[0].status !== Image.Ready
         }
 
@@ -317,13 +317,13 @@ Item {
                 width: 80
                 height: 80
                 radius: 40
-                color: Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.1)
+                color: Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1)
 
                 Text {
                     anchors.centerIn: parent
-                    text: theme.iconUser
-                    color: theme.textDimmed
-                    font { family: theme.fontFamily; pixelSize: 40 }
+                    text: Root.Theme.iconUser
+                    color: Root.Theme.textDimmed
+                    font { family: Root.Theme.fontFamily; pixelSize: 40 }
                 }
             }
 
@@ -336,8 +336,8 @@ Item {
             Text {
                 id: clockText
                 anchors.horizontalCenter: parent.horizontalCenter
-                color: theme.textPrimary
-                font { family: theme.fontFamily; pixelSize: 72; bold: true }
+                color: Root.Theme.textPrimary
+                font { family: Root.Theme.fontFamily; pixelSize: 72; bold: true }
                 property int tick: 0
                 text: {
                     void(tick);
@@ -351,8 +351,8 @@ Item {
             Text {
                 id: dateText
                 anchors.horizontalCenter: parent.horizontalCenter
-                color: theme.textDimmed
-                font { family: theme.fontFamily; pixelSize: 18 }
+                color: Root.Theme.textDimmed
+                font { family: Root.Theme.fontFamily; pixelSize: 18 }
                 property int tick: 0
                 text: {
                     void(tick);
@@ -379,7 +379,7 @@ Item {
             width: centerColumn.width + 48
             height: centerColumn.height + 40
             radius: 20
-            color: Qt.rgba(theme.base00.r, theme.base00.g, theme.base00.b, 0.75)
+            color: Qt.rgba(Root.Theme.base00.r, Root.Theme.base00.g, Root.Theme.base00.b, 0.75)
 
             Column {
                 id: centerColumn
@@ -392,8 +392,8 @@ Item {
                     id: fingerIcon
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "󰈷"
-                    color: lock.showError ? theme.textCritical : theme.textAccent
-                    font { family: theme.fontFamily; pixelSize: 64 }
+                    color: lock.showError ? Root.Theme.textCritical : Root.Theme.textAccent
+                    font { family: Root.Theme.fontFamily; pixelSize: 64 }
                     visible: !lock.passwordMode
 
                 transform: Translate { id: fingerShakeTranslate; x: 0 }
@@ -420,8 +420,8 @@ Item {
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "󰌾"
-                color: lock.showError ? theme.textCritical : theme.textDimmed
-                font { family: theme.fontFamily; pixelSize: 36 }
+                color: lock.showError ? Root.Theme.textCritical : Root.Theme.textDimmed
+                font { family: Root.Theme.fontFamily; pixelSize: 36 }
                 visible: lock.passwordMode
             }
 
@@ -429,16 +429,16 @@ Item {
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: lock.statusText
-                color: lock.showError ? theme.textCritical : theme.textDimmed
-                font { family: theme.fontFamily; pixelSize: 14 }
+                color: lock.showError ? Root.Theme.textCritical : Root.Theme.textDimmed
+                font { family: Root.Theme.fontFamily; pixelSize: 14 }
             }
 
             // Switch to password option
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "Use password"
-                color: theme.textAccent
-                font { family: theme.fontFamily; pixelSize: 12; underline: switchMouse.containsMouse }
+                color: Root.Theme.textAccent
+                font { family: Root.Theme.fontFamily; pixelSize: 12; underline: switchMouse.containsMouse }
                 visible: !lock.passwordMode
                 opacity: 0.8
 
@@ -464,12 +464,12 @@ Item {
                 height: 44
                 radius: 22
                 visible: lock.passwordMode
-                color: Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.08)
+                color: Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.08)
                 border.color: passInput.activeFocus
-                    ? theme.textAccent
+                    ? Root.Theme.textAccent
                     : lock.showError
-                      ? theme.textCritical
-                      : Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.15)
+                      ? Root.Theme.textCritical
+                      : Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.15)
                 border.width: 2
 
                 Behavior on border.color { ColorAnimation { duration: 150 } }
@@ -483,8 +483,8 @@ Item {
                     TextInput {
                         id: passInput
                         Layout.fillWidth: true
-                        color: lock.isAuthenticating ? theme.textDimmed : theme.textPrimary
-                        font { family: theme.fontFamily; pixelSize: 14 }
+                        color: lock.isAuthenticating ? Root.Theme.textDimmed : Root.Theme.textPrimary
+                        font { family: Root.Theme.fontFamily; pixelSize: 14 }
                         echoMode: TextInput.Password
                         clip: true
                         verticalAlignment: TextInput.AlignVCenter
@@ -493,7 +493,7 @@ Item {
                         Text {
                             anchors.fill: parent
                             text: lock.isAuthenticating ? "" : "Password"
-                            color: theme.textDimmed
+                            color: Root.Theme.textDimmed
                             font: parent.font
                             visible: parent.text.length === 0
                             verticalAlignment: Text.AlignVCenter
@@ -505,8 +505,8 @@ Item {
 
                     Text {
                         text: "→"
-                        color: passInput.text.length > 0 ? theme.textAccent : theme.textDimmed
-                        font { family: theme.fontFamily; pixelSize: 18; bold: true }
+                        color: passInput.text.length > 0 ? Root.Theme.textAccent : Root.Theme.textDimmed
+                        font { family: Root.Theme.fontFamily; pixelSize: 18; bold: true }
                         visible: passInput.text.length > 0
 
                         MouseArea {
@@ -533,7 +533,7 @@ Item {
                 width: 48
                 height: 48
                 radius: 8
-                color: theme.base01
+                color: Root.Theme.base01
                 clip: true
 
                 Image {
@@ -546,9 +546,9 @@ Item {
 
                 Text {
                     anchors.centerIn: parent
-                    text: theme.iconMusic
-                    color: theme.textDimmed
-                    font { family: theme.fontFamily; pixelSize: 20 }
+                    text: Root.Theme.iconMusic
+                    color: Root.Theme.textDimmed
+                    font { family: Root.Theme.fontFamily; pixelSize: 20 }
                     visible: lockAlbumArt.status !== Image.Ready
                 }
             }
@@ -560,16 +560,16 @@ Item {
 
                 Text {
                     text: lock.playerService ? lock.playerService.trackTitle : ""
-                    color: theme.textPrimary
-                    font { family: theme.fontFamily; pixelSize: 14; bold: true }
+                    color: Root.Theme.textPrimary
+                    font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
                     elide: Text.ElideRight
                     width: Math.min(implicitWidth, 250)
                 }
 
                 Text {
                     text: lock.playerService ? lock.playerService.trackArtist : ""
-                    color: theme.textDimmed
-                    font { family: theme.fontFamily; pixelSize: 12 }
+                    color: Root.Theme.textDimmed
+                    font { family: Root.Theme.fontFamily; pixelSize: 12 }
                     elide: Text.ElideRight
                     width: Math.min(implicitWidth, 250)
                     visible: text.length > 0
@@ -579,9 +579,9 @@ Item {
             // Play/pause indicator
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: (lock.playerService && lock.playerService.isPlaying) ? theme.iconMediaPause : theme.iconMediaPlay
-                color: theme.textAccent
-                font { family: theme.fontFamily; pixelSize: 20 }
+                text: (lock.playerService && lock.playerService.isPlaying) ? Root.Theme.iconMediaPause : Root.Theme.iconMediaPlay
+                color: Root.Theme.textAccent
+                font { family: Root.Theme.fontFamily; pixelSize: 20 }
             }
         }
     } // lockContent Item

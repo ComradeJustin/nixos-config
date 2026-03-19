@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   inputs,
   ...
@@ -66,9 +67,16 @@ in
     enable = true;
     #Icon Theme
     iconTheme = {
-      package = pkgs.la-capitaine-icon-theme;
-      name = "la-capitaine-icon-theme";
+      package = pkgs.gruvbox-plus-icons;
+      name = "Gruvbox-Plus-Dark";
     };
+  };
+
+  # Qt configuration - use GTK platform theme so Qt apps (including QuickShell)
+  # use the same icon theme as GTK apps (override Stylix's qtct setting)
+  qt = {
+    enable = true;
+    platformTheme.name = lib.mkForce "gtk3";
   };
   stylix.targets.vscode.profileNames = [
     "Default"

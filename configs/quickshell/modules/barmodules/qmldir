@@ -1,3 +1,4 @@
+module BarModules
 TimeModule 1.0 TimeModule.qml
 WorkspaceModule 1.0 WorkspaceModule.qml
 WindowModule 1.0 WindowModule.qml
@@ -8,6 +9,7 @@ NetworkModule 1.0 NetworkModule.qml
 BluetoothModule 1.0 BluetoothModule.qml
 BatteryModule 1.0 BatteryModule.qml
 MediaModule 1.0 MediaModule.qml
+MediaPopup 1.0 MediaPopup.qml
 PowerIcon 1.0 PowerIcon.qml
 NotifIcon 1.0 NotifIcon.qml
 GearIcon 1.0 GearIcon.qml

@@ -11,6 +11,8 @@ ShellRoot {
     Utils.NotifService { id: notifSvc }
     Utils.WifiService { id: wifiSvc }
     Utils.BluetoothService { id: btSvc }
+    Utils.BrightnessService { id: briSvc }
+    Utils.WindowService { id: winSvc }
 
     Modules.PowerMenu {
         id: pmModule
@@ -26,7 +28,10 @@ ShellRoot {
         bluetoothService: btSvc
     }
     Modules.Spotlight { id: spotModule }
-    Modules.Osd {}
+    Modules.Osd {
+        audioService: audioSvc
+        brightnessService: briSvc
+    }
     Modules.Bar {
         notifRef: ccModule
         playerService: playerSvc
@@ -35,6 +40,11 @@ ShellRoot {
         powerMenuRef: pmModule
         wifiService: wifiSvc
         bluetoothService: btSvc
+    }
+
+    // Background widgets overlay
+    Modules.WidgetOverlay {
+        windowService: winSvc
     }
 
     // ── Session Lock ──

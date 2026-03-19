@@ -76,6 +76,11 @@
       ...
     }@inputs:
     let
+      # Overlays to fix package issues
+      overlays = [
+        (import ./overlays/btop-icon-fix.nix)
+      ];
+
       # Shared modules used by all hosts
       sharedModules = [
         ./main/configuration.nix
@@ -108,7 +113,9 @@
         nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           specialArgs = { inherit inputs; };
-          modules = sharedModules ++ hostModules;
+          modules = sharedModules ++ hostModules ++ [
+            { nixpkgs.overlays = overlays; }
+          ];
         };
     in
     {

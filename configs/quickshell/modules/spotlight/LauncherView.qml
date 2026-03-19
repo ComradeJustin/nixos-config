@@ -10,7 +10,7 @@ Item {
     implicitWidth: parent ? parent.width : 500
     implicitHeight: launchInner.implicitHeight
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     property string searchText: ""
     property int selectedIndex: 0
@@ -151,8 +151,8 @@ Item {
         Text {
             visible: filteredIndices.length === 0
             text: searchText.length > 0 ? "No matches" : "Loading…"
-            color: theme.textDimmed
-            font { family: theme.fontFamily; pixelSize: theme.notifBodySize }
+            color: Root.Theme.textDimmed
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.notifBodySize }
             width: parent.width; height: 60
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
@@ -162,15 +162,15 @@ Item {
             id: appFlick
             visible: filteredIndices.length > 0
             width: parent.width
-            height: Math.min(appCol.implicitHeight, theme.launchMaxHeight - 100)
+            height: Math.min(appCol.implicitHeight, Root.Theme.launchMaxHeight - 100)
             contentHeight: appCol.implicitHeight
             clip: true; boundsBehavior: Flickable.StopAtBounds
 
             function ensureVisible(selIdx) {
-                let y = selIdx * theme.launchItemHeight;
+                let y = selIdx * Root.Theme.launchItemHeight;
                 if (y < contentY) contentY = y;
-                else if (y + theme.launchItemHeight > contentY + height)
-                    contentY = y + theme.launchItemHeight - height;
+                else if (y + Root.Theme.launchItemHeight > contentY + height)
+                    contentY = y + Root.Theme.launchItemHeight - height;
             }
 
             Column {
@@ -183,23 +183,23 @@ Item {
                     Rectangle {
                         id: appItem
                         width: appCol.width
-                        height: theme.launchItemHeight
+                        height: Root.Theme.launchItemHeight
 
                         property int sourceIndex: root.filteredIndices[index] ?? -1
                         property var entry: sourceIndex >= 0 ? appModel.get(sourceIndex) : null
                         property bool isSelected: index === root.selectedIndex
 
                         color: isSelected
-                            ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.12)
+                            ? Qt.rgba(Root.Theme.textAccent.r, Root.Theme.textAccent.g, Root.Theme.textAccent.b, 0.12)
                             : appMouse.containsMouse
-                              ? Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.06)
+                              ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.06)
                               : "transparent"
 
                         RowLayout {
                             anchors {
                                 left: parent.left; right: parent.right
                                 verticalCenter: parent.verticalCenter
-                                leftMargin: theme.notifPadding; rightMargin: theme.notifPadding
+                                leftMargin: Root.Theme.notifPadding; rightMargin: Root.Theme.notifPadding
                             }
                             spacing: 12
 
@@ -212,27 +212,27 @@ Item {
                                     if (p.indexOf("/") !== -1) return "file://" + p;
                                     return "image://icon/" + p;
                                 }
-                                sourceSize.width: theme.launchIconSize; sourceSize.height: theme.launchIconSize
-                                Layout.preferredWidth: theme.launchIconSize; Layout.preferredHeight: theme.launchIconSize
+                                sourceSize.width: Root.Theme.launchIconSize; sourceSize.height: Root.Theme.launchIconSize
+                                Layout.preferredWidth: Root.Theme.launchIconSize; Layout.preferredHeight: Root.Theme.launchIconSize
                                 visible: status === Image.Ready; smooth: true
                             }
 
                             Rectangle {
                                 visible: appIconImg.status !== Image.Ready
-                                Layout.preferredWidth: theme.launchIconSize; Layout.preferredHeight: theme.launchIconSize
-                                radius: 8; color: theme.textDimmed; opacity: 0.2
+                                Layout.preferredWidth: Root.Theme.launchIconSize; Layout.preferredHeight: Root.Theme.launchIconSize
+                                radius: 8; color: Root.Theme.textDimmed; opacity: 0.2
                                 Text {
                                     anchors.centerIn: parent
                                     text: appItem.entry ? appItem.entry.appName.charAt(0).toUpperCase() : ""
-                                    color: theme.textPrimary
-                                    font { family: theme.fontFamily; pixelSize: 16; bold: true }
+                                    color: Root.Theme.textPrimary
+                                    font { family: Root.Theme.fontFamily; pixelSize: 16; bold: true }
                                 }
                             }
 
                             Text {
                                 text: appItem.entry ? appItem.entry.appName : ""
-                                color: appItem.isSelected ? theme.textAccent : theme.textPrimary
-                                font { family: theme.fontFamily; pixelSize: theme.notifTitleSize; bold: appItem.isSelected }
+                                color: appItem.isSelected ? Root.Theme.textAccent : Root.Theme.textPrimary
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.notifTitleSize; bold: appItem.isSelected }
                                 Layout.fillWidth: true; elide: Text.ElideRight
                             }
                         }

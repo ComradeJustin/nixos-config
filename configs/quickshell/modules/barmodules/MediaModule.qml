@@ -4,7 +4,7 @@ import "../.." as Root
 Item {
     id: root
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     property int fixedTextWidth: 200
     property real scrollSpeed: 30
@@ -19,14 +19,32 @@ Item {
     property bool needsScroll: innerText.contentWidth > fixedTextWidth
 
     implicitWidth: visible ? playIcon.width + 6 + fixedTextWidth : 0
-    implicitHeight: theme.barHeight
+    implicitHeight: Root.Theme.barHeight
+
+    // Hover background for entire media module
+    Rectangle {
+        id: hoverBg
+        anchors.fill: parent
+        anchors.margins: -4
+        radius: Root.Theme.radiusSmall
+        color: mediaHover.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.08) : "transparent"
+        Behavior on color { ColorAnimation { duration: 100 } }
+    }
+
+    MouseArea {
+        id: mediaHover
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        acceptedButtons: Qt.NoButton  // Don't consume clicks, let children handle
+    }
 
     Text {
         id: playIcon
         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-        text: root.isPlaying ? theme.iconMediaPlay : theme.iconMediaPause
-        color: theme.textAccent
-        font { family: theme.fontFamily; pixelSize: theme.iconSize }
+        text: root.isPlaying ? Root.Theme.iconMediaPlay : Root.Theme.iconMediaPause
+        color: mediaHover.containsMouse ? Root.Theme.textAccent : Root.Theme.textAccent
+        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
 
         MouseArea {
             anchors.fill: parent; cursorShape: Qt.PointingHandCursor
@@ -37,23 +55,29 @@ Item {
     Item {
         id: textContainer
         anchors { left: playIcon.right; leftMargin: 6 }
-        width: root.fixedTextWidth; height: theme.barHeight; y: 0; clip: true
+        width: root.fixedTextWidth; height: Root.Theme.barHeight; y: 0; clip: true
 
         Text {
             anchors.verticalCenter: parent.verticalCenter; width: parent.width
-            text: root.mediaText; color: theme.textDimmed
-            font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
+            text: root.mediaText
+            color: mediaHover.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
             elide: Text.ElideRight; visible: !root.needsScroll
         }
 
         Row {
             id: scrollRow; anchors.verticalCenter: parent.verticalCenter; visible: root.needsScroll
             Text {
-                id: innerText; text: root.mediaText; color: theme.textDimmed
-                font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
+                id: innerText; text: root.mediaText
+                color: mediaHover.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
             }
             Item { width: 40; height: 1 }
-            Text { text: root.mediaText; color: theme.textDimmed; font: innerText.font }
+            Text {
+                text: root.mediaText
+                color: mediaHover.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed
+                font: innerText.font
+            }
         }
 
         NumberAnimation {

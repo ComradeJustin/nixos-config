@@ -8,18 +8,18 @@ import ".." as Root
 Scope {
     id: pm
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     property bool showing: false
     property var powerService: null
     property int selectedIndex: 0
 
     property var actions: [
-        { icon: theme.iconLock, label: "Lock", action: "lock" },
-        { icon: theme.iconSuspend, label: "Suspend", action: "suspend" },
-        { icon: theme.iconLogout, label: "Logout", action: "logout" },
-        { icon: theme.iconReboot, label: "Reboot", action: "reboot" },
-        { icon: theme.iconShutdown, label: "Shutdown", action: "shutdown" }
+        { icon: Root.Theme.iconLock, label: "Lock", action: "lock" },
+        { icon: Root.Theme.iconSuspend, label: "Suspend", action: "suspend" },
+        { icon: Root.Theme.iconLogout, label: "Logout", action: "logout" },
+        { icon: Root.Theme.iconReboot, label: "Reboot", action: "reboot" },
+        { icon: Root.Theme.iconShutdown, label: "Shutdown", action: "shutdown" }
     ]
 
     function toggle() {
@@ -79,15 +79,15 @@ Scope {
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "Session"
-                color: theme.textPrimary
-                font { family: theme.fontFamily; pixelSize: 22; bold: true }
+                color: Root.Theme.textPrimary
+                font { family: Root.Theme.fontFamily; pixelSize: 22; bold: true }
             }
 
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "Arrow keys to navigate, Enter to select\nEsc or click anywhere to cancel"
-                color: theme.textDimmed
-                font { family: theme.fontFamily; pixelSize: 12 }
+                color: Root.Theme.textDimmed
+                font { family: Root.Theme.fontFamily; pixelSize: 12 }
                 horizontalAlignment: Text.AlignHCenter
                 lineHeight: 1.3
             }
@@ -105,8 +105,8 @@ Scope {
                         width: 90; height: 90
                         radius: pm.selectedIndex === index ? 45 : 16
                         color: pm.selectedIndex === index
-                            ? Qt.rgba(theme.textAccent.r, theme.textAccent.g, theme.textAccent.b, 0.8)
-                            : theme.ccSectionBg
+                            ? Qt.rgba(Root.Theme.textAccent.r, Root.Theme.textAccent.g, Root.Theme.textAccent.b, 0.8)
+                            : Root.Theme.ccSectionBg
 
                         Behavior on radius { NumberAnimation { duration: 150 } }
                         Behavior on color { ColorAnimation { duration: 150 } }
@@ -114,11 +114,11 @@ Scope {
                         Text {
                             anchors.centerIn: parent
                             text: modelData.icon
-                            color: pm.selectedIndex === index ? theme.barBackground
-                                 : modelData.action === "shutdown" ? theme.textCritical
-                                 : modelData.action === "reboot" ? theme.textOrange
-                                 : theme.textPrimary
-                            font { family: theme.fontFamily; pixelSize: 28 }
+                            color: pm.selectedIndex === index ? Root.Theme.barBackground
+                                 : modelData.action === "shutdown" ? Root.Theme.textCritical
+                                 : modelData.action === "reboot" ? Root.Theme.textOrange
+                                 : Root.Theme.textPrimary
+                            font { family: Root.Theme.fontFamily; pixelSize: 28 }
                         }
 
                         MouseArea {
@@ -136,8 +136,8 @@ Scope {
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: pm.actions[pm.selectedIndex].label
-                color: theme.textPrimary
-                font { family: theme.fontFamily; pixelSize: 14 }
+                color: Root.Theme.textPrimary
+                font { family: Root.Theme.fontFamily; pixelSize: 14 }
             }
         }
 

@@ -8,7 +8,7 @@ Item {
     implicitWidth: wsRow.implicitWidth
     implicitHeight: wsRow.implicitHeight
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     property int maxVisible: 6
 
@@ -24,26 +24,38 @@ Item {
         }
     }
 
-    // Minimal workspace indicators - fixed size dots with opacity states
+    // Workspace indicators - rounded pills that expand when focused
     Row {
         id: wsRow
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 10
+        spacing: 8
 
         Repeater {
             model: niri.workspaces
 
             Rectangle {
-                width: 6
+                id: wsIndicator
+                width: model.isFocused ? 18 : 6   // Pill when active, dot otherwise
                 height: 6
-                radius: 0  // Brutalist: fully square
-                color: theme.textPrimary
+                radius: 3                          // Fully rounded (half height)
+                color: Root.Theme.textPrimary
                 opacity: model.isFocused ? 1.0
                        : model.isActive  ? 0.5
                        :                   0.2
 
+                Behavior on width {
+                    NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+                }
                 Behavior on opacity {
-                    NumberAnimation { duration: 100; easing.type: Easing.OutQuad }
+                    NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+                }
+
+                // Subtle scale animation on focus change
+                transform: Scale {
+                    origin.x: wsIndicator.width / 2
+                    origin.y: wsIndicator.height / 2
+                    xScale: model.isFocused ? 1.0 : 1.0
+                    yScale: model.isFocused ? 1.0 : 1.0
                 }
 
                 MouseArea {

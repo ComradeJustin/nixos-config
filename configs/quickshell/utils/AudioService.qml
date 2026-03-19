@@ -12,8 +12,14 @@ Scope {
     property var sources: ListModel {}
     property string activeSink: ""
     property string activeSource: ""
+    property string activeDeviceLabel: ""
 
-    Component.onCompleted: { pollProc.running = true; sinkProc.running = true; sourceProc.running = true; }
+    // Signals for OSD integration (named to avoid conflict with auto-generated property signals)
+    signal volumeUpdated(int oldValue, int newValue)
+    signal muteToggled(bool oldMuted, bool newMuted)
+    signal deviceSwitched(string oldDevice, string newDevice)
+
+    Component.onCompleted: { pollProc.running = true; sinkProc.running = true; sourceProc.running = true; devProc.running = true; }
 
     function setVolume(v) {
         v = Math.max(0, Math.min(100, v));
@@ -61,11 +67,26 @@ Scope {
         command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]
         stdout: SplitParser {
             onRead: data => {
-                root.muted = data.indexOf("[MUTED]") !== -1;
+                let wasMuted = root.muted;
+                let wasVol = root.volume;
+
+                let newMuted = data.indexOf("[MUTED]") !== -1;
+                let newVol = wasVol;
+
                 let p = data.split(" ");
                 if (p.length >= 2) {
                     let f = parseFloat(p[1]);
-                    if (!isNaN(f)) root.volume = Math.round(f * 100);
+                    if (!isNaN(f)) newVol = Math.round(f * 100);
+                }
+
+                // Update and emit signals
+                if (newMuted !== wasMuted) {
+                    root.muted = newMuted;
+                    root.muteToggled(wasMuted, newMuted);
+                }
+                if (newVol !== wasVol) {
+                    root.volume = newVol;
+                    if (wasVol >= 0) root.volumeUpdated(wasVol, newVol);
                 }
             }
         }
@@ -76,6 +97,9 @@ Scope {
     Process { id: muteProc; command: ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"] }
 
     // ── Per-app volume (PipeWire native) ──
+    // Use a temporary list to avoid flicker from clear/repopulate
+    property var pendingApps: []
+
     Process {
         id: appScanProc
         command: ["bash", "-c",
@@ -87,10 +111,36 @@ Scope {
             onRead: data => {
                 let p = data.split("\t");
                 if (p.length < 4) return;
-                root.appStreams.append({ "appIdx": p[0], "appName": p[1] || "Unknown", "appIcon": p[2] || "", "appVol": parseInt(p[3]) || 100 });
+                root.pendingApps.push({ "appIdx": p[0], "appName": p[1] || "Unknown", "appIcon": p[2] || "", "appVol": parseInt(p[3]) || 100 });
             }
         }
-        onStarted: root.appStreams.clear()
+        onStarted: root.pendingApps = []
+        onExited: {
+            // Smart update: only modify what changed to prevent flicker
+            let newApps = root.pendingApps;
+            let oldCount = root.appStreams.count;
+            let newCount = newApps.length;
+
+            // Update existing items or add new ones
+            for (let i = 0; i < newCount; i++) {
+                if (i < oldCount) {
+                    // Update existing item if different
+                    let old = root.appStreams.get(i);
+                    let neu = newApps[i];
+                    if (old.appIdx !== neu.appIdx || old.appName !== neu.appName || old.appVol !== neu.appVol) {
+                        root.appStreams.set(i, neu);
+                    }
+                } else {
+                    // Add new item
+                    root.appStreams.append(newApps[i]);
+                }
+            }
+
+            // Remove extra items from the end
+            while (root.appStreams.count > newCount) {
+                root.appStreams.remove(root.appStreams.count - 1);
+            }
+        }
     }
     Process { id: appSetProc; property string idx: ""; property real vol: 0; command: ["wpctl", "set-volume", idx, vol.toString()] }
 
@@ -139,4 +189,30 @@ Scope {
         onStarted: root.sources.clear()
     }
     Process { id: sourceSetProc; property string sourceName: ""; command: ["pactl", "set-default-source", sourceName] }
+
+    // ── Device label polling (for OSD) ──
+    Process {
+        id: devProc
+        command: [
+            "bash", "-c",
+            "wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null | " +
+            "grep -oP 'node\\.description\\s*=\\s*\"\\K[^\"]+' || echo ''"
+        ]
+        stdout: SplitParser {
+            onRead: data => {
+                let name = data.trim();
+                if (name.length === 0) return;
+
+                let wasDevice = root.activeDeviceLabel;
+                if (name !== wasDevice) {
+                    root.activeDeviceLabel = name;
+                    if (wasDevice.length > 0) {
+                        root.deviceSwitched(wasDevice, name);
+                    }
+                }
+            }
+        }
+        onExited: devPollTimer.start()
+    }
+    Timer { id: devPollTimer; interval: 800; onTriggered: devProc.running = true }
 }

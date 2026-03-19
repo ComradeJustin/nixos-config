@@ -8,14 +8,14 @@ Item {
     implicitWidth: row.implicitWidth
     implicitHeight: row.implicitHeight
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     // Set your coordinates (default: auto-detect via ip-api)
     property real latitude: 0
     property real longitude: 0
     property string temperature: "--"
     property int weatherCode: -1
-    property string weatherIcon: theme.iconWeatherDefault
+    property string weatherIcon: Root.Theme.iconWeatherDefault
     property bool fetching: false
     property bool hasLocation: false
 
@@ -26,15 +26,15 @@ Item {
 
         Text {
             text: root.weatherIcon
-            color: theme.textPrimary
-            font { family: theme.fontFamily; pixelSize: theme.iconSize }
+            color: Root.Theme.textPrimary
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }
 
         Text {
             text: root.temperature
-            color: theme.textPrimary
-            font { family: theme.fontFamily; pixelSize: theme.fontSize; bold: theme.fontBold }
+            color: Root.Theme.textPrimary
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
             anchors.verticalCenter: parent.verticalCenter
         }
     }
@@ -42,24 +42,24 @@ Item {
     // WMO Weather codes to icons
     function codeToIcon(code) {
         // Clear
-        if (code === 0) return theme.iconWeatherSunny;
+        if (code === 0) return Root.Theme.iconWeatherSunny;
         // Partly cloudy
-        if (code === 1 || code === 2) return theme.iconWeatherPartly;
+        if (code === 1 || code === 2) return Root.Theme.iconWeatherPartly;
         // Overcast
-        if (code === 3) return theme.iconWeatherCloudy;
+        if (code === 3) return Root.Theme.iconWeatherCloudy;
         // Fog
-        if (code >= 45 && code <= 48) return theme.iconWeatherFog;
+        if (code >= 45 && code <= 48) return Root.Theme.iconWeatherFog;
         // Drizzle / Rain
-        if (code >= 51 && code <= 67) return theme.iconWeatherRain;
+        if (code >= 51 && code <= 67) return Root.Theme.iconWeatherRain;
         // Snow
-        if (code >= 71 && code <= 77) return theme.iconWeatherSnow;
+        if (code >= 71 && code <= 77) return Root.Theme.iconWeatherSnow;
         // Showers
-        if (code >= 80 && code <= 82) return theme.iconWeatherRain;
+        if (code >= 80 && code <= 82) return Root.Theme.iconWeatherRain;
         // Snow showers
-        if (code >= 85 && code <= 86) return theme.iconWeatherSnow;
+        if (code >= 85 && code <= 86) return Root.Theme.iconWeatherSnow;
         // Thunderstorm
-        if (code >= 95 && code <= 99) return theme.iconWeatherStorm;
-        return theme.iconWeatherDefault;
+        if (code >= 95 && code <= 99) return Root.Theme.iconWeatherStorm;
+        return Root.Theme.iconWeatherDefault;
     }
 
     // Step 1: Get location from IP

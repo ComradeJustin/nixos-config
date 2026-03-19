@@ -9,7 +9,7 @@ import "barmodules" as BarModules
 Scope {
     id: barScope
 
-    Root.Theme { id: theme }
+    // Theme is now a singleton - access via Root.Theme.propertyName
 
     property bool isHidden: false
     property bool showCava: false
@@ -55,13 +55,13 @@ Scope {
             left: true
             right: true
         }
-        implicitHeight: theme.barHeight
+        implicitHeight: Root.Theme.barHeight
 
         WlrLayershell.namespace: "quickshell-bar"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         exclusionMode: ExclusionMode.Normal
-        exclusiveZone: barScope.isHidden ? 0 : theme.barHeight
+        exclusiveZone: barScope.isHidden ? 0 : Root.Theme.barHeight
 
         color: "transparent"
 
@@ -72,9 +72,9 @@ Scope {
             Rectangle {
                 id: bg
                 width: parent.width
-                height: theme.barHeight
-                color: theme.barBackground
-                y: barScope.isHidden ? -theme.barHeight : 0
+                height: Root.Theme.barHeight
+                color: Root.Theme.barBackground
+                y: barScope.isHidden ? -Root.Theme.barHeight : 0
 
                 Behavior on y {
                     NumberAnimation { duration: 200; easing.type: Easing.InOutCubic }
@@ -83,14 +83,14 @@ Scope {
                 // ── Left ──
                 Row {
                     id: leftSection
-                    height: theme.barHeight
+                    height: Root.Theme.barHeight
                     anchors {
                         left: parent.left
-                        leftMargin: theme.barPadding
+                        leftMargin: Root.Theme.barPadding
                         verticalCenter: parent.verticalCenter
                     }
-                    spacing: theme.barSpacing
-                    width: Math.min(implicitWidth, mediaModule.x - theme.barPadding - theme.barSpacing)
+                    spacing: Root.Theme.barSpacing
+                    width: Math.min(implicitWidth, mediaModule.x - Root.Theme.barPadding - Root.Theme.barSpacing)
                     clip: true
 
                     BarModules.PowerIcon {
@@ -114,13 +114,13 @@ Scope {
                 // ── Right ──
                 Row {
                     id: rightSection
-                    height: theme.barHeight
+                    height: Root.Theme.barHeight
                     anchors {
                         right: parent.right
-                        rightMargin: theme.barPadding
+                        rightMargin: Root.Theme.barPadding
                         verticalCenter: parent.verticalCenter
                     }
-                    spacing: theme.barSpacing
+                    spacing: Root.Theme.barSpacing
 
                     BarModules.UtilsModule {
                         id: utilsModule
@@ -142,228 +142,10 @@ Scope {
     // ══════════════════════════════════
     // ── Media popup (uses playerService) ──
     // ══════════════════════════════════
-    property bool cavaWanted: barScope.showCava && !barScope.isHidden
-    property var ps: barScope.playerService
-
-    onCavaWantedChanged: {
-        if (cavaWanted) cavaPanel.visible = true;
-    }
-
-    PanelWindow {
-        id: cavaPanel
-
-        visible: false
-
-        anchors { top: true }
-        implicitWidth: theme.cavaWidth
-        margins.top: theme.barHeight
-        implicitHeight: theme.cavaHeight + 6
-
-        WlrLayershell.namespace: "quickshell-cava"
-        WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-        exclusionMode: ExclusionMode.Ignore
-
-        color: "transparent"
-
-        Item {
-            anchors.fill: parent
-            clip: true
-
-            Rectangle {
-                id: cavaRect
-                width: parent.width
-                height: theme.cavaHeight
-                radius: 0  // Brutalist: square
-                color: theme.cavaBackground
-                border.width: theme.borderWidth
-                border.color: theme.borderColor
-
-                y: barScope.cavaWanted ? 6 : -(theme.cavaHeight + 6)
-
-                Behavior on y {
-                    NumberAnimation { duration: 200; easing.type: Easing.InOutCubic }
-                }
-
-                onYChanged: {
-                    if (!barScope.cavaWanted && y <= -(theme.cavaHeight + 5))
-                        cavaPanel.visible = false;
-                }
-
-                // Block all clicks from falling through to compositor
-                MouseArea {
-                    anchors.fill: parent
-                    acceptedButtons: Qt.AllButtons
-                }
-
-                // ── Cava bars as background (from playerService) ──
-                Row {
-                    anchors.bottom: parent.bottom
-                    anchors.bottomMargin: 4
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: 1
-                    opacity: 0.15
-
-                    Repeater {
-                        model: theme.cavaBars
-                        Rectangle {
-                            width: Math.max(1, (theme.cavaWidth - theme.cavaBars - 20) / theme.cavaBars)
-                            height: {
-                                let vals = barScope.ps ? barScope.ps.cavaBars : [];
-                                if (!vals || index >= vals.length) return 1;
-                                return Math.max(1, vals[index] * (theme.cavaHeight - 10));
-                            }
-                            radius: 0  // Brutalist: square bars
-                            anchors.bottom: parent.bottom
-                            color: {
-                                let vals = barScope.ps ? barScope.ps.cavaBars : [];
-                                return (vals && index < vals.length && vals[index] > 0.7) ? theme.cavaBarPeak : theme.cavaBarColor;
-                            }
-                            Behavior on height { NumberAnimation { duration: 50 } }
-                        }
-                    }
-                }
-
-                // ── Content ──
-                Column {
-                    id: mediaContent
-                    anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12 }
-                    spacing: 6
-
-                    Row {
-                        width: parent.width; spacing: 10
-
-                        Rectangle {
-                            width: theme.cavaArtSize; height: theme.cavaArtSize
-                            radius: 0; clip: true  // Brutalist: square
-                            color: Qt.rgba(theme.textDimmed.r, theme.textDimmed.g, theme.textDimmed.b, 0.2)
-                            border.width: theme.borderWidth
-                            border.color: theme.borderColor
-
-                            Image {
-                                id: artImg; anchors.fill: parent
-                                source: barScope.ps ? barScope.ps.trackArtUrl : ""
-                                fillMode: Image.PreserveAspectCrop; smooth: true; asynchronous: true
-                                visible: status === Image.Ready
-                            }
-                            Text {
-                                anchors.centerIn: parent; text: theme.iconMediaPlay; color: theme.textDimmed
-                                font { family: theme.fontFamily; pixelSize: 24 }
-                                visible: artImg.status !== Image.Ready
-                            }
-                        }
-
-                        Column {
-                            width: parent.width - theme.cavaArtSize - 10
-                            anchors.verticalCenter: parent.verticalCenter; spacing: 2
-
-                            Text {
-                                text: barScope.ps ? barScope.ps.trackTitle : ""
-                                color: theme.textPrimary
-                                font { family: theme.fontFamily; pixelSize: 13; bold: true }
-                                width: parent.width; elide: Text.ElideRight
-                            }
-                            Text {
-                                text: barScope.ps ? barScope.ps.trackArtist : ""
-                                color: theme.textDimmed
-                                font { family: theme.fontFamily; pixelSize: 11 }
-                                width: parent.width; elide: Text.ElideRight
-                                visible: barScope.ps ? barScope.ps.trackArtist.length > 0 : false
-                            }
-                        }
-                    }
-
-                    // Seekable progress bar (thin, industrial)
-                    Item {
-                        id: seekBar
-                        width: parent.width; height: 16
-                        property real pos: barScope.ps ? barScope.ps.position : 0
-                        property real len: barScope.ps ? barScope.ps.length : 0
-                        property real ratio: len > 0 ? pos / len : 0
-                        property bool dragging: false
-                        property real dragRatio: 0
-
-                        Rectangle {
-                            anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
-                            height: 3; radius: 0; color: theme.textDimmed; opacity: 0.3
-                        }
-                        Rectangle {
-                            anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                            height: 3; radius: 0; color: theme.textAccent
-                            width: parent.width * (seekBar.dragging ? seekBar.dragRatio : seekBar.ratio)
-                        }
-                        Rectangle {
-                            width: 10; height: 10; radius: 0; color: theme.textAccent
-                            y: (parent.height - 10) / 2
-                            x: (parent.width - 10) * (seekBar.dragging ? seekBar.dragRatio : seekBar.ratio)
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                            onPressed: function(mouse) {
-                                seekBar.dragging = true;
-                                seekBar.dragRatio = Math.max(0, Math.min(1, mouse.x / seekBar.width));
-                            }
-                            onPositionChanged: function(mouse) {
-                                if (pressed)
-                                    seekBar.dragRatio = Math.max(0, Math.min(1, mouse.x / seekBar.width));
-                            }
-                            onReleased: {
-                                if (barScope.ps && seekBar.len > 0)
-                                    barScope.ps.seek(seekBar.dragRatio * seekBar.len);
-                                seekBar.dragging = false;
-                            }
-                        }
-                    }
-
-                    // Time labels
-                    Item {
-                        width: parent.width; height: 12
-                        Text {
-                            anchors.left: parent.left
-                            text: barScope.ps ? barScope.ps.formatTime(seekBar.dragging ? seekBar.dragRatio * seekBar.len : seekBar.pos) : "0:00"
-                            color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 10 }
-                        }
-                        Text {
-                            anchors.right: parent.right
-                            text: barScope.ps ? barScope.ps.formatTime(seekBar.len) : "0:00"
-                            color: theme.textDimmed; font { family: theme.fontFamily; pixelSize: 10 }
-                        }
-                    }
-
-                    // Controls
-                    Row {
-                        anchors.horizontalCenter: parent.horizontalCenter; spacing: 20; height: 36
-
-                        Text {
-                            text: theme.iconPrev; color: theme.textPrimary
-                            font { family: theme.fontFamily; pixelSize: 18 }
-                            anchors.verticalCenter: parent.verticalCenter
-                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (barScope.ps) barScope.ps.previous(); } }
-                        }
-
-                        Rectangle {
-                            width: 36; height: 36; radius: 0; color: theme.textAccent
-                            anchors.verticalCenter: parent.verticalCenter
-                            Text {
-                                anchors.centerIn: parent
-                                text: (barScope.ps && barScope.ps.isPlaying) ? theme.iconMediaPause : theme.iconMediaPlay
-                                color: theme.barBackground
-                                font { family: theme.fontFamily; pixelSize: 18 }
-                            }
-                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (barScope.ps) barScope.ps.togglePlaying(); } }
-                        }
-
-                        Text {
-                            text: theme.iconNext; color: theme.textPrimary
-                            font { family: theme.fontFamily; pixelSize: 18 }
-                            anchors.verticalCenter: parent.verticalCenter
-                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (barScope.ps) barScope.ps.next(); } }
-                        }
-                    }
-                }
-            }
-        }
+    BarModules.MediaPopup {
+        playerService: barScope.playerService
+        showCava: barScope.showCava
+        barHidden: barScope.isHidden
     }
 
     // ══════════════════════════════════
