@@ -43,7 +43,7 @@ Item {
         id: playIcon
         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
         text: root.isPlaying ? Root.Theme.iconMediaPlay : Root.Theme.iconMediaPause
-        color: mediaHover.containsMouse ? Root.Theme.textAccent : Root.Theme.textAccent
+        color: Root.Theme.domainMedia
         font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
 
         MouseArea {

@@ -23,14 +23,14 @@ Item {
 
         Text {
             text: Root.Theme.iconCpu
-            color: root.cpuPercent >= 90 ? Root.Theme.textCritical : Root.Theme.textPrimary
+            color: root.cpuPercent >= 90 ? Root.Theme.accentDanger : Root.Theme.domainSystem
             font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }
 
         Text {
             text: root.cpuPercent >= 0 ? "Cpu " + root.cpuPercent + "%" : "Cpu --"
-            color: root.cpuPercent >= 90 ? Root.Theme.textCritical : Root.Theme.textPrimary
+            color: root.cpuPercent >= 90 ? Root.Theme.accentDanger : Root.Theme.textPrimary
             font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
             anchors.verticalCenter: parent.verticalCenter
         }
@@ -39,7 +39,7 @@ Item {
 
         Text {
             text: Root.Theme.iconRam
-            color: Root.Theme.textPrimary
+            color: Root.Theme.domainSystem
             font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }

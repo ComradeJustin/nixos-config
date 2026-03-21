@@ -27,8 +27,8 @@ Item {
             }
             color: {
                 if (!root.bluetoothService || !root.bluetoothService.enabled) return Root.Theme.textDimmed;
-                if (root.bluetoothService.connected) return Root.Theme.textAccent;
-                return Root.Theme.textPrimary;
+                if (root.bluetoothService.connected) return Root.Theme.accentSuccess;
+                return Root.Theme.domainNetwork;
             }
             font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
@@ -46,7 +46,7 @@ Item {
             }
             color: {
                 if (!root.bluetoothService || !root.bluetoothService.enabled) return Root.Theme.textDimmed;
-                if (root.bluetoothService.connected) return Root.Theme.textAccent;
+                if (root.bluetoothService.connected) return Root.Theme.textPrimary;
                 return Root.Theme.textPrimary;
             }
             font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }

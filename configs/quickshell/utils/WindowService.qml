@@ -2,22 +2,26 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 
-// Tracks window state for widget occlusion
+// Tracks window state and overview mode for widget occlusion
 Scope {
     id: root
 
-    // True when widgets should be visible (no windows on active workspace)
-    property bool widgetsVisible: windowCount === 0
+    // True when widgets should be visible (no windows on active workspace AND not in overview)
+    property bool widgetsVisible: windowCount === 0 && !overviewOpen
     property int windowCount: 0
+    property bool overviewOpen: false
 
-    Component.onCompleted: checkProc.running = true
+    Component.onCompleted: {
+        checkProc.running = true;
+        overviewProc.running = true;
+    }
 
-    // Single combined check - gets active workspace and counts its windows
+    // Use JSON output for reliable parsing - workspace IDs can be non-contiguous
     Process {
         id: checkProc
         command: ["bash", "-c",
-            "ws=$(niri msg workspaces 2>/dev/null | grep -E '^\\s*\\*' | awk '{print $2}'); " +
-            "niri msg windows 2>/dev/null | grep -c \"Workspace ID: $ws\" || echo 0"
+            "ws=$(niri msg -j workspaces 2>/dev/null | jq '.[] | select(.is_active) | .id'); " +
+            "niri msg -j windows 2>/dev/null | jq --arg ws \"$ws\" '[.[] | select(.workspace_id == ($ws | tonumber))] | length'"
         ]
 
         stdout: SplitParser {
@@ -32,6 +36,18 @@ Scope {
         onExited: pollTimer.start()
     }
 
+    // Check overview state
+    Process {
+        id: overviewProc
+        command: ["bash", "-c", "niri msg -j overview-state 2>/dev/null | jq -r '.is_open'"]
+
+        stdout: SplitParser {
+            onRead: data => {
+                root.overviewOpen = data.trim() === "true";
+            }
+        }
+    }
+
     // Poll regularly
     Timer {
         id: pollTimer
@@ -39,7 +55,7 @@ Scope {
         onTriggered: checkProc.running = true
     }
 
-    // Also listen to niri events for faster response
+    // Listen to niri events for faster response
     Process {
         id: eventProc
         command: ["niri", "msg", "event-stream"]
@@ -47,6 +63,12 @@ Scope {
 
         stdout: SplitParser {
             onRead: data => {
+                // Check for overview toggle events
+                if (data.indexOf("Overview toggled") !== -1) {
+                    // Parse "Overview toggled: true/false"
+                    root.overviewOpen = data.indexOf("true") !== -1;
+                }
+                // Check for window/workspace changes
                 if (data.indexOf("Window") !== -1 || data.indexOf("Workspace") !== -1) {
                     // Immediate check on relevant events
                     checkProc.running = true;

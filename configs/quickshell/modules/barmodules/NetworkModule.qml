@@ -17,21 +17,23 @@ Item {
 
         Text {
             text: {
-                if (!root.wifiService || !root.wifiService.connected) return Root.Theme.iconWifiOff;
+                if (!root.wifiService || !root.wifiService.enabled) return Root.Theme.iconWifiOff;
+                if (!root.wifiService.connected) return Root.Theme.iconWifiMin;
                 if (root.wifiService.iface === "ethernet") return Root.Theme.iconEth;
                 if (root.wifiService.signal > 75) return Root.Theme.iconWifiHi;
                 if (root.wifiService.signal > 50) return Root.Theme.iconWifiMid;
                 if (root.wifiService.signal > 25) return Root.Theme.iconWifiLow;
                 return Root.Theme.iconWifiMin;
             }
-            color: (root.wifiService && root.wifiService.connected) ? Root.Theme.textPrimary : Root.Theme.textDimmed
+            color: (root.wifiService && root.wifiService.connected) ? Root.Theme.domainNetwork : Root.Theme.textDimmed
             font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }
 
         Text {
             text: {
-                if (!root.wifiService || !root.wifiService.connected) return "Net off";
+                if (!root.wifiService || !root.wifiService.enabled) return "Wi-Fi off";
+                if (!root.wifiService.connected) return "No network";
                 if (root.wifiService.iface === "ethernet") return "Eth";
                 return root.wifiService.ssid;
             }

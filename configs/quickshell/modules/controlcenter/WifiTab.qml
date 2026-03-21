@@ -32,7 +32,7 @@ Flickable {
 
                 Text {
                     text: Root.Theme.iconWifiHi
-                    color: Root.Theme.textAccent
+                    color: Root.Theme.domainNetwork
                     font { family: Root.Theme.fontFamily; pixelSize: 18 }
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -42,12 +42,12 @@ Flickable {
 
                     Text {
                         text: root.wifiService ? root.wifiService.ssid : ""
-                        color: Root.Theme.textAccent
+                        color: Root.Theme.textPrimary
                         font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true }
                     }
                     Text {
                         text: "Connected"
-                        color: Root.Theme.textDimmed
+                        color: Root.Theme.accentSuccess
                         font { family: Root.Theme.fontFamily; pixelSize: 10; letterSpacing: 1 }
                     }
                 }
@@ -92,6 +92,7 @@ Flickable {
                     : Root.Theme.iconWifiMin
                 label: model.wifiSsid
                 isActive: false
+                accentColor: Root.Theme.domainNetwork
                 onClicked: {
                     if (root.wifiService) root.wifiService.connectTo(model.wifiSsid);
                 }

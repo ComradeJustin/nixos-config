@@ -11,7 +11,7 @@
     security.pam.services = {
       login.fprintAuth = true;
       sudo.fprintAuth = true;
-      polkit.fprintAuth = true;
+      polkit-1.fprintAuth = true;
       quickshell-bar.fprintAuth = true;
     };
   };

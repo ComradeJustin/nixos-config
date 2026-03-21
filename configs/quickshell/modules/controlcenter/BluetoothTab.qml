@@ -32,7 +32,7 @@ Flickable {
 
                 Text {
                     text: Root.Theme.iconBtConnected
-                    color: Root.Theme.textAccent
+                    color: Root.Theme.domainNetwork
                     font { family: Root.Theme.fontFamily; pixelSize: 18 }
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -42,12 +42,12 @@ Flickable {
 
                     Text {
                         text: root.bluetoothService ? root.bluetoothService.connectedDevice : ""
-                        color: Root.Theme.textAccent
+                        color: Root.Theme.textPrimary
                         font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true }
                     }
                     Text {
                         text: "Connected"
-                        color: Root.Theme.textDimmed
+                        color: Root.Theme.accentSuccess
                         font { family: Root.Theme.fontFamily; pixelSize: 10; letterSpacing: 1 }
                     }
                 }
@@ -86,6 +86,7 @@ Flickable {
                 icon: model.btConnected ? Root.Theme.iconBtConnected : Root.Theme.iconBtOn
                 label: model.btName
                 isActive: model.btConnected
+                accentColor: Root.Theme.domainNetwork
                 onClicked: {
                     if (root.bluetoothService) {
                         if (model.btConnected)

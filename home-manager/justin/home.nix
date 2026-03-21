@@ -1,6 +1,5 @@
 {
   config,
-  lib,
   pkgs,
   inputs,
   ...
@@ -28,12 +27,28 @@ in
           algorithm: "fuzzy"    # prefix or fuzzy
           external: {
             # set to false to prevent nushell looking into $env.PATH to find more suggestions
-            enable: true 
+            enable: true
             # set to lower can improve completion performance at the cost of omitting some options
-            max_results: 100 
+            max_results: 100
           }
         }
-      } '';
+      }
+
+      # Force 100Mbps when a switch port has auto-negotiation issues
+      def eth-downshift [] {
+        sudo ethtool -s enp0s31f6 speed 100 duplex full autoneg off
+      }
+
+      # Restore gigabit auto-negotiation
+      def eth-gigabit [] {
+        sudo ethtool -s enp0s31f6 speed 1000 duplex full autoneg on
+      }
+    '';
+  };
+
+  programs.atuin = {
+    enable = true;
+    enableNushellIntegration = true;
   };
 
   programs.carapace.enable = true;
@@ -72,12 +87,6 @@ in
     };
   };
 
-  # Qt configuration - use GTK platform theme so Qt apps (including QuickShell)
-  # use the same icon theme as GTK apps (override Stylix's qtct setting)
-  qt = {
-    enable = true;
-    platformTheme.name = lib.mkForce "gtk3";
-  };
   stylix.targets.vscode.profileNames = [
     "Default"
     "default"

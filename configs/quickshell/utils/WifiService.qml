@@ -22,7 +22,10 @@ Scope {
         id: statusProc
         command: [
             "bash", "-c",
-            "if nmcli -t -f TYPE,STATE dev 2>/dev/null | grep -q '^ethernet:connected$'; then " +
+            "wifi_radio=$(nmcli radio wifi 2>/dev/null); " +
+            "if [ \"$wifi_radio\" = \"disabled\" ]; then " +
+            "  echo radio-off; " +
+            "elif nmcli -t -f TYPE,STATE dev 2>/dev/null | grep -q '^ethernet:connected$'; then " +
             "  echo ethernet; " +
             "else " +
             "  line=$(nmcli -t -f ACTIVE,SSID,SIGNAL dev wifi 2>/dev/null | grep '^yes' | head -1); " +
@@ -31,7 +34,7 @@ Scope {
             "  if [ -n \"$ssid\" ]; then " +
             "    echo \"wifi:$ssid:$sig\"; " +
             "  else " +
-            "    echo off; " +
+            "    echo disconnected; " +
             "  fi; " +
             "fi"
         ]
@@ -39,7 +42,14 @@ Scope {
 
         stdout: SplitParser {
             onRead: data => {
-                if (data === "ethernet") {
+                if (data === "radio-off") {
+                    root.enabled = false;
+                    root.iface = "";
+                    root.connected = false;
+                    root.ssid = "";
+                    root.signal = -1;
+                } else if (data === "ethernet") {
+                    root.enabled = true;
                     root.iface = "ethernet";
                     root.connected = true;
                     root.ssid = "";
@@ -47,6 +57,7 @@ Scope {
                 } else if (data.indexOf("wifi:") === 0) {
                     var parts = data.split(":");
                     var s = parts[1] || "";
+                    root.enabled = true;
                     if (s.length === 0) {
                         root.iface = "";
                         root.connected = false;
@@ -59,6 +70,8 @@ Scope {
                         root.signal = parseInt(parts[2]) || 0;
                     }
                 } else {
+                    // "disconnected" — radio on but not joined to any network
+                    root.enabled = true;
                     root.iface = "";
                     root.connected = false;
                     root.ssid = "";

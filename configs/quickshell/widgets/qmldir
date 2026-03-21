@@ -1,2 +1,7 @@
 module widgets
 ClockWidget 1.0 ClockWidget.qml
+WeatherWidget 1.0 WeatherWidget.qml
+SystemWidget 1.0 SystemWidget.qml
+QuoteWidget 1.0 QuoteWidget.qml
+NowPlayingWidget 1.0 NowPlayingWidget.qml
+CalendarWidget 1.0 CalendarWidget.qml

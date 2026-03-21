@@ -63,6 +63,7 @@ Flickable {
                             visible: status === Image.Ready
                             smooth: true
                             fillMode: Image.PreserveAspectCrop
+                            cache: false  // Disable caching to ensure updated images are shown
                         }
 
                         Rectangle {
@@ -106,7 +107,7 @@ Flickable {
                                 width: Math.max(18, bdgTxt.implicitWidth + 8)
                                 height: 18
                                 radius: Root.Theme.radiusSmall
-                                color: Root.Theme.textAccent
+                                color: Root.Theme.domainNotifications
 
                                 Text {
                                     id: bdgTxt

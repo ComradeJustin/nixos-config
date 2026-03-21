@@ -17,9 +17,9 @@ Item {
     property bool hasBattery: false
 
     property color activeColor: root.pluggedIn
-        ? Root.Theme.textCharging
+        ? Root.Theme.barBatteryCharge
         : (root.capacity >= 0 && root.capacity <= 15
-           ? Root.Theme.textCritical : Root.Theme.textPrimary)
+           ? Root.Theme.barBatteryLow : Root.Theme.domainPower)
 
     Row {
         id: row
@@ -51,7 +51,7 @@ Item {
         Text {
             visible: root.pluggedIn && !root.charging
             text: Root.Theme.iconPlug
-            color: Root.Theme.textCharging
+            color: Root.Theme.barBatteryCharge
             font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }

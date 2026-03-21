@@ -27,7 +27,7 @@ Item {
                 if (root.volume > 0) return Root.Theme.iconVolLow;
                 return Root.Theme.iconVolMute;
             }
-            color: root.muted ? Root.Theme.textDimmed : Root.Theme.textPrimary
+            color: root.muted ? Root.Theme.textDimmed : Root.Theme.domainMedia
             font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
         }
 

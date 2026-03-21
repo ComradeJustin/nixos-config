@@ -7,14 +7,15 @@
 {
   stylix.enable = true;
   # autoEnable stays true (default) - we disable slow targets explicitly
-  stylix.base16Scheme = ../../assets/colour-schemes/cozy.yaml;
+  #stylix.base16Scheme = ../../assets/colour-schemes/cozy.yaml;
+  stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-hard.yaml";
+
   stylix.polarity = "dark";
 
   stylix.cursor.package = pkgs.capitaine-cursors;
   stylix.cursor.name = "capitaine-cursors";
   stylix.cursor.size = 32;
   stylix.targets.nixvim.enable = false;
-  
 
   stylix.fonts = {
     serif = {

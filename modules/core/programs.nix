@@ -13,12 +13,14 @@
     # GUI Applications
     ghostty
     vscode
+    gimp
     nautilus
     krita
 
     # Network tools
     wireshark
     nmap
+    ethtool
   ];
 
   imports = [

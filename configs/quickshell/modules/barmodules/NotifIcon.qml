@@ -27,10 +27,10 @@ Item {
             text: root.isDnd ? Root.Theme.iconDnd
                 : root.unread > 0 ? Root.Theme.iconBellBadge
                 : Root.Theme.iconBell
-            color: root.isDnd ? Root.Theme.textWarning
-                 : root.historyOpen ? Root.Theme.textAccent
-                 : root.unread > 0 ? Root.Theme.textWarning
-                 : Root.Theme.textPrimary
+            color: root.isDnd ? Root.Theme.accentWarning
+                 : root.historyOpen ? Root.Theme.domainNotifications
+                 : root.unread > 0 ? Root.Theme.domainNotifications
+                 : Root.Theme.textDimmed
             font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }
@@ -42,7 +42,7 @@ Item {
             width: Math.max(14, badgeText.implicitWidth + 6)
             height: 14
             radius: 7
-            color: Root.Theme.textCritical
+            color: Root.Theme.domainNotifications
             anchors {
                 left: bellIcon.right
                 leftMargin: -6

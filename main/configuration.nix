@@ -20,6 +20,42 @@
 
   networking.networkmanager.enable = true;
 
+  # Disable EEE on Intel I219-LM — prevents link on switches with poor EEE support
+  services.udev.extraRules = ''
+    ACTION=="add", SUBSYSTEM=="net", KERNEL=="enp0s31f6", RUN+="${pkgs.ethtool}/bin/ethtool --set-eee enp0s31f6 eee off"
+  '';
+
+  # Auto-downshift to 100Mbps if gigabit negotiation fails on certain switch ports
+  systemd.services."e1000e-negotiation-retry" = {
+    description = "Fallback to 100Mbps if gigabit negotiation fails";
+    wantedBy = [ "network.target" ];
+    after = [ "network-pre.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "e1000e-retry" ''
+        IFACE=enp0s31f6
+        sleep 8
+
+        LINK=$(${pkgs.ethtool}/bin/ethtool $IFACE | ${pkgs.gawk}/bin/awk '/Link detected/{print $3}')
+        if [ "$LINK" = "yes" ]; then exit 0; fi
+
+        # No link — try forcing 100Mbps to distinguish negotiation failure from unplugged cable
+        ${pkgs.ethtool}/bin/ethtool -s $IFACE speed 100 duplex full autoneg off
+        ${pkgs.iproute2}/bin/ip link set $IFACE up
+        sleep 4
+
+        LINK=$(${pkgs.ethtool}/bin/ethtool $IFACE | ${pkgs.gawk}/bin/awk '/Link detected/{print $3}')
+        if [ "$LINK" = "yes" ]; then
+          ${pkgs.util-linux}/bin/logger "e1000e: gigabit negotiation failed, staying at 100Mbps"
+        else
+          # Cable is unplugged — restore autoneg
+          ${pkgs.ethtool}/bin/ethtool -s $IFACE autoneg on
+          ${pkgs.util-linux}/bin/logger "e1000e: no carrier at 100Mbps either, cable likely unplugged"
+        fi
+      '';
+    };
+  };
+
   # Sets the timezone
   time.timeZone = "America/Vancouver";
 
@@ -39,7 +75,7 @@
   # Defines A user
   users.users.justin = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "wireshark" "networkmanager"]; # Enable ‘sudo’ for the user.
+    extraGroups = [ "wheel" "wireshark" "networkmanager" "lpadmin" ]; # Enable ‘sudo’ for the user.
     packages = with pkgs; [
       tree
     ];
@@ -54,6 +90,18 @@
     "flakes"
   ];
 
+  # Nix store maintenance
+  nix.settings.auto-optimise-store = true;
+
+  programs.nh = {
+    enable = true;
+    flake = "/home/justin/nixos-config";
+    clean = {
+      enable = true;
+      extraArgs = "--keep-since 30d --keep 5";
+    };
+  };
+
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.mtr.enable = true;
@@ -65,7 +113,13 @@
   # List services that you want to enable:
 
   # Enable the OpenSSH daemon.
-  services.openssh.enable = true;
+  services.openssh = {
+    enable = true;
+    settings = {
+      PermitRootLogin = "no";
+      PasswordAuthentication = false;
+    };
+  };
 
   # Firewall enabled with no open ports (most secure)
   # Add ports to allowedTCPPorts if needed, e.g., [ 22 ] for SSH
@@ -74,6 +128,15 @@
     allowedTCPPorts = [ ];
     allowedUDPPorts = [ ];
   };
+
+  # Brute-force protection
+  services.fail2ban.enable = true;
+
+  # SSD health
+  services.fstrim.enable = true;
+
+  # Firmware updates
+  services.fwupd.enable = true;
 
   # Copy the NixOS configuration file and link it from the resulting system
   # (/run/current-system/configuration.nix). This is useful in case you
@@ -104,14 +167,20 @@
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
   # Select internationalisation properties.
-  # i18n.defaultLocale = "en_US.UTF-8";
+  i18n.defaultLocale = "en_US.UTF-8";
   # console = {
   #   font = "Lat2-Terminus16";
   #   keyMap = "us";
   #   useXkbConfig = true; # use xkb.options in tty.
   # };
   # Enable CUPS to print documents.
-  # services.printing.enable = true;
+  services.printing.enable = true;
+  services.printing.drivers = with pkgs; [ gutenprint hplip ];
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    openFirewall = true;
+  };
 
   # Enable touchpad support (enabled default in most desktopManager).
   # services.libinput.enable = true;

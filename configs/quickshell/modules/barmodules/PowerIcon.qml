@@ -13,7 +13,7 @@ Item {
     Text {
         id: icon
         text: Root.Theme.iconPower
-        color: Root.Theme.textAccent
+        color: Root.Theme.accentDanger
         font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize + 2 }
         anchors.verticalCenter: parent.verticalCenter
     }

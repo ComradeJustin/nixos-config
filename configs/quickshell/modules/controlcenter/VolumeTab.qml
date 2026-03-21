@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import "../.." as Root
 import "../../components" as Components
 
@@ -40,7 +41,7 @@ Flickable {
                     Text {
                         anchors.centerIn: parent
                         text: (root.audioService && root.audioService.muted) ? Root.Theme.iconVolMute : Root.Theme.iconVolHigh
-                        color: (root.audioService && root.audioService.muted) ? Root.Theme.textDimmed : Root.Theme.textPrimary
+                        color: (root.audioService && root.audioService.muted) ? Root.Theme.textDimmed : Root.Theme.domainMedia
                         font { family: Root.Theme.fontFamily; pixelSize: 20 }
                     }
                     MouseArea {
@@ -57,6 +58,7 @@ Flickable {
                     height: 20
                     anchors.verticalCenter: parent.verticalCenter
                     value: root.audioService ? root.audioService.volume : 0
+                    accentColor: Root.Theme.domainMedia
                     onValueUpdated: function(newValue) {
                         if (root.audioService) root.audioService.setVolume(Math.round(newValue));
                     }
@@ -108,10 +110,11 @@ Flickable {
                             id: appIcn
                             anchors.fill: parent
                             source: {
+                                // Use Quickshell.iconPath for proper icon theme support
                                 if (model.appIcon && model.appIcon !== "")
-                                    return "image://icon/" + model.appIcon;
+                                    return Quickshell.iconPath(model.appIcon, true);
                                 if (model.appName && model.appName !== "")
-                                    return "image://icon/" + model.appName.toLowerCase();
+                                    return Quickshell.iconPath(model.appName.toLowerCase(), true);
                                 return "";
                             }
                             sourceSize.width: 24
@@ -156,6 +159,7 @@ Flickable {
                                 height: 14
                                 handleSize: 10
                                 value: model.appVol || 0
+                                accentColor: Root.Theme.domainMedia
                                 onValueUpdated: function(newValue) {
                                     if (root.audioService) root.audioService.setAppVolume(model.appIdx, Math.round(newValue));
                                 }
@@ -201,6 +205,7 @@ Flickable {
                 label: model.devDesc
                 isActive: model.devActive
                 showActiveBackground: true
+                accentColor: Root.Theme.domainMedia
                 onClicked: { if (root.audioService) root.audioService.setSink(model.devName); }
             }
         }
@@ -226,6 +231,7 @@ Flickable {
                 label: model.devDesc
                 isActive: model.devActive
                 showActiveBackground: true
+                accentColor: Root.Theme.domainMedia
                 onClicked: { if (root.audioService) root.audioService.setSource(model.devName); }
             }
         }

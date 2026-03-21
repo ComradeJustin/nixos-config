@@ -15,11 +15,11 @@ Scope {
     property int selectedIndex: 0
 
     property var actions: [
-        { icon: Root.Theme.iconLock, label: "Lock", action: "lock" },
-        { icon: Root.Theme.iconSuspend, label: "Suspend", action: "suspend" },
-        { icon: Root.Theme.iconLogout, label: "Logout", action: "logout" },
-        { icon: Root.Theme.iconReboot, label: "Reboot", action: "reboot" },
-        { icon: Root.Theme.iconShutdown, label: "Shutdown", action: "shutdown" }
+        { icon: Root.Theme.iconLock, label: "Lock", action: "lock", color: Root.Theme.domainSettings },
+        { icon: Root.Theme.iconSuspend, label: "Suspend", action: "suspend", color: Root.Theme.accentWarning },
+        { icon: Root.Theme.iconLogout, label: "Logout", action: "logout", color: Root.Theme.domainNetwork },
+        { icon: Root.Theme.iconReboot, label: "Reboot", action: "reboot", color: Root.Theme.accentWarm },
+        { icon: Root.Theme.iconShutdown, label: "Shutdown", action: "shutdown", color: Root.Theme.accentDanger }
     ]
 
     function toggle() {
@@ -105,7 +105,7 @@ Scope {
                         width: 90; height: 90
                         radius: pm.selectedIndex === index ? 45 : 16
                         color: pm.selectedIndex === index
-                            ? Qt.rgba(Root.Theme.textAccent.r, Root.Theme.textAccent.g, Root.Theme.textAccent.b, 0.8)
+                            ? Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.8)
                             : Root.Theme.ccSectionBg
 
                         Behavior on radius { NumberAnimation { duration: 150 } }
@@ -114,10 +114,7 @@ Scope {
                         Text {
                             anchors.centerIn: parent
                             text: modelData.icon
-                            color: pm.selectedIndex === index ? Root.Theme.barBackground
-                                 : modelData.action === "shutdown" ? Root.Theme.textCritical
-                                 : modelData.action === "reboot" ? Root.Theme.textOrange
-                                 : Root.Theme.textPrimary
+                            color: pm.selectedIndex === index ? Root.Theme.barBackground : modelData.color
                             font { family: Root.Theme.fontFamily; pixelSize: 28 }
                         }
 
@@ -136,8 +133,8 @@ Scope {
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: pm.actions[pm.selectedIndex].label
-                color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontFamily; pixelSize: 14 }
+                color: pm.actions[pm.selectedIndex].color
+                font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
             }
         }
 

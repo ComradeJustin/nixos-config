@@ -1,5 +1,6 @@
 import Quickshell
 import Quickshell.Services.Notifications
+import Quickshell.Io
 import QtQuick
 
 Scope {
@@ -20,6 +21,12 @@ Scope {
     property int counter: 0
     property var expanded: ({})
 
+    // ── Image copy queue ──
+    // When apps like Spotify reuse the same temp file for album art,
+    // we need to copy images to unique locations before they get overwritten.
+    property var imgCopyQueue: []
+    property bool imgCopyBusy: false
+
     // Helper to safely read a string property
     function safeStr(val) {
         if (val === null || val === undefined) return "";
@@ -32,8 +39,63 @@ Scope {
         if (!p || p === "") return "";
         if (p.indexOf("://") !== -1) return p;
         if (p.charAt(0) === "/") return "file://" + p;
-        // Assume freedesktop icon name (e.g. "firefox", "spotify")
-        return "image://icon/" + p;
+        // Use Quickshell.iconPath for proper icon theme support
+        return Quickshell.iconPath(p, true);
+    }
+
+    // Queue an image copy operation
+    // srcPath: original file path (absolute, no file:// prefix)
+    // nId: notification ID to update when copy completes
+    function queueImageCopy(srcPath, nId) {
+        if (!srcPath || srcPath === "" || srcPath.charAt(0) !== "/") return;
+        // Get file extension
+        var ext = ".png";
+        var dotIdx = srcPath.lastIndexOf(".");
+        if (dotIdx !== -1) ext = srcPath.substring(dotIdx);
+        var destPath = "/tmp/qs-notif-" + nId + ext;
+        imgCopyQueue.push({ src: srcPath, dest: destPath, nId: nId });
+        processImgCopyQueue();
+    }
+
+    function processImgCopyQueue() {
+        if (imgCopyBusy || imgCopyQueue.length === 0) return;
+        imgCopyBusy = true;
+        var item = imgCopyQueue.shift();
+        imgCopyProc.targetNId = item.nId;
+        imgCopyProc.destPath = item.dest;
+        // Copy the file to a unique location
+        imgCopyProc.command = ["cp", "-f", item.src, item.dest];
+        imgCopyProc.running = true;
+    }
+
+    Process {
+        id: imgCopyProc
+        property int targetNId: -1
+        property string destPath: ""
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode === 0 && imgCopyProc.destPath !== "") {
+                // Update notification with copied image path
+                root.updateNotifImage(imgCopyProc.targetNId, "file://" + imgCopyProc.destPath);
+            }
+            root.imgCopyBusy = false;
+            root.processImgCopyQueue();
+        }
+    }
+
+    // Update a notification's imagePath after async copy completes
+    function updateNotifImage(nId, newPath) {
+        // Update in items array
+        for (var i = 0; i < root.items.length; i++) {
+            if (root.items[i].nId === nId) {
+                root.items[i].imagePath = newPath;
+                break;
+            }
+        }
+        // Update in popupItems array
+        // (popup items don't have nId, but we can match by checking if imagePath starts with file:///tmp/qs-notif-)
+        // Actually, popups use different data structure, so we need to rebuild stacks
+        rebuildStacks();
+        rebuildPopupStacks();
     }
 
     NotificationServer {
@@ -63,16 +125,26 @@ Scope {
         var appIcon = "";
         try { appIcon = safeStr(n.appIcon); } catch(e) {}
 
-        // Use image if available, otherwise app icon
-        var displayImg = resolveImg(img);
-        if (displayImg === "" && appIcon !== "") displayImg = resolveImg(appIcon);
-
         var urg = n.urgency;
 
         var dur = root.timeout;
         if (urg === NotificationUrgency.Critical) dur = dur * 3;
 
+        // Increment counter FIRST to guarantee unique IDs
         root.counter = root.counter + 1;
+
+        // Use image if available, otherwise app icon
+        var displayImg = resolveImg(img);
+        if (displayImg === "" && appIcon !== "") displayImg = resolveImg(appIcon);
+
+        // If it's a local file, queue a copy to preserve the image
+        // (apps like Spotify reuse the same temp file for album art)
+        var rawImgPath = img;
+        if (rawImgPath === "" && appIcon !== "" && appIcon.charAt(0) === "/") rawImgPath = appIcon;
+        if (rawImgPath !== "" && rawImgPath.charAt(0) === "/") {
+            queueImageCopy(rawImgPath, root.counter);
+        }
+
         var ts = new Date();
         var h = ts.getHours();
         var mn = ts.getMinutes();
@@ -151,8 +223,6 @@ Scope {
                 var img = safeStr(n.image);
                 var appIcon = "";
                 try { appIcon = safeStr(n.appIcon); } catch(e) {}
-                var displayImg = resolveImg(img);
-                if (displayImg === "" && appIcon !== "") displayImg = resolveImg(appIcon);
 
                 // Key only on appName + summary (not body which may change constantly)
                 var key = appName + "|" + summary;
@@ -160,8 +230,19 @@ Scope {
                 var prevKey = root.lastSeen[appName];
                 if (prevKey !== key && prevKey !== undefined) {
                     // Summary changed — this is a real replacement (e.g. new track)
-                    // Add to history
                     root.counter = root.counter + 1;
+
+                    var displayImg = resolveImg(img);
+                    if (displayImg === "" && appIcon !== "") displayImg = resolveImg(appIcon);
+
+                    // If it's a local file, queue a copy to preserve the image
+                    var rawImgPath = img;
+                    if (rawImgPath === "" && appIcon !== "" && appIcon.charAt(0) === "/") rawImgPath = appIcon;
+                    if (rawImgPath !== "" && rawImgPath.charAt(0) === "/") {
+                        root.queueImageCopy(rawImgPath, root.counter);
+                    }
+
+                    // Add to history
                     var ts = new Date();
                     var h = ts.getHours();
                     var mn = ts.getMinutes();

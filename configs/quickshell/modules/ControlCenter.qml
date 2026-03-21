@@ -19,6 +19,9 @@ Scope {
     property var notifService: null
     property var wifiService: null
     property var bluetoothService: null
+    property var widgetOverlayRef: null
+
+    signal widgetEditRequested()
 
     function toggle() {
         showing = !showing;
@@ -136,6 +139,7 @@ Scope {
                                     visible: status === Image.Ready
                                     smooth: true
                                     fillMode: Image.PreserveAspectCrop
+                                    cache: false  // Disable caching for dynamic notification images
                                 }
 
                                 Rectangle {
@@ -174,7 +178,7 @@ Scope {
                                         width: Math.max(16, tBadge.implicitWidth + 6)
                                         height: 16
                                         radius: Root.Theme.radiusSmall
-                                        color: Root.Theme.textAccent
+                                        color: Root.Theme.domainNotifications
 
                                         Text {
                                             id: tBadge
@@ -267,24 +271,53 @@ Scope {
                             anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         }
 
-                        Rectangle {
-                            width: 28; height: 28
-                            radius: Root.Theme.radiusSmall
-                            color: powerMouse.containsMouse ? Qt.rgba(Root.Theme.textCritical.r, Root.Theme.textCritical.g, Root.Theme.textCritical.b, 0.15) : "transparent"
+                        Row {
                             anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                            spacing: 6
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: Root.Theme.iconPower
-                                color: Root.Theme.textCritical
-                                font { family: Root.Theme.fontFamily; pixelSize: 18 }
+                            // Widget Settings Button
+                            Rectangle {
+                                width: 28; height: 28
+                                radius: Root.Theme.radiusSmall
+                                color: widgetSettingsMouse.containsMouse ? Qt.rgba(Root.Theme.domainSettings.r, Root.Theme.domainSettings.g, Root.Theme.domainSettings.b, 0.15) : "transparent"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: Root.Theme.iconWidgets
+                                    color: widgetSettingsMouse.containsMouse ? Root.Theme.domainSettings : Root.Theme.textDimmed
+                                    font { family: Root.Theme.fontFamily; pixelSize: 16 }
+                                }
+                                MouseArea {
+                                    id: widgetSettingsMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        cc.showing = false;
+                                        cc.widgetEditRequested();
+                                    }
+                                }
                             }
-                            MouseArea {
-                                id: powerMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: { cc.showing = false; if (cc.powerMenuRef) cc.powerMenuRef.toggle(); }
+
+                            // Power Menu Button (changed icon to shutdown symbol)
+                            Rectangle {
+                                width: 28; height: 28
+                                radius: Root.Theme.radiusSmall
+                                color: powerMouse.containsMouse ? Qt.rgba(Root.Theme.accentDanger.r, Root.Theme.accentDanger.g, Root.Theme.accentDanger.b, 0.15) : "transparent"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: Root.Theme.iconShutdown
+                                    color: Root.Theme.accentDanger
+                                    font { family: Root.Theme.fontFamily; pixelSize: 16 }
+                                }
+                                MouseArea {
+                                    id: powerMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: { cc.showing = false; if (cc.powerMenuRef) cc.powerMenuRef.toggle(); }
+                                }
                             }
                         }
                     }
@@ -297,13 +330,13 @@ Scope {
                         Rectangle {
                             id: wifiToggle
                             width: 40; height: 40; radius: Root.Theme.radiusSmall
-                            property bool isOn: cc.wifiService && cc.wifiService.connected
+                            property bool isOn: cc.wifiService && cc.wifiService.enabled
                             color: wifiMouse.containsMouse
                                 ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1)
-                                : (isOn ? Qt.rgba(Root.Theme.textAccent.r, Root.Theme.textAccent.g, Root.Theme.textAccent.b, 0.15) : "transparent")
+                                : (isOn ? Qt.rgba(Root.Theme.domainNetwork.r, Root.Theme.domainNetwork.g, Root.Theme.domainNetwork.b, 0.15) : "transparent")
                             border.width: Root.Theme.borderWidth
-                            border.color: isOn ? Root.Theme.textAccent : Root.Theme.borderColor
-                            Text { anchors.centerIn: parent; text: parent.isOn ? Root.Theme.iconWifiHi : Root.Theme.iconWifiOff; color: parent.isOn ? Root.Theme.textAccent : Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 16 } }
+                            border.color: isOn ? Root.Theme.domainNetwork : Root.Theme.borderColor
+                            Text { anchors.centerIn: parent; text: parent.isOn ? Root.Theme.iconWifiHi : Root.Theme.iconWifiOff; color: parent.isOn ? Root.Theme.domainNetwork : Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 16 } }
                             MouseArea { id: wifiMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.wifiService) cc.wifiService.toggle(); } }
                         }
 
@@ -313,10 +346,10 @@ Scope {
                             property bool isOn: cc.notifService ? cc.notifService.dnd : false
                             color: dndMouse.containsMouse
                                 ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1)
-                                : (isOn ? Qt.rgba(Root.Theme.textAccent.r, Root.Theme.textAccent.g, Root.Theme.textAccent.b, 0.15) : "transparent")
+                                : (isOn ? Qt.rgba(Root.Theme.domainNotifications.r, Root.Theme.domainNotifications.g, Root.Theme.domainNotifications.b, 0.15) : "transparent")
                             border.width: Root.Theme.borderWidth
-                            border.color: isOn ? Root.Theme.textAccent : Root.Theme.borderColor
-                            Text { anchors.centerIn: parent; text: parent.isOn ? Root.Theme.iconDnd : Root.Theme.iconDndOff; color: parent.isOn ? Root.Theme.textAccent : Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 16 } }
+                            border.color: isOn ? Root.Theme.domainNotifications : Root.Theme.borderColor
+                            Text { anchors.centerIn: parent; text: parent.isOn ? Root.Theme.iconDnd : Root.Theme.iconDndOff; color: parent.isOn ? Root.Theme.domainNotifications : Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 16 } }
                             MouseArea { id: dndMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.notifService) cc.notifService.dnd = !cc.notifService.dnd; } }
                         }
 
@@ -326,10 +359,10 @@ Scope {
                             property bool isOn: cc.audioService ? !cc.audioService.muted : true
                             color: muteMouse.containsMouse
                                 ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1)
-                                : (isOn ? Qt.rgba(Root.Theme.textAccent.r, Root.Theme.textAccent.g, Root.Theme.textAccent.b, 0.15) : "transparent")
+                                : (isOn ? Qt.rgba(Root.Theme.domainMedia.r, Root.Theme.domainMedia.g, Root.Theme.domainMedia.b, 0.15) : "transparent")
                             border.width: Root.Theme.borderWidth
-                            border.color: isOn ? Root.Theme.textAccent : Root.Theme.borderColor
-                            Text { anchors.centerIn: parent; text: parent.isOn ? Root.Theme.iconVolHigh : Root.Theme.iconVolMute; color: parent.isOn ? Root.Theme.textAccent : Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 16 } }
+                            border.color: isOn ? Root.Theme.domainMedia : Root.Theme.borderColor
+                            Text { anchors.centerIn: parent; text: parent.isOn ? Root.Theme.iconVolHigh : Root.Theme.iconVolMute; color: parent.isOn ? Root.Theme.domainMedia : Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 16 } }
                             MouseArea { id: muteMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.audioService) cc.audioService.toggleMute(); } }
                         }
 
@@ -339,10 +372,10 @@ Scope {
                             property bool isOn: cc.bluetoothService ? cc.bluetoothService.enabled : false
                             color: btMouse.containsMouse
                                 ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1)
-                                : (isOn ? Qt.rgba(Root.Theme.textAccent.r, Root.Theme.textAccent.g, Root.Theme.textAccent.b, 0.15) : "transparent")
+                                : (isOn ? Qt.rgba(Root.Theme.domainNetwork.r, Root.Theme.domainNetwork.g, Root.Theme.domainNetwork.b, 0.15) : "transparent")
                             border.width: Root.Theme.borderWidth
-                            border.color: isOn ? Root.Theme.textAccent : Root.Theme.borderColor
-                            Text { anchors.centerIn: parent; text: parent.isOn ? Root.Theme.iconBtOn : Root.Theme.iconBtOff; color: parent.isOn ? Root.Theme.textAccent : Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 16 } }
+                            border.color: isOn ? Root.Theme.domainNetwork : Root.Theme.borderColor
+                            Text { anchors.centerIn: parent; text: parent.isOn ? Root.Theme.iconBtOn : Root.Theme.iconBtOff; color: parent.isOn ? Root.Theme.domainNetwork : Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 16 } }
                             MouseArea { id: btMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.bluetoothService) cc.bluetoothService.toggle(); } }
                         }
                     }
@@ -353,10 +386,10 @@ Scope {
 
                         Repeater {
                             model: [
-                                { tab: "notifications", icon: Root.Theme.iconBell, label: "Notif" },
-                                { tab: "volume", icon: Root.Theme.iconVolHigh, label: "Vol" },
-                                { tab: "wifi", icon: Root.Theme.iconWifiHi, label: "Net" },
-                                { tab: "bluetooth", icon: Root.Theme.iconBtOn, label: "Bt" }
+                                { tab: "notifications", icon: Root.Theme.iconBell, label: "Notif", accent: Root.Theme.domainNotifications },
+                                { tab: "volume", icon: Root.Theme.iconVolHigh, label: "Vol", accent: Root.Theme.domainMedia },
+                                { tab: "wifi", icon: Root.Theme.iconWifiHi, label: "Net", accent: Root.Theme.domainNetwork },
+                                { tab: "bluetooth", icon: Root.Theme.iconBtOn, label: "Bt", accent: Root.Theme.domainNetwork }
                             ]
 
                             Rectangle {
@@ -370,17 +403,17 @@ Scope {
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: modelData.icon
-                                        color: cc.activeTab === modelData.tab ? Root.Theme.textAccent : (tabMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
+                                        color: cc.activeTab === modelData.tab ? modelData.accent : (tabMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
                                         font { family: Root.Theme.fontFamily; pixelSize: 16 }
                                     }
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: modelData.label
-                                        color: cc.activeTab === modelData.tab ? Root.Theme.textAccent : (tabMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
+                                        color: cc.activeTab === modelData.tab ? modelData.accent : (tabMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
                                         font { family: Root.Theme.fontFamily; pixelSize: 11 }
                                     }
                                 }
-                                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 2; color: cc.activeTab === modelData.tab ? Root.Theme.textAccent : "transparent" }
+                                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 2; color: cc.activeTab === modelData.tab ? modelData.accent : "transparent" }
                                 MouseArea {
                                     id: tabMouse
                                     anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -454,7 +487,7 @@ Scope {
                                     anchors.centerIn: parent
                                     property bool isDnd: cc.notifService ? cc.notifService.dnd : false
                                     text: isDnd ? Root.Theme.iconDnd + " Silent" : Root.Theme.iconDndOff + " Silent"
-                                    color: isDnd ? Root.Theme.textAccent : (silentMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
+                                    color: isDnd ? Root.Theme.domainNotifications : (silentMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
                                     font { family: Root.Theme.fontFamily; pixelSize: 12 }
                                 }
                                 MouseArea { id: silentMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.notifService) cc.notifService.dnd = !cc.notifService.dnd; } }

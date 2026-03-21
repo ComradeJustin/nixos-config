@@ -12,6 +12,7 @@ Item {
     property bool showHandle: true  // Show the drag handle
     property int trackHeight: 3     // Height of the track
     property int handleSize: 12     // Size of the handle (square)
+    property color accentColor: Root.Theme.textAccent // Accent color for fill and handle
 
     // Signals
     signal valueUpdated(real newValue)
@@ -53,7 +54,7 @@ Item {
         }
         height: slider.trackHeight
         radius: height / 2  // Fully rounded track
-        color: Root.Theme.textAccent
+        color: slider.accentColor
         width: parent.width * slider.ratio
 
         Behavior on width {
@@ -68,7 +69,7 @@ Item {
         width: slider.handleSize
         height: slider.handleSize
         radius: Root.Theme.radiusSmall  // Slightly rounded handle
-        color: Root.Theme.textAccent
+        color: slider.accentColor
         y: (parent.height - height) / 2
         x: (parent.width - width) * slider.ratio
 

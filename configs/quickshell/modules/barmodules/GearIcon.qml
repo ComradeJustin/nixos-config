@@ -14,7 +14,7 @@ Item {
     Text {
         id: icon
         text: Root.Theme.iconGear
-        color: root.isOpen ? Root.Theme.textAccent : Root.Theme.textPrimary
+        color: root.isOpen ? Root.Theme.domainSettings : Root.Theme.textDimmed
         font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
         anchors.verticalCenter: parent.verticalCenter
     }

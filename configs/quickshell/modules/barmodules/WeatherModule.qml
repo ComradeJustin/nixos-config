@@ -26,7 +26,7 @@ Item {
 
         Text {
             text: root.weatherIcon
-            color: Root.Theme.textPrimary
+            color: Root.Theme.domainWeather
             font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }
@@ -65,7 +65,7 @@ Item {
     // Step 1: Get location from IP
     Process {
         id: geoProc
-        command: ["curl", "-s", "--max-time", "5", "https://ip-api.com/json/?fields=lat,lon"]
+        command: ["curl", "-s", "--max-time", "5", "http://ip-api.com/json/?fields=lat,lon"]
 
         stdout: SplitParser {
             onRead: data => {

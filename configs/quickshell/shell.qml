@@ -1,3 +1,4 @@
+//@ pragma IconTheme Gruvbox-Plus-Dark
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -26,6 +27,8 @@ ShellRoot {
         notifService: notifSvc
         wifiService: wifiSvc
         bluetoothService: btSvc
+        widgetOverlayRef: widgetModule
+        onWidgetEditRequested: widgetModule.toggleEditMode()
     }
     Modules.Spotlight { id: spotModule }
     Modules.Osd {
@@ -44,7 +47,9 @@ ShellRoot {
 
     // Background widgets overlay
     Modules.WidgetOverlay {
+        id: widgetModule
         windowService: winSvc
+        playerService: playerSvc
     }
 
     // ── Session Lock ──
@@ -79,5 +84,6 @@ ShellRoot {
         function powermenu(): string { pmModule.toggle(); return "ok" }
         function lockscreen(): string { lock(); return "ok" }
         function wakelock(): string { if (screenLocked) wakeCounter++; return "ok" }
+        function widgetsettings(): string { widgetModule.toggleEditMode(); return "ok" }
     }
 }

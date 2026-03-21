@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import Quickshell.Io
 import "../.." as Root
 
@@ -210,7 +211,8 @@ Item {
                                     let p = appItem.entry.appIcon;
                                     if (!p || p === "") return "";
                                     if (p.indexOf("/") !== -1) return "file://" + p;
-                                    return "image://icon/" + p;
+                                    // Use Quickshell.iconPath for proper icon theme support
+                                    return Quickshell.iconPath(p, true);
                                 }
                                 sourceSize.width: Root.Theme.launchIconSize; sourceSize.height: Root.Theme.launchIconSize
                                 Layout.preferredWidth: Root.Theme.launchIconSize; Layout.preferredHeight: Root.Theme.launchIconSize

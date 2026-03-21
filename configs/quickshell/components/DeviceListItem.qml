@@ -9,6 +9,7 @@ Rectangle {
     property string label: ""
     property bool isActive: false
     property bool showActiveBackground: false  // For audio device selection
+    property color accentColor: Root.Theme.textAccent  // Accent color for active state
 
     signal clicked()
 
@@ -17,7 +18,7 @@ Rectangle {
     radius: Root.Theme.radiusSmall
     color: {
         if (showActiveBackground && isActive)
-            return Qt.rgba(Root.Theme.textAccent.r, Root.Theme.textAccent.g, Root.Theme.textAccent.b, 0.1);
+            return Qt.rgba(item.accentColor.r, item.accentColor.g, item.accentColor.b, 0.1);
         if (mouse.containsMouse)
             return Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.06);
         return "transparent";
@@ -35,14 +36,14 @@ Rectangle {
 
         Text {
             text: item.icon
-            color: item.isActive ? Root.Theme.textAccent : Root.Theme.textDimmed
+            color: item.isActive ? item.accentColor : Root.Theme.textDimmed
             font { family: Root.Theme.fontFamily; pixelSize: 16 }
             anchors.verticalCenter: parent.verticalCenter
         }
 
         Text {
             text: item.label
-            color: item.isActive ? Root.Theme.textAccent : Root.Theme.textPrimary
+            color: item.isActive ? item.accentColor : Root.Theme.textPrimary
             font { family: Root.Theme.fontFamily; pixelSize: 13; bold: item.isActive }
             anchors.verticalCenter: parent.verticalCenter
             elide: Text.ElideRight

@@ -12,8 +12,5 @@ if [[ -z "$HOST" ]]; then
     exit 1
 fi
 
-echo "Updating flake inputs..."
-nix flake update "${FLAKE_DIR}"
-
-echo "Rebuilding ${HOST}..."
-sudo nixos-rebuild switch --flake "${FLAKE_DIR}#${HOST}"
+echo "Updating flake inputs and rebuilding ${HOST}..."
+nh os switch "${FLAKE_DIR}" -H "${HOST}" --update

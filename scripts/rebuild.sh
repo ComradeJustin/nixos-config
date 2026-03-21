@@ -12,4 +12,4 @@ if [[ -z "$HOST" ]]; then
     exit 1
 fi
 
-sudo nixos-rebuild switch --flake "${FLAKE_DIR}#${HOST}"
+nh os switch "${FLAKE_DIR}" -H ${HOST} --ask

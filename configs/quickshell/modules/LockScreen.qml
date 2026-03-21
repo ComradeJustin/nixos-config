@@ -24,6 +24,8 @@ Item {
     property string pendingPassword: ""
     property bool pamWaitingForResponse: false
     property int wakeSignal: 0
+    // Track if user explicitly requested password mode (vs fprintd timeout)
+    property bool userRequestedPassword: false
     onWakeSignalChanged: if (wakeSignal > 0) resetToFingerprint()
 
     PamContext {
@@ -56,8 +58,23 @@ Item {
                     lock.statusText = "Enter password";
                     focusTimer.start();
                 } else {
-                    // Delay entering password mode to allow fingerprint to work
-                    passwordModeDelay.start();
+                    // Check if this is a fingerprint timeout message from fprintd
+                    // If fprintd times out, it sends a password prompt - we should restart fingerprint instead
+                    var lower = msg.toLowerCase();
+                    var isFprintdTimeout = lower.indexOf("timeout") !== -1
+                        || lower.indexOf("timed out") !== -1
+                        || lower.indexOf("password") !== -1;
+
+                    if (isFprintdTimeout && !lock.userRequestedPassword) {
+                        // fprintd timed out - restart fingerprint auth instead of switching to password
+                        console.log("fprintd timeout detected, restarting fingerprint auth");
+                        lock.pamWaitingForResponse = false;
+                        pam.respond("");  // Send empty response to clear PAM state
+                        fprintdRestartDelay.start();
+                    } else {
+                        // Delay entering password mode to allow fingerprint to work
+                        passwordModeDelay.start();
+                    }
                 }
             } else if (!lock.passwordMode && msg.length > 0) {
                 // Only process info messages before password mode
@@ -130,7 +147,9 @@ Item {
         lock.isAuthenticating = false;
         lock.pamWaitingForResponse = false;
         passwordModeDelay.stop();
+        fprintdRestartDelay.stop();
         // Don't reset passwordMode — once in password mode, stay there
+        // But if user didn't explicitly request password, we can try fingerprint again
         if (!lock.passwordMode) {
             lock.statusText = "Swipe fingerprint to unlock";
         } else {
@@ -145,6 +164,7 @@ Item {
     function resetToFingerprint() {
         // Called on wake from suspend - reset to fingerprint mode
         lock.passwordMode = false;
+        lock.userRequestedPassword = false;
         lock.pendingPassword = "";
         passInput.text = "";
         lock.statusText = "Swipe fingerprint to unlock";
@@ -157,6 +177,18 @@ Item {
         id: fprintdWakeDelay
         interval: 1000  // 1 second delay for fprintd to wake up
         onTriggered: startAuth()
+    }
+
+    Timer {
+        id: fprintdRestartDelay
+        interval: 500  // Short delay before restarting fingerprint after timeout
+        onTriggered: {
+            if (!lock.passwordMode && !lock.authDone) {
+                console.log("Restarting fingerprint auth after fprintd timeout");
+                lock.statusText = "Swipe fingerprint to unlock";
+                startAuth();
+            }
+        }
     }
 
     function submitPassword() {
@@ -450,6 +482,8 @@ Item {
                     hoverEnabled: true
                     onClicked: {
                         passwordModeDelay.stop();
+                        fprintdRestartDelay.stop();
+                        lock.userRequestedPassword = true;
                         lock.passwordMode = true;
                         lock.statusText = "Enter password";
                         lock.isAuthenticating = false;

@@ -362,6 +362,31 @@ Process {
 }
 ```
 
+### Niri IPC — JSON Parsing Pattern
+
+**Problem:** Niri workspace IDs are internal identifiers that can be non-contiguous (e.g., 1, 5, 6 instead of 1, 2, 3). When workspaces are removed and recreated, the IDs increment even if the workspace count stays the same. Text-based parsing of `niri msg` output is fragile.
+
+**Solution:** Always use JSON output (`niri msg -j`) with `jq` for reliable parsing:
+
+```qml
+Process {
+    command: ["bash", "-c",
+        // Get active workspace ID from JSON (handles non-contiguous IDs)
+        "ws=$(niri msg -j workspaces 2>/dev/null | jq '.[] | select(.is_active) | .id'); " +
+        // Count windows on that workspace
+        "niri msg -j windows 2>/dev/null | jq --arg ws \"$ws\" '[.[] | select(.workspace_id == ($ws | tonumber))] | length'"
+    ]
+}
+```
+
+**Key fields:**
+- `workspaces[].id` — Internal workspace ID (non-contiguous)
+- `workspaces[].idx` — Logical position (1, 2, 3...)
+- `workspaces[].is_active` — Currently focused workspace
+- `windows[].workspace_id` — Matches workspace `id`, not `idx`
+
+**When to use:** Any QuickShell service that needs workspace or window state from niri.
+
 ## Workflows
 
 ### Adding a New Optional Module
@@ -407,6 +432,59 @@ nix build .#nixosConfigurations.nixlaptop.config.system.build.toplevel
 # Evaluate module options
 nix eval --json '.#nixosConfigurations.nixlaptop.config.modules.quickshell.features'
 ```
+
+## Hardware Workarounds
+
+### Intel I219-LM Auto-Negotiation Fallback Service
+
+When the I219-LM NIC fails to negotiate gigabit on certain switch ports, use this systemd oneshot service. It waits for negotiation, then probes with 100Mbps to distinguish negotiation failure from an unplugged cable:
+
+```nix
+systemd.services."e1000e-negotiation-retry" = {
+  description = "Fallback to 100Mbps if gigabit negotiation fails";
+  wantedBy = [ "network.target" ];
+  after = [ "network-pre.target" ];
+  serviceConfig = {
+    Type = "oneshot";
+    ExecStart = pkgs.writeShellScript "e1000e-retry" ''
+      IFACE=enp0s31f6
+      sleep 8
+
+      LINK=$(${pkgs.ethtool}/bin/ethtool $IFACE | awk '/Link detected/{print $3}')
+      if [ "$LINK" = "yes" ]; then exit 0; fi
+
+      ${pkgs.ethtool}/bin/ethtool -s $IFACE speed 100 duplex full autoneg off
+      ${pkgs.iproute2}/bin/ip link set $IFACE up
+      sleep 4
+
+      LINK=$(${pkgs.ethtool}/bin/ethtool $IFACE | awk '/Link detected/{print $3}')
+      if [ "$LINK" = "yes" ]; then
+        logger "e1000e: gigabit negotiation failed, staying at 100Mbps"
+      else
+        ${pkgs.ethtool}/bin/ethtool -s $IFACE autoneg on
+        logger "e1000e: no carrier at 100Mbps either, cable likely unplugged"
+      fi
+    '';
+  };
+};
+```
+
+Also add udev rule to disable EEE (common cause of I219-LM negotiation issues):
+```nix
+services.udev.extraRules = ''
+  ACTION=="add", SUBSYSTEM=="net", KERNEL=="enp0s31f6", RUN+="${pkgs.ethtool}/bin/ethtool --set-eee enp0s31f6 eee off"
+'';
+```
+
+Manual override aliases in nushell (`home-manager/justin/home.nix`):
+```nix
+programs.nushell.extraConfig = ''
+  def eth-downshift [] { sudo ethtool -s enp0s31f6 speed 100 duplex full autoneg off }
+  def eth-gigabit [] { sudo ethtool -s enp0s31f6 speed 1000 duplex full autoneg on }
+'';
+```
+
+See global skill `intel-i219-autoneg-failure.md` for full diagnosis and root cause details.
 
 ## Stylix Theming
 

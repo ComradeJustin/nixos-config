@@ -13,11 +13,11 @@ QtObject {
 
     // Widget visibility toggles
     property bool showClockWidget: true
-    property bool showWeatherWidget: false
-    property bool showSystemWidget: false
+    property bool showWeatherWidget: true
+    property bool showSystemWidget: true
     property bool showQuoteWidget: false
-    property bool showNowPlayingWidget: false
-    property bool showCalendarWidget: false
+    property bool showNowPlayingWidget: true
+    property bool showCalendarWidget: true
 
     // Widget positions: "top-left", "top-center", "top-right",
     //                   "center-left", "center", "center-right",
@@ -27,7 +27,7 @@ QtObject {
     property string systemWidgetPosition: "top-left"
     property string quoteWidgetPosition: "bottom-center"
     property string nowPlayingWidgetPosition: "bottom-left"
-    property string calendarWidgetPosition: "top-left"
+    property string calendarWidgetPosition: "center-left"
 
     // Widget margins from screen edge
     property int widgetMarginX: 40
@@ -105,4 +105,42 @@ QtObject {
 
     // Clock font size (pixels)
     property int clockFontSize: 48
+
+    // ══════════════════════════════════════════════════════════════════
+    // ── Weather Widget Settings ──
+    // ══════════════════════════════════════════════════════════════════
+
+    property bool weatherUseMetric: true
+    property int weatherFontSize: 32
+
+    // ══════════════════════════════════════════════════════════════════
+    // ── System Widget Settings ──
+    // ══════════════════════════════════════════════════════════════════
+
+    property bool systemShowCpu: true
+    property bool systemShowRam: true
+    property int systemFontSize: 24
+
+    // ══════════════════════════════════════════════════════════════════
+    // ── Quote Widget Settings ──
+    // ══════════════════════════════════════════════════════════════════
+
+    property int quoteMaxWidth: 400
+    property int quoteFontSize: 16
+    property int quoteRefreshInterval: 3600000  // 1 hour in ms
+
+    // ══════════════════════════════════════════════════════════════════
+    // ── Now Playing Widget Settings ──
+    // ══════════════════════════════════════════════════════════════════
+
+    property bool nowPlayingShowArt: true
+    property int nowPlayingArtSize: 80
+    property int nowPlayingFontSize: 14
+
+    // ══════════════════════════════════════════════════════════════════
+    // ── Calendar Widget Settings ──
+    // ══════════════════════════════════════════════════════════════════
+
+    property bool calendarShowWeekNumbers: false
+    property int calendarCellSize: 28
 }

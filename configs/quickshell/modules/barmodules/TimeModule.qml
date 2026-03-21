@@ -22,7 +22,7 @@ Item {
 
         Text {
             text: Root.Theme.iconCal
-            color: Root.Theme.textPrimary
+            color: Root.Theme.domainTime
             font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }
@@ -38,7 +38,7 @@ Item {
 
         Text {
             text: Root.Theme.iconClock
-            color: Root.Theme.textPrimary
+            color: Root.Theme.domainTime
             font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
             anchors.verticalCenter: parent.verticalCenter
         }
