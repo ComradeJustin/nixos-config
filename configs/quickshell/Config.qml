@@ -18,6 +18,7 @@ QtObject {
     property bool showQuoteWidget: false
     property bool showNowPlayingWidget: true
     property bool showCalendarWidget: true
+    property bool showStockWidget: true
 
     // Widget positions: "top-left", "top-center", "top-right",
     //                   "center-left", "center", "center-right",
@@ -28,6 +29,7 @@ QtObject {
     property string quoteWidgetPosition: "bottom-center"
     property string nowPlayingWidgetPosition: "bottom-left"
     property string calendarWidgetPosition: "center-left"
+    property string stockWidgetPosition: "center-right"
 
     // Widget margins from screen edge
     property int widgetMarginX: 40
@@ -143,4 +145,17 @@ QtObject {
 
     property bool calendarShowWeekNumbers: false
     property int calendarCellSize: 28
+
+    // ══════════════════════════════════════════════════════════════════
+    // ── Stock Widget Settings ──
+    // ══════════════════════════════════════════════════════════════════
+
+    // Comma-separated stock symbols to track
+    property var stockSymbols: ["SPY", "QQQ", "AAPL"]
+
+    // Font size for stock ticker text
+    property int stockFontSize: 14
+
+    // Refresh interval in milliseconds (default: 5 minutes)
+    property int stockRefreshInterval: 300000
 }

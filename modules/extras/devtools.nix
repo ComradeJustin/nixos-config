@@ -11,7 +11,7 @@
       python3
       direnv
       nix-direnv
-      nixfmt-rfc-style
+      nixfmt
       tmux
       nix-output-monitor
     ];

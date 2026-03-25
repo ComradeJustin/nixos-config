@@ -1,12 +1,7 @@
 {
-  config,
   pkgs,
-  inputs,
   ...
 }:
 {
-  programs.nixvim = {
-    enable = true;
-  };
-
+  environment.systemPackages = [ pkgs.neovim ];
 }

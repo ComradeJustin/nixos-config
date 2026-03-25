@@ -6,6 +6,7 @@
     nixcord = {
       url = "github:FlameFlag/nixcord";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs-nixcord.follows = "nixpkgs";
     };
 
     spicetify-nix = {
@@ -13,7 +14,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    awww.url = "git+https://codeberg.org/LGFae/awww";
+    awww = {
+      url = "git+https://codeberg.org/LGFae/awww";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     stylix = {
       url = "github:nix-community/stylix";
@@ -36,17 +40,16 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    lobster.url = "github:justchokingaround/lobster";
+    lobster = {
+      url = "github:justchokingaround/lobster";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     apple-fonts.url = "github:Lyndeno/apple-fonts.nix";
     apple-fonts.inputs.nixpkgs.follows = "nixpkgs";
 
     nixos-hardware.url = "github:NixOS/nixos-hardware";
 
-    nixvim = {
-      url = "github:nix-community/nixvim";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
 
     spotatui = {
       url = "github:LargeModGames/spotatui";
@@ -70,7 +73,6 @@
       qml-niri,
       apple-fonts,
       nixos-hardware,
-      nixvim,
       niri-beta,
       spotatui,
       ...
@@ -86,13 +88,12 @@
         ./main/configuration.nix
         ./modules/core
         ./modules/extras
+        ./modules/profiles
         ./modules/services
         ./modules/theming
         stylix.nixosModules.stylix
         home-manager.nixosModules.home-manager
         inputs.spicetify-nix.nixosModules.default
-        inputs.nixvim.nixosModules.nixvim
-        ./modules/programs/nixvim.nix
         {
           home-manager = {
             useGlobalPkgs = true;
@@ -100,18 +101,12 @@
             users.justin = import ./home-manager/justin/home.nix;
             backupFileExtension = "backup";
           };
-          # Desktop environment (enabled for all hosts)
-          modules.niri.enable = true;
-          modules.quickshell.enable = true;
-          modules.lockscreen.enable = true;
-          modules.compscijava.enable = true;
         }
       ];
 
       # Helper function to create a host configuration
       mkHost = { hostModules }:
         nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
           specialArgs = { inherit inputs; };
           modules = sharedModules ++ hostModules ++ [
             { nixpkgs.overlays = overlays; }
@@ -125,7 +120,10 @@
             ./hosts/nixpc/hardware-configuration.nix
             ./hosts/nixpc/gpu.nix
             ./hosts/nixpc/networking.nix
-            { modules.gaming.enable = true; }
+            {
+              modules.profiles.desktop.enable = true;
+              modules.gaming.enable = true;
+            }
           ];
         };
 
@@ -136,6 +134,7 @@
             ./hosts/nixlaptop/networking.nix
             nixos-hardware.nixosModules.lenovo-thinkpad-t14-intel-gen1
             {
+              modules.profiles.desktop.enable = true;
               modules.fingerprint.enable = true;
               modules.bluetooth.enable = true;
             }

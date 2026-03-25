@@ -14,7 +14,7 @@ binds {
     Mod+Shift+Slash { show-hotkey-overlay; }
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
-    Mod+Return hotkey-overlay-title="Open a Terminal: ghostty" { spawn "ghostty"; }
+    Mod+Return hotkey-overlay-title="Open a Terminal: ghostty" { spawn "ghostty" "+new-window"; }
     Mod+D { spawn "qs"  "ipc" "call" "quickshell-bar" "clipboard"; }
     Mod+Space { spawn "qs"  "ipc" "call" "quickshell-bar" "launcher"; }
     Mod+P { spawn "qs"  "ipc" "call" "quickshell-bar" "wallpaper"; }

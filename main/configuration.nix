@@ -31,10 +31,11 @@
     wantedBy = [ "network.target" ];
     after = [ "network-pre.target" ];
     serviceConfig = {
-      Type = "oneshot";
+      Type = "simple";
+      RemainAfterExit = true;
       ExecStart = pkgs.writeShellScript "e1000e-retry" ''
         IFACE=enp0s31f6
-        sleep 8
+        sleep 3
 
         LINK=$(${pkgs.ethtool}/bin/ethtool $IFACE | ${pkgs.gawk}/bin/awk '/Link detected/{print $3}')
         if [ "$LINK" = "yes" ]; then exit 0; fi
@@ -42,7 +43,7 @@
         # No link — try forcing 100Mbps to distinguish negotiation failure from unplugged cable
         ${pkgs.ethtool}/bin/ethtool -s $IFACE speed 100 duplex full autoneg off
         ${pkgs.iproute2}/bin/ip link set $IFACE up
-        sleep 4
+        sleep 2
 
         LINK=$(${pkgs.ethtool}/bin/ethtool $IFACE | ${pkgs.gawk}/bin/awk '/Link detected/{print $3}')
         if [ "$LINK" = "yes" ]; then
@@ -68,6 +69,15 @@
   services.pipewire = {
     enable = true;
     pulse.enable = true;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+    extraConfig.pipewire."92-low-latency" = {
+      "context.properties" = {
+        "default.clock.rate" = 48000;
+        "default.clock.quantum" = 1024;
+        "default.clock.min-quantum" = 512;
+      };
+    };
   };
   # Services
   services.gvfs.enable = true;
@@ -85,14 +95,30 @@
   nixpkgs.config.allowUnfree = true;
 
   # flakes
-  nix.settings.experimental-features = [
-    "nix-command"
-    "flakes"
-  ];
+  nix.settings = {
+    experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
+    auto-optimise-store = true;
 
-  # Nix store maintenance
-  nix.settings.auto-optimise-store = true;
+    # Parallel builds — adjust to your core count
+    max-jobs = "auto";       # number of derivations built in parallel
+    cores = 0;               # cores per job (0 = all available)
 
+    # Extra binary caches so you download instead of compile
+    substituters = [
+      "https://cache.nixos.org"
+      "https://nix-community.cachix.org"
+    ];
+    trusted-public-keys = [
+      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+    ];
+
+    # Faster evaluation
+    eval-cache = true;
+  };
   programs.nh = {
     enable = true;
     flake = "/home/justin/nixos-config";
@@ -117,7 +143,7 @@
     enable = true;
     settings = {
       PermitRootLogin = "no";
-      PasswordAuthentication = false;
+      PasswordAuthentication = true;
     };
   };
 

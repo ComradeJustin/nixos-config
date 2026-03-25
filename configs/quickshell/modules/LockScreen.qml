@@ -18,33 +18,25 @@ Item {
     property bool showError: false
     property bool authDone: false
     property bool isAuthenticating: false
-    // true once PAM has asked for a password at least once
     property bool passwordMode: false
     property var playerService: null
     property string pendingPassword: ""
-    property bool pamWaitingForResponse: false
     property int wakeSignal: 0
-    // Track if user explicitly requested password mode (vs fprintd timeout)
-    property bool userRequestedPassword: false
     onWakeSignalChanged: if (wakeSignal > 0) resetToFingerprint()
 
     PamContext {
         id: pam
-        config: "login"
+        config: "quickshell-bar"
 
         onPamMessage: {
             var msg = "" + (pam.message || "");
             var needsResponse = pam.responseRequired;
-            var isErr = pam.messageIsError;
 
-            console.log("PAM msg='" + msg + "' needsResp=" + needsResponse + " isErr=" + isErr);
+            console.log("PAM msg='" + msg + "' needsResp=" + needsResponse);
 
             if (needsResponse) {
-                // PAM wants a password - but delay showing password UI to give fingerprint a chance
-                lock.pamWaitingForResponse = true;
                 lock.showError = false;
 
-                // Only auto-submit if we have an explicitly queued password
                 if (lock.pendingPassword.length > 0) {
                     var pw = lock.pendingPassword;
                     lock.pendingPassword = "";
@@ -52,32 +44,14 @@ Item {
                     lock.isAuthenticating = true;
                     lock.passwordMode = true;
                     pam.respond(pw);
-                } else if (lock.passwordMode) {
-                    // Already in password mode, show prompt
+                } else {
+                    // PAM moved past fingerprint to password phase
+                    lock.passwordMode = true;
                     lock.isAuthenticating = false;
                     lock.statusText = "Enter password";
                     focusTimer.start();
-                } else {
-                    // Check if this is a fingerprint timeout message from fprintd
-                    // If fprintd times out, it sends a password prompt - we should restart fingerprint instead
-                    var lower = msg.toLowerCase();
-                    var isFprintdTimeout = lower.indexOf("timeout") !== -1
-                        || lower.indexOf("timed out") !== -1
-                        || lower.indexOf("password") !== -1;
-
-                    if (isFprintdTimeout && !lock.userRequestedPassword) {
-                        // fprintd timed out - restart fingerprint auth instead of switching to password
-                        console.log("fprintd timeout detected, restarting fingerprint auth");
-                        lock.pamWaitingForResponse = false;
-                        pam.respond("");  // Send empty response to clear PAM state
-                        fprintdRestartDelay.start();
-                    } else {
-                        // Delay entering password mode to allow fingerprint to work
-                        passwordModeDelay.start();
-                    }
                 }
             } else if (!lock.passwordMode && msg.length > 0) {
-                // Only process info messages before password mode
                 var lower = msg.toLowerCase();
                 if (lower.indexOf("no-match") !== -1 || lower.indexOf("no match") !== -1
                     || lower.indexOf("not match") !== -1 || lower.indexOf("verify-no-match") !== -1
@@ -92,7 +66,6 @@ Item {
                     lock.showError = false;
                 }
             }
-            // If passwordMode is true, ignore all non-response messages
         }
 
         onCompleted: function(result) {
@@ -100,27 +73,21 @@ Item {
             lock.isAuthenticating = false;
             if (lock.authDone) return;
 
-            // PamResult is a number enum: 0 = success, anything else = failure
             if (result === 0) {
                 lock.authDone = true;
-                lock.pamWaitingForResponse = false;
-                passwordModeDelay.stop();
                 lock.statusText = "Welcome back";
                 lock.showError = false;
                 unlockAnim.start();
             } else {
-                // Authentication failed
                 if (lock.pendingPassword.length > 0) {
-                    // We have a queued password - this was fingerprint failure, not password
-                    // Restart PAM quickly to get to password prompt
-                    lock.statusText = "Tap fingerprint to continue...";
+                    // Queued password — restart PAM to reach password prompt
+                    lock.statusText = "Authenticating...";
                     lock.showError = false;
                     lock.isAuthenticating = true;
                     pamRestartDelay.start();
                 } else if (lock.passwordMode) {
                     lock.statusText = "Wrong password — try again";
                     lock.showError = true;
-                    // Don't clear input - let user keep typing
                     pwRestart.start();
                 } else {
                     lock.statusText = "Fingerprint not recognized";
@@ -145,11 +112,6 @@ Item {
         lock.showError = false;
         lock.authDone = false;
         lock.isAuthenticating = false;
-        lock.pamWaitingForResponse = false;
-        passwordModeDelay.stop();
-        fprintdRestartDelay.stop();
-        // Don't reset passwordMode — once in password mode, stay there
-        // But if user didn't explicitly request password, we can try fingerprint again
         if (!lock.passwordMode) {
             lock.statusText = "Swipe fingerprint to unlock";
         } else {
@@ -162,33 +124,19 @@ Item {
     }
 
     function resetToFingerprint() {
-        // Called on wake from suspend - reset to fingerprint mode
         lock.passwordMode = false;
-        lock.userRequestedPassword = false;
         lock.pendingPassword = "";
         passInput.text = "";
         lock.statusText = "Swipe fingerprint to unlock";
         lock.showError = false;
-        // Give fprintd time to reinitialize after wake before starting PAM
+        // Give fprintd time to reinitialize after wake
         fprintdWakeDelay.start();
     }
 
     Timer {
         id: fprintdWakeDelay
-        interval: 1000  // 1 second delay for fprintd to wake up
+        interval: 1000
         onTriggered: startAuth()
-    }
-
-    Timer {
-        id: fprintdRestartDelay
-        interval: 500  // Short delay before restarting fingerprint after timeout
-        onTriggered: {
-            if (!lock.passwordMode && !lock.authDone) {
-                console.log("Restarting fingerprint auth after fprintd timeout");
-                lock.statusText = "Swipe fingerprint to unlock";
-                startAuth();
-            }
-        }
     }
 
     function submitPassword() {
@@ -230,18 +178,6 @@ Item {
     Timer { id: focusTimer; interval: 50; onTriggered: passInput.forceActiveFocus() }
     Timer { id: errorReset; interval: 1500; onTriggered: lock.showError = false }
     Timer { id: pamStartupDelay; interval: 150; onTriggered: startAuth() }
-    Timer {
-        id: passwordModeDelay
-        interval: 1500  // Give fingerprint 1.5 seconds before showing password UI
-        onTriggered: {
-            if (lock.pamWaitingForResponse && !lock.authDone) {
-                lock.passwordMode = true;
-                lock.statusText = "Enter password";
-                lock.isAuthenticating = false;
-                focusTimer.start();
-            }
-        }
-    }
 
     Timer {
         id: fingerErrorReset
@@ -481,9 +417,6 @@ Item {
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true
                     onClicked: {
-                        passwordModeDelay.stop();
-                        fprintdRestartDelay.stop();
-                        lock.userRequestedPassword = true;
                         lock.passwordMode = true;
                         lock.statusText = "Enter password";
                         lock.isAuthenticating = false;

@@ -20,6 +20,7 @@ Scope {
     property var wifiService: null
     property var bluetoothService: null
     property var widgetOverlayRef: null
+    property var idleInhibitService: null
 
     signal widgetEditRequested()
 
@@ -377,6 +378,19 @@ Scope {
                             border.color: isOn ? Root.Theme.domainNetwork : Root.Theme.borderColor
                             Text { anchors.centerIn: parent; text: parent.isOn ? Root.Theme.iconBtOn : Root.Theme.iconBtOff; color: parent.isOn ? Root.Theme.domainNetwork : Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 16 } }
                             MouseArea { id: btMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.bluetoothService) cc.bluetoothService.toggle(); } }
+                        }
+
+                        Rectangle {
+                            id: caffeineToggle
+                            width: 40; height: 40; radius: Root.Theme.radiusSmall
+                            property bool isOn: cc.idleInhibitService ? cc.idleInhibitService.inhibited : false
+                            color: caffeineMouse.containsMouse
+                                ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1)
+                                : (isOn ? Qt.rgba(Root.Theme.caffeineAccent.r, Root.Theme.caffeineAccent.g, Root.Theme.caffeineAccent.b, 0.15) : "transparent")
+                            border.width: Root.Theme.borderWidth
+                            border.color: isOn ? Root.Theme.caffeineAccent : Root.Theme.borderColor
+                            Text { anchors.centerIn: parent; text: parent.isOn ? Root.Theme.iconCaffeine : Root.Theme.iconCaffeineOff; color: parent.isOn ? Root.Theme.caffeineAccent : Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 16 } }
+                            MouseArea { id: caffeineMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.idleInhibitService) cc.idleInhibitService.toggle(); } }
                         }
                     }
 

@@ -5,3 +5,4 @@ SystemWidget 1.0 SystemWidget.qml
 QuoteWidget 1.0 QuoteWidget.qml
 NowPlayingWidget 1.0 NowPlayingWidget.qml
 CalendarWidget 1.0 CalendarWidget.qml
+StockWidget 1.0 StockWidget.qml

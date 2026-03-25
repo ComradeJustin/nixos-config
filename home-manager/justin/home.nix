@@ -58,7 +58,13 @@ in
     enable = true;
   };
 
-  programs.ghostty.enable = true;
+  programs.ghostty = {
+    enable = true;
+    settings = {
+      quit-after-last-window-closed = false;
+    };
+  };
+
 
   # Allows me to set up config files.
   xdg.configFile = {

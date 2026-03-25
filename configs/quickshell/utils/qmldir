@@ -6,3 +6,4 @@ WifiService 1.0 WifiService.qml
 BluetoothService 1.0 BluetoothService.qml
 BrightnessService 1.0 BrightnessService.qml
 WindowService 1.0 WindowService.qml
+IdleInhibitService 1.0 IdleInhibitService.qml

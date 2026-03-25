@@ -127,6 +127,7 @@ Scope {
     property size quoteSize: Qt.size(180, 70)
     property size nowPlayingSize: Qt.size(180, 90)
     property size calendarSize: Qt.size(200, 180)
+    property size stockSize: Qt.size(220, 120)
 
     // ══════════════════════════════════════════════════════════════════
     // ── Single Widget Overlay Panel ──
@@ -271,6 +272,27 @@ Scope {
 
                 onImplicitWidthChanged: root.calendarSize = Qt.size(implicitWidth, implicitHeight)
                 onImplicitHeightChanged: root.calendarSize = Qt.size(implicitWidth, implicitHeight)
+            }
+
+            // Stock Widget
+            Widgets.StockWidget {
+                id: stockW
+                visible: Root.Config.showStockWidget
+                opacity: (root.widgetsShown && !root.editMode) ? 1 : 0
+                Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.InOutQuad } }
+
+                property string posStr: root.getEffectivePosition("stockWidgetPosition", Root.Config.stockWidgetPosition)
+                property point pos: root.getPosition(posStr, implicitWidth, implicitHeight, widgetPanel.width, widgetPanel.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
+                x: pos.x; y: pos.y
+                Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+
+                symbols: Root.Config.stockSymbols
+                fontSize: Root.Config.stockFontSize
+                refreshInterval: Root.Config.stockRefreshInterval
+
+                onImplicitWidthChanged: root.stockSize = Qt.size(implicitWidth, implicitHeight)
+                onImplicitHeightChanged: root.stockSize = Qt.size(implicitWidth, implicitHeight)
             }
         }
     }
@@ -548,6 +570,38 @@ Scope {
                         editOverlay.isDragging = false; editOverlay.nearestSnap = "";
                         let newPos = root.findSnapPosition(parent.x, parent.y, parent.width, parent.height, editOverlay.width, editOverlay.height);
                         root.pendingPositions["calendarWidgetPosition"] = newPos;
+                        root.pendingPositions = Object.assign({}, root.pendingPositions);
+                    }
+                }
+            }
+
+            // Stock ghost
+            Rectangle {
+                id: stockGhost
+                visible: Root.Config.showStockWidget
+                width: root.stockSize.width; height: root.stockSize.height
+                radius: Root.Theme.widgetRadius
+                color: Root.Theme.widgetBackground
+                border.width: 2
+                border.color: stockDrag.drag.active ? Root.Theme.textAccent : Root.Theme.editModeBorder
+
+                property string posStr: root.getEffectivePosition("stockWidgetPosition", Root.Config.stockWidgetPosition)
+                property point targetPos: root.getPosition(posStr, width, height, editOverlay.width, editOverlay.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
+                x: stockDrag.drag.active ? x : targetPos.x
+                y: stockDrag.drag.active ? y : targetPos.y
+                Behavior on x { enabled: !stockDrag.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                Behavior on y { enabled: !stockDrag.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+
+                Text { anchors.centerIn: parent; text: "Stocks"; color: Root.Theme.widgetText; font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true } }
+                MouseArea {
+                    id: stockDrag; anchors.fill: parent; drag.target: parent; drag.smoothed: false
+                    cursorShape: drag.active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+                    onPressed: { editOverlay.isDragging = true; editOverlay.draggedSize = Qt.size(parent.width, parent.height); }
+                    onPositionChanged: if (drag.active) editOverlay.updateNearestSnap(parent.x, parent.y, parent.width, parent.height)
+                    onReleased: {
+                        editOverlay.isDragging = false; editOverlay.nearestSnap = "";
+                        let newPos = root.findSnapPosition(parent.x, parent.y, parent.width, parent.height, editOverlay.width, editOverlay.height);
+                        root.pendingPositions["stockWidgetPosition"] = newPos;
                         root.pendingPositions = Object.assign({}, root.pendingPositions);
                     }
                 }

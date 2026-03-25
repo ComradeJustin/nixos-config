@@ -12,7 +12,11 @@
       login.fprintAuth = true;
       sudo.fprintAuth = true;
       polkit-1.fprintAuth = true;
-      quickshell-bar.fprintAuth = true;
+      quickshell-bar = {
+        fprintAuth = true;
+        # No timeout so fingerprint stays active indefinitely on lockscreen
+        rules.auth.fprintd.args = [ "timeout=-1" "max-tries=-1" ];
+      };
     };
   };
 }

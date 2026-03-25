@@ -14,6 +14,7 @@ ShellRoot {
     Utils.BluetoothService { id: btSvc }
     Utils.BrightnessService { id: briSvc }
     Utils.WindowService { id: winSvc }
+    Utils.IdleInhibitService { id: idleInhibitSvc }
 
     Modules.PowerMenu {
         id: pmModule
@@ -28,6 +29,7 @@ ShellRoot {
         wifiService: wifiSvc
         bluetoothService: btSvc
         widgetOverlayRef: widgetModule
+        idleInhibitService: idleInhibitSvc
         onWidgetEditRequested: widgetModule.toggleEditMode()
     }
     Modules.Spotlight { id: spotModule }
@@ -85,5 +87,6 @@ ShellRoot {
         function lockscreen(): string { lock(); return "ok" }
         function wakelock(): string { if (screenLocked) wakeCounter++; return "ok" }
         function widgetsettings(): string { widgetModule.toggleEditMode(); return "ok" }
+        function caffeine(): string { idleInhibitSvc.toggle(); return idleInhibitSvc.inhibited ? "on" : "off" }
     }
 }

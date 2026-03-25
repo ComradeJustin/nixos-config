@@ -193,6 +193,11 @@ QtObject {
     readonly property string iconDndOff:    "󰂚"
     readonly property string iconClipboard: "󰅍"
 
+    // Idle inhibit (caffeine)
+    readonly property string iconCaffeine:    "󰛊"
+    readonly property string iconCaffeineOff: "󰛩"
+    readonly property color  caffeineAccent:  base0A          // Yellow for awake/alert
+
     // Bluetooth
     readonly property string iconBtOn:        "󰂯"
     readonly property string iconBtOff:       "󰂲"
@@ -285,6 +290,11 @@ QtObject {
     readonly property color  powerLock:     domainSettings   // Purple for lock
 
     // Weather
+    // Stock
+    readonly property string iconStockUp:        "󰜷"
+    readonly property string iconStockDown:      "󰜮"
+    readonly property string iconStock:          "󰄪"
+
     readonly property string iconWeatherSunny:   "󰖙"
     readonly property string iconWeatherCloudy:  "󰖐"
     readonly property string iconWeatherPartly:  "󰖕"
@@ -317,6 +327,7 @@ QtObject {
     readonly property color  widgetSystemAccent:   domainSystem    // Orange for system stats
     readonly property color  widgetMediaAccent:    domainMedia     // Purple for now playing
     readonly property color  widgetQuoteAccent:    base0C          // Cyan for quotes (neutral info)
+    readonly property color  widgetStockAccent:    base0B          // Green for stocks
 
     // Widget Edit Mode
     readonly property string iconEdit:           "󰏫"

@@ -1,10 +1,8 @@
+{ config, lib, pkgs, inputs, ... }:
 {
-  lib,
-  pkgs,
-  inputs,
-  ...
-}:
-{
+  options.modules.spicetify.enable = lib.mkEnableOption "Spicetify (modded Spotify)";
+
+  config = lib.mkIf config.modules.spicetify.enable {
   # allow spotify to be installed if you don't have unfree enabled already
   nixpkgs.config.allowUnfreePredicate =
     pkg:
@@ -48,4 +46,5 @@
       }
     )
   ];
+  };
 }
