@@ -2,6 +2,7 @@ import Quickshell
 import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import ".." as Root
 import "controlcenter" as CCTabs
 
@@ -120,6 +121,14 @@ Scope {
                         color: Root.Theme.notifBackground
                         border.width: Root.Theme.borderWidth
                         border.color: Root.Theme.borderColor
+
+                        layer.enabled: true
+                        layer.effect: DropShadow {
+                            transparentBorder: true
+                            color: Qt.rgba(0, 0, 0, 0.35)
+                            radius: 12
+                            samples: 25
+                        }
 
                         RowLayout {
                             id: toastInner
@@ -251,11 +260,20 @@ Scope {
                 id: ccRect
                 width: Root.Theme.ccWidth
                 height: parent.height
-                radius: Root.Theme.radiusMedium  // Cozy: rounded panel edges
+                radius: Root.Theme.radiusMedium
                 color: Root.Theme.barBackground
                 x: cc.showing ? 0 : Root.Theme.ccWidth
                 Behavior on x { NumberAnimation { duration: 250; easing.type: Easing.InOutCubic } }
                 onXChanged: { if (!cc.showing && x >= Root.Theme.ccWidth - 1) ccPanel.visible = false; }
+
+                layer.enabled: cc.showing
+                layer.effect: DropShadow {
+                    transparentBorder: true
+                    color: Qt.rgba(0, 0, 0, 0.45)
+                    radius: 20
+                    samples: 41
+                    horizontalOffset: -4
+                }
 
                 Column {
                     anchors { fill: parent; margins: Root.Theme.ccPadding }

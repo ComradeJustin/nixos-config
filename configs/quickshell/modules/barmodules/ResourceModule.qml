@@ -29,13 +29,13 @@ Item {
         }
 
         Text {
-            text: root.cpuPercent >= 0 ? "Cpu " + root.cpuPercent + "%" : "Cpu --"
-            color: root.cpuPercent >= 90 ? Root.Theme.accentDanger : Root.Theme.textPrimary
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
+            text: root.cpuPercent >= 0 ? root.cpuPercent + "%" : "--"
+            color: root.cpuPercent >= 90 ? Root.Theme.accentDanger : Root.Theme.domainSystem
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
             anchors.verticalCenter: parent.verticalCenter
         }
 
-        Item { width: 8; height: 1 }
+        Item { width: 4; height: 1 }
 
         Text {
             text: Root.Theme.iconRam
@@ -45,12 +45,9 @@ Item {
         }
 
         Text {
-            text: {
-                if (root.ramUsedGb < 0) return "Mem --";
-                return "Mem " + root.ramUsedGb.toFixed(1) + "G";
-            }
-            color: Root.Theme.textPrimary
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
+            text: root.ramUsedGb >= 0 ? root.ramUsedGb.toFixed(1) + "G" : "--"
+            color: Root.Theme.domainSystem
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
             anchors.verticalCenter: parent.verticalCenter
         }
     }

@@ -80,7 +80,14 @@ Scope {
                     NumberAnimation { duration: 200; easing.type: Easing.InOutCubic }
                 }
 
-                // ── Left ──
+                // Reusable bar separator
+                component BarSep : Rectangle {
+                    width: 1; height: 14
+                    color: Root.Theme.textDimmed; opacity: 0.15
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                // ── Left: navigation & context ──
                 Row {
                     id: leftSection
                     height: Root.Theme.barHeight
@@ -97,13 +104,17 @@ Scope {
                         anchors.verticalCenter: parent.verticalCenter
                         onClicked: { if (barScope.powerMenuRef) barScope.powerMenuRef.toggle(); }
                     }
+                    BarSep {}
                     BarModules.WorkspaceModule { anchors.verticalCenter: parent.verticalCenter }
+                    BarSep {}
                     BarModules.TimeModule { anchors.verticalCenter: parent.verticalCenter }
+                    BarSep {}
                     BarModules.WeatherModule { anchors.verticalCenter: parent.verticalCenter }
+                    BarSep {}
                     BarModules.WindowModule { anchors.verticalCenter: parent.verticalCenter }
                 }
 
-                // ── Center (media) ──
+                // ── Center: media ──
                 BarModules.MediaModule {
                     id: mediaModule
                     anchors.centerIn: parent
@@ -111,7 +122,7 @@ Scope {
                     onCavaToggled: barScope.showCava = !barScope.showCava
                 }
 
-                // ── Right ──
+                // ── Right: system & controls ──
                 Row {
                     id: rightSection
                     height: Root.Theme.barHeight
@@ -129,6 +140,13 @@ Scope {
                         wifiService: barScope.wifiService
                         bluetoothService: barScope.bluetoothService
                     }
+                    BarSep { visible: trayModule.visible }
+                    BarModules.TrayModule {
+                        id: trayModule
+                        anchors.verticalCenter: parent.verticalCenter
+                        barPanel: panel
+                    }
+                    BarSep {}
                     BarModules.GearIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         isOpen: barScope.notifRef ? barScope.notifRef.showing : false

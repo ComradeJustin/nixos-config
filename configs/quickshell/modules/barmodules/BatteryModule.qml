@@ -42,9 +42,9 @@ Item {
         }
 
         Text {
-            text: root.capacity >= 0 ? "Bat " + root.capacity + "%" : "Bat --"
+            text: root.capacity >= 0 ? root.capacity + "%" : "--"
             color: root.activeColor
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
             anchors.verticalCenter: parent.verticalCenter
         }
 

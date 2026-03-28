@@ -488,67 +488,79 @@ Item {
         }
 
         // ── Music display above prompt ──
-        Row {
+        Rectangle {
+            id: mediaBg
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: promptBackdrop.top
-            anchors.bottomMargin: 20
-            spacing: 12
+            anchors.bottomMargin: 16
+            width: mediaRow.width + 32
+            height: mediaRow.height + 20
+            radius: 16
+            color: Qt.rgba(Root.Theme.base00.r, Root.Theme.base00.g, Root.Theme.base00.b, 0.75)
+            border.width: 1
+            border.color: Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.15)
             visible: lock.playerService && lock.playerService.hasMedia
 
-            // Album art
-            Rectangle {
-                width: 48
-                height: 48
-                radius: 8
-                color: Root.Theme.base01
-                clip: true
+            Row {
+                id: mediaRow
+                anchors.centerIn: parent
+                spacing: 12
 
-                Image {
-                    id: lockAlbumArt
-                    anchors.fill: parent
-                    source: lock.playerService ? lock.playerService.trackArtUrl : ""
-                    fillMode: Image.PreserveAspectCrop
-                    visible: status === Image.Ready
+                // Album art
+                Rectangle {
+                    width: 48
+                    height: 48
+                    radius: 8
+                    color: Root.Theme.base01
+                    clip: true
+
+                    Image {
+                        id: lockAlbumArt
+                        anchors.fill: parent
+                        source: lock.playerService ? lock.playerService.trackArtUrl : ""
+                        fillMode: Image.PreserveAspectCrop
+                        visible: status === Image.Ready
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: Root.Theme.iconMusic
+                        color: Root.Theme.textDimmed
+                        font { family: Root.Theme.fontFamily; pixelSize: 20 }
+                        visible: lockAlbumArt.status !== Image.Ready
+                    }
                 }
 
+                // Track info
+                Column {
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 2
+
+                    Text {
+                        text: lock.playerService ? lock.playerService.trackTitle : ""
+                        color: Root.Theme.textPrimary
+                        font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
+                        elide: Text.ElideRight
+                        width: Math.min(implicitWidth, 250)
+                    }
+
+                    Text {
+                        text: lock.playerService ? lock.playerService.trackArtist : ""
+                        color: Root.Theme.textDimmed
+                        font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                        elide: Text.ElideRight
+                        width: Math.min(implicitWidth, 250)
+                        visible: text.length > 0
+                    }
+                }
+
+                // Play/pause indicator
                 Text {
-                    anchors.centerIn: parent
-                    text: Root.Theme.iconMusic
-                    color: Root.Theme.textDimmed
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: (lock.playerService && lock.playerService.isPlaying) ? Root.Theme.iconMediaPause : Root.Theme.iconMediaPlay
+                    color: Root.Theme.domainMedia
                     font { family: Root.Theme.fontFamily; pixelSize: 20 }
-                    visible: lockAlbumArt.status !== Image.Ready
                 }
-            }
-
-            // Track info
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 2
-
-                Text {
-                    text: lock.playerService ? lock.playerService.trackTitle : ""
-                    color: Root.Theme.textPrimary
-                    font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
-                    elide: Text.ElideRight
-                    width: Math.min(implicitWidth, 250)
-                }
-
-                Text {
-                    text: lock.playerService ? lock.playerService.trackArtist : ""
-                    color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 12 }
-                    elide: Text.ElideRight
-                    width: Math.min(implicitWidth, 250)
-                    visible: text.length > 0
-                }
-            }
-
-            // Play/pause indicator
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: (lock.playerService && lock.playerService.isPlaying) ? Root.Theme.iconMediaPause : Root.Theme.iconMediaPlay
-                color: Root.Theme.textAccent
-                font { family: Root.Theme.fontFamily; pixelSize: 20 }
             }
         }
     } // lockContent Item

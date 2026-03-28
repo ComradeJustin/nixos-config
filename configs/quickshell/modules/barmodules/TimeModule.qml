@@ -29,12 +29,12 @@ Item {
 
         Text {
             text: root.dateText || "--"
-            color: Root.Theme.textPrimary
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
+            color: Root.Theme.domainTime
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
             anchors.verticalCenter: parent.verticalCenter
         }
 
-        Item { width: 8; height: 1 }
+        Item { width: 4; height: 1 }
 
         Text {
             text: Root.Theme.iconClock
@@ -45,8 +45,8 @@ Item {
 
         Text {
             text: root.timeText || "--:--"
-            color: Root.Theme.textPrimary
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
+            color: Root.Theme.domainTime
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
             anchors.verticalCenter: parent.verticalCenter
         }
     }

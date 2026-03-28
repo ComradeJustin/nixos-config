@@ -34,8 +34,8 @@ Item {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: root.volume >= 0 ? root.volume + "%" : "--"
-            color: root.muted ? Root.Theme.textDimmed : Root.Theme.textPrimary
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
+            color: root.muted ? Root.Theme.textDimmed : Root.Theme.domainMedia
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
         }
     }
 }

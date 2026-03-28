@@ -1,6 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
+import Qt5Compat.GraphicalEffects
 import ".." as Root
 
 // Centered power menu overlay.
@@ -110,6 +111,13 @@ Scope {
 
                         Behavior on radius { NumberAnimation { duration: 150 } }
                         Behavior on color { ColorAnimation { duration: 150 } }
+
+                        layer.enabled: pm.selectedIndex === index
+                        layer.effect: Glow {
+                            color: Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.5)
+                            radius: 16
+                            samples: 33
+                        }
 
                         Text {
                             anchors.centerIn: parent

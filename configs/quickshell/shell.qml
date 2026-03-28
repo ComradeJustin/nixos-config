@@ -1,3 +1,4 @@
+//@ pragma UseQApplication
 //@ pragma IconTheme Gruvbox-Plus-Dark
 import Quickshell
 import Quickshell.Io

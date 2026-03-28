@@ -1,6 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
+import Qt5Compat.GraphicalEffects
 import "../.." as Root
 
 // Media popup panel with visualizer and controls
@@ -44,6 +45,15 @@ PanelWindow {
             color: Root.Theme.cavaBackground
             border.width: Root.Theme.borderWidth
             border.color: Root.Theme.borderColor
+
+            layer.enabled: popup.cavaWanted
+            layer.effect: DropShadow {
+                transparentBorder: true
+                color: Qt.rgba(0, 0, 0, 0.4)
+                radius: 12
+                samples: 25
+                verticalOffset: 4
+            }
 
             y: popup.cavaWanted ? 6 : -(Root.Theme.cavaHeight + 6)
 

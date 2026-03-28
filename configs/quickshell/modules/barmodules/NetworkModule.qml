@@ -32,13 +32,13 @@ Item {
 
         Text {
             text: {
-                if (!root.wifiService || !root.wifiService.enabled) return "Wi-Fi off";
-                if (!root.wifiService.connected) return "No network";
+                if (!root.wifiService || !root.wifiService.enabled) return "Off";
+                if (!root.wifiService.connected) return "No net";
                 if (root.wifiService.iface === "ethernet") return "Eth";
                 return root.wifiService.ssid;
             }
-            color: (root.wifiService && root.wifiService.connected) ? Root.Theme.textPrimary : Root.Theme.textDimmed
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
+            color: (root.wifiService && root.wifiService.connected) ? Root.Theme.domainNetwork : Root.Theme.textDimmed
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
             anchors.verticalCenter: parent.verticalCenter
         }
     }

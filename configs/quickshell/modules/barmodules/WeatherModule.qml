@@ -33,8 +33,8 @@ Item {
 
         Text {
             text: root.temperature
-            color: Root.Theme.textPrimary
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
+            color: Root.Theme.domainWeather
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
             anchors.verticalCenter: parent.verticalCenter
         }
     }

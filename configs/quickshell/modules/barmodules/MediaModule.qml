@@ -60,8 +60,8 @@ Item {
         Text {
             anchors.verticalCenter: parent.verticalCenter; width: parent.width
             text: root.mediaText
-            color: mediaHover.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
+            color: mediaHover.containsMouse ? Root.Theme.domainMedia : Root.Theme.textDimmed
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
             elide: Text.ElideRight; visible: !root.needsScroll
         }
 
@@ -69,13 +69,13 @@ Item {
             id: scrollRow; anchors.verticalCenter: parent.verticalCenter; visible: root.needsScroll
             Text {
                 id: innerText; text: root.mediaText
-                color: mediaHover.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
+                color: mediaHover.containsMouse ? Root.Theme.domainMedia : Root.Theme.textDimmed
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
             }
             Item { width: 40; height: 1 }
             Text {
                 text: root.mediaText
-                color: mediaHover.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed
+                color: mediaHover.containsMouse ? Root.Theme.domainMedia : Root.Theme.textDimmed
                 font: innerText.font
             }
         }

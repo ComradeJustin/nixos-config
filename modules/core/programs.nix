@@ -14,7 +14,7 @@
     ghostty
     vscode
     nautilus
-
+    feh
     # Network tools
     wireshark
     nmap

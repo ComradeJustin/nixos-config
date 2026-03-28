@@ -2,6 +2,7 @@ import Quickshell
 import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import ".." as Root
 import "spotlight" as Views
 
@@ -99,6 +100,14 @@ Scope {
             Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
             Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
             Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.InOutQuad } }
+
+            layer.enabled: spot.showing
+            layer.effect: DropShadow {
+                transparentBorder: true
+                color: Qt.rgba(0, 0, 0, 0.5)
+                radius: 24
+                samples: 49
+            }
 
             onOpacityChanged: {
                 if (!spot.showing && opacity <= 0.01)

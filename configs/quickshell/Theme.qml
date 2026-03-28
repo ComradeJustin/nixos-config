@@ -107,7 +107,7 @@ QtObject {
     // ── Bar Geometry (grid-aligned) ──
     readonly property int barHeight:  32   // 4 units
     readonly property int barPadding: 8    // 1 unit
-    readonly property int barSpacing: 16   // 2 units
+    readonly property int barSpacing: 8    // 1 unit
 
     // ── OSD Geometry (grid-aligned) ──
     readonly property int osdWidth:    256  // 32 units

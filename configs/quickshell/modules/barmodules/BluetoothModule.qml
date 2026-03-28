@@ -36,20 +36,19 @@ Item {
 
         Text {
             text: {
-                if (!root.bluetoothService || !root.bluetoothService.enabled) return "Bt off";
+                if (!root.bluetoothService || !root.bluetoothService.enabled) return "Off";
                 if (root.bluetoothService.connected) {
-                    // Truncate long device names
                     var name = root.bluetoothService.connectedDevice;
                     return name.length > 10 ? name.substring(0, 8) + "…" : name;
                 }
-                return "Bt on";
+                return "On";
             }
             color: {
                 if (!root.bluetoothService || !root.bluetoothService.enabled) return Root.Theme.textDimmed;
-                if (root.bluetoothService.connected) return Root.Theme.textPrimary;
-                return Root.Theme.textPrimary;
+                if (root.bluetoothService.connected) return Root.Theme.accentSuccess;
+                return Root.Theme.domainNetwork;
             }
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: Root.Theme.fontBold }
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
             anchors.verticalCenter: parent.verticalCenter
         }
     }

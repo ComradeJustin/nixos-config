@@ -60,6 +60,7 @@
       url = "github:niri-wm/niri/wip/branch";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
   };
 
   outputs =
