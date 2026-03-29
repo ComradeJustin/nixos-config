@@ -1,49 +1,47 @@
+{ config, lib, pkgs, inputs, ... }:
 {
-  config,
-  lib,
-  pkgs,
-  inputs,
-  ...
-}:
-{
-  environment.systemPackages = with pkgs; [
-    # Shell and utilities
-    nushell
-    carapace
-    jq
-    fzf
-    unzip
-    zip
-    p7zip
-    zstd
+  options.modules.cli-packages.enable = lib.mkEnableOption "CLI tools (neovim, git, ripgrep, bat, etc.)" // { default = true; };
 
-    # Core CLI tools
-    neovim
-    wget
-    curl
-    git
-    lazygit
-    gh
+  config = lib.mkIf config.modules.cli-packages.enable {
+    environment.systemPackages = with pkgs; [
+      # Shell and utilities
+      nushell
+      carapace
+      jq
+      fzf
+      unzip
+      zip
+      p7zip
+      zstd
 
-    # Modern CLI replacements
-    fd
-    ripgrep
-    bat
-    eza
-    dust
-    zoxide
-    tealdeer
+      # Core CLI tools
+      neovim
+      wget
+      curl
+      git
+      lazygit
+      gh
 
-    # System monitoring
-    btop
-    fastfetch
+      # Modern CLI replacements
+      fd
+      ripgrep
+      bat
+      eza
+      dust
+      zoxide
+      tealdeer
 
-    # Man pages
-    man-pages
-    man-pages-posix
+      # System monitoring
+      btop
+      fastfetch
 
-    # Notifications
-    glib
-    libnotify
-  ];
+      # Man pages
+      man-pages
+      man-pages-posix
+
+      # Notifications
+      glib
+      libnotify
+    ];
+  };
 }

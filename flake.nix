@@ -84,14 +84,14 @@
         (import ./overlays/btop-icon-fix.nix)
       ];
 
-      # Shared modules used by all hosts
+      # All module definitions — options are registered but nothing activates without enables
       sharedModules = [
-        ./main/configuration.nix
         ./modules/core
-        ./modules/extras
+        ./modules/desktop
+        ./modules/server
+        ./modules/hardware
+        ./modules/hosts
         ./modules/profiles
-        ./modules/services
-        ./modules/theming
         stylix.nixosModules.stylix
         home-manager.nixosModules.home-manager
         inputs.spicetify-nix.nixosModules.default
@@ -124,6 +124,13 @@
             {
               modules.profiles.desktop.enable = true;
               modules.gaming.enable = true;
+              modules.compscijava.enable = true;
+              modules.ai.enable = true;
+              modules.distributed-builds.enable = true;
+              modules.distributed-builds.role = "client";
+              modules.distributed-builds.builders = [
+                { hostName = "home-core"; maxJobs = 4; speedFactor = 2; }
+              ];
             }
           ];
         };
@@ -131,13 +138,38 @@
         nixlaptop = mkHost {
           hostModules = [
             ./hosts/nixlaptop/hardware-configuration.nix
-            ./hosts/nixlaptop/laptop.nix
             ./hosts/nixlaptop/networking.nix
             nixos-hardware.nixosModules.lenovo-thinkpad-t14-intel-gen1
             {
               modules.profiles.desktop.enable = true;
+              modules.hosts.laptop.enable = true;
               modules.fingerprint.enable = true;
               modules.bluetooth.enable = true;
+              modules.compscijava.enable = true;
+              modules.ai.enable = true;
+              modules.distributed-builds.enable = true;
+              modules.distributed-builds.role = "client";
+              modules.distributed-builds.builders = [
+                { hostName = "home-core"; maxJobs = 4; speedFactor = 2; }
+              ];
+            }
+          ];
+        };
+
+        home-core = mkHost {
+          hostModules = [
+            # TODO: generate on home-core then commit:
+            #   sudo nix run nixpkgs#nixos-facter -- -o facter.json
+            # { hardware.facter.reportPath = ./hosts/servers/home-core/facter.json; }
+            ./hosts/servers/home-core/filesystems.nix
+            ./hosts/servers/home-core/networking.nix
+            {
+              modules.profiles.server.enable = true;
+              modules.tailscale.enable = true;
+              modules.nginx.enable = true;
+              modules.docker.enable = true;
+              modules.distributed-builds.enable = true;
+              modules.distributed-builds.role = "builder";
             }
           ];
         };

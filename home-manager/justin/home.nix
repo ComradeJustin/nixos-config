@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   inputs,
   ...
@@ -82,38 +83,24 @@ in
       recursive = true;
     };
   };
-  # home.file.".config/ghostty".source = ../../configs/ghostty;
 
   gtk = {
     enable = true;
-    #Icon Theme
     iconTheme = {
       package = pkgs.gruvbox-plus-icons;
       name = "Gruvbox-Plus-Dark";
     };
   };
 
-  stylix.targets.vscode.profileNames = [
-    "Default"
-    "default"
-  ];
-
   imports = [
-
-    ../../modules/programs/git.nix
-    ../../modules/programs/rofi.nix
+    ./modules/git.nix
+    ./modules/rofi.nix
   ];
   services.cliphist = {
 
     enable = true;
 
-    # A Wayland session
     systemdTargets = [ "config.wayland.systemd.target" ];
-
-    # Sway Target
-    # if using make sure that:
-    # "wayland.windowManager.sway.systemd.enable = true;" is set
-    #systemdTargets = ["sway-session.target"];
 
     extraOptions = [
       "-max-dedupe-search"

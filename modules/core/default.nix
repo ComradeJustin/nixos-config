@@ -1,8 +1,12 @@
 {
   imports = [
     ./cli-packages.nix
-    ./fonts.nix
-    ./programs.nix
-    ./services.nix
+    ./boot.nix
+    ./locale.nix
+    ./nix-settings.nix
+    ./security.nix
+    ./networking.nix
+    ./users.nix
+    ./testing.nix
   ];
 }
