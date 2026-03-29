@@ -165,6 +165,8 @@
             ./hosts/servers/home-core/networking.nix
             {
               modules.profiles.server.enable = true;
+              modules.boot.loader = "grub-mbr";
+              modules.boot.grubDevice = "/dev/sda";  # TODO: verify actual disk
               modules.tailscale.enable = true;
               modules.nginx.enable = true;
               modules.docker.enable = true;
