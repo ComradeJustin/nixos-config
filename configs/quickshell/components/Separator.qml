@@ -1,10 +1,13 @@
 import QtQuick
 import ".." as Root
 
-// Horizontal separator line for control center tabs and lists
+// Separator line for control center tabs, lists, and bar modules.
+// Set vertical: true for bar separator use.
 Rectangle {
-    width: parent ? parent.width : 100
-    height: 1
+    property bool vertical: false
+
+    width: vertical ? 1 : (parent ? parent.width : 100)
+    height: vertical ? 14 : 1
     color: Root.Theme.textDimmed
     opacity: 0.15
 }

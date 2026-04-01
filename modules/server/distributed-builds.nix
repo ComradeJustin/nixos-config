@@ -83,12 +83,21 @@ in
       })
     ]))
 
-    # Client role: send builds to remote machines
+    # Client role: send builds to remote machines + build locally in parallel
     (lib.mkIf isClient {
       nix.distributedBuilds = true;
       nix.settings.builders-use-substitutes = true;
 
-      nix.buildMachines = map (b: {
+      nix.buildMachines = [
+        # Local machine as a builder so Nix uses both local + remote simultaneously
+        {
+          hostName = "localhost";
+          system = "x86_64-linux";
+          maxJobs = 4;
+          speedFactor = 1;
+          supportedFeatures = [ "nixos-test" "big-parallel" "kvm" ];
+        }
+      ] ++ map (b: {
         inherit (b) hostName system maxJobs speedFactor supportedFeatures;
         protocol = "ssh-ng";
         sshUser = if cfg.transport == "tailscale" then "root" else "nix-builder";

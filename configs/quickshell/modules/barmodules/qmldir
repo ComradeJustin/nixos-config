@@ -2,16 +2,7 @@ module BarModules
 TimeModule 1.0 TimeModule.qml
 WorkspaceModule 1.0 WorkspaceModule.qml
 WindowModule 1.0 WindowModule.qml
-UtilsModule 1.0 UtilsModule.qml
-ResourceModule 1.0 ResourceModule.qml
-AudioModule 1.0 AudioModule.qml
-NetworkModule 1.0 NetworkModule.qml
-BluetoothModule 1.0 BluetoothModule.qml
 BatteryModule 1.0 BatteryModule.qml
 MediaModule 1.0 MediaModule.qml
 MediaPopup 1.0 MediaPopup.qml
-PowerIcon 1.0 PowerIcon.qml
-NotifIcon 1.0 NotifIcon.qml
-GearIcon 1.0 GearIcon.qml
-WeatherModule 1.0 WeatherModule.qml
 TrayModule 1.0 TrayModule.qml

@@ -1,25 +1,21 @@
 import QtQuick
 import Quickshell.Io
 import ".." as Root
+import "../components" as Components
 
 // Background quote widget with inspirational quotes
-Item {
+Components.WidgetFrame {
     id: root
+    widgetName: "quote"
 
-    // Config properties
     property int maxWidth: 400
     property int fontSize: 16
-    property int refreshInterval: 3600000  // 1 hour
+    property int refreshInterval: 3600000
 
-    implicitWidth: Math.min(content.implicitWidth, maxWidth) + Root.Theme.widgetPadding * 2
-    implicitHeight: content.implicitHeight + Root.Theme.widgetPadding * 2
-
-    // Quote state
     property string quoteText: ""
     property string quoteAuthor: ""
     property bool fetching: false
 
-    // Fallback quotes (used when API unavailable)
     readonly property var fallbackQuotes: [
         { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
         { text: "Simplicity is the ultimate sophistication.", author: "Leonardo da Vinci" },
@@ -42,7 +38,6 @@ Item {
         fallbackIndex = (fallbackIndex + 1) % fallbackQuotes.length;
     }
 
-    // Try quotable.io API
     Process {
         id: quoteProc
         command: ["curl", "-s", "--max-time", "5", "https://api.quotable.io/random?maxLength=150"]
@@ -64,9 +59,7 @@ Item {
         }
         onExited: (code) => {
             root.fetching = false;
-            if (code !== 0 || root.quoteText === "") {
-                root.useFallback();
-            }
+            if (code !== 0 || root.quoteText === "") root.useFallback();
             pollTimer.start();
         }
     }
@@ -77,47 +70,12 @@ Item {
         quoteProc.running = true;
     }
 
-    Component.onCompleted: {
-        // Start with fallback immediately, then fetch
-        useFallback();
-        startTimer.start();
-    }
+    Component.onCompleted: { useFallback(); startTimer.start(); }
 
-    Timer {
-        id: startTimer
-        interval: 3000
-        onTriggered: root.fetchQuote()
-    }
-
-    Timer {
-        id: pollTimer
-        interval: root.refreshInterval
-        onTriggered: root.fetchQuote()
-    }
-
-    // Shadow layer
-    Rectangle {
-        anchors.fill: bg
-        anchors.margins: -2
-        anchors.topMargin: 2
-        radius: Root.Theme.widgetRadius + 2
-        color: Root.Theme.widgetShadowColor
-        opacity: 0.4
-    }
-
-    // Widget background
-    Rectangle {
-        id: bg
-        anchors.fill: parent
-        radius: Root.Theme.widgetRadius
-        color: Root.Theme.widgetBackground
-        border.width: Root.Theme.borderWidth
-        border.color: Root.Theme.borderColor
-    }
+    Timer { id: startTimer; interval: 3000; onTriggered: root.fetchQuote() }
+    Timer { id: pollTimer; interval: root.refreshInterval; onTriggered: root.fetchQuote() }
 
     Column {
-        id: content
-        anchors.centerIn: parent
         spacing: 8
         width: Math.min(quoteTextItem.implicitWidth, root.maxWidth)
 
@@ -128,21 +86,14 @@ Item {
             color: Root.Theme.widgetText
             wrapMode: Text.WordWrap
             horizontalAlignment: Text.AlignHCenter
-            font {
-                family: Root.Theme.fontFamily
-                pixelSize: root.fontSize
-                italic: true
-            }
+            font { family: Root.Theme.fontFamily; pixelSize: root.fontSize; italic: true }
         }
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "— " + root.quoteAuthor
             color: Root.Theme.widgetTextDimmed
-            font {
-                family: Root.Theme.fontFamily
-                pixelSize: Math.round(root.fontSize * 0.8)
-            }
+            font { family: Root.Theme.fontFamily; pixelSize: Math.round(root.fontSize * 0.8) }
         }
     }
 }

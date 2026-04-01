@@ -111,4 +111,10 @@ in
     allowImages = true;
 
   };
+  # Environment
+  home.sessionVariables = {
+    EDITOR = "nvim";
+    BROWSER = "firefox";
+    TERMINAL = "ghostty";
+  };
 }

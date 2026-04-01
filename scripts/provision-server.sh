@@ -15,7 +15,7 @@ if [[ -z "$HOSTNAME" || -z "$TARGET" ]]; then
     echo "  2. Extracting filesystems from hardware-configuration.nix"
     echo "  3. Creating the host directory with networking.nix"
     echo ""
-    echo "Example: $0 home-core root@192.168.1.100"
+    echo "Example: $0 home-core justin@192.168.1.100"
     exit 1
 fi
 
@@ -32,38 +32,36 @@ fi
 
 mkdir -p "$HOST_DIR"
 
-echo "==> Generating facter.json on ${TARGET}..."
-ssh "$TARGET" 'nix run nixpkgs#nixos-facter -- -o /tmp/facter.json 2>/dev/null'
-scp "$TARGET":/tmp/facter.json "$HOST_DIR/facter.json"
-ssh "$TARGET" 'rm -f /tmp/facter.json'
-echo "    Saved to ${HOST_DIR}/facter.json"
+# Set up SSH connection multiplexing — one auth for all commands
+SOCK="/tmp/ssh-provision-${HOSTNAME}"
+ssh -fNM -S "$SOCK" "$TARGET"
+trap 'ssh -S "$SOCK" -O exit "$TARGET" 2>/dev/null' EXIT
 
-echo "==> Fetching hardware-configuration.nix from ${TARGET}..."
-scp "$TARGET":/etc/nixos/hardware-configuration.nix "/tmp/hw-config-${HOSTNAME}.nix" 2>/dev/null || true
+echo "==> Generating facter.json and fetching hardware config..."
+ssh -S "$SOCK" -t "$TARGET" "sudo nix --extra-experimental-features 'nix-command flakes' run nixpkgs#nixos-facter -- -o /tmp/facter.json && sudo cp /etc/nixos/hardware-configuration.nix /tmp/hw-config.nix 2>/dev/null; sudo chmod 644 /tmp/facter.json /tmp/hw-config.nix 2>/dev/null"
+
+scp -o "ControlPath=$SOCK" "$TARGET":/tmp/facter.json "$HOST_DIR/facter.json"
+echo "    Saved facter.json"
+
+scp -o "ControlPath=$SOCK" "$TARGET":/tmp/hw-config.nix "/tmp/hw-config-${HOSTNAME}.nix" 2>/dev/null || true
+
+ssh -S "$SOCK" -t "$TARGET" 'sudo rm -f /tmp/facter.json /tmp/hw-config.nix'
 
 if [[ -f "/tmp/hw-config-${HOSTNAME}.nix" ]]; then
     echo "==> Extracting filesystems.nix..."
-    # Extract fileSystems, swapDevices, and boot.initrd from hardware-configuration.nix
-    # Keep everything except the kernel module and nixpkgs.hostPlatform lines that facter handles
     python3 -c "
-import re, sys
+import sys
 
 with open('/tmp/hw-config-${HOSTNAME}.nix') as f:
     content = f.read()
 
-# Lines to keep: fileSystems, swapDevices, boot.initrd, boot.loader, nixpkgs.hostPlatform
-# Lines to drop: boot.kernelModules, boot.extraModulePackages, hardware.*, networking.*
-# (facter handles kernel modules and hardware detection)
-
 lines = content.split('\n')
 output = []
-skip_block = False
-brace_depth = 0
 
 for line in lines:
     stripped = line.strip()
 
-    # Skip the function header and outer braces — we'll write our own
+    # Skip the function header
     if stripped.startswith('{') and ('config' in stripped or 'lib' in stripped or 'pkgs' in stripped or 'modulesPath' in stripped):
         continue
     if stripped == '{' and not output:
@@ -80,7 +78,7 @@ for line in lines:
     ]):
         continue
 
-    # Skip comments about auto-generated
+    # Skip auto-generated comments
     if stripped.startswith('# Do not modify') or stripped.startswith('# Generated'):
         continue
 
@@ -140,20 +138,6 @@ ls -1 "$HOST_DIR"
 echo ""
 echo "Next steps:"
 echo "  1. Review ${HOST_DIR}/filesystems.nix — verify mounts and UUIDs"
-echo "  2. Add host entry to flake.nix:"
-echo ""
-echo "        ${HOSTNAME} = mkHost {"
-echo "          hostModules = ["
-echo "            { hardware.facter.reportPath = ./hosts/servers/${HOSTNAME}/facter.json; }"
-echo "            ./hosts/servers/${HOSTNAME}/filesystems.nix"
-echo "            ./hosts/servers/${HOSTNAME}/networking.nix"
-echo "            {"
-echo "              modules.profiles.server.enable = true;"
-echo "              modules.tailscale.enable = true;"
-echo "              modules.distributed-builds.enable = true;"
-echo "              modules.distributed-builds.role = \"builder\";"
-echo "            }"
-echo "          ];"
-echo "        };"
-echo ""
-echo "  3. Deploy: ./scripts/rebuild.sh ${HOSTNAME}"
+echo "  2. Add host entry to flake.nix (if not already there)"
+echo "  3. Uncomment the facter.json line in flake.nix"
+echo "  4. Deploy: ./scripts/rebuild.sh ${HOSTNAME}"

@@ -61,6 +61,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
   };
 
   outputs =
@@ -76,6 +81,7 @@
       nixos-hardware,
       niri-beta,
       spotatui,
+      disko,
       ...
     }@inputs:
     let
@@ -94,6 +100,7 @@
         ./modules/profiles
         stylix.nixosModules.stylix
         home-manager.nixosModules.home-manager
+        disko.nixosModules.disko
         inputs.spicetify-nix.nixosModules.default
         {
           home-manager = {
@@ -158,9 +165,8 @@
 
         home-core = mkHost {
           hostModules = [
-            # TODO: generate on home-core then commit:
-            #   sudo nix run nixpkgs#nixos-facter -- -o facter.json
-            # { hardware.facter.reportPath = ./hosts/servers/home-core/facter.json; }
+            { hardware.facter.reportPath = ./hosts/servers/home-core/facter.json; }
+            ./hosts/servers/home-core/disk-config.nix
             ./hosts/servers/home-core/filesystems.nix
             ./hosts/servers/home-core/networking.nix
             {

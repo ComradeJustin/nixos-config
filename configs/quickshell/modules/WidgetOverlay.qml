@@ -4,12 +4,15 @@ import Quickshell.Io
 import QtQuick
 import ".." as Root
 import "../widgets" as Widgets
+import "../components" as Components
+import "../core" as Core
 
 Scope {
     id: root
 
     property var windowService: null
     property var playerService: null
+    property var weatherService: null
 
     property bool editMode: false
     signal editModeToggled(bool enabled)
@@ -23,6 +26,13 @@ Scope {
         "bottom-left", "bottom-center", "bottom-right"
     ]
 
+    // All widget position keys for swap logic (derived from Registry)
+    readonly property var allWidgetKeys: {
+        let keys = [];
+        for (let w of Core.Registry.widgets) keys.push(w.positionKey);
+        return keys;
+    }
+
     function toggleEditMode() {
         editMode = !editMode;
         if (!editMode) pendingPositions = {};
@@ -30,13 +40,11 @@ Scope {
     }
 
     function savePositions() {
-        // Merge pending into cached
         for (let widget in pendingPositions) {
             cachedPositions[widget] = pendingPositions[widget];
         }
         cachedPositions = Object.assign({}, cachedPositions);
 
-        // Build lines from all cached positions
         let lines = [];
         for (let widget in cachedPositions) {
             let pos = cachedPositions[widget];
@@ -45,7 +53,6 @@ Scope {
             }
         }
 
-        // Save to file
         if (lines.length > 0) {
             let data = lines.join("\n");
             let path = Root.Theme.homeDir + "/.cache/quickshell-widget-positions";
@@ -76,14 +83,11 @@ Scope {
             }
         }
         onExited: {
-            // Trigger reactivity after loading
             root.cachedPositions = Object.assign({}, root.cachedPositions);
         }
     }
 
-    Process {
-        id: saveProc
-    }
+    Process { id: saveProc }
 
     function getPosition(posStr, itemWidth, itemHeight, areaWidth, areaHeight, marginX, marginY) {
         let x = 0, y = 0;
@@ -118,19 +122,84 @@ Scope {
         return pendingPositions[widgetName] || cachedPositions[widgetName] || configPos;
     }
 
+    // ── Swap Logic ──
+    // Snapshot of pendingPositions taken at drag start, so mid-drag
+    // hover-swaps always reset to the pre-drag state before applying.
+    property var preDragPending: ({})
+
+    function beginDrag(droppedKey) {
+        preDragPending = Object.assign({}, pendingPositions);
+    }
+
+    // Swap: occupant goes to the dragged widget's pre-drag position.
+    // Each call rebuilds from preDragPending so only one swap is active.
+    function handleSwap(droppedKey, targetPosition, originPosition) {
+        let origin = originPosition;
+        let fresh = Object.assign({}, preDragPending);
+
+        // Find which widget occupies the target in the pre-drag state
+        for (let key of allWidgetKeys) {
+            if (key !== droppedKey) {
+                let pos = fresh[key] || cachedPositions[key] || getDefaultPosition(key);
+                if (pos === targetPosition) {
+                    fresh[key] = origin;
+                    break;
+                }
+            }
+        }
+        fresh[droppedKey] = targetPosition;
+        pendingPositions = fresh;
+    }
+
+    function getDefaultPosition(key) {
+        for (let w of Core.Registry.widgets) {
+            if (w.positionKey === key)
+                return Root.Config[key] || w.defaultPos;
+        }
+        return "center";
+    }
+
     property bool widgetsShown: root.editMode || !Root.Config.autoHideWidgets || (root.windowService ? root.windowService.widgetsVisible : true)
 
-    // Store widget sizes for ghost rectangles to use
-    property size clockSize: Qt.size(160, 90)
-    property size weatherSize: Qt.size(130, 70)
-    property size systemSize: Qt.size(130, 70)
-    property size quoteSize: Qt.size(180, 70)
-    property size nowPlayingSize: Qt.size(180, 90)
-    property size calendarSize: Qt.size(200, 180)
-    property size stockSize: Qt.size(220, 120)
+    // Store widget sizes for ghost rectangles (keyed by widget key)
+    property var widgetSizes: ({
+        "clock": Qt.size(160, 90), "weather": Qt.size(130, 70),
+        "system": Qt.size(130, 70), "quote": Qt.size(180, 70),
+        "nowPlaying": Qt.size(180, 90), "calendar": Qt.size(200, 180),
+        "stock": Qt.size(220, 120)
+    })
+
+    function updateWidgetSize(key, w, h) {
+        let s = widgetSizes;
+        s[key] = Qt.size(w, h);
+        widgetSizes = s;
+    }
 
     // ══════════════════════════════════════════════════════════════════
-    // ── Single Widget Overlay Panel ──
+    // ── Widget positioning helper for panel children ──
+    // ══════════════════════════════════════════════════════════════════
+    component PositionedWidget : Item {
+        id: pw
+        property string positionKey
+        property string defaultPosition
+        property bool configVisible: true
+        property bool extraVisible: true  // e.g. hasMedia for NowPlaying
+
+        visible: configVisible
+        opacity: (root.widgetsShown && !root.editMode && extraVisible) ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.InOutQuad } }
+
+        property string posStr: root.getEffectivePosition(positionKey, defaultPosition)
+        property point pos: root.getPosition(posStr, implicitWidth, implicitHeight,
+            (parent ? parent.width : 1920), (parent ? parent.height : 1080),
+            Root.Config.widgetMarginX, Root.Config.widgetMarginY)
+        x: pos.x; y: pos.y
+        Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ── Widget Overlay Panel ──
     // ══════════════════════════════════════════════════════════════════
     Variants {
         model: Root.Config.enableWallpaperWidgets ? Quickshell.screens : []
@@ -147,152 +216,126 @@ Scope {
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
 
-            // Clock Widget
-            Widgets.ClockWidget {
-                id: clockW
-                visible: Root.Config.showClockWidget
-                opacity: (root.widgetsShown && !root.editMode) ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.InOutQuad } }
+            PositionedWidget {
+                positionKey: "clockWidgetPosition"
+                defaultPosition: Root.Config.clockWidgetPosition
+                configVisible: Root.Config.showClockWidget
 
-                property string posStr: root.getEffectivePosition("clockWidgetPosition", Root.Config.clockWidgetPosition)
-                property point pos: root.getPosition(posStr, implicitWidth, implicitHeight, widgetPanel.width, widgetPanel.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
-                x: pos.x; y: pos.y
-                Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                timeFormat: Root.Config.clockShowSeconds ? Root.Config.clockTimeFormat.replace("mm", "mm:ss") : Root.Config.clockTimeFormat
-                dateFormat: Root.Config.clockDateFormat
-                showDate: Root.Config.clockShowDate
-                showSeconds: Root.Config.clockShowSeconds
-                clockFontSize: Root.Config.clockFontSize
-
-                onImplicitWidthChanged: root.clockSize = Qt.size(implicitWidth, implicitHeight)
-                onImplicitHeightChanged: root.clockSize = Qt.size(implicitWidth, implicitHeight)
+                Widgets.ClockWidget {
+                    id: clockW
+                    timeFormat: Root.Config.clockShowSeconds ? Root.Config.clockTimeFormat.replace("mm", "mm:ss") : Root.Config.clockTimeFormat
+                    dateFormat: Root.Config.clockDateFormat
+                    showDate: Root.Config.clockShowDate
+                    showSeconds: Root.Config.clockShowSeconds
+                    clockFontSize: Root.Config.clockFontSize
+                    onImplicitWidthChanged: root.updateWidgetSize("clock", implicitWidth, implicitHeight)
+                    onImplicitHeightChanged: root.updateWidgetSize("clock", implicitWidth, implicitHeight)
+                }
+                implicitWidth: clockW.implicitWidth
+                implicitHeight: clockW.implicitHeight
             }
 
-            // Weather Widget
-            Widgets.WeatherWidget {
-                id: weatherW
-                visible: Root.Config.showWeatherWidget
-                opacity: (root.widgetsShown && !root.editMode) ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.InOutQuad } }
+            PositionedWidget {
+                positionKey: "weatherWidgetPosition"
+                defaultPosition: Root.Config.weatherWidgetPosition
+                configVisible: Root.Config.showWeatherWidget
 
-                property string posStr: root.getEffectivePosition("weatherWidgetPosition", Root.Config.weatherWidgetPosition)
-                property point pos: root.getPosition(posStr, implicitWidth, implicitHeight, widgetPanel.width, widgetPanel.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
-                x: pos.x; y: pos.y
-                Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                useMetric: Root.Config.weatherUseMetric
-                fontSize: Root.Config.weatherFontSize
-
-                onImplicitWidthChanged: root.weatherSize = Qt.size(implicitWidth, implicitHeight)
-                onImplicitHeightChanged: root.weatherSize = Qt.size(implicitWidth, implicitHeight)
+                Widgets.WeatherWidget {
+                    id: weatherW
+                    weatherService: root.weatherService
+                    fontSize: Root.Config.weatherFontSize
+                    onImplicitWidthChanged: root.updateWidgetSize("weather", implicitWidth, implicitHeight)
+                    onImplicitHeightChanged: root.updateWidgetSize("weather", implicitWidth, implicitHeight)
+                }
+                implicitWidth: weatherW.implicitWidth
+                implicitHeight: weatherW.implicitHeight
             }
 
-            // System Widget
-            Widgets.SystemWidget {
-                id: systemW
-                visible: Root.Config.showSystemWidget
-                opacity: (root.widgetsShown && !root.editMode) ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.InOutQuad } }
+            PositionedWidget {
+                positionKey: "systemWidgetPosition"
+                defaultPosition: Root.Config.systemWidgetPosition
+                configVisible: Root.Config.showSystemWidget
 
-                property string posStr: root.getEffectivePosition("systemWidgetPosition", Root.Config.systemWidgetPosition)
-                property point pos: root.getPosition(posStr, implicitWidth, implicitHeight, widgetPanel.width, widgetPanel.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
-                x: pos.x; y: pos.y
-                Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                showCpu: Root.Config.systemShowCpu
-                showRam: Root.Config.systemShowRam
-                fontSize: Root.Config.systemFontSize
-
-                onImplicitWidthChanged: root.systemSize = Qt.size(implicitWidth, implicitHeight)
-                onImplicitHeightChanged: root.systemSize = Qt.size(implicitWidth, implicitHeight)
+                Widgets.SystemWidget {
+                    id: systemW
+                    statsService: Core.ServiceManager.systemStats
+                    showCpu: Root.Config.systemShowCpu
+                    showRam: Root.Config.systemShowRam
+                    fontSize: Root.Config.systemFontSize
+                    onImplicitWidthChanged: root.updateWidgetSize("system", implicitWidth, implicitHeight)
+                    onImplicitHeightChanged: root.updateWidgetSize("system", implicitWidth, implicitHeight)
+                }
+                implicitWidth: systemW.implicitWidth
+                implicitHeight: systemW.implicitHeight
             }
 
-            // Quote Widget
-            Widgets.QuoteWidget {
-                id: quoteW
-                visible: Root.Config.showQuoteWidget
-                opacity: (root.widgetsShown && !root.editMode) ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.InOutQuad } }
+            PositionedWidget {
+                positionKey: "quoteWidgetPosition"
+                defaultPosition: Root.Config.quoteWidgetPosition
+                configVisible: Root.Config.showQuoteWidget
 
-                property string posStr: root.getEffectivePosition("quoteWidgetPosition", Root.Config.quoteWidgetPosition)
-                property point pos: root.getPosition(posStr, implicitWidth, implicitHeight, widgetPanel.width, widgetPanel.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
-                x: pos.x; y: pos.y
-                Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                maxWidth: Root.Config.quoteMaxWidth
-                fontSize: Root.Config.quoteFontSize
-                refreshInterval: Root.Config.quoteRefreshInterval
-
-                onImplicitWidthChanged: root.quoteSize = Qt.size(implicitWidth, implicitHeight)
-                onImplicitHeightChanged: root.quoteSize = Qt.size(implicitWidth, implicitHeight)
+                Widgets.QuoteWidget {
+                    id: quoteW
+                    maxWidth: Root.Config.quoteMaxWidth
+                    fontSize: Root.Config.quoteFontSize
+                    refreshInterval: Root.Config.quoteRefreshInterval
+                    onImplicitWidthChanged: root.updateWidgetSize("quote", implicitWidth, implicitHeight)
+                    onImplicitHeightChanged: root.updateWidgetSize("quote", implicitWidth, implicitHeight)
+                }
+                implicitWidth: quoteW.implicitWidth
+                implicitHeight: quoteW.implicitHeight
             }
 
-            // Now Playing Widget
-            Widgets.NowPlayingWidget {
-                id: nowPlayingW
-                visible: Root.Config.showNowPlayingWidget
-                opacity: (root.widgetsShown && !root.editMode && hasMedia) ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.InOutQuad } }
+            PositionedWidget {
+                positionKey: "nowPlayingWidgetPosition"
+                defaultPosition: Root.Config.nowPlayingWidgetPosition
+                configVisible: Root.Config.showNowPlayingWidget
+                extraVisible: nowPlayingW.hasMedia
 
-                property string posStr: root.getEffectivePosition("nowPlayingWidgetPosition", Root.Config.nowPlayingWidgetPosition)
-                property point pos: root.getPosition(posStr, implicitWidth, implicitHeight, widgetPanel.width, widgetPanel.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
-                x: pos.x; y: pos.y
-                Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                playerService: root.playerService
-                showArt: Root.Config.nowPlayingShowArt
-                artSize: Root.Config.nowPlayingArtSize
-                fontSize: Root.Config.nowPlayingFontSize
-
-                onImplicitWidthChanged: root.nowPlayingSize = Qt.size(implicitWidth, implicitHeight)
-                onImplicitHeightChanged: root.nowPlayingSize = Qt.size(implicitWidth, implicitHeight)
+                Widgets.NowPlayingWidget {
+                    id: nowPlayingW
+                    playerService: root.playerService
+                    showArt: Root.Config.nowPlayingShowArt
+                    artSize: Root.Config.nowPlayingArtSize
+                    fontSize: Root.Config.nowPlayingFontSize
+                    onImplicitWidthChanged: root.updateWidgetSize("nowPlaying", implicitWidth, implicitHeight)
+                    onImplicitHeightChanged: root.updateWidgetSize("nowPlaying", implicitWidth, implicitHeight)
+                }
+                implicitWidth: nowPlayingW.implicitWidth
+                implicitHeight: nowPlayingW.implicitHeight
             }
 
-            // Calendar Widget
-            Widgets.CalendarWidget {
-                id: calendarW
-                visible: Root.Config.showCalendarWidget
-                opacity: (root.widgetsShown && !root.editMode) ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.InOutQuad } }
+            PositionedWidget {
+                positionKey: "calendarWidgetPosition"
+                defaultPosition: Root.Config.calendarWidgetPosition
+                configVisible: Root.Config.showCalendarWidget
 
-                property string posStr: root.getEffectivePosition("calendarWidgetPosition", Root.Config.calendarWidgetPosition)
-                property point pos: root.getPosition(posStr, implicitWidth, implicitHeight, widgetPanel.width, widgetPanel.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
-                x: pos.x; y: pos.y
-                Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                showWeekNumbers: Root.Config.calendarShowWeekNumbers
-                cellSize: Root.Config.calendarCellSize
-
-                onImplicitWidthChanged: root.calendarSize = Qt.size(implicitWidth, implicitHeight)
-                onImplicitHeightChanged: root.calendarSize = Qt.size(implicitWidth, implicitHeight)
+                Widgets.CalendarWidget {
+                    id: calendarW
+                    showWeekNumbers: Root.Config.calendarShowWeekNumbers
+                    cellSize: Root.Config.calendarCellSize
+                    onImplicitWidthChanged: root.updateWidgetSize("calendar", implicitWidth, implicitHeight)
+                    onImplicitHeightChanged: root.updateWidgetSize("calendar", implicitWidth, implicitHeight)
+                }
+                implicitWidth: calendarW.implicitWidth
+                implicitHeight: calendarW.implicitHeight
             }
 
-            // Stock Widget
-            Widgets.StockWidget {
-                id: stockW
-                visible: Root.Config.showStockWidget
-                opacity: (root.widgetsShown && !root.editMode) ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.InOutQuad } }
+            PositionedWidget {
+                positionKey: "stockWidgetPosition"
+                defaultPosition: Root.Config.stockWidgetPosition
+                configVisible: Root.Config.showStockWidget
 
-                property string posStr: root.getEffectivePosition("stockWidgetPosition", Root.Config.stockWidgetPosition)
-                property point pos: root.getPosition(posStr, implicitWidth, implicitHeight, widgetPanel.width, widgetPanel.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
-                x: pos.x; y: pos.y
-                Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                symbols: Root.Config.stockSymbols
-                fontSize: Root.Config.stockFontSize
-                refreshInterval: Root.Config.stockRefreshInterval
-
-                onImplicitWidthChanged: root.stockSize = Qt.size(implicitWidth, implicitHeight)
-                onImplicitHeightChanged: root.stockSize = Qt.size(implicitWidth, implicitHeight)
+                Widgets.StockWidget {
+                    id: stockW
+                    symbols: Root.Config.stockSymbols
+                    fontSize: Root.Config.stockFontSize
+                    refreshInterval: Root.Config.stockRefreshInterval
+                    onImplicitWidthChanged: root.updateWidgetSize("stock", implicitWidth, implicitHeight)
+                    onImplicitHeightChanged: root.updateWidgetSize("stock", implicitWidth, implicitHeight)
+                }
+                implicitWidth: stockW.implicitWidth
+                implicitHeight: stockW.implicitHeight
             }
         }
     }
@@ -315,14 +358,12 @@ Scope {
             exclusionMode: ExclusionMode.Ignore
             color: Qt.rgba(0, 0, 0, 0.3)
 
-            // FocusScope for keyboard handling
             FocusScope {
                 anchors.fill: parent
                 focus: true
                 Keys.onEscapePressed: root.toggleEditMode()
             }
 
-            // Track current drag state
             property bool isDragging: false
             property size draggedSize: Qt.size(100, 60)
             property string nearestSnap: ""
@@ -340,7 +381,6 @@ Scope {
                     property bool isActive: editOverlay.isDragging && editOverlay.nearestSnap === posName
                     property bool showBorder: editOverlay.isDragging
 
-                    // Use dragged widget size when dragging, otherwise compact for text
                     property real targetWidth: editOverlay.isDragging ? editOverlay.draggedSize.width : 60
                     property real targetHeight: editOverlay.isDragging ? editOverlay.draggedSize.height : 24
 
@@ -353,7 +393,6 @@ Scope {
                     Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
                     Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
-                    // Border rectangle that expands when dragging
                     Rectangle {
                         anchors.fill: parent
                         radius: Root.Theme.radiusMedium
@@ -362,7 +401,6 @@ Scope {
                         border.color: snapIndicator.isActive ? Root.Theme.textAccent : Root.Theme.textDimmed
                         opacity: snapIndicator.showBorder ? (snapIndicator.isActive ? 1 : 0.5) : 0
                         scale: snapIndicator.isActive ? 1.02 : 1
-
                         Behavior on color { ColorAnimation { duration: 150 } }
                         Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
                         Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
@@ -383,227 +421,19 @@ Scope {
                 }
             }
 
-            // Clock ghost
-            Rectangle {
-                id: clockGhost
-                visible: Root.Config.showClockWidget
-                width: root.clockSize.width; height: root.clockSize.height
-                radius: Root.Theme.widgetRadius
-                color: Root.Theme.widgetBackground
-                border.width: 2
-                border.color: clockDrag.drag.active ? Root.Theme.textAccent : Root.Theme.editModeBorder
-
-                property string posStr: root.getEffectivePosition("clockWidgetPosition", Root.Config.clockWidgetPosition)
-                property point targetPos: root.getPosition(posStr, width, height, editOverlay.width, editOverlay.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
-                x: clockDrag.drag.active ? x : targetPos.x
-                y: clockDrag.drag.active ? y : targetPos.y
-                Behavior on x { enabled: !clockDrag.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on y { enabled: !clockDrag.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                Text { anchors.centerIn: parent; text: "Clock"; color: Root.Theme.widgetText; font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true } }
-                MouseArea {
-                    id: clockDrag; anchors.fill: parent; drag.target: parent; drag.smoothed: false
-                    cursorShape: drag.active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-                    onPressed: { editOverlay.isDragging = true; editOverlay.draggedSize = Qt.size(parent.width, parent.height); }
-                    onPositionChanged: if (drag.active) editOverlay.updateNearestSnap(parent.x, parent.y, parent.width, parent.height)
-                    onReleased: {
-                        editOverlay.isDragging = false; editOverlay.nearestSnap = "";
-                        let newPos = root.findSnapPosition(parent.x, parent.y, parent.width, parent.height, editOverlay.width, editOverlay.height);
-                        root.pendingPositions["clockWidgetPosition"] = newPos;
-                        root.pendingPositions = Object.assign({}, root.pendingPositions);
-                    }
-                }
-            }
-
-            // Weather ghost
-            Rectangle {
-                id: weatherGhost
-                visible: Root.Config.showWeatherWidget
-                width: root.weatherSize.width; height: root.weatherSize.height
-                radius: Root.Theme.widgetRadius
-                color: Root.Theme.widgetBackground
-                border.width: 2
-                border.color: weatherDrag.drag.active ? Root.Theme.textAccent : Root.Theme.editModeBorder
-
-                property string posStr: root.getEffectivePosition("weatherWidgetPosition", Root.Config.weatherWidgetPosition)
-                property point targetPos: root.getPosition(posStr, width, height, editOverlay.width, editOverlay.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
-                x: weatherDrag.drag.active ? x : targetPos.x
-                y: weatherDrag.drag.active ? y : targetPos.y
-                Behavior on x { enabled: !weatherDrag.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on y { enabled: !weatherDrag.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                Text { anchors.centerIn: parent; text: "Weather"; color: Root.Theme.widgetText; font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true } }
-                MouseArea {
-                    id: weatherDrag; anchors.fill: parent; drag.target: parent; drag.smoothed: false
-                    cursorShape: drag.active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-                    onPressed: { editOverlay.isDragging = true; editOverlay.draggedSize = Qt.size(parent.width, parent.height); }
-                    onPositionChanged: if (drag.active) editOverlay.updateNearestSnap(parent.x, parent.y, parent.width, parent.height)
-                    onReleased: {
-                        editOverlay.isDragging = false; editOverlay.nearestSnap = "";
-                        let newPos = root.findSnapPosition(parent.x, parent.y, parent.width, parent.height, editOverlay.width, editOverlay.height);
-                        root.pendingPositions["weatherWidgetPosition"] = newPos;
-                        root.pendingPositions = Object.assign({}, root.pendingPositions);
-                    }
-                }
-            }
-
-            // System ghost
-            Rectangle {
-                id: systemGhost
-                visible: Root.Config.showSystemWidget
-                width: root.systemSize.width; height: root.systemSize.height
-                radius: Root.Theme.widgetRadius
-                color: Root.Theme.widgetBackground
-                border.width: 2
-                border.color: systemDrag.drag.active ? Root.Theme.textAccent : Root.Theme.editModeBorder
-
-                property string posStr: root.getEffectivePosition("systemWidgetPosition", Root.Config.systemWidgetPosition)
-                property point targetPos: root.getPosition(posStr, width, height, editOverlay.width, editOverlay.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
-                x: systemDrag.drag.active ? x : targetPos.x
-                y: systemDrag.drag.active ? y : targetPos.y
-                Behavior on x { enabled: !systemDrag.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on y { enabled: !systemDrag.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                Text { anchors.centerIn: parent; text: "System"; color: Root.Theme.widgetText; font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true } }
-                MouseArea {
-                    id: systemDrag; anchors.fill: parent; drag.target: parent; drag.smoothed: false
-                    cursorShape: drag.active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-                    onPressed: { editOverlay.isDragging = true; editOverlay.draggedSize = Qt.size(parent.width, parent.height); }
-                    onPositionChanged: if (drag.active) editOverlay.updateNearestSnap(parent.x, parent.y, parent.width, parent.height)
-                    onReleased: {
-                        editOverlay.isDragging = false; editOverlay.nearestSnap = "";
-                        let newPos = root.findSnapPosition(parent.x, parent.y, parent.width, parent.height, editOverlay.width, editOverlay.height);
-                        root.pendingPositions["systemWidgetPosition"] = newPos;
-                        root.pendingPositions = Object.assign({}, root.pendingPositions);
-                    }
-                }
-            }
-
-            // Quote ghost
-            Rectangle {
-                id: quoteGhost
-                visible: Root.Config.showQuoteWidget
-                width: root.quoteSize.width; height: root.quoteSize.height
-                radius: Root.Theme.widgetRadius
-                color: Root.Theme.widgetBackground
-                border.width: 2
-                border.color: quoteDrag.drag.active ? Root.Theme.textAccent : Root.Theme.editModeBorder
-
-                property string posStr: root.getEffectivePosition("quoteWidgetPosition", Root.Config.quoteWidgetPosition)
-                property point targetPos: root.getPosition(posStr, width, height, editOverlay.width, editOverlay.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
-                x: quoteDrag.drag.active ? x : targetPos.x
-                y: quoteDrag.drag.active ? y : targetPos.y
-                Behavior on x { enabled: !quoteDrag.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on y { enabled: !quoteDrag.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                Text { anchors.centerIn: parent; text: "Quote"; color: Root.Theme.widgetText; font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true } }
-                MouseArea {
-                    id: quoteDrag; anchors.fill: parent; drag.target: parent; drag.smoothed: false
-                    cursorShape: drag.active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-                    onPressed: { editOverlay.isDragging = true; editOverlay.draggedSize = Qt.size(parent.width, parent.height); }
-                    onPositionChanged: if (drag.active) editOverlay.updateNearestSnap(parent.x, parent.y, parent.width, parent.height)
-                    onReleased: {
-                        editOverlay.isDragging = false; editOverlay.nearestSnap = "";
-                        let newPos = root.findSnapPosition(parent.x, parent.y, parent.width, parent.height, editOverlay.width, editOverlay.height);
-                        root.pendingPositions["quoteWidgetPosition"] = newPos;
-                        root.pendingPositions = Object.assign({}, root.pendingPositions);
-                    }
-                }
-            }
-
-            // Now Playing ghost
-            Rectangle {
-                id: nowPlayingGhost
-                visible: Root.Config.showNowPlayingWidget
-                width: root.nowPlayingSize.width; height: root.nowPlayingSize.height
-                radius: Root.Theme.widgetRadius
-                color: Root.Theme.widgetBackground
-                border.width: 2
-                border.color: nowPlayingDrag.drag.active ? Root.Theme.textAccent : Root.Theme.editModeBorder
-
-                property string posStr: root.getEffectivePosition("nowPlayingWidgetPosition", Root.Config.nowPlayingWidgetPosition)
-                property point targetPos: root.getPosition(posStr, width, height, editOverlay.width, editOverlay.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
-                x: nowPlayingDrag.drag.active ? x : targetPos.x
-                y: nowPlayingDrag.drag.active ? y : targetPos.y
-                Behavior on x { enabled: !nowPlayingDrag.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on y { enabled: !nowPlayingDrag.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                Text { anchors.centerIn: parent; text: "Now Playing"; color: Root.Theme.widgetText; font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true } }
-                MouseArea {
-                    id: nowPlayingDrag; anchors.fill: parent; drag.target: parent; drag.smoothed: false
-                    cursorShape: drag.active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-                    onPressed: { editOverlay.isDragging = true; editOverlay.draggedSize = Qt.size(parent.width, parent.height); }
-                    onPositionChanged: if (drag.active) editOverlay.updateNearestSnap(parent.x, parent.y, parent.width, parent.height)
-                    onReleased: {
-                        editOverlay.isDragging = false; editOverlay.nearestSnap = "";
-                        let newPos = root.findSnapPosition(parent.x, parent.y, parent.width, parent.height, editOverlay.width, editOverlay.height);
-                        root.pendingPositions["nowPlayingWidgetPosition"] = newPos;
-                        root.pendingPositions = Object.assign({}, root.pendingPositions);
-                    }
-                }
-            }
-
-            // Calendar ghost
-            Rectangle {
-                id: calendarGhost
-                visible: Root.Config.showCalendarWidget
-                width: root.calendarSize.width; height: root.calendarSize.height
-                radius: Root.Theme.widgetRadius
-                color: Root.Theme.widgetBackground
-                border.width: 2
-                border.color: calendarDrag.drag.active ? Root.Theme.textAccent : Root.Theme.editModeBorder
-
-                property string posStr: root.getEffectivePosition("calendarWidgetPosition", Root.Config.calendarWidgetPosition)
-                property point targetPos: root.getPosition(posStr, width, height, editOverlay.width, editOverlay.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
-                x: calendarDrag.drag.active ? x : targetPos.x
-                y: calendarDrag.drag.active ? y : targetPos.y
-                Behavior on x { enabled: !calendarDrag.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on y { enabled: !calendarDrag.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                Text { anchors.centerIn: parent; text: "Calendar"; color: Root.Theme.widgetText; font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true } }
-                MouseArea {
-                    id: calendarDrag; anchors.fill: parent; drag.target: parent; drag.smoothed: false
-                    cursorShape: drag.active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-                    onPressed: { editOverlay.isDragging = true; editOverlay.draggedSize = Qt.size(parent.width, parent.height); }
-                    onPositionChanged: if (drag.active) editOverlay.updateNearestSnap(parent.x, parent.y, parent.width, parent.height)
-                    onReleased: {
-                        editOverlay.isDragging = false; editOverlay.nearestSnap = "";
-                        let newPos = root.findSnapPosition(parent.x, parent.y, parent.width, parent.height, editOverlay.width, editOverlay.height);
-                        root.pendingPositions["calendarWidgetPosition"] = newPos;
-                        root.pendingPositions = Object.assign({}, root.pendingPositions);
-                    }
-                }
-            }
-
-            // Stock ghost
-            Rectangle {
-                id: stockGhost
-                visible: Root.Config.showStockWidget
-                width: root.stockSize.width; height: root.stockSize.height
-                radius: Root.Theme.widgetRadius
-                color: Root.Theme.widgetBackground
-                border.width: 2
-                border.color: stockDrag.drag.active ? Root.Theme.textAccent : Root.Theme.editModeBorder
-
-                property string posStr: root.getEffectivePosition("stockWidgetPosition", Root.Config.stockWidgetPosition)
-                property point targetPos: root.getPosition(posStr, width, height, editOverlay.width, editOverlay.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
-                x: stockDrag.drag.active ? x : targetPos.x
-                y: stockDrag.drag.active ? y : targetPos.y
-                Behavior on x { enabled: !stockDrag.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on y { enabled: !stockDrag.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                Text { anchors.centerIn: parent; text: "Stocks"; color: Root.Theme.widgetText; font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true } }
-                MouseArea {
-                    id: stockDrag; anchors.fill: parent; drag.target: parent; drag.smoothed: false
-                    cursorShape: drag.active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-                    onPressed: { editOverlay.isDragging = true; editOverlay.draggedSize = Qt.size(parent.width, parent.height); }
-                    onPositionChanged: if (drag.active) editOverlay.updateNearestSnap(parent.x, parent.y, parent.width, parent.height)
-                    onReleased: {
-                        editOverlay.isDragging = false; editOverlay.nearestSnap = "";
-                        let newPos = root.findSnapPosition(parent.x, parent.y, parent.width, parent.height, editOverlay.width, editOverlay.height);
-                        root.pendingPositions["stockWidgetPosition"] = newPos;
-                        root.pendingPositions = Object.assign({}, root.pendingPositions);
-                    }
+            // Widget drag ghosts — driven by Registry
+            Repeater {
+                model: Core.Registry.widgets
+                Components.DragGhost {
+                    required property var modelData
+                    visible: Root.Config["show" + modelData.configKey.charAt(0).toUpperCase()
+                             + modelData.configKey.slice(1) + "Widget"]
+                    widgetName: modelData.key
+                    label: modelData.label
+                    positionKey: modelData.positionKey
+                    widgetSize: root.widgetSizes[modelData.key] || Qt.size(100, 60)
+                    overlay: editOverlay
+                    widgetRoot: root
                 }
             }
 

@@ -1,24 +1,11 @@
-# TODO: Generate on home-core with nixos-generate-config, then replace
-# the placeholder values with real UUIDs from the machine.
-# Hardware detection (kernel modules, drivers) will be handled by facter.json.
-{ ... }:
+{ lib, modulesPath, ... }:
 {
-  nixpkgs.hostPlatform = "x86_64-linux";
+  imports =
+    [ (modulesPath + "/installer/scan/not-detected.nix")
+    ];
 
-  # boot.initrd.availableKernelModules = [ ... ];
-  # boot.initrd.kernelModules = [ ... ];
+  boot.initrd.availableKernelModules = [ "ehci_pci" "ahci" "usb_storage" "sd_mod" "sr_mod" "rtsx_pci_sdmmc" ];
+  boot.initrd.kernelModules = [ ];
 
-  # fileSystems."/" = {
-  #   device = "/dev/disk/by-uuid/XXXX";
-  #   fsType = "ext4";
-  # };
-
-  # fileSystems."/boot" = {
-  #   device = "/dev/disk/by-uuid/XXXX";
-  #   fsType = "vfat";
-  # };
-
-  # swapDevices = [
-  #   { device = "/dev/disk/by-uuid/XXXX"; }
-  # ];
+  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 }

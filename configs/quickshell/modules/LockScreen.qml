@@ -84,7 +84,8 @@ Item {
                     lock.statusText = "Authenticating...";
                     lock.showError = false;
                     lock.isAuthenticating = true;
-                    pamRestartDelay.start();
+                    pamDelay.delay = 100;
+                    pamDelay.start();
                 } else if (lock.passwordMode) {
                     lock.statusText = "Wrong password — try again";
                     lock.showError = true;
@@ -93,7 +94,8 @@ Item {
                     lock.statusText = "Fingerprint not recognized";
                     lock.showError = true;
                     fingerShake.start();
-                    fingerRestart.start();
+                    authRestart.delay = 500;
+                    authRestart.start();
                 }
             }
         }
@@ -104,7 +106,8 @@ Item {
             if (lock.authDone) return;
             lock.statusText = "Auth error — retrying";
             lock.showError = true;
-            fingerRestart.start();
+            authRestart.delay = 500;
+            authRestart.start();
         }
     }
 
@@ -130,14 +133,10 @@ Item {
         lock.statusText = "Swipe fingerprint to unlock";
         lock.showError = false;
         // Give fprintd time to reinitialize after wake
-        fprintdWakeDelay.start();
+        authRestart.delay = 1000;
+        authRestart.start();
     }
 
-    Timer {
-        id: fprintdWakeDelay
-        interval: 1000
-        onTriggered: startAuth()
-    }
 
     function submitPassword() {
         if (lock.isAuthenticating) return;
@@ -165,19 +164,19 @@ Item {
             // PAM not active, start it with queued password
             lock.statusText = "Authenticating...";
             lock.pendingPassword = pw;
-            pamRestartDelay.start();
+            pamDelay.delay = 100;
+            pamDelay.start();
         }
     }
 
     Component.onCompleted: {
         // Small delay to ensure PAM is ready before prompting
-        pamStartupDelay.start();
+        pamDelay.delay = 150;
+        pamDelay.start();
     }
 
     // ── Timers ──
     Timer { id: focusTimer; interval: 50; onTriggered: passInput.forceActiveFocus() }
-    Timer { id: errorReset; interval: 1500; onTriggered: lock.showError = false }
-    Timer { id: pamStartupDelay; interval: 150; onTriggered: startAuth() }
 
     Timer {
         id: fingerErrorReset
@@ -188,9 +187,19 @@ Item {
         }
     }
 
+    // Unified PAM start delay (replaces pamStartupDelay + pamRestartDelay)
     Timer {
-        id: fingerRestart
-        interval: 500
+        id: pamDelay
+        property int delay: 150
+        interval: delay
+        onTriggered: pam.start()
+    }
+
+    // Unified auth restart (replaces fingerRestart + fprintdWakeDelay)
+    Timer {
+        id: authRestart
+        property int delay: 500
+        interval: delay
         onTriggered: lock.startAuth()
     }
 
@@ -202,21 +211,14 @@ Item {
             lock.authDone = false;
             lock.isAuthenticating = false;
             lock.statusText = "Enter password";
-            // Don't clear passInput.text - preserve what user typed
             focusTimer.start();
 
-            // Only restart PAM if no password is pending
             if (lock.pendingPassword.length === 0) {
                 if (pam.active) pam.abort();
-                pamRestartDelay.start();
+                pamDelay.delay = 100;
+                pamDelay.start();
             }
         }
-    }
-
-    Timer {
-        id: pamRestartDelay
-        interval: 100
-        onTriggered: pam.start()
     }
 
     // ══════════════════════════════════

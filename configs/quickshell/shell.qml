@@ -3,20 +3,44 @@
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import QtQuick
 import "modules" as Modules
-import "utils" as Utils
+import "services" as Services
+import "core" as Core
 
 ShellRoot {
-    Utils.AudioService { id: audioSvc }
-    Utils.PlayerService { id: playerSvc }
-    Utils.PowerService { id: powerSvc }
-    Utils.NotifService { id: notifSvc }
-    Utils.WifiService { id: wifiSvc }
-    Utils.BluetoothService { id: btSvc }
-    Utils.BrightnessService { id: briSvc }
-    Utils.WindowService { id: winSvc }
-    Utils.IdleInhibitService { id: idleInhibitSvc }
+    // ── Services ──
+    Services.AudioService { id: audioSvc }
+    Services.PlayerService { id: playerSvc }
+    Services.PowerService { id: powerSvc }
+    Services.NotifService { id: notifSvc }
+    Services.WifiService { id: wifiSvc }
+    Services.BluetoothService { id: btSvc }
+    Services.BrightnessService { id: briSvc }
+    Services.WindowService { id: winSvc }
+    Services.IdleInhibitService { id: idleInhibitSvc }
+    Services.WeatherService { id: weatherSvc }
+    Services.SystemStatsService { id: systemStatsSvc }
 
+    // Register services with ServiceManager for self-wiring
+    Item {
+        visible: false
+        Component.onCompleted: {
+            Core.ServiceManager.register("audio", audioSvc);
+            Core.ServiceManager.register("player", playerSvc);
+            Core.ServiceManager.register("power", powerSvc);
+            Core.ServiceManager.register("notif", notifSvc);
+            Core.ServiceManager.register("wifi", wifiSvc);
+            Core.ServiceManager.register("bluetooth", btSvc);
+            Core.ServiceManager.register("brightness", briSvc);
+            Core.ServiceManager.register("window", winSvc);
+            Core.ServiceManager.register("idleInhibit", idleInhibitSvc);
+            Core.ServiceManager.register("weather", weatherSvc);
+            Core.ServiceManager.register("systemStats", systemStatsSvc);
+        }
+    }
+
+    // ── Modules ──
     Modules.PowerMenu {
         id: pmModule
         powerService: powerSvc
@@ -46,6 +70,8 @@ ShellRoot {
         powerMenuRef: pmModule
         wifiService: wifiSvc
         bluetoothService: btSvc
+        weatherService: weatherSvc
+        systemStatsService: systemStatsSvc
     }
 
     // Background widgets overlay
@@ -53,6 +79,7 @@ ShellRoot {
         id: widgetModule
         windowService: winSvc
         playerService: playerSvc
+        weatherService: weatherSvc
     }
 
     // ── Session Lock ──
