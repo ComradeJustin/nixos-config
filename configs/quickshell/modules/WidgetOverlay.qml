@@ -159,7 +159,12 @@ Scope {
         return "center";
     }
 
-    property bool widgetsShown: root.editMode || !Root.Config.autoHideWidgets || (root.windowService ? root.windowService.widgetsVisible : true)
+    // Per-screen widget visibility check
+    function widgetsShownForScreen(screenName) {
+        if (root.editMode || !Root.Config.autoHideWidgets) return true;
+        if (!root.windowService) return true;
+        return root.windowService.screenEmpty(screenName) && !root.windowService.overviewOpen;
+    }
 
     // Store widget sizes for ghost rectangles (keyed by widget key)
     property var widgetSizes: ({
@@ -184,9 +189,10 @@ Scope {
         property string defaultPosition
         property bool configVisible: true
         property bool extraVisible: true  // e.g. hasMedia for NowPlaying
+        property string screenName: ""  // set by parent PanelWindow
 
         visible: configVisible
-        opacity: (root.widgetsShown && !root.editMode && extraVisible) ? 1 : 0
+        opacity: (root.widgetsShownForScreen(screenName) && !root.editMode && extraVisible) ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.InOutQuad } }
 
         property string posStr: root.getEffectivePosition(positionKey, defaultPosition)
@@ -208,6 +214,7 @@ Scope {
             id: widgetPanel
             property var modelData
             screen: modelData
+            property string panelScreenName: screen?.name ?? ""
 
             anchors { top: true; left: true; right: true; bottom: true }
             WlrLayershell.namespace: "quickshell-widgets"
@@ -220,6 +227,7 @@ Scope {
                 positionKey: "clockWidgetPosition"
                 defaultPosition: Root.Config.clockWidgetPosition
                 configVisible: Root.Config.showClockWidget
+                screenName: widgetPanel.panelScreenName
 
                 Widgets.ClockWidget {
                     id: clockW
@@ -239,6 +247,7 @@ Scope {
                 positionKey: "weatherWidgetPosition"
                 defaultPosition: Root.Config.weatherWidgetPosition
                 configVisible: Root.Config.showWeatherWidget
+                screenName: widgetPanel.panelScreenName
 
                 Widgets.WeatherWidget {
                     id: weatherW
@@ -255,6 +264,7 @@ Scope {
                 positionKey: "systemWidgetPosition"
                 defaultPosition: Root.Config.systemWidgetPosition
                 configVisible: Root.Config.showSystemWidget
+                screenName: widgetPanel.panelScreenName
 
                 Widgets.SystemWidget {
                     id: systemW
@@ -273,6 +283,7 @@ Scope {
                 positionKey: "quoteWidgetPosition"
                 defaultPosition: Root.Config.quoteWidgetPosition
                 configVisible: Root.Config.showQuoteWidget
+                screenName: widgetPanel.panelScreenName
 
                 Widgets.QuoteWidget {
                     id: quoteW
@@ -290,6 +301,7 @@ Scope {
                 positionKey: "nowPlayingWidgetPosition"
                 defaultPosition: Root.Config.nowPlayingWidgetPosition
                 configVisible: Root.Config.showNowPlayingWidget
+                screenName: widgetPanel.panelScreenName
                 extraVisible: nowPlayingW.hasMedia
 
                 Widgets.NowPlayingWidget {
@@ -309,6 +321,7 @@ Scope {
                 positionKey: "calendarWidgetPosition"
                 defaultPosition: Root.Config.calendarWidgetPosition
                 configVisible: Root.Config.showCalendarWidget
+                screenName: widgetPanel.panelScreenName
 
                 Widgets.CalendarWidget {
                     id: calendarW
@@ -325,6 +338,7 @@ Scope {
                 positionKey: "stockWidgetPosition"
                 defaultPosition: Root.Config.stockWidgetPosition
                 configVisible: Root.Config.showStockWidget
+                screenName: widgetPanel.panelScreenName
 
                 Widgets.StockWidget {
                     id: stockW

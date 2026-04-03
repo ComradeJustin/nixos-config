@@ -742,40 +742,32 @@ Scope {
         barHidden: barScope.isHidden
     }
 
-    // Fullscreen detection
+    // Fullscreen detection — checks all windows on the bar's screen, not just focused
+    property string _barScreenName: panel.screen?.name ?? ""
+
     Process {
         id: fsProc
         command: [
             "bash", "-c",
             "command -v jq >/dev/null || { echo 0; exit; }; " +
-            "w=$(niri msg -j focused-window 2>/dev/null) || { echo 0; exit; }; " +
-            "ww=$(echo \"$w\" | jq '.layout.window_size[0] // 0'); " +
-            "wh=$(echo \"$w\" | jq '.layout.window_size[1] // 0'); " +
-            "wsid=$(echo \"$w\" | jq '.workspace_id // -1'); " +
-            "ws=$(niri msg -j workspaces 2>/dev/null) || { echo 0; exit; }; " +
-            "output=$(echo \"$ws\" | jq -r --argjson id \"$wsid\" '.[] | select(.id == $id) | .output // \"\"'); " +
-            "[ -z \"$output\" ] && { echo 0; exit; }; " +
+            "BAR_SCREEN=\"$1\"; " +
+            "[ -z \"$BAR_SCREEN\" ] && { echo 0; exit; }; " +
+            "wsid=$(niri msg -j workspaces 2>/dev/null | jq -r --arg out \"$BAR_SCREEN\" " +
+            "  '.[] | select(.is_active and .output == $out) | .id // empty'); " +
+            "[ -z \"$wsid\" ] && { echo 0; exit; }; " +
             "o=$(niri msg -j outputs 2>/dev/null) || { echo 0; exit; }; " +
-            "ow=$(echo \"$o\" | jq --arg n \"$output\" '.[$n].logical.width // 0'); " +
-            "oh=$(echo \"$o\" | jq --arg n \"$output\" '.[$n].logical.height // 0'); " +
-            "if [ \"${ww%.*}\" -ge \"${ow%.*}\" ] 2>/dev/null && [ \"${wh%.*}\" -ge \"${oh%.*}\" ] 2>/dev/null; then " +
-            "  echo \"1 $output\"; " +
-            "else " +
-            "  echo 0; " +
-            "fi"
+            "ow=$(echo \"$o\" | jq --arg n \"$BAR_SCREEN\" '.[$n].logical.width // 0'); " +
+            "oh=$(echo \"$o\" | jq --arg n \"$BAR_SCREEN\" '.[$n].logical.height // 0'); " +
+            "fs=$(niri msg -j windows 2>/dev/null | jq --argjson ws \"$wsid\" --argjson ow \"$ow\" --argjson oh \"$oh\" " +
+            "  '[.[] | select(.workspace_id == $ws and ((.layout.window_size[0] // 0) | floor) >= ($ow | floor) and ((.layout.window_size[1] // 0) | floor) >= ($oh | floor))] | length'); " +
+            "[ \"${fs:-0}\" -gt 0 ] && echo 1 || echo 0",
+            "--", barScope._barScreenName
         ]
         running: true
 
         stdout: SplitParser {
             onRead: data => {
-                let parts = data.trim().split(" ");
-                if (parts[0] === "1") {
-                    let fsOutput = parts.slice(1).join(" ");
-                    let barScreen = panel.screen?.name ?? "";
-                    barScope.isHidden = (barScreen === "" || fsOutput === barScreen);
-                } else {
-                    barScope.isHidden = false;
-                }
+                barScope.isHidden = data.trim() === "1";
             }
         }
 
