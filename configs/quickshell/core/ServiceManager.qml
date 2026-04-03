@@ -8,10 +8,15 @@ QtObject {
 
     property var _services: ({})
 
+    property int _rev: 0
+
     function register(key, instance) {
-        let s = _services;
+        let old = _services;
+        let s = {};
+        for (let k in old) s[k] = old[k];
         s[key] = instance;
         _services = s;
+        _rev++;
     }
 
     function get(key) {
@@ -19,15 +24,16 @@ QtObject {
     }
 
     // Convenience properties for type-safe access
-    readonly property var audio:       _services["audio"] || null
-    readonly property var player:      _services["player"] || null
-    readonly property var power:       _services["power"] || null
-    readonly property var notif:       _services["notif"] || null
-    readonly property var wifi:        _services["wifi"] || null
-    readonly property var bluetooth:   _services["bluetooth"] || null
-    readonly property var brightness:  _services["brightness"] || null
-    readonly property var window:      _services["window"] || null
-    readonly property var idleInhibit: _services["idleInhibit"] || null
-    readonly property var weather:     _services["weather"] || null
-    readonly property var systemStats: _services["systemStats"] || null
+    // _rev dependency forces re-evaluation when services are registered
+    readonly property var audio:       _rev >= 0 ? (_services["audio"]       || null) : null
+    readonly property var player:      _rev >= 0 ? (_services["player"]      || null) : null
+    readonly property var power:       _rev >= 0 ? (_services["power"]       || null) : null
+    readonly property var notif:       _rev >= 0 ? (_services["notif"]       || null) : null
+    readonly property var wifi:        _rev >= 0 ? (_services["wifi"]        || null) : null
+    readonly property var bluetooth:   _rev >= 0 ? (_services["bluetooth"]   || null) : null
+    readonly property var brightness:  _rev >= 0 ? (_services["brightness"]  || null) : null
+    readonly property var window:      _rev >= 0 ? (_services["window"]      || null) : null
+    readonly property var idleInhibit: _rev >= 0 ? (_services["idleInhibit"] || null) : null
+    readonly property var weather:     _rev >= 0 ? (_services["weather"]     || null) : null
+    readonly property var systemStats: _rev >= 0 ? (_services["systemStats"] || null) : null
 }

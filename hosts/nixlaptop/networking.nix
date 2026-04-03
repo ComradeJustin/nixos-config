@@ -6,6 +6,9 @@
 }:
 {
   networking.hostName = "nixlaptop";
+   environment.sessionVariables = rec {
+    CUPS_USER = "remote user";
+  };
 
   # Disable EEE on Intel I219-LM — prevents link on switches with poor EEE support
   services.udev.extraRules = ''

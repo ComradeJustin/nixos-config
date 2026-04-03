@@ -4,14 +4,13 @@ import "../.." as Root
 import "../../components" as Components
 
 // Notifications tab content for ControlCenter
-Flickable {
+Components.SmoothFlickable {
     id: root
 
     property var notifService: null
 
     contentHeight: notifCol.implicitHeight
     clip: true
-    boundsBehavior: Flickable.StopAtBounds
 
     Column {
         id: notifCol

@@ -14,10 +14,23 @@ Item {
     property int handleSize: 12     // Size of the handle (square)
     property color accentColor: Root.Theme.textAccent // Accent color for fill and handle
 
+    property bool liveUpdate: true
+
     // Signals
     signal valueUpdated(real newValue)
     signal dragStarted()
     signal dragEnded()
+
+    Timer {
+        id: liveThrottle
+        interval: 50
+        onTriggered: {
+            if (slider.dragging) {
+                slider.value = slider.dragValue;
+                slider.valueUpdated(slider.dragValue);
+            }
+        }
+    }
 
     // Internal state
     property bool dragging: false
@@ -94,11 +107,13 @@ Item {
         onPositionChanged: function(mouse) {
             if (pressed) {
                 updateDragValue(mouse.x);
+                if (slider.liveUpdate) liveThrottle.restart();
             }
         }
 
         onReleased: {
             if (slider.dragging) {
+                liveThrottle.stop();
                 slider.value = slider.dragValue;
                 slider.valueUpdated(slider.dragValue);
                 slider.dragging = false;

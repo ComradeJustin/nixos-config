@@ -5,14 +5,13 @@ import "../.." as Root
 import "../../components" as Components
 
 // Volume/Audio tab content for ControlCenter
-Flickable {
+Components.SmoothFlickable {
     id: root
 
     property var audioService: null
 
     contentHeight: volCol.implicitHeight
     clip: true
-    boundsBehavior: Flickable.StopAtBounds
 
     Column {
         id: volCol
@@ -54,13 +53,20 @@ Flickable {
                 }
 
                 Components.SliderBar {
+                    id: masterSlider
                     width: parent.width - 20 - 50 - 20
                     height: 20
                     anchors.verticalCenter: parent.verticalCenter
-                    value: root.audioService ? root.audioService.volume : 0
                     accentColor: Root.Theme.domainMedia
                     onValueUpdated: function(newValue) {
                         if (root.audioService) root.audioService.setVolume(Math.round(newValue));
+                    }
+                    // Only sync from service when not dragging to prevent feedback jitter
+                    Binding {
+                        target: masterSlider
+                        property: "value"
+                        value: root.audioService ? root.audioService.volume : 0
+                        when: !masterSlider.dragging
                     }
                 }
 
@@ -155,13 +161,19 @@ Flickable {
                             spacing: 8
 
                             Components.SliderBar {
+                                id: appSlider
                                 width: parent.width - 44
                                 height: 14
                                 handleSize: 10
-                                value: model.appVol || 0
                                 accentColor: Root.Theme.domainMedia
                                 onValueUpdated: function(newValue) {
                                     if (root.audioService) root.audioService.setAppVolume(model.appIdx, Math.round(newValue));
+                                }
+                                Binding {
+                                    target: appSlider
+                                    property: "value"
+                                    value: model.appVol || 0
+                                    when: !appSlider.dragging
                                 }
                             }
 

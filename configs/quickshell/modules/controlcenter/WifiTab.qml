@@ -4,14 +4,13 @@ import "../.." as Root
 import "../../components" as Components
 
 // WiFi/Network tab content for ControlCenter
-Flickable {
+Components.SmoothFlickable {
     id: root
 
     property var wifiService: null
 
     contentHeight: wifiTabCol.implicitHeight
     clip: true
-    boundsBehavior: Flickable.StopAtBounds
 
     Column {
         id: wifiTabCol

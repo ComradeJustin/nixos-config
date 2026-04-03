@@ -21,15 +21,27 @@ Scope {
 
     Component.onCompleted: { pollProc.running = true; sinkProc.running = true; sourceProc.running = true; devProc.running = true; }
 
+    // Guard: ignore poll results briefly after a manual set to prevent jitter
+    property bool suppressPoll: false
+    Timer { id: suppressTimer; interval: 300; onTriggered: root.suppressPoll = false }
+
     function setVolume(v) {
         v = Math.max(0, Math.min(100, v));
+        let old = root.volume;
         root.volume = v;
+        if (old !== v) root.volumeUpdated(old, v);
+        root.suppressPoll = true;
+        suppressTimer.restart();
         setProc.vol = v;
         setProc.running = true;
     }
 
     function toggleMute() {
+        let wasMuted = root.muted;
         root.muted = !root.muted;
+        root.muteToggled(wasMuted, root.muted);
+        root.suppressPoll = true;
+        suppressTimer.restart();
         muteProc.running = true;
     }
 
@@ -67,6 +79,8 @@ Scope {
         command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]
         stdout: SplitParser {
             onRead: data => {
+                if (root.suppressPoll) return;
+
                 let wasMuted = root.muted;
                 let wasVol = root.volume;
 
@@ -92,8 +106,13 @@ Scope {
         }
         onExited: pollTimer.start()
     }
-    Timer { id: pollTimer; interval: 300; onTriggered: pollProc.running = true }
-    Process { id: setProc; property int vol: 0; command: ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", vol + "%"] }
+    // Adaptive polling: faster when recently active
+    property bool recentlyActive: false
+    Timer { id: activityCooldown; interval: 2000; onTriggered: root.recentlyActive = false }
+    function markActive() { recentlyActive = true; activityCooldown.restart(); }
+
+    Timer { id: pollTimer; interval: root.recentlyActive ? 100 : 300; onTriggered: pollProc.running = true }
+    Process { id: setProc; property int vol: 0; command: ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", vol + "%"]; onStarted: root.markActive() }
     Process { id: muteProc; command: ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"] }
 
     // ── Per-app volume (PipeWire native) ──

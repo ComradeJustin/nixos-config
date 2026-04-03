@@ -3,6 +3,7 @@ import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
 import "../.." as Root
+import "../../components" as Components
 
 // Wallpaper selector view for the Spotlight popup.
 // Scans directory once at startup, applies wallpapers via awww.
@@ -217,14 +218,13 @@ Item {
             verticalAlignment: Text.AlignVCenter
         }
 
-        Flickable {
+        Components.SmoothFlickable {
             id: wpFlick
             visible: filteredIndices.length > 0
             width: parent.width
             height: Math.min(gridContent.height + Root.Theme.wpSpacing * 2, Root.Theme.wpMaxHeight - 48)  // 46px search bar + 1px divider + 1px margin
             contentHeight: gridContent.height + Root.Theme.wpSpacing * 2
             clip: true
-            boundsBehavior: Flickable.StopAtBounds
 
             Grid {
                 id: gridContent

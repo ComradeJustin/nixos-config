@@ -63,16 +63,13 @@ ShellRoot {
         brightnessService: briSvc
     }
     Modules.Bar {
+        id: barModule
         notifRef: ccModule
-        playerService: playerSvc
-        powerService: powerSvc
-        audioService: audioSvc
         powerMenuRef: pmModule
-        wifiService: wifiSvc
-        bluetoothService: btSvc
-        weatherService: weatherSvc
-        systemStatsService: systemStatsSvc
+        playerService: playerSvc
     }
+
+    Modules.SettingsPanel { id: settingsPanel; barRef: barModule }
 
     // Background widgets overlay
     Modules.WidgetOverlay {
@@ -115,6 +112,13 @@ ShellRoot {
         function lockscreen(): string { lock(); return "ok" }
         function wakelock(): string { if (screenLocked) wakeCounter++; return "ok" }
         function widgetsettings(): string { widgetModule.toggleEditMode(); return "ok" }
+        function settings(): string { settingsPanel.toggle(); return "ok" }
+        function baredit(): string { barModule.toggleBarEdit(); return "ok" }
         function caffeine(): string { idleInhibitSvc.toggle(); return idleInhibitSvc.inhibited ? "on" : "off" }
+        function volumeup(): string { audioSvc.setVolume(audioSvc.volume + 5); return "ok" }
+        function volumedown(): string { audioSvc.setVolume(audioSvc.volume - 5); return "ok" }
+        function volumemute(): string { audioSvc.toggleMute(); return "ok" }
+        function brightnessup(): string { briSvc.increase(5); return "ok" }
+        function brightnessdown(): string { briSvc.decrease(5); return "ok" }
     }
 }

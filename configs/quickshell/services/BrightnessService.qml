@@ -15,9 +15,17 @@ Scope {
 
     Component.onCompleted: pollProc.running = true
 
+    // Guard: ignore poll results briefly after a manual set to prevent jitter
+    property bool suppressPoll: false
+    Timer { id: suppressTimer; interval: 300; onTriggered: root.suppressPoll = false }
+
     function setBrightness(percent) {
         percent = Math.max(0, Math.min(100, percent));
+        let old = root.brightness;
         root.brightness = percent;
+        if (old !== percent && old >= 0) root.brightnessUpdated(old, percent);
+        root.suppressPoll = true;
+        suppressTimer.restart();
         setProc.percent = percent;
         setProc.running = true;
     }
@@ -44,6 +52,8 @@ Scope {
 
         stdout: SplitParser {
             onRead: data => {
+                if (root.suppressPoll) return;
+
                 let parts = data.trim().split(" ");
                 if (parts.length >= 2) {
                     let cur = parseInt(parts[0]);

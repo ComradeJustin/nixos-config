@@ -28,11 +28,11 @@ QtObject {
     readonly property QtObject widgets: QtObject {
         property bool clock: true
         property bool weather: true
-        property bool system: true
+        property bool system: false
         property bool quote: false
         property bool nowPlaying: true
         property bool calendar: true
-        property bool stock: true
+        property bool stock: false
 
         property string clockPosition: "bottom-right"
         property string weatherPosition: "top-right"
@@ -105,6 +105,70 @@ QtObject {
         property var symbols: ["SPY", "QQQ", "AAPL"]
         property int fontSize: 14
         property int refreshInterval: 300000
+    }
+
+    // ── Default layout order (mirrors Registry.barModules) ──
+    readonly property var _defaultLayoutLeft: ["power", "workspace", "time", "weather", "window"]
+    readonly property var _defaultLayoutCenter: ["media"]
+    readonly property var _defaultLayoutRight: ["resource", "audio", "network", "bluetooth", "battery", "tray", "gear"]
+
+    function _getDefaultOrder(section) {
+        if (section === "left" || section === "layoutLeft") return _defaultLayoutLeft;
+        if (section === "center" || section === "layoutCenter") return _defaultLayoutCenter;
+        if (section === "right" || section === "layoutRight") return _defaultLayoutRight;
+        return [];
+    }
+
+    // ── Helper functions for Settings panel ──
+    function isBarModuleEnabled(key) {
+        return bar.layoutLeft.indexOf(key) >= 0
+            || bar.layoutCenter.indexOf(key) >= 0
+            || bar.layoutRight.indexOf(key) >= 0;
+    }
+
+    function toggleBarModule(key, defaultSection) {
+        let sections = ["layoutLeft", "layoutCenter", "layoutRight"];
+        for (let s of sections) {
+            let arr = bar[s];
+            let idx = arr.indexOf(key);
+            if (idx >= 0) {
+                arr.splice(idx, 1);
+                bar[s] = [...arr];
+                save();
+                return;
+            }
+        }
+        // Re-enable: insert at correct position based on default order
+        let target = "layout" + defaultSection.charAt(0).toUpperCase() + defaultSection.slice(1);
+        let arr = bar[target];
+        let defaultOrder = _getDefaultOrder(target);
+        let defaultIdx = defaultOrder.indexOf(key);
+        let insertIdx = arr.length;
+        for (let i = 0; i < arr.length; i++) {
+            let existingDefaultIdx = defaultOrder.indexOf(arr[i]);
+            if (existingDefaultIdx > defaultIdx) {
+                insertIdx = i;
+                break;
+            }
+        }
+        arr.splice(insertIdx, 0, key);
+        bar[target] = [...arr];
+        save();
+    }
+
+    function toggleWidget(configKey) {
+        widgets[configKey] = !widgets[configKey];
+        save();
+    }
+
+    function reorderBarModule(key, section, newIndex) {
+        let prop = "layout" + section.charAt(0).toUpperCase() + section.slice(1);
+        let arr = bar[prop].slice();
+        let oldIndex = arr.indexOf(key);
+        if (oldIndex >= 0) arr.splice(oldIndex, 1);
+        arr.splice(Math.min(newIndex, arr.length), 0, key);
+        bar[prop] = arr;
+        save();
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -211,7 +275,9 @@ QtObject {
                 workspace: bar.workspace, time: bar.time, weather: bar.weather,
                 window: bar.window, media: bar.media, resource: bar.resource,
                 audio: bar.audio, network: bar.network, bluetooth: bar.bluetooth,
-                battery: bar.battery
+                battery: bar.battery,
+                layoutLeft: bar.layoutLeft, layoutCenter: bar.layoutCenter,
+                layoutRight: bar.layoutRight
             },
             widgets: {
                 clock: widgets.clock, weather: widgets.weather, system: widgets.system,
@@ -270,6 +336,9 @@ QtObject {
                 if (b.network !== undefined) bar.network = b.network;
                 if (b.bluetooth !== undefined) bar.bluetooth = b.bluetooth;
                 if (b.battery !== undefined) bar.battery = b.battery;
+                if (b.layoutLeft !== undefined) bar.layoutLeft = b.layoutLeft;
+                if (b.layoutCenter !== undefined) bar.layoutCenter = b.layoutCenter;
+                if (b.layoutRight !== undefined) bar.layoutRight = b.layoutRight;
             }
 
             // Widgets
@@ -311,16 +380,16 @@ QtObject {
                 if (c.dateFormat !== undefined) clockConfig.dateFormat = c.dateFormat;
                 if (c.showDate !== undefined) clockConfig.showDate = c.showDate;
                 if (c.showSeconds !== undefined) clockConfig.showSeconds = c.showSeconds;
-                if (c.fontSize !== undefined) clockConfig.fontSize = c.fontSize;
+                if (c.fontSize !== undefined && c.fontSize > 0) clockConfig.fontSize = c.fontSize;
             }
             if (d.weather) {
                 if (d.weather.useMetric !== undefined) weatherConfig.useMetric = d.weather.useMetric;
-                if (d.weather.fontSize !== undefined) weatherConfig.fontSize = d.weather.fontSize;
+                if (d.weather.fontSize !== undefined && d.weather.fontSize > 0) weatherConfig.fontSize = d.weather.fontSize;
             }
             if (d.system) {
                 if (d.system.showCpu !== undefined) systemConfig.showCpu = d.system.showCpu;
                 if (d.system.showRam !== undefined) systemConfig.showRam = d.system.showRam;
-                if (d.system.fontSize !== undefined) systemConfig.fontSize = d.system.fontSize;
+                if (d.system.fontSize !== undefined && d.system.fontSize > 0) systemConfig.fontSize = d.system.fontSize;
             }
             if (d.quote) {
                 if (d.quote.maxWidth !== undefined) quoteConfig.maxWidth = d.quote.maxWidth;
@@ -329,7 +398,7 @@ QtObject {
             }
             if (d.nowPlaying) {
                 if (d.nowPlaying.showArt !== undefined) nowPlayingConfig.showArt = d.nowPlaying.showArt;
-                if (d.nowPlaying.artSize !== undefined) nowPlayingConfig.artSize = d.nowPlaying.artSize;
+                if (d.nowPlaying.artSize !== undefined && d.nowPlaying.artSize > 0) nowPlayingConfig.artSize = d.nowPlaying.artSize;
                 if (d.nowPlaying.fontSize !== undefined) nowPlayingConfig.fontSize = d.nowPlaying.fontSize;
             }
             if (d.calendar) {

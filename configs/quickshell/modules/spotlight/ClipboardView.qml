@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell.Io
 import "../.." as Root
+import "../../components" as Components
 
 // Clipboard history view for the Spotlight popup.
 Item {
@@ -98,12 +99,12 @@ Item {
             horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
         }
 
-        Flickable {
+        Components.SmoothFlickable {
             visible: clipModel.count > 0
             width: parent.width
             height: Math.min(clipCol.implicitHeight, Root.Theme.clipMaxHeight - 80)
             contentHeight: clipCol.implicitHeight
-            clip: true; boundsBehavior: Flickable.StopAtBounds
+            clip: true
 
             Column {
                 id: clipCol; width: parent.width; spacing: 0

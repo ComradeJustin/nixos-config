@@ -5,3 +5,4 @@ PowerMenu 1.0 PowerMenu.qml
 Spotlight 1.0 Spotlight.qml
 LockScreen 1.0 LockScreen.qml
 WidgetOverlay 1.0 WidgetOverlay.qml
+SettingsPanel 1.0 SettingsPanel.qml

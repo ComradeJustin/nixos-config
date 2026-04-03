@@ -1,0 +1,98 @@
+{
+  "bar": {
+    "workspace": true,
+    "time": true,
+    "weather": true,
+    "window": true,
+    "media": true,
+    "resource": true,
+    "audio": true,
+    "network": true,
+    "bluetooth": true,
+    "battery": true,
+    "layoutLeft": [
+      "power",
+      "workspace",
+      "tray",
+      "time",
+      "weather",
+      "window"
+    ],
+    "layoutCenter": [
+      "media"
+    ],
+    "layoutRight": [
+      "bluetooth",
+      "network",
+      "audio",
+      "resource",
+      "battery",
+      "gear"
+    ]
+  },
+  "widgets": {
+    "clock": true,
+    "weather": true,
+    "system": false,
+    "quote": false,
+    "nowPlaying": true,
+    "calendar": true,
+    "stock": false,
+    "clockPosition": "bottom-right",
+    "weatherPosition": "top-right",
+    "systemPosition": "top-left",
+    "quotePosition": "bottom-center",
+    "nowPlayingPosition": "bottom-left",
+    "calendarPosition": "center-left",
+    "stockPosition": "center-right",
+    "marginX": 40,
+    "marginY": 40
+  },
+  "features": {
+    "wallpaperWidgets": true,
+    "autoHideWidgets": true,
+    "autoHideBarInFullscreen": true,
+    "mediaPopup": true,
+    "clipboardHistory": true,
+    "wallpaperSelector": true
+  },
+  "clock": {
+    "timeFormat": "HH:mm",
+    "dateFormat": "dddd, MMMM d",
+    "showDate": true,
+    "showSeconds": false,
+    "fontSize": 48
+  },
+  "weather": {
+    "useMetric": true,
+    "fontSize": 32
+  },
+  "system": {
+    "showCpu": true,
+    "showRam": true,
+    "fontSize": 24
+  },
+  "quote": {
+    "maxWidth": 400,
+    "fontSize": 16,
+    "refreshInterval": 3600000
+  },
+  "nowPlaying": {
+    "showArt": true,
+    "artSize": 80,
+    "fontSize": 14
+  },
+  "calendar": {
+    "showWeekNumbers": false,
+    "cellSize": 28
+  },
+  "stock": {
+    "symbols": [
+      "SPY",
+      "QQQ",
+      "AAPL"
+    ],
+    "fontSize": 14,
+    "refreshInterval": 300000
+  }
+}

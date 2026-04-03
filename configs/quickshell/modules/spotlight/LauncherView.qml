@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import "../.." as Root
+import "../../components" as Components
 
 // App launcher view for the Spotlight popup.
 // Caches desktop entries on load, filters by search.
@@ -159,13 +160,13 @@ Item {
             verticalAlignment: Text.AlignVCenter
         }
 
-        Flickable {
+        Components.SmoothFlickable {
             id: appFlick
             visible: filteredIndices.length > 0
             width: parent.width
             height: Math.min(appCol.implicitHeight, Root.Theme.launchMaxHeight - 100)
             contentHeight: appCol.implicitHeight
-            clip: true; boundsBehavior: Flickable.StopAtBounds
+            clip: true
 
             function ensureVisible(selIdx) {
                 let y = selIdx * Root.Theme.launchItemHeight;

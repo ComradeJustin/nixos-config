@@ -6,3 +6,10 @@ BatteryModule 1.0 BatteryModule.qml
 MediaModule 1.0 MediaModule.qml
 MediaPopup 1.0 MediaPopup.qml
 TrayModule 1.0 TrayModule.qml
+PowerModule 1.0 PowerModule.qml
+WeatherModule 1.0 WeatherModule.qml
+ResourceModule 1.0 ResourceModule.qml
+AudioModule 1.0 AudioModule.qml
+NetworkModule 1.0 NetworkModule.qml
+BluetoothModule 1.0 BluetoothModule.qml
+GearModule 1.0 GearModule.qml

@@ -1,21 +1,23 @@
 import QtQuick
 import "../.." as Root
 import "../../components" as Components
+import "../../core" as Core
 
 Item {
     id: root
 
     property int fixedTextWidth: 200
-    property var playerService: null
+    property var playerService: Core.ServiceManager.player
     signal cavaToggled()
 
     property bool isPlaying: playerService ? playerService.isPlaying : false
     property string mediaText: playerService ? playerService.displayText : ""
+    property bool hasMedia: mediaText.length > 0
 
-    visible: mediaText.length > 0
-
-    implicitWidth: visible ? playIcon.width + 6 + fixedTextWidth : 0
+    implicitWidth: hasMedia ? playIcon.width + 6 + fixedTextWidth : 0
     implicitHeight: Root.Theme.barHeight
+    opacity: hasMedia ? 1 : 0
+    clip: true
 
     // Hover background
     Rectangle {

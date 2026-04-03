@@ -127,7 +127,7 @@ PanelWindow {
                     color: Root.Theme.osdAccent
 
                     Behavior on width {
-                        NumberAnimation { duration: 80; easing.type: Easing.OutQuad }
+                        NumberAnimation { duration: 50; easing.type: Easing.OutCubic }
                     }
                 }
             }

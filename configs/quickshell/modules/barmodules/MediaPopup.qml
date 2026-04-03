@@ -3,12 +3,13 @@ import Quickshell.Wayland
 import QtQuick
 import Qt5Compat.GraphicalEffects
 import "../.." as Root
+import "../../core" as Core
 
 // Media popup panel with visualizer and controls
 PanelWindow {
     id: popup
 
-    property var playerService: null
+    property var playerService: Core.ServiceManager.player
     property bool showCava: false
     property bool barHidden: false
 

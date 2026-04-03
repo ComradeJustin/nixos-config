@@ -25,19 +25,19 @@ QtObject {
     // ── Bar modules ──
     // key: unique id, label: display name, section: left/center/right, file: true if file-based
     readonly property var barModules: [
-        { key: "power",     label: "Power",     section: "left",   file: false },
-        { key: "workspace", label: "Workspace", section: "left",   file: true  },
-        { key: "time",      label: "Time",      section: "left",   file: true  },
-        { key: "weather",   label: "Weather",   section: "left",   file: false, services: ["weather"] },
-        { key: "window",    label: "Window",    section: "left",   file: true  },
-        { key: "media",     label: "Media",     section: "center", file: true,  services: ["player"] },
-        { key: "resource",  label: "Resources", section: "right",  file: false },
-        { key: "audio",     label: "Audio",     section: "right",  file: false, services: ["audio"] },
-        { key: "network",   label: "Network",   section: "right",  file: false, services: ["wifi"] },
-        { key: "bluetooth", label: "Bluetooth", section: "right",  file: false, services: ["bluetooth"] },
-        { key: "battery",   label: "Battery",   section: "right",  file: true  },
-        { key: "tray",      label: "Tray",      section: "right",  file: true  },
-        { key: "gear",      label: "Settings",  section: "right",  file: false }
+        { key: "power",     label: "Power",     section: "left",   file: true },
+        { key: "workspace", label: "Workspace", section: "left",   file: true },
+        { key: "time",      label: "Time",      section: "left",   file: true },
+        { key: "weather",   label: "Weather",   section: "left",   file: true, services: ["weather"] },
+        { key: "window",    label: "Window",    section: "left",   file: true },
+        { key: "media",     label: "Media",     section: "center", file: true, services: ["player"] },
+        { key: "resource",  label: "Resources", section: "right",  file: true },
+        { key: "audio",     label: "Audio",     section: "right",  file: true, services: ["audio"] },
+        { key: "network",   label: "Network",   section: "right",  file: true, services: ["wifi"] },
+        { key: "bluetooth", label: "Bluetooth", section: "right",  file: true, services: ["bluetooth"] },
+        { key: "battery",   label: "Battery",   section: "right",  file: true },
+        { key: "tray",      label: "Tray",      section: "right",  file: true },
+        { key: "gear",      label: "Settings",  section: "right",  file: true }
     ]
 
     // ── Widgets ──

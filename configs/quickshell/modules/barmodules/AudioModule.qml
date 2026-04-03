@@ -1,0 +1,16 @@
+import QtQuick
+import "../.." as Root
+import "../../components" as Components
+import "../../core" as Core
+
+Components.BarItem {
+    id: root
+
+    property var svc: Core.ServiceManager.audio
+    property int vol: svc ? svc.volume : -1
+    property bool muted: svc ? svc.muted : false
+
+    icon: Root.Theme.volumeIcon(vol, muted)
+    value: vol >= 0 ? vol + "%" : "--"
+    accent: muted ? Root.Theme.textDimmed : Root.Theme.domainMedia
+}

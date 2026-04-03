@@ -4,14 +4,13 @@ import "../.." as Root
 import "../../components" as Components
 
 // Bluetooth tab content for ControlCenter
-Flickable {
+Components.SmoothFlickable {
     id: root
 
     property var bluetoothService: null
 
     contentHeight: btTabCol.implicitHeight
     clip: true
-    boundsBehavior: Flickable.StopAtBounds
 
     Column {
         id: btTabCol

@@ -13,3 +13,7 @@ ScrollingText 1.0 ScrollingText.qml
 ProcessPoller 1.0 ProcessPoller.qml
 IconButton 1.0 IconButton.qml
 NotificationCard 1.0 NotificationCard.qml
+SettingToggle 1.0 SettingToggle.qml
+SettingSlider 1.0 SettingSlider.qml
+SettingSection 1.0 SettingSection.qml
+SmoothFlickable 1.0 SmoothFlickable.qml

@@ -18,6 +18,9 @@ in
   programs.git.enable = true;
   programs.nushell = {
     enable = true;
+    shellAliases = {
+      ctf = "nix-shell ~/nixos-config/shells/ctf.nix";
+    };
     extraConfig = ''
       $env.config = {
         show_banner: false,
@@ -116,5 +119,6 @@ in
     EDITOR = "nvim";
     BROWSER = "firefox";
     TERMINAL = "ghostty";
+    NIXOS_OZONE_WL = "1";
   };
 }
