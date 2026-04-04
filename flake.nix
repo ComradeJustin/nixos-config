@@ -128,10 +128,10 @@
             ./hosts/nixpc/hardware-configuration.nix
             ./hosts/nixpc/gpu.nix
             ./hosts/nixpc/networking.nix
-            ({ pkgs, ... }: {
+            {
               modules.boot.loader = "grub-efi";
               boot.loader.grub.useOSProber = true;
-              boot.loader.grub.theme = pkgs.sleek-grub-theme;
+              boot.loader.grub.theme = ./assets/grub-themes/sayonara;
               modules.profiles.desktop.enable = true;
               modules.gaming.enable = true;
               modules.compscijava.enable = true;
@@ -141,7 +141,7 @@
               modules.distributed-builds.builders = [
                 { hostName = "home-core"; maxJobs = 4; speedFactor = 2; }
               ];
-            })
+            }
           ];
         };
 
