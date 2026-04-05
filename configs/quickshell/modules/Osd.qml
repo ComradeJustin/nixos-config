@@ -2,13 +2,14 @@ import Quickshell
 import Quickshell.Wayland
 import QtQuick
 import ".." as Root
+import "../core" as Core
 
 PanelWindow {
     id: osd
 
-    // Service references (injected from Shell.qml)
-    property var audioService: null
-    property var brightnessService: null
+    // Self-wired via ServiceManager
+    readonly property var audioService: Core.ServiceManager.audio
+    readonly property var brightnessService: Core.ServiceManager.brightness
 
     WlrLayershell.namespace: "quickshell-osd"
     WlrLayershell.layer: WlrLayer.Overlay

@@ -25,8 +25,6 @@ PanelWindow {
     color: "transparent"
 
     // ── Public API ──────────────────────────────────────────────────────
-    property var barRef: null
-    property var widgetOverlayRef: null
 
     function toggle() {
         if (visible) {
@@ -457,7 +455,7 @@ PanelWindow {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             win._close()
-                            if (win.barRef) win.barRef.toggleBarEdit()
+                            let bar = Core.ServiceManager.bar; if (bar) bar.toggleBarEdit()
                         }
                     }
                 }
@@ -601,7 +599,7 @@ PanelWindow {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             win._close()
-                            if (win.widgetOverlayRef) win.widgetOverlayRef.toggleEditMode()
+                            let wo = Core.ServiceManager.widgetOverlay; if (wo) wo.toggleEditMode()
                         }
                     }
                 }

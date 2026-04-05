@@ -1,10 +1,9 @@
 import QtQuick
 import "../.." as Root
+import "../../core" as Core
 
 Item {
     id: root
-
-    property var powerMenuRef: null
 
     implicitWidth: powerText.implicitWidth
     implicitHeight: Root.Theme.barHeight
@@ -20,6 +19,6 @@ Item {
     MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
-        onClicked: { if (root.powerMenuRef) root.powerMenuRef.toggle(); }
+        onClicked: { let pm = Core.ServiceManager.powerMenu; if (pm) pm.toggle(); }
     }
 }

@@ -5,6 +5,7 @@ import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
 import ".." as Root
+import "../core" as Core
 
 Item {
     id: lock
@@ -20,7 +21,7 @@ Item {
     property bool isAuthenticating: false
     property bool passwordMode: false
     property bool hasFingerprint: false
-    property var playerService: null
+    property var playerService: Core.ServiceManager.player
     property string pendingPassword: ""
     property bool awaitingResponse: false  // tracks whether PAM is waiting for a password
     property int wakeSignal: 0

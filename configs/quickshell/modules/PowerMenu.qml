@@ -3,6 +3,7 @@ import Quickshell.Wayland
 import QtQuick
 import Qt5Compat.GraphicalEffects
 import ".." as Root
+import "../core" as Core
 
 // Centered power menu overlay.
 // Toggle via IPC: qs ipc call quickshell-bar power
@@ -12,7 +13,6 @@ Scope {
     // Theme is now a singleton - access via Root.Theme.propertyName
 
     property bool showing: false
-    property var powerService: null
     property int selectedIndex: 0
 
     property var actions: [
@@ -36,11 +36,12 @@ Scope {
     function execute(action) {
         showing = false;
         if (action === "lock") { lockRequested(); return }
-        if (!powerService) return;
-        if (action === "suspend") powerService.suspend();
-        else if (action === "logout") powerService.logout();
-        else if (action === "reboot") powerService.reboot();
-        else if (action === "shutdown") powerService.shutdown();
+        let svc = Core.ServiceManager.power;
+        if (!svc) return;
+        if (action === "suspend") svc.suspend();
+        else if (action === "logout") svc.logout();
+        else if (action === "reboot") svc.reboot();
+        else if (action === "shutdown") svc.shutdown();
     }
 
     PanelWindow {

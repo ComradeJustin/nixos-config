@@ -5,7 +5,6 @@ import "../../core" as Core
 Item {
     id: root
 
-    property var notifRef: null
     property var notifSvc: Core.ServiceManager.notif
     property int unread: notifSvc ? notifSvc.unreadCount : 0
 
@@ -17,7 +16,7 @@ Item {
         text: root.unread > 0 ? Root.Icons.bellBadge : Root.Icons.gear
         color: {
             if (root.unread > 0) return Root.Theme.domainNotifications;
-            if (root.notifRef && root.notifRef.showing) return Root.Theme.domainSettings;
+            if (Core.ServiceManager.controlCenter && Core.ServiceManager.controlCenter.showing) return Root.Theme.domainSettings;
             return Root.Theme.textDimmed;
         }
         font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
@@ -58,7 +57,7 @@ Item {
         cursorShape: Qt.PointingHandCursor
         onClicked: {
             if (root.notifSvc) root.notifSvc.unreadCount = 0;
-            if (root.notifRef) root.notifRef.toggle();
+            if (Core.ServiceManager.controlCenter) Core.ServiceManager.controlCenter.toggle();
         }
     }
 }

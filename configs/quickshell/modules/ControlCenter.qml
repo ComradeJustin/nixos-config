@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import ".." as Root
 import "../components" as Components
+import "../core" as Core
 import "controlcenter" as CCTabs
 
 Scope {
@@ -14,12 +15,12 @@ Scope {
     property string activeTab: "notifications"
     property bool showHistory: showing
 
-    property var audioService: null
-    property var powerMenuRef: null
-    property var notifService: null
-    property var wifiService: null
-    property var bluetoothService: null
-    property var idleInhibitService: null
+    // Self-wired via ServiceManager
+    readonly property var audioService: Core.ServiceManager.audio
+    readonly property var notifService: Core.ServiceManager.notif
+    readonly property var wifiService: Core.ServiceManager.wifi
+    readonly property var bluetoothService: Core.ServiceManager.bluetooth
+    readonly property var idleInhibitService: Core.ServiceManager.idleInhibit
 
     function toggle() {
         showing = !showing;
@@ -207,7 +208,7 @@ Scope {
                             icon: Root.Icons.shutdown
                             iconColor: Root.Theme.accentDanger
                             hoverColor: Qt.rgba(Root.Theme.accentDanger.r, Root.Theme.accentDanger.g, Root.Theme.accentDanger.b, 0.15)
-                            onClicked: { cc.showing = false; if (cc.powerMenuRef) cc.powerMenuRef.toggle(); }
+                            onClicked: { cc.showing = false; let pm = Core.ServiceManager.powerMenu; if (pm) pm.toggle(); }
                         }
                     }
 

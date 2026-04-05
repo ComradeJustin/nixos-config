@@ -10,7 +10,6 @@ Scope {
     id: sp
 
     property bool showing: false
-    property var barRef: null
 
     function toggle() {
         showing = !showing;
@@ -112,7 +111,7 @@ Scope {
                                 MouseArea {
                                     id: reorderMouse
                                     anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                    onClicked: { sp.showing = false; if (sp.barRef) sp.barRef.toggleBarEdit(); }
+                                    onClicked: { sp.showing = false; let bar = Core.ServiceManager.bar; if (bar) bar.toggleBarEdit(); }
                                 }
                             }
                         }

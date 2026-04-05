@@ -13,9 +13,6 @@ Scope {
 
     property bool isHidden: false
     property bool showCava: false
-    property var notifRef: null
-    property var powerMenuRef: null
-    property var playerService: null
     property bool barEditMode: false
 
     // ── Drag-and-drop state ──
@@ -134,19 +131,19 @@ Scope {
     Timer { id: zoneRestoreTimer; interval: 220; onTriggered: {} }
 
     // ── Component map for Repeater-driven bar ──
-    Component { id: compPower; BarModules.PowerModule { powerMenuRef: barScope.powerMenuRef } }
+    Component { id: compPower; BarModules.PowerModule {} }
     Component { id: compWorkspace; BarModules.WorkspaceModule {} }
     Component { id: compTime; BarModules.TimeModule {} }
     Component { id: compWeather; BarModules.WeatherModule {} }
     Component { id: compWindow; BarModules.WindowModule {} }
-    Component { id: compMedia; BarModules.MediaModule { playerService: barScope.playerService; onCavaToggled: barScope.showCava = !barScope.showCava } }
+    Component { id: compMedia; BarModules.MediaModule { onCavaToggled: barScope.showCava = !barScope.showCava } }
     Component { id: compResource; BarModules.ResourceModule {} }
     Component { id: compAudio; BarModules.AudioModule {} }
     Component { id: compNetwork; BarModules.NetworkModule {} }
     Component { id: compBluetooth; BarModules.BluetoothModule {} }
     Component { id: compBattery; BarModules.BatteryModule {} }
     Component { id: compTray; BarModules.TrayModule { barPanel: panel } }
-    Component { id: compGear; BarModules.GearModule { notifRef: barScope.notifRef } }
+    Component { id: compGear; BarModules.GearModule {} }
 
     property var componentMap: ({
         "power": compPower, "workspace": compWorkspace, "time": compTime,

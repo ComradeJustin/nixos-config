@@ -10,10 +10,6 @@ import "../core" as Core
 Scope {
     id: root
 
-    property var windowService: null
-    property var playerService: null
-    property var weatherService: null
-
     property bool editMode: false
     signal editModeToggled(bool enabled)
 
@@ -157,8 +153,9 @@ Scope {
     // Per-screen widget visibility check
     function widgetsShownForScreen(screenName) {
         if (root.editMode || !Root.Config.features.autoHideWidgets) return true;
-        if (!root.windowService) return true;
-        return root.windowService.screenEmpty(screenName) && !root.windowService.overviewOpen;
+        let ws = Core.ServiceManager.window;
+        if (!ws) return true;
+        return ws.screenEmpty(screenName) && !ws.overviewOpen;
     }
 
     // Store widget sizes for ghost rectangles (keyed by widget key)
@@ -199,6 +196,55 @@ Scope {
         Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
     }
 
+    // ── Widget Component definitions (config bindings baked in) ──
+    Component { id: compClock; Widgets.ClockWidget {
+        timeFormat: Root.Config.clockConfig.showSeconds ? Root.Config.clockConfig.timeFormat.replace("mm", "mm:ss") : Root.Config.clockConfig.timeFormat
+        dateFormat: Root.Config.clockConfig.dateFormat
+        showDate: Root.Config.clockConfig.showDate
+        showSeconds: Root.Config.clockConfig.showSeconds
+        clockFontSize: Root.Config.clockConfig.fontSize
+    }}
+    Component { id: compWeather; Widgets.WeatherWidget {
+        weatherService: Core.ServiceManager.weather
+        fontSize: Root.Config.weatherConfig.fontSize
+    }}
+    Component { id: compSystem; Widgets.SystemWidget {
+        statsService: Core.ServiceManager.systemStats
+        showCpu: Root.Config.systemConfig.showCpu
+        showRam: Root.Config.systemConfig.showRam
+        fontSize: Root.Config.systemConfig.fontSize
+    }}
+    Component { id: compQuote; Widgets.QuoteWidget {
+        maxWidth: Root.Config.quoteConfig.maxWidth
+        fontSize: Root.Config.quoteConfig.fontSize
+        refreshInterval: Root.Config.quoteConfig.refreshInterval
+    }}
+    Component { id: compNowPlaying; Widgets.NowPlayingWidget {
+        playerService: Core.ServiceManager.player
+        showArt: Root.Config.nowPlayingConfig.showArt
+        artSize: Root.Config.nowPlayingConfig.artSize
+        fontSize: Root.Config.nowPlayingConfig.fontSize
+    }}
+    Component { id: compCalendar; Widgets.CalendarWidget {
+        showWeekNumbers: Root.Config.calendarConfig.showWeekNumbers
+        cellSize: Root.Config.calendarConfig.cellSize
+    }}
+    Component { id: compStock; Widgets.StockWidget {
+        symbols: Root.Config.stockConfig.symbols
+        fontSize: Root.Config.stockConfig.fontSize
+        refreshInterval: Root.Config.stockConfig.refreshInterval
+    }}
+
+    property var widgetComponentMap: ({
+        "clock": compClock,
+        "weather": compWeather,
+        "system": compSystem,
+        "quote": compQuote,
+        "nowPlaying": compNowPlaying,
+        "calendar": compCalendar,
+        "stock": compStock
+    })
+
     // ══════════════════════════════════════════════════════════════════
     // ── Widget Overlay Panel ──
     // ══════════════════════════════════════════════════════════════════
@@ -218,133 +264,33 @@ Scope {
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
 
-            PositionedWidget {
-                positionKey: "clockWidgetPosition"
-                defaultPosition: Root.Config.widgets.clockPosition
-                configVisible: Root.Config.widgets.clock
-                screenName: widgetPanel.panelScreenName
+            // Data-driven widget instantiation from Registry
+            Repeater {
+                model: Core.Registry.widgets
+                PositionedWidget {
+                    required property var modelData
+                    positionKey: modelData.positionKey
+                    defaultPosition: Root.Config.widgets[modelData.configKey + "Position"] || modelData.defaultPos
+                    configVisible: Root.Config.widgets[modelData.configKey] || false
+                    screenName: widgetPanel.panelScreenName
+                    extraVisible: widgetLoader.item
+                        ? (widgetLoader.item.hasMedia !== undefined ? widgetLoader.item.hasMedia : true)
+                        : true
 
-                Widgets.ClockWidget {
-                    id: clockW
-                    timeFormat: Root.Config.clockConfig.showSeconds ? Root.Config.clockConfig.timeFormat.replace("mm", "mm:ss") : Root.Config.clockConfig.timeFormat
-                    dateFormat: Root.Config.clockConfig.dateFormat
-                    showDate: Root.Config.clockConfig.showDate
-                    showSeconds: Root.Config.clockConfig.showSeconds
-                    clockFontSize: Root.Config.clockConfig.fontSize
-                    onImplicitWidthChanged: root.updateWidgetSize("clock", implicitWidth, implicitHeight)
-                    onImplicitHeightChanged: root.updateWidgetSize("clock", implicitWidth, implicitHeight)
+                    implicitWidth: widgetLoader.item ? widgetLoader.item.implicitWidth : 0
+                    implicitHeight: widgetLoader.item ? widgetLoader.item.implicitHeight : 0
+
+                    Loader {
+                        id: widgetLoader
+                        sourceComponent: root.widgetComponentMap[modelData.key] || null
+                    }
+
+                    Connections {
+                        target: widgetLoader.item
+                        function onImplicitWidthChanged() { root.updateWidgetSize(modelData.key, widgetLoader.item.implicitWidth, widgetLoader.item.implicitHeight) }
+                        function onImplicitHeightChanged() { root.updateWidgetSize(modelData.key, widgetLoader.item.implicitWidth, widgetLoader.item.implicitHeight) }
+                    }
                 }
-                implicitWidth: clockW.implicitWidth
-                implicitHeight: clockW.implicitHeight
-            }
-
-            PositionedWidget {
-                positionKey: "weatherWidgetPosition"
-                defaultPosition: Root.Config.widgets.weatherPosition
-                configVisible: Root.Config.widgets.weather
-                screenName: widgetPanel.panelScreenName
-
-                Widgets.WeatherWidget {
-                    id: weatherW
-                    weatherService: root.weatherService
-                    fontSize: Root.Config.weatherConfig.fontSize
-                    onImplicitWidthChanged: root.updateWidgetSize("weather", implicitWidth, implicitHeight)
-                    onImplicitHeightChanged: root.updateWidgetSize("weather", implicitWidth, implicitHeight)
-                }
-                implicitWidth: weatherW.implicitWidth
-                implicitHeight: weatherW.implicitHeight
-            }
-
-            PositionedWidget {
-                positionKey: "systemWidgetPosition"
-                defaultPosition: Root.Config.widgets.systemPosition
-                configVisible: Root.Config.widgets.system
-                screenName: widgetPanel.panelScreenName
-
-                Widgets.SystemWidget {
-                    id: systemW
-                    statsService: Core.ServiceManager.systemStats
-                    showCpu: Root.Config.systemConfig.showCpu
-                    showRam: Root.Config.systemConfig.showRam
-                    fontSize: Root.Config.systemConfig.fontSize
-                    onImplicitWidthChanged: root.updateWidgetSize("system", implicitWidth, implicitHeight)
-                    onImplicitHeightChanged: root.updateWidgetSize("system", implicitWidth, implicitHeight)
-                }
-                implicitWidth: systemW.implicitWidth
-                implicitHeight: systemW.implicitHeight
-            }
-
-            PositionedWidget {
-                positionKey: "quoteWidgetPosition"
-                defaultPosition: Root.Config.widgets.quotePosition
-                configVisible: Root.Config.widgets.quote
-                screenName: widgetPanel.panelScreenName
-
-                Widgets.QuoteWidget {
-                    id: quoteW
-                    maxWidth: Root.Config.quoteConfig.maxWidth
-                    fontSize: Root.Config.quoteConfig.fontSize
-                    refreshInterval: Root.Config.quoteConfig.refreshInterval
-                    onImplicitWidthChanged: root.updateWidgetSize("quote", implicitWidth, implicitHeight)
-                    onImplicitHeightChanged: root.updateWidgetSize("quote", implicitWidth, implicitHeight)
-                }
-                implicitWidth: quoteW.implicitWidth
-                implicitHeight: quoteW.implicitHeight
-            }
-
-            PositionedWidget {
-                positionKey: "nowPlayingWidgetPosition"
-                defaultPosition: Root.Config.widgets.nowPlayingPosition
-                configVisible: Root.Config.widgets.nowPlaying
-                screenName: widgetPanel.panelScreenName
-                extraVisible: nowPlayingW.hasMedia
-
-                Widgets.NowPlayingWidget {
-                    id: nowPlayingW
-                    playerService: root.playerService
-                    showArt: Root.Config.nowPlayingConfig.showArt
-                    artSize: Root.Config.nowPlayingConfig.artSize
-                    fontSize: Root.Config.nowPlayingConfig.fontSize
-                    onImplicitWidthChanged: root.updateWidgetSize("nowPlaying", implicitWidth, implicitHeight)
-                    onImplicitHeightChanged: root.updateWidgetSize("nowPlaying", implicitWidth, implicitHeight)
-                }
-                implicitWidth: nowPlayingW.implicitWidth
-                implicitHeight: nowPlayingW.implicitHeight
-            }
-
-            PositionedWidget {
-                positionKey: "calendarWidgetPosition"
-                defaultPosition: Root.Config.widgets.calendarPosition
-                configVisible: Root.Config.widgets.calendar
-                screenName: widgetPanel.panelScreenName
-
-                Widgets.CalendarWidget {
-                    id: calendarW
-                    showWeekNumbers: Root.Config.calendarConfig.showWeekNumbers
-                    cellSize: Root.Config.calendarConfig.cellSize
-                    onImplicitWidthChanged: root.updateWidgetSize("calendar", implicitWidth, implicitHeight)
-                    onImplicitHeightChanged: root.updateWidgetSize("calendar", implicitWidth, implicitHeight)
-                }
-                implicitWidth: calendarW.implicitWidth
-                implicitHeight: calendarW.implicitHeight
-            }
-
-            PositionedWidget {
-                positionKey: "stockWidgetPosition"
-                defaultPosition: Root.Config.widgets.stockPosition
-                configVisible: Root.Config.widgets.stock
-                screenName: widgetPanel.panelScreenName
-
-                Widgets.StockWidget {
-                    id: stockW
-                    symbols: Root.Config.stockConfig.symbols
-                    fontSize: Root.Config.stockConfig.fontSize
-                    refreshInterval: Root.Config.stockConfig.refreshInterval
-                    onImplicitWidthChanged: root.updateWidgetSize("stock", implicitWidth, implicitHeight)
-                    onImplicitHeightChanged: root.updateWidgetSize("stock", implicitWidth, implicitHeight)
-                }
-                implicitWidth: stockW.implicitWidth
-                implicitHeight: stockW.implicitHeight
             }
         }
     }
@@ -435,8 +381,7 @@ Scope {
                 model: Core.Registry.widgets
                 Components.DragGhost {
                     required property var modelData
-                    visible: Root.Config["show" + modelData.configKey.charAt(0).toUpperCase()
-                             + modelData.configKey.slice(1) + "Widget"]
+                    visible: Root.Config.widgets[modelData.configKey] || false
                     widgetName: modelData.key
                     label: modelData.label
                     positionKey: modelData.positionKey

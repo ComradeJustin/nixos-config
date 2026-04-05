@@ -23,8 +23,8 @@ QtObject {
         return _services[key] || null;
     }
 
-    // Convenience properties for type-safe access
-    // _rev dependency forces re-evaluation when services are registered
+    // Convenience properties — _rev dependency forces re-evaluation on registration
+    // Services
     readonly property var audio:       _rev >= 0 ? (_services["audio"]       || null) : null
     readonly property var player:      _rev >= 0 ? (_services["player"]      || null) : null
     readonly property var power:       _rev >= 0 ? (_services["power"]       || null) : null
@@ -36,6 +36,12 @@ QtObject {
     readonly property var idleInhibit: _rev >= 0 ? (_services["idleInhibit"] || null) : null
     readonly property var weather:     _rev >= 0 ? (_services["weather"]     || null) : null
     readonly property var systemStats: _rev >= 0 ? (_services["systemStats"] || null) : null
+
+    // Module references — registered by shell.qml
+    readonly property var bar:            _rev >= 0 ? (_services["bar"]            || null) : null
+    readonly property var controlCenter:  _rev >= 0 ? (_services["controlCenter"]  || null) : null
+    readonly property var powerMenu:      _rev >= 0 ? (_services["powerMenu"]      || null) : null
+    readonly property var widgetOverlay:  _rev >= 0 ? (_services["widgetOverlay"]  || null) : null
 
     // Shared bar popup window reference — registered by Bar.qml
     property var barPopup: null

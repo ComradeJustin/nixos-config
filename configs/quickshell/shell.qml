@@ -22,10 +22,11 @@ ShellRoot {
     Services.WeatherService { id: weatherSvc }
     Services.SystemStatsService { id: systemStatsSvc }
 
-    // Register services with ServiceManager for self-wiring
+    // Register services and modules with ServiceManager for self-wiring
     Item {
         visible: false
         Component.onCompleted: {
+            // Services
             Core.ServiceManager.register("audio", audioSvc);
             Core.ServiceManager.register("player", playerSvc);
             Core.ServiceManager.register("power", powerSvc);
@@ -37,46 +38,29 @@ ShellRoot {
             Core.ServiceManager.register("idleInhibit", idleInhibitSvc);
             Core.ServiceManager.register("weather", weatherSvc);
             Core.ServiceManager.register("systemStats", systemStatsSvc);
+            // Modules
+            Core.ServiceManager.register("bar", barModule);
+            Core.ServiceManager.register("controlCenter", ccModule);
+            Core.ServiceManager.register("powerMenu", pmModule);
+            Core.ServiceManager.register("widgetOverlay", widgetModule);
         }
     }
 
     // ── Modules ──
     Modules.PowerMenu {
         id: pmModule
-        powerService: powerSvc
         onLockRequested: lock()
     }
-    Modules.ControlCenter {
-        id: ccModule
-        audioService: audioSvc
-        powerMenuRef: pmModule
-        notifService: notifSvc
-        wifiService: wifiSvc
-        bluetoothService: btSvc
-        idleInhibitService: idleInhibitSvc
-    }
+    Modules.ControlCenter { id: ccModule }
     Modules.Spotlight { id: spotModule }
-    Modules.Osd {
-        audioService: audioSvc
-        brightnessService: briSvc
-    }
-    Modules.Bar {
-        id: barModule
-        notifRef: ccModule
-        powerMenuRef: pmModule
-        playerService: playerSvc
-    }
+    Modules.Osd {}
+    Modules.Bar { id: barModule }
 
-    Modules.SettingsWindow { id: settingsWindow; barRef: barModule; widgetOverlayRef: widgetModule }
+    Modules.SettingsWindow { id: settingsWindow }
     Modules.MonitorPanel { id: monitorPanel }
 
     // Background widgets overlay
-    Modules.WidgetOverlay {
-        id: widgetModule
-        windowService: winSvc
-        playerService: playerSvc
-        weatherService: weatherSvc
-    }
+    Modules.WidgetOverlay { id: widgetModule }
 
     // ── Session Lock ──
     property bool screenLocked: false
@@ -89,7 +73,6 @@ ShellRoot {
         WlSessionLockSurface {
             Modules.LockScreen {
                 anchors.fill: parent
-                playerService: playerSvc
                 wakeSignal: wakeCounter
                 onUnlocked: screenLocked = false
             }
