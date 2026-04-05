@@ -22,6 +22,7 @@ Item {
     property bool hasFingerprint: false
     property var playerService: null
     property string pendingPassword: ""
+    property bool awaitingResponse: false  // tracks whether PAM is waiting for a password
     property int wakeSignal: 0
     onWakeSignalChanged: if (wakeSignal > 0 && hasFingerprint) resetToFingerprint()
 
@@ -37,6 +38,7 @@ Item {
 
             if (needsResponse) {
                 lock.showError = false;
+                lock.awaitingResponse = true;
 
                 if (lock.pendingPassword.length > 0) {
                     var pw = lock.pendingPassword;
@@ -44,9 +46,10 @@ Item {
                     lock.statusText = "Authenticating...";
                     lock.isAuthenticating = true;
                     lock.passwordMode = true;
+                    lock.awaitingResponse = false;
                     pam.respond(pw);
                 } else {
-                    // PAM moved past fingerprint to password phase
+                    // PAM wants a password — show input
                     lock.passwordMode = true;
                     lock.isAuthenticating = false;
                     lock.statusText = "Enter password";
@@ -72,6 +75,7 @@ Item {
         onCompleted: function(result) {
             console.log("PAM completed: result=" + result);
             lock.isAuthenticating = false;
+            lock.awaitingResponse = false;
             if (lock.authDone) return;
 
             if (result === 0) {
@@ -104,6 +108,7 @@ Item {
         onError: function(err) {
             console.log("PAM system error: " + err);
             lock.isAuthenticating = false;
+            lock.awaitingResponse = false;
             if (lock.authDone) return;
             lock.statusText = "Auth error — retrying";
             lock.showError = true;
@@ -116,6 +121,7 @@ Item {
         lock.showError = false;
         lock.authDone = false;
         lock.isAuthenticating = false;
+        lock.awaitingResponse = false;
         if (!lock.hasFingerprint) lock.passwordMode = true;
         if (!lock.passwordMode) {
             lock.statusText = "Swipe fingerprint to unlock";
@@ -154,15 +160,16 @@ Item {
         lock.showError = false;
         lock.isAuthenticating = true;
 
-        if (pam.active && pam.responseRequired) {
-            // PAM is ready for password, submit immediately
+        if (pam.active && lock.awaitingResponse) {
+            // PAM is waiting for a password response — submit immediately
             lock.statusText = "Authenticating...";
+            lock.awaitingResponse = false;
             pam.respond(pw);
         } else if (pam.active) {
-            // PAM is active but in fingerprint phase - queue password and wait
-            lock.statusText = "Tap fingerprint to continue...";
+            // PAM is active but hasn't asked for password yet (fingerprint phase)
+            // Queue the password for when PAM reaches password prompt
+            lock.statusText = lock.hasFingerprint ? "Tap fingerprint to continue..." : "Authenticating...";
             lock.pendingPassword = pw;
-            // Don't abort - wait for PAM to move to password phase
         } else {
             // PAM not active, start it with queued password
             lock.statusText = "Authenticating...";
