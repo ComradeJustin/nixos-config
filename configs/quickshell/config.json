@@ -10,7 +10,7 @@
     "network": true,
     "bluetooth": true,
     "battery": true,
-    "style": "flat",
+    "style": "float",
     "showGroups": false,
     "showCpuGraph": true,
     "layoutLeft": [

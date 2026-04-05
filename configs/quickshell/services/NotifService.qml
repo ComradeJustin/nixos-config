@@ -23,6 +23,8 @@ Scope {
     property var imgCopyQueue: []
     property bool imgCopyBusy: false
 
+    function toggleDnd() { dnd = !dnd; }
+
     function safeStr(val) {
         if (val === null || val === undefined) return "";
         return "" + val;

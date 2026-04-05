@@ -42,6 +42,7 @@ QtObject {
     readonly property var controlCenter:  _rev >= 0 ? (_services["controlCenter"]  || null) : null
     readonly property var powerMenu:      _rev >= 0 ? (_services["powerMenu"]      || null) : null
     readonly property var widgetOverlay:  _rev >= 0 ? (_services["widgetOverlay"]  || null) : null
+    readonly property var settingsWindow: _rev >= 0 ? (_services["settingsWindow"] || null) : null
 
     // Shared bar popup window reference — registered by Bar.qml
     property var barPopup: null

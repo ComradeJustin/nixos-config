@@ -114,7 +114,7 @@ QtObject {
 
     // ── Bar geometry ──
     readonly property int barHeight:  32
-    readonly property int barPadding: 8
+    readonly property int barPadding: 14
     readonly property int barSpacing: 8
 
     // ── OSD geometry ──

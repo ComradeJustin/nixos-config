@@ -317,6 +317,8 @@ Scope {
                 anchors.fill: parent
                 focus: true
                 Keys.onEscapePressed: root.toggleEditMode()
+                Keys.onReturnPressed: root.commit()
+                Keys.onEnterPressed: root.commit()
             }
 
             property bool isDragging: false

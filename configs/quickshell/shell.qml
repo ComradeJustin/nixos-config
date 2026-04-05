@@ -43,6 +43,7 @@ ShellRoot {
             Core.ServiceManager.register("controlCenter", ccModule);
             Core.ServiceManager.register("powerMenu", pmModule);
             Core.ServiceManager.register("widgetOverlay", widgetModule);
+            Core.ServiceManager.register("settingsWindow", settingsWindow);
         }
     }
 

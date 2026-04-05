@@ -156,6 +156,42 @@ Scope {
     property bool isFloating: Root.Config.bar.style === "float"
     property int floatMargin: 6
     property int barTotalHeight: isFloating ? Root.Theme.barHeight + floatMargin * 2 : Root.Theme.barHeight
+
+    // ── Sub-group background computation ──
+    // Build a lookup from module key → group name
+    property var _groupMap: {
+        let map = {};
+        let mods = Core.Registry.barModules;
+        for (let i = 0; i < mods.length; i++) map[mods[i].key] = mods[i].group;
+        return map;
+    }
+
+    // Find contiguous runs of same-group modules within a layout array
+    function _computeSubGroups(layout, secName) {
+        let groups = [];
+        if (!layout || layout.length === 0) return groups;
+        let gmap = _groupMap;
+        let runStart = 0;
+        let currentGroup = gmap[layout[0]] || layout[0];
+        for (let i = 1; i <= layout.length; i++) {
+            let g = i < layout.length ? (gmap[layout[i]] || layout[i]) : null;
+            if (g !== currentGroup) {
+                groups.push({ startIdx: runStart, endIdx: i - 1, sec: secName });
+                runStart = i;
+                currentGroup = g;
+            }
+        }
+        return groups;
+    }
+
+    // Combined sub-groups across all three sections
+    property var _allSubGroups: {
+        let l = _computeSubGroups(Root.Config.bar.layoutLeft, "left");
+        let c = _computeSubGroups(Root.Config.bar.layoutCenter, "center");
+        let r = _computeSubGroups(Root.Config.bar.layoutRight, "right");
+        return l.concat(c).concat(r);
+    }
+
     PanelWindow {
         id: panel
 
@@ -186,25 +222,29 @@ Scope {
                 y: barScope.isHidden ? -barScope.barTotalHeight : (barScope.isFloating ? barScope.floatMargin : 0)
                 Behavior on y { NumberAnimation { duration: Root.Theme.anim.slideDuration; easing.type: Easing.InOutCubic } }
 
-                // ── Section group backgrounds (when showGroups is on) ──
+                // ── Sub-group backgrounds (when showGroups is on) ──
                 Repeater {
-                    model: [
-                        { section: leftSection, vis: leftSection.implicitWidth > 0 },
-                        { section: centerSection, vis: centerSection.implicitWidth > 0 },
-                        { section: rightSection, vis: rightSection.implicitWidth > 0 }
-                    ]
+                    model: barScope._allSubGroups
                     Rectangle {
                         required property var modelData
-                        property Item sec: modelData.section
-                        visible: Root.Config.bar.showGroups && modelData.vis
-                        x: sec.x - _hPad
+                        // Resolve section-specific repeater and row
+                        property var _rep: modelData.sec === "left" ? leftRepeater
+                                        : (modelData.sec === "center" ? centerRepeater : rightRepeater)
+                        property Item _row: modelData.sec === "left" ? leftSection
+                                         : (modelData.sec === "center" ? centerSection : rightSection)
+                        // Track items reactively via repeater count dependency
+                        property var _firstItem: { void(_rep.count); return _rep.itemAt(modelData.startIdx); }
+                        property var _lastItem:  { void(_rep.count); return _rep.itemAt(modelData.endIdx); }
+
+                        visible: Root.Config.bar.showGroups && _firstItem !== null && _lastItem !== null
+                        x: _firstItem ? _row.x + _firstItem.x - _hPad : 0
+                        width: (_firstItem && _lastItem) ? (_lastItem.x + _lastItem.width - _firstItem.x + _hPad * 2) : 0
                         y: _vPad
-                        width: sec.implicitWidth + _hPad * 2
                         height: bg.height - _vPad * 2
-                        radius: Root.Theme.radiusMedium
+                        radius: Root.Theme.radiusSmall
                         color: Root.Theme.layer1
 
-                        property int _hPad: 6
+                        property int _hPad: 5
                         property int _vPad: 4
                     }
                 }
@@ -401,9 +441,15 @@ Scope {
 
         WlrLayershell.namespace: "quickshell-baredit"
         WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
         exclusionMode: ExclusionMode.Ignore
         color: "transparent"
+
+        FocusScope {
+            anchors.fill: parent
+            focus: true
+            Keys.onEscapePressed: barScope.barEditMode = false
+        }
 
         Rectangle {
             anchors.fill: parent

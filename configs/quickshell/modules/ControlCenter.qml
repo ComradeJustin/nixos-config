@@ -163,13 +163,24 @@ Scope {
         implicitWidth: Root.Theme.ccWidth + 6
         WlrLayershell.namespace: "quickshell-cc"
         WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
         exclusionMode: ExclusionMode.Ignore
         color: "transparent"
 
-        Item {
+        FocusScope {
             anchors.fill: parent
+            focus: cc.showing
             clip: true
+
+            Keys.onEscapePressed: cc.showing = false
+            Keys.onLeftPressed: {
+                let idx = tabBar.activeIndex;
+                if (idx > 0) cc.activeTab = tabBar.tabs[idx - 1].tab;
+            }
+            Keys.onRightPressed: {
+                let idx = tabBar.activeIndex;
+                if (idx < tabBar.tabs.length - 1) cc.activeTab = tabBar.tabs[idx + 1].tab;
+            }
 
             Rectangle {
                 id: ccRect
@@ -208,48 +219,31 @@ Scope {
                             icon: Root.Icons.shutdown
                             iconColor: Root.Theme.accentDanger
                             hoverColor: Qt.rgba(Root.Theme.accentDanger.r, Root.Theme.accentDanger.g, Root.Theme.accentDanger.b, 0.15)
+                            tooltipText: "Power menu"
                             onClicked: { cc.showing = false; let pm = Core.ServiceManager.powerMenu; if (pm) pm.toggle(); }
                         }
                     }
 
-                    // ── Quick toggles (using QuickToggle component) ──
+                    // ── Quick toggles (data-driven from Registry) ──
                     Row {
                         anchors.horizontalCenter: parent.horizontalCenter
                         spacing: 8; height: 40
 
-                        Components.QuickToggle {
-                            isOn: cc.wifiService && cc.wifiService.enabled
-                            iconOn: Root.Icons.wifiHi; iconOff: Root.Icons.wifiOff
-                            accent: Root.Theme.domainNetwork
-                            onToggled: { if (cc.wifiService) cc.wifiService.toggle(); }
-                        }
-
-                        Components.QuickToggle {
-                            isOn: cc.notifService ? cc.notifService.dnd : false
-                            iconOn: Root.Icons.dnd; iconOff: Root.Icons.dndOff
-                            accent: Root.Theme.domainNotifications
-                            onToggled: { if (cc.notifService) cc.notifService.dnd = !cc.notifService.dnd; }
-                        }
-
-                        Components.QuickToggle {
-                            isOn: cc.audioService ? !cc.audioService.muted : true
-                            iconOn: Root.Icons.volHigh; iconOff: Root.Icons.volMute
-                            accent: Root.Theme.domainMedia
-                            onToggled: { if (cc.audioService) cc.audioService.toggleMute(); }
-                        }
-
-                        Components.QuickToggle {
-                            isOn: cc.bluetoothService ? cc.bluetoothService.enabled : false
-                            iconOn: Root.Icons.btOn; iconOff: Root.Icons.btOff
-                            accent: Root.Theme.domainNetwork
-                            onToggled: { if (cc.bluetoothService) cc.bluetoothService.toggle(); }
-                        }
-
-                        Components.QuickToggle {
-                            isOn: cc.idleInhibitService ? cc.idleInhibitService.inhibited : false
-                            iconOn: Root.Icons.caffeine; iconOff: Root.Icons.caffeineOff
-                            accent: Root.Theme.caffeineAccent
-                            onToggled: { if (cc.idleInhibitService) cc.idleInhibitService.toggle(); }
+                        Repeater {
+                            model: Core.Registry.quickToggles
+                            Components.QuickToggle {
+                                required property var modelData
+                                property var svc: Core.ServiceManager[modelData.service]
+                                isOn: {
+                                    if (!svc) return false;
+                                    let val = svc[modelData.stateProp];
+                                    return modelData.invertState ? !val : !!val;
+                                }
+                                iconOn: modelData.iconOn
+                                iconOff: modelData.iconOff
+                                accent: Root.Theme[modelData.accent]
+                                onToggled: { if (svc && typeof svc[modelData.action] === "function") svc[modelData.action](); }
+                            }
                         }
                     }
 

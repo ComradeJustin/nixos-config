@@ -42,11 +42,10 @@ PanelWindow {
 
     // Page definitions — icon uses Nerd Font codepoints matching the spec
     readonly property var _pages: [
-        { id: "bar",        label: "Bar",        icon: "󰍹" },
-        { id: "widgets",    label: "Widgets",     icon: "󰕰" },
-        { id: "features",   label: "Features",    icon: "󰒓" },
-        { id: "appearance", label: "Appearance",  icon: "󰏘" },
-        { id: "about",      label: "About",       icon: "󰋽" }
+        { id: "bar",         label: "Bar",         icon: "󰍹" },
+        { id: "widgets",     label: "Widgets",     icon: "󰕰" },
+        { id: "preferences", label: "Preferences", icon: "󰒓" },
+        { id: "about",       label: "About",       icon: "󰋽" }
     ]
 
     function _open() {
@@ -80,6 +79,8 @@ PanelWindow {
             anchors.fill: parent
             focus: true
             Keys.onEscapePressed: win._close()
+            Keys.onUpPressed: { if (win._activePage > 0) win._switchPage(win._activePage - 1); }
+            Keys.onDownPressed: { if (win._activePage < win._pages.length - 1) win._switchPage(win._activePage + 1); }
             onClicked: win._close()
         }
     }
@@ -313,28 +314,12 @@ PanelWindow {
                         }
                     }
 
-                    // Close button
-                    Rectangle {
+                    Components.IconButton {
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                        width: 28; height: 28
-                        radius: Root.Theme.radiusSmall
-                        color: closeMouse.containsMouse
-                            ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1)
-                            : "transparent"
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: Root.Icons.cancel
-                            color: Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 16 }
-                        }
-                        MouseArea {
-                            id: closeMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: win._close()
-                        }
+                        icon: Root.Icons.cancel
+                        iconColor: Root.Theme.textDimmed
+                        tooltipText: "Close (Esc)"
+                        onClicked: win._close()
                     }
                 }
 
@@ -375,9 +360,8 @@ PanelWindow {
                             switch (win._activePage) {
                                 case 0: return barPage
                                 case 1: return widgetsPage
-                                case 2: return featuresPage
-                                case 3: return appearancePage
-                                case 4: return aboutPage
+                                case 2: return preferencesPage
+                                case 3: return aboutPage
                                 default: return null
                             }
                         }
@@ -462,21 +446,6 @@ PanelWindow {
             }
 
             Components.SettingSection {
-                title: "BAR BEHAVIOR"
-                width: parent.width
-
-                Components.SettingToggle {
-                    label: "Auto-hide bar in fullscreen"
-                    description: "Hide the bar when a window goes fullscreen"
-                    isOn: Root.Config.features.autoHideBarInFullscreen
-                    onToggled: {
-                        Root.Config.features.autoHideBarInFullscreen = !Root.Config.features.autoHideBarInFullscreen
-                        Root.Config.save()
-                    }
-                }
-            }
-
-            Components.SettingSection {
                 title: "BAR STYLE"
                 width: parent.width
 
@@ -534,25 +503,6 @@ PanelWindow {
                         label: modelData.label
                         isOn: Root.Config.widgets[modelData.configKey] || false
                         onToggled: Root.Config.toggleWidget(modelData.configKey)
-                    }
-                }
-
-                Components.SettingToggle {
-                    label: "Auto-hide widgets when windows present"
-                    isOn: Root.Config.features.autoHideWidgets
-                    onToggled: {
-                        Root.Config.features.autoHideWidgets = !Root.Config.features.autoHideWidgets
-                        Root.Config.save()
-                    }
-                }
-
-                Components.SettingToggle {
-                    label: "Wallpaper widgets"
-                    description: "Render widgets directly on the wallpaper layer"
-                    isOn: Root.Config.features.wallpaperWidgets
-                    onToggled: {
-                        Root.Config.features.wallpaperWidgets = !Root.Config.features.wallpaperWidgets
-                        Root.Config.save()
                     }
                 }
 
@@ -717,15 +667,15 @@ PanelWindow {
         }
     }
 
-    // ── Features page ─────────────────────────────────────────────────────
+    // ── Preferences page (merged Features + Appearance) ─────────────────
     Component {
-        id: featuresPage
+        id: preferencesPage
         Column {
             width: parent ? parent.width : 0
             spacing: 16
 
             Components.SettingSection {
-                title: "POPUPS & OVERLAYS"
+                title: "FEATURES"
                 width: parent.width
 
                 Components.SettingToggle {
@@ -755,6 +705,15 @@ PanelWindow {
                         Root.Config.save()
                     }
                 }
+                Components.SettingToggle {
+                    label: "Wallpaper widgets"
+                    description: "Render widgets directly on the wallpaper layer"
+                    isOn: Root.Config.features.wallpaperWidgets
+                    onToggled: {
+                        Root.Config.features.wallpaperWidgets = !Root.Config.features.wallpaperWidgets
+                        Root.Config.save()
+                    }
+                }
             }
 
             Components.SettingSection {
@@ -781,22 +740,10 @@ PanelWindow {
                 }
             }
 
-            Item { width: 1; height: 8 }
-        }
-    }
-
-    // ── Appearance page ───────────────────────────────────────────────────
-    Component {
-        id: appearancePage
-        Column {
-            width: parent ? parent.width : 0
-            spacing: 16
-
             Components.SettingSection {
-                title: "INTERVALS"
+                title: "TIMING"
                 width: parent.width
 
-                // Weather interval: stored in ms, display in minutes (1–30)
                 Components.SettingSlider {
                     label: "Weather update"
                     value: Math.round(Root.Config.behavior.weatherUpdateInterval / 60000)
@@ -806,8 +753,6 @@ PanelWindow {
                         Root.Config.save()
                     }
                 }
-
-                // System stats interval: stored in ms, display in seconds (1–10)
                 Components.SettingSlider {
                     label: "System stats"
                     value: Math.round(Root.Config.behavior.systemStatsInterval / 1000)
@@ -817,8 +762,6 @@ PanelWindow {
                         Root.Config.save()
                     }
                 }
-
-                // Notification timeout: stored in ms, display in seconds (1–15)
                 Components.SettingSlider {
                     label: "Notification timeout"
                     value: Math.round(Root.Config.behavior.notificationTimeout / 1000)
@@ -828,12 +771,6 @@ PanelWindow {
                         Root.Config.save()
                     }
                 }
-            }
-
-            Components.SettingSection {
-                title: "LIMITS"
-                width: parent.width
-
                 Components.SettingSlider {
                     label: "Max clipboard items"
                     value: Root.Config.behavior.maxClipboardItems

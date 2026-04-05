@@ -25,19 +25,19 @@ QtObject {
     // ── Bar modules ──
     // key: unique id, label: display name, section: left/center/right, file: true if file-based
     readonly property var barModules: [
-        { key: "power",     label: "Power",     section: "left",   file: true },
-        { key: "workspace", label: "Workspace", section: "left",   file: true },
-        { key: "time",      label: "Time",      section: "left",   file: true },
-        { key: "weather",   label: "Weather",   section: "left",   file: true, services: ["weather"] },
-        { key: "window",    label: "Window",    section: "left",   file: true },
-        { key: "media",     label: "Media",     section: "center", file: true, services: ["player"] },
-        { key: "resource",  label: "Resources", section: "right",  file: true },
-        { key: "audio",     label: "Audio",     section: "right",  file: true, services: ["audio"] },
-        { key: "network",   label: "Network",   section: "right",  file: true, services: ["wifi"] },
-        { key: "bluetooth", label: "Bluetooth", section: "right",  file: true, services: ["bluetooth"] },
-        { key: "battery",   label: "Battery",   section: "right",  file: true },
-        { key: "tray",      label: "Tray",      section: "right",  file: true },
-        { key: "gear",      label: "Settings",  section: "right",  file: true }
+        { key: "power",     label: "Power",     section: "left",   file: true, group: "power" },
+        { key: "workspace", label: "Workspace", section: "left",   file: true, group: "nav" },
+        { key: "time",      label: "Time",      section: "left",   file: true, group: "nav" },
+        { key: "weather",   label: "Weather",   section: "left",   file: true, group: "weather", services: ["weather"] },
+        { key: "window",    label: "Window",    section: "left",   file: true, group: "window" },
+        { key: "media",     label: "Media",     section: "center", file: true, group: "media", services: ["player"] },
+        { key: "resource",  label: "Resources", section: "right",  file: true, group: "stats" },
+        { key: "audio",     label: "Audio",     section: "right",  file: true, group: "conn", services: ["audio"] },
+        { key: "network",   label: "Network",   section: "right",  file: true, group: "conn", services: ["wifi"] },
+        { key: "bluetooth", label: "Bluetooth", section: "right",  file: true, group: "conn", services: ["bluetooth"] },
+        { key: "battery",   label: "Battery",   section: "right",  file: true, group: "battery" },
+        { key: "tray",      label: "Tray",      section: "right",  file: true, group: "utils" },
+        { key: "gear",      label: "Settings",  section: "right",  file: true, group: "utils" }
     ]
 
     // ── Widgets ──
@@ -59,11 +59,13 @@ QtObject {
     ]
 
     // ── Quick toggles (for ControlCenter) ──
+    // stateProp: which service property reflects the toggle state
+    // invertState: if true, isOn = !service[stateProp] (e.g. audio: isOn when NOT muted)
     readonly property var quickToggles: [
-        { key: "wifi",      iconOn: "󰤨", iconOff: "󰤭", accent: "domainNetwork",       service: "wifi",        action: "toggle" },
-        { key: "dnd",       iconOn: "󰂛", iconOff: "󰂚", accent: "domainNotifications", service: "notif",       action: "toggleDnd" },
-        { key: "mute",      iconOn: "󰕾", iconOff: "󰖁", accent: "domainMedia",         service: "audio",       action: "toggleMute", invertState: true },
-        { key: "bluetooth", iconOn: "󰂯", iconOff: "󰂲", accent: "domainNetwork",       service: "bluetooth",   action: "toggle" },
-        { key: "caffeine",  iconOn: "󰛊", iconOff: "󰛩", accent: "caffeineAccent",      service: "idleInhibit", action: "toggle" }
+        { key: "wifi",      iconOn: "󰤨", iconOff: "󰤭", accent: "domainNetwork",       service: "wifi",        action: "toggle",     stateProp: "enabled" },
+        { key: "dnd",       iconOn: "󰂛", iconOff: "󰂚", accent: "domainNotifications", service: "notif",       action: "toggleDnd",  stateProp: "dnd" },
+        { key: "mute",      iconOn: "󰕾", iconOff: "󰖁", accent: "domainMedia",         service: "audio",       action: "toggleMute", stateProp: "muted", invertState: true },
+        { key: "bluetooth", iconOn: "󰂯", iconOff: "󰂲", accent: "domainNetwork",       service: "bluetooth",   action: "toggle",     stateProp: "enabled" },
+        { key: "caffeine",  iconOn: "󰛊", iconOff: "󰛩", accent: "caffeineAccent",      service: "idleInhibit", action: "toggle",     stateProp: "inhibited" }
     ]
 }

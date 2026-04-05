@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import ".." as Root
+import "../core" as Core
 import "spotlight" as Views
 
 // Unified popup (rofi-style) with switchable views.
@@ -223,24 +224,22 @@ Scope {
                         }
                     }
 
-                    // ── Tab switcher with sliding indicator ──
+                    // ── Tab switcher with sliding indicator (data-driven) ──
                     Item {
                         id: spotTabBar
                         Layout.rightMargin: Root.Theme.notifPadding
                         implicitWidth: spotTabRow.implicitWidth
                         implicitHeight: 28
 
-                        property var views: ["launcher", "clipboard", "wallpaper"]
-                        property var icons: [Root.Icons.launch, Root.Icons.clipboard, Root.Icons.wallpaper]
+                        readonly property var views: Core.Registry.spotlightViews
                         property int activeIdx: {
                             for (let i = 0; i < views.length; i++)
-                                if (views[i] === spot.activeView) return i;
+                                if (views[i].key === spot.activeView) return i;
                             return 0;
                         }
 
                         // Sliding underline
                         Rectangle {
-                            id: spotTabIndicator
                             y: spotTabBar.height - 2
                             width: 16; height: 2
                             radius: 1
@@ -255,18 +254,19 @@ Scope {
                             spacing: 8
 
                             Repeater {
-                                model: spotTabBar.views.length
+                                model: spotTabBar.views
 
                                 Item {
+                                    required property var modelData
                                     width: 24; height: 28
                                     Text {
                                         anchors.centerIn: parent
-                                        text: spotTabBar.icons[index]
-                                        color: spot.activeView === spotTabBar.views[index] ? Root.Theme.textAccent : Root.Theme.textDimmed
+                                        text: modelData.icon
+                                        color: spot.activeView === modelData.key ? Root.Theme.textAccent : Root.Theme.textDimmed
                                         font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize - 2 }
                                         Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                                     }
-                                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: spot.open(spotTabBar.views[index]) }
+                                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: spot.open(modelData.key) }
                                 }
                             }
                         }
