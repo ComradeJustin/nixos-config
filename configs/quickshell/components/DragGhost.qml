@@ -23,13 +23,13 @@ Rectangle {
     property point targetPos: {
         if (!overlay || !widgetRoot) return Qt.point(0, 0);
         return widgetRoot.getPosition(posStr, width, height, overlay.width, overlay.height,
-            Root.Config.widgetMarginX, Root.Config.widgetMarginY);
+            Root.Config.widgets.marginX, Root.Config.widgets.marginY);
     }
 
     x: dragArea.drag.active ? x : targetPos.x
     y: dragArea.drag.active ? y : targetPos.y
-    Behavior on x { enabled: !dragArea.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-    Behavior on y { enabled: !dragArea.drag.active; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+    Behavior on x { enabled: !dragArea.drag.active; NumberAnimation { duration: Root.Theme.anim.springDuration; easing.type: Easing.OutBack; easing.overshoot: 0.3 } }
+    Behavior on y { enabled: !dragArea.drag.active; NumberAnimation { duration: Root.Theme.anim.springDuration; easing.type: Easing.OutBack; easing.overshoot: 0.3 } }
 
     Text {
         anchors.centerIn: parent

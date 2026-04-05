@@ -11,6 +11,14 @@ Scope {
     property real ramTotalGb: -1
     property int ramPercent: ramTotalGb > 0 ? Math.round(ramUsedGb / ramTotalGb * 100) : -1
 
+    // Disk stats
+    property real diskUsedGb: -1
+    property real diskTotalGb: -1
+    property int diskPercent: diskTotalGb > 0 ? Math.round(diskUsedGb / diskTotalGb * 100) : -1
+
+    // Uptime
+    property string uptime: ""
+
     property real prevIdle: 0
     property real prevTotal: 0
 
@@ -56,12 +64,40 @@ Scope {
                 }
             }
         }
+        onExited: diskProc.running = true
+    }
+
+    Process {
+        id: diskProc
+        command: ["df", "--output=used,size", "-B1", "/"]
+        stdout: SplitParser {
+            onRead: data => {
+                let parts = data.trim().split(/\s+/);
+                if (parts.length >= 2) {
+                    let used = parseFloat(parts[0]);
+                    let total = parseFloat(parts[1]);
+                    if (total > 0 && !isNaN(used)) {
+                        root.diskUsedGb = used / 1073741824;
+                        root.diskTotalGb = total / 1073741824;
+                    }
+                }
+            }
+        }
+        onExited: uptimeProc.running = true
+    }
+
+    Process {
+        id: uptimeProc
+        command: ["awk", "{d=int($1/86400);h=int($1%86400/3600);m=int($1%3600/60);if(d>0)printf\"%dd %dh\",d,h;else if(h>0)printf\"%dh %dm\",h,m;else printf\"%dm\",m}", "/proc/uptime"]
+        stdout: SplitParser {
+            onRead: data => { root.uptime = data.trim(); }
+        }
         onExited: pollTimer.start()
     }
 
     Timer {
         id: pollTimer
-        interval: Root.Config.systemStatsInterval
+        interval: Root.Config.behavior.systemStatsInterval
         onTriggered: cpuProc.running = true
     }
 }

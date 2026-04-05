@@ -30,7 +30,7 @@ Components.SmoothFlickable {
                 spacing: 10
 
                 Text {
-                    text: Root.Theme.iconBtConnected
+                    text: Root.Icons.btConnected
                     color: Root.Theme.domainNetwork
                     font { family: Root.Theme.fontFamily; pixelSize: 18 }
                     anchors.verticalCenter: parent.verticalCenter
@@ -82,7 +82,7 @@ Components.SmoothFlickable {
 
             Components.DeviceListItem {
                 width: btTabCol.width
-                icon: model.btConnected ? Root.Theme.iconBtConnected : Root.Theme.iconBtOn
+                icon: model.btConnected ? Root.Icons.btConnected : Root.Icons.btOn
                 label: model.btName
                 isActive: model.btConnected
                 accentColor: Root.Theme.domainNetwork

@@ -75,7 +75,7 @@ Item {
             width: parent.width; height: 32
             Item { Layout.fillWidth: true }
             Text {
-                text: Root.Theme.iconTrash
+                text: Root.Icons.trash
                 color: clipModel.count > 0 ? Root.Theme.textDimmed : "transparent"
                 font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
                 Layout.rightMargin: Root.Theme.notifPadding

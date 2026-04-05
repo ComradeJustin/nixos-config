@@ -8,7 +8,7 @@ Components.BarItem {
 
     property var svc: Core.ServiceManager.weather
 
-    icon: svc ? svc.icon : Root.Theme.iconWeatherDefault
+    icon: svc ? svc.icon : Root.Icons.weatherDefault
     value: svc ? svc.temperature : "--"
     accent: Root.Theme.domainWeather
 }

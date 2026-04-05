@@ -16,11 +16,11 @@ Scope {
     property int selectedIndex: 0
 
     property var actions: [
-        { icon: Root.Theme.iconLock, label: "Lock", action: "lock", color: Root.Theme.domainSettings },
-        { icon: Root.Theme.iconSuspend, label: "Suspend", action: "suspend", color: Root.Theme.accentWarning },
-        { icon: Root.Theme.iconLogout, label: "Logout", action: "logout", color: Root.Theme.domainNetwork },
-        { icon: Root.Theme.iconReboot, label: "Reboot", action: "reboot", color: Root.Theme.accentWarm },
-        { icon: Root.Theme.iconShutdown, label: "Shutdown", action: "shutdown", color: Root.Theme.accentDanger }
+        { icon: Root.Icons.lock, label: "Lock", action: "lock", color: Root.Theme.domainSettings },
+        { icon: Root.Icons.suspend, label: "Suspend", action: "suspend", color: Root.Theme.accentWarning },
+        { icon: Root.Icons.logout, label: "Logout", action: "logout", color: Root.Theme.domainNetwork },
+        { icon: Root.Icons.reboot, label: "Reboot", action: "reboot", color: Root.Theme.accentWarm },
+        { icon: Root.Icons.shutdown, label: "Shutdown", action: "shutdown", color: Root.Theme.accentDanger }
     ]
 
     function toggle() {
@@ -60,7 +60,7 @@ Scope {
             anchors.fill: parent
             color: Qt.rgba(0, 0, 0, 0.55)
             opacity: pm.showing ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 150 } }
+            Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.enterDuration } }
             MouseArea { anchors.fill: parent; onClicked: pm.showing = false }
         }
 
@@ -68,10 +68,10 @@ Scope {
         Column {
             anchors.centerIn: parent
             spacing: 20
-            scale: pm.showing ? 1 : 0.9
+            scale: pm.showing ? 1 : 0.92
             opacity: pm.showing ? 1 : 0
-            Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-            Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+            Behavior on scale { NumberAnimation { duration: Root.Theme.anim.bounceDuration; easing.type: Easing.OutBack; easing.overshoot: 0.5 } }
+            Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
 
             onOpacityChanged: {
                 if (!pm.showing && opacity <= 0.01) pmPanel.visible = false;
@@ -109,8 +109,8 @@ Scope {
                             ? Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.8)
                             : Root.Theme.ccSectionBg
 
-                        Behavior on radius { NumberAnimation { duration: 150 } }
-                        Behavior on color { ColorAnimation { duration: 150 } }
+                        Behavior on radius { NumberAnimation { duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic } }
+                        Behavior on color { ColorAnimation { duration: Root.Theme.anim.moveDuration } }
 
                         layer.enabled: pm.selectedIndex === index
                         layer.effect: Glow {

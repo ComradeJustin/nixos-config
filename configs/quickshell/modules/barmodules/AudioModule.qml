@@ -10,7 +10,7 @@ Components.BarItem {
     property int vol: svc ? svc.volume : -1
     property bool muted: svc ? svc.muted : false
 
-    icon: Root.Theme.volumeIcon(vol, muted)
+    icon: Root.Icons.volumeIcon(vol, muted)
     value: vol >= 0 ? vol + "%" : "--"
     accent: muted ? Root.Theme.textDimmed : Root.Theme.domainMedia
 }

@@ -83,7 +83,7 @@ Components.WidgetFrame {
         Row {
             spacing: 6
             Text {
-                text: Root.Theme.iconStock
+                text: Root.Icons.stock
                 color: Root.Theme.widgetStockAccent
                 font { family: Root.Theme.fontIcons; pixelSize: root.fontSize }
                 anchors.verticalCenter: parent.verticalCenter
@@ -120,7 +120,7 @@ Components.WidgetFrame {
                     anchors.verticalCenter: parent.verticalCenter
                 }
                 Text {
-                    text: item ? (isUp ? Root.Theme.iconStockUp : Root.Theme.iconStockDown) : ""
+                    text: item ? (isUp ? Root.Icons.stockUp : Root.Icons.stockDown) : ""
                     color: changeColor
                     font { family: Root.Theme.fontIcons; pixelSize: root.fontSize * 0.9 }
                     anchors.verticalCenter: parent.verticalCenter

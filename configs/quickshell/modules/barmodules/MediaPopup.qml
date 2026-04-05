@@ -91,7 +91,10 @@ PanelWindow {
                         }
                         radius: 0
                         anchors.bottom: parent.bottom
-                        color: Root.Theme.cavaBarColor  // Consistent color, no peak variation
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: Qt.lighter(Root.Theme.cavaBarColor, 1.4) }
+                            GradientStop { position: 1.0; color: Root.Theme.cavaBarColor }
+                        }
                         Behavior on height { NumberAnimation { duration: 50 } }
                     }
                 }
@@ -106,23 +109,43 @@ PanelWindow {
                 Row {
                     width: parent.width; spacing: 10
 
-                    Rectangle {
+                    Item {
                         width: Root.Theme.cavaArtSize; height: Root.Theme.cavaArtSize
-                        radius: Root.Theme.radiusSmall; clip: true
-                        color: Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.2)
-                        border.width: Root.Theme.borderWidth
-                        border.color: Root.Theme.borderColor
 
+                        // Ambient glow behind album art
                         Image {
-                            id: artImg; anchors.fill: parent
+                            id: artGlow
+                            anchors.centerIn: parent
+                            width: parent.width + 16; height: parent.height + 16
                             source: popup.playerService ? popup.playerService.trackArtUrl : ""
                             fillMode: Image.PreserveAspectCrop; smooth: true; asynchronous: true
-                            visible: status === Image.Ready
+                            visible: false
                         }
-                        Text {
-                            anchors.centerIn: parent; text: Root.Theme.iconMediaPlay; color: Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 24 }
-                            visible: artImg.status !== Image.Ready
+                        GaussianBlur {
+                            anchors.fill: artGlow; source: artGlow
+                            radius: 20; samples: 41
+                            opacity: artImg.status === Image.Ready ? 0.35 : 0
+                            Behavior on opacity { NumberAnimation { duration: 300 } }
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Root.Theme.radiusSmall; clip: true
+                            color: Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.2)
+                            border.width: Root.Theme.borderWidth
+                            border.color: Root.Theme.borderColor
+
+                            Image {
+                                id: artImg; anchors.fill: parent
+                                source: popup.playerService ? popup.playerService.trackArtUrl : ""
+                                fillMode: Image.PreserveAspectCrop; smooth: true; asynchronous: true
+                                visible: status === Image.Ready
+                            }
+                            Text {
+                                anchors.centerIn: parent; text: Root.Icons.mediaPlay; color: Root.Theme.textDimmed
+                                font { family: Root.Theme.fontFamily; pixelSize: 24 }
+                                visible: artImg.status !== Image.Ready
+                            }
                         }
                     }
 
@@ -162,13 +185,25 @@ PanelWindow {
                     }
                     Rectangle {
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        height: 3; radius: height / 2; color: Root.Theme.textAccent
+                        height: 3; radius: height / 2
                         width: parent.width * (seekBar.dragging ? seekBar.dragRatio : seekBar.ratio)
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: Root.Theme.textAccent }
+                            GradientStop { position: 1.0; color: Qt.lighter(Root.Theme.textAccent, 1.3) }
+                        }
                     }
                     Rectangle {
-                        width: 10; height: 10; radius: Root.Theme.radiusSmall; color: Root.Theme.textAccent
+                        id: seekHandle
+                        width: 10; height: 10; radius: 5; color: Root.Theme.textAccent
                         y: (parent.height - 10) / 2
                         x: (parent.width - 10) * (seekBar.dragging ? seekBar.dragRatio : seekBar.ratio)
+
+                        layer.enabled: seekBar.dragging
+                        layer.effect: DropShadow {
+                            transparentBorder: true; color: Root.Theme.textAccent
+                            radius: 6; samples: 13
+                        }
                     }
 
                     MouseArea {
@@ -216,7 +251,7 @@ PanelWindow {
 
                         Text {
                             anchors.centerIn: parent
-                            text: Root.Theme.iconPrev
+                            text: Root.Icons.prev
                             color: prevMouse.containsMouse ? Root.Theme.textAccent : Root.Theme.textPrimary
                             font { family: Root.Theme.fontFamily; pixelSize: 16 }
                         }
@@ -224,17 +259,31 @@ PanelWindow {
                     }
 
                     Rectangle {
+                        id: playBtn
                         width: 32; height: 32; radius: Root.Theme.radiusSmall
                         color: playMouse.containsMouse ? Qt.lighter(Root.Theme.textAccent, 1.1) : Root.Theme.textAccent
                         anchors.verticalCenter: parent.verticalCenter
+                        scale: 1.0
+
+                        SequentialAnimation {
+                            id: playBounce
+                            NumberAnimation { target: playBtn; property: "scale"; to: 0.85; duration: 60; easing.type: Easing.InQuad }
+                            NumberAnimation { target: playBtn; property: "scale"; to: 1.0; duration: 80; easing.type: Easing.OutBack; easing.overshoot: 1.5 }
+                        }
 
                         Text {
                             anchors.centerIn: parent
-                            text: (popup.playerService && popup.playerService.isPlaying) ? Root.Theme.iconMediaPause : Root.Theme.iconMediaPlay
+                            text: (popup.playerService && popup.playerService.isPlaying) ? Root.Icons.mediaPause : Root.Icons.mediaPlay
                             color: Root.Theme.barBackground
                             font { family: Root.Theme.fontFamily; pixelSize: 16 }
                         }
-                        MouseArea { id: playMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (popup.playerService) popup.playerService.togglePlaying(); } }
+                        MouseArea {
+                            id: playMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                playBounce.start();
+                                if (popup.playerService) popup.playerService.togglePlaying();
+                            }
+                        }
                     }
 
                     Rectangle {
@@ -245,7 +294,7 @@ PanelWindow {
 
                         Text {
                             anchors.centerIn: parent
-                            text: Root.Theme.iconNext
+                            text: Root.Icons.next
                             color: nextMouse.containsMouse ? Root.Theme.textAccent : Root.Theme.textPrimary
                             font { family: Root.Theme.fontFamily; pixelSize: 16 }
                         }

@@ -1,16 +1,22 @@
 import QtQuick
-import QtQuick.Layouts
+import Quickshell.Io
 import Niri 0.1
 import "../.." as Root
 
+// Workspace indicators with sliding active pill overlay.
+// All dots stay the same size. The colored pill slides over the focused one.
 Item {
     id: root
-    implicitWidth: wsRow.implicitWidth
-    implicitHeight: wsRow.implicitHeight
-
-    // Theme is now a singleton - access via Root.Theme.propertyName
 
     property int maxVisible: 6
+    property int dotSize: 6
+    property int pillWidth: 16
+    property int spacing: 8
+
+    // Account for pill overflow beyond the dot grid
+    property int _pillOverflow: Math.max(0, Math.ceil((pillWidth - dotSize) / 2))
+    implicitWidth: _pillOverflow + (dotSize + spacing) * Math.max(wsRepeater.count, 1) - spacing + _pillOverflow
+    implicitHeight: Root.Theme.barHeight
 
     Niri {
         id: niri
@@ -18,53 +24,90 @@ Item {
             connect();
             workspaces.maxCount = root.maxVisible;
         }
-
         onErrorOccurred: function(error) {
             console.warn("WorkspaceModule: niri error:", error);
         }
     }
 
-    // Workspace indicators - rounded pills that expand when focused
-    Row {
-        id: wsRow
+    property int focusedIndex: {
+        for (let i = 0; i < wsRepeater.count; i++) {
+            let item = wsRepeater.itemAt(i);
+            if (item && item.isFocused) return i;
+        }
+        return 0;
+    }
+
+    // Pill slides to focused dot position, stretching wider than the dot
+    Rectangle {
+        id: pill
+        width: root.pillWidth
+        height: root.dotSize
+        radius: root.dotSize / 2
+        color: Root.Theme.wsFocused
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 8
+        // Center pill on the focused dot within the padded area
+        x: root._pillOverflow + root.focusedIndex * (root.dotSize + root.spacing) + root.dotSize / 2 - width / 2
+        visible: wsRepeater.count > 0
+
+        Behavior on x {
+            NumberAnimation { duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic }
+        }
+    }
+
+    // Fixed-position dots — offset by pill overflow
+    Row {
+        id: dotRow
+        x: root._pillOverflow
+        spacing: root.spacing
+        anchors.verticalCenter: parent.verticalCenter
 
         Repeater {
+            id: wsRepeater
             model: niri.workspaces
 
             Rectangle {
-                id: wsIndicator
-                width: model.isFocused ? 18 : 6   // Pill when active, dot otherwise
-                height: 6
-                radius: 3                          // Fully rounded (half height)
-                color: model.isFocused ? Root.Theme.wsFocused : Root.Theme.textPrimary
-                opacity: model.isFocused ? 1.0
-                       : model.isActive  ? 0.5
-                       :                   0.2
+                property bool isFocused: model.isFocused
+                property bool isActive: model.isActive
 
-                Behavior on width {
-                    NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
-                }
+                width: root.dotSize
+                height: root.dotSize
+                radius: root.dotSize / 2
+
+                color: Root.Theme.textPrimary
+                opacity: isFocused ? 0
+                       : isActive  ? 0.5
+                       :             0.2
+
                 Behavior on opacity {
-                    NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
-                }
-
-                // Subtle scale animation on focus change
-                transform: Scale {
-                    origin.x: wsIndicator.width / 2
-                    origin.y: wsIndicator.height / 2
-                    xScale: model.isFocused ? 1.0 : 1.0
-                    yScale: model.isFocused ? 1.0 : 1.0
+                    NumberAnimation { duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic }
                 }
 
                 MouseArea {
                     anchors.fill: parent
-                    anchors.margins: -4  // Larger hit area
+                    anchors.margins: -4
                     cursorShape: Qt.PointingHandCursor
                     onClicked: niri.focusWorkspaceById(model.id)
                 }
             }
         }
     }
+
+    // Scroll to switch workspaces
+    WheelHandler {
+        orientation: Qt.Vertical
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+        property real _accum: 0
+        onWheel: function(event) {
+            _accum += event.angleDelta.y;
+            if (Math.abs(_accum) >= 120) {
+                let direction = _accum > 0 ? "prev" : "next";
+                _accum = 0;
+                wsSwitchProc.command = ["niri", "msg", "action", "focus-workspace-" + direction];
+                wsSwitchProc.running = true;
+            }
+            event.accepted = true;
+        }
+    }
+
+    Process { id: wsSwitchProc }
 }

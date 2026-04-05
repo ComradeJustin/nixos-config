@@ -79,7 +79,7 @@ Scope {
             anchors.fill: parent
             color: Root.Theme.scrimColor
             opacity: spot.showing ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 150 } }
+            Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.enterDuration } }
             MouseArea { anchors.fill: parent; onClicked: spot.close() }
         }
 
@@ -97,9 +97,9 @@ Scope {
             scale: spot.showing ? 1 : 0.95
             opacity: spot.showing ? 1 : 0
 
-            Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-            Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-            Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.InOutQuad } }
+            Behavior on scale { NumberAnimation { duration: Root.Theme.anim.bounceDuration; easing.type: Easing.OutBack; easing.overshoot: 0.3 } }
+            Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
+            Behavior on width { NumberAnimation { duration: Root.Theme.anim.resizeDuration; easing.type: Easing.InOutCubic } }
 
             layer.enabled: spot.showing
             layer.effect: DropShadow {
@@ -125,7 +125,7 @@ Scope {
                     height: 46
 
                     Text {
-                        text: Root.Theme.iconSearch
+                        text: Root.Icons.search
                         color: Root.Theme.textDimmed
                         font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
                         Layout.leftMargin: Root.Theme.notifPadding
@@ -151,6 +151,7 @@ Scope {
                                 wallpaperView.searchText = text;
                                 wallpaperView.selectedIndex = 0;
                                 wallpaperView.updateFilter();
+                                wallpaperView.onSearchTextChanged();
                             }
                         }
 
@@ -222,33 +223,51 @@ Scope {
                         }
                     }
 
-                    // ── Tab switcher (underline indicator) ──
-                    Row {
+                    // ── Tab switcher with sliding indicator ──
+                    Item {
+                        id: spotTabBar
                         Layout.rightMargin: Root.Theme.notifPadding
-                        spacing: 8
+                        implicitWidth: spotTabRow.implicitWidth
+                        implicitHeight: 28
 
-                        Repeater {
-                            model: [
-                                { view: "launcher", icon: Root.Theme.iconLaunch },
-                                { view: "clipboard", icon: Root.Theme.iconClipboard },
-                                { view: "wallpaper", icon: Root.Theme.iconWallpaper }
-                            ]
+                        property var views: ["launcher", "clipboard", "wallpaper"]
+                        property var icons: [Root.Icons.launch, Root.Icons.clipboard, Root.Icons.wallpaper]
+                        property int activeIdx: {
+                            for (let i = 0; i < views.length; i++)
+                                if (views[i] === spot.activeView) return i;
+                            return 0;
+                        }
 
-                            Item {
-                                width: 24; height: 28
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: modelData.icon
-                                    color: spot.activeView === modelData.view ? Root.Theme.textAccent : Root.Theme.textDimmed
-                                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize - 2 }
+                        // Sliding underline
+                        Rectangle {
+                            id: spotTabIndicator
+                            y: spotTabBar.height - 2
+                            width: 16; height: 2
+                            radius: 1
+                            color: Root.Theme.textAccent
+                            x: spotTabBar.activeIdx * (24 + 8) + (24 - 16) / 2
+
+                            Behavior on x { NumberAnimation { duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic } }
+                        }
+
+                        Row {
+                            id: spotTabRow
+                            spacing: 8
+
+                            Repeater {
+                                model: spotTabBar.views.length
+
+                                Item {
+                                    width: 24; height: 28
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: spotTabBar.icons[index]
+                                        color: spot.activeView === spotTabBar.views[index] ? Root.Theme.textAccent : Root.Theme.textDimmed
+                                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize - 2 }
+                                        Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
+                                    }
+                                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: spot.open(spotTabBar.views[index]) }
                                 }
-                                Rectangle {
-                                    anchors.bottom: parent.bottom
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    width: 16; height: 2
-                                    color: spot.activeView === modelData.view ? Root.Theme.textAccent : "transparent"
-                                }
-                                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: spot.open(modelData.view) }
                             }
                         }
                     }

@@ -58,11 +58,9 @@ Scope {
         else if (x > 2 * third) { section = "right"; repeater = rightRepeater; layoutKey = "layoutRight"; }
         else { section = "center"; repeater = centerRepeater; layoutKey = "layoutCenter"; }
 
-        // Compute insertion index, skipping the dragged item's position
         let layout = Root.Config.bar[layoutKey];
         let idx = 0;
         for (let i = 0; i < repeater.count; i++) {
-            // Skip the dragged item — it's still in the model but faded out
             if (layout[i] === _dragKey) continue;
             let item = repeater.itemAt(i);
             if (!item) continue;
@@ -70,8 +68,6 @@ Scope {
             if (x > mid) idx = i + 1;
         }
 
-        // Adjust: if dragged item is in this section before idx, subtract 1
-        // so the index is correct after removal
         let dragIdx = layout.indexOf(_dragKey);
         if (dragIdx >= 0 && dragIdx < idx) idx--;
 
@@ -83,16 +79,12 @@ Scope {
         if (!_dragActive || !_dragKey) return;
         _updateDropTarget(x, y);
 
-        // Capture values before resetting — the Repeater may destroy the
-        // calling delegate when we touch the layout arrays
         let key = _dragKey;
         let targetSection = _dropTargetSection;
         let targetIdx = _dropTargetIndex;
 
-        // Reset drag state FIRST so visuals clear even if delegate is destroyed
         _resetDrag();
 
-        // Remove from all sections
         let sections = ["layoutLeft", "layoutCenter", "layoutRight"];
         for (let s of sections) {
             let arr = Root.Config.bar[s].slice();
@@ -108,12 +100,17 @@ Scope {
             return;
         }
 
-        // Insert into target section
         let prop = "layout" + targetSection.charAt(0).toUpperCase() + targetSection.slice(1);
         let arr = Root.Config.bar[prop].slice();
         arr.splice(Math.min(targetIdx, arr.length), 0, key);
         Root.Config.bar[prop] = arr;
         Root.Config.save();
+    }
+
+    function _startDrag(key, section) {
+        _dragActive = true;
+        _dragKey = key;
+        _dragSourceSection = section;
     }
 
     function _resetDrag() {
@@ -159,17 +156,20 @@ Scope {
         "gear": compGear
     })
 
+    property bool isFloating: Root.Config.bar.style === "float"
+    property int floatMargin: 6
+    property int barTotalHeight: isFloating ? Root.Theme.barHeight + floatMargin * 2 : Root.Theme.barHeight
     PanelWindow {
         id: panel
 
         anchors { top: true; left: true; right: true }
-        implicitHeight: Root.Theme.barHeight
+        implicitHeight: barScope.barTotalHeight
 
         WlrLayershell.namespace: "quickshell-bar"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         exclusionMode: ExclusionMode.Normal
-        exclusiveZone: barScope.isHidden ? 0 : Root.Theme.barHeight
+        exclusiveZone: barScope.isHidden ? 0 : barScope.barTotalHeight
 
         color: "transparent"
 
@@ -179,13 +179,40 @@ Scope {
 
             Rectangle {
                 id: bg
-                width: parent.width
+                width: barScope.isFloating ? parent.width - barScope.floatMargin * 2 : parent.width
                 height: Root.Theme.barHeight
+                x: barScope.isFloating ? barScope.floatMargin : 0
                 color: Root.Theme.barBackground
-                y: barScope.isHidden ? -Root.Theme.barHeight : 0
-                Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.InOutCubic } }
+                radius: barScope.isFloating ? Root.Theme.radiusMedium : 0
+                border.width: barScope.isFloating ? Root.Theme.borderWidth : 0
+                border.color: Root.Theme.borderColor
+                y: barScope.isHidden ? -barScope.barTotalHeight : (barScope.isFloating ? barScope.floatMargin : 0)
+                Behavior on y { NumberAnimation { duration: Root.Theme.anim.slideDuration; easing.type: Easing.InOutCubic } }
 
-                // ── Left section ──
+                // ── Section group backgrounds (when showGroups is on) ──
+                Repeater {
+                    model: [
+                        { section: leftSection, vis: leftSection.implicitWidth > 0 },
+                        { section: centerSection, vis: centerSection.implicitWidth > 0 },
+                        { section: rightSection, vis: rightSection.implicitWidth > 0 }
+                    ]
+                    Rectangle {
+                        required property var modelData
+                        property Item sec: modelData.section
+                        visible: Root.Config.bar.showGroups && modelData.vis
+                        x: sec.x - _hPad
+                        y: _vPad
+                        width: sec.implicitWidth + _hPad * 2
+                        height: bg.height - _vPad * 2
+                        radius: Root.Theme.radiusMedium
+                        color: Root.Theme.layer1
+
+                        property int _hPad: 6
+                        property int _vPad: 4
+                    }
+                }
+
+                // ── Left section (scroll = brightness) ──
                 Row {
                     id: leftSection
                     height: Root.Theme.barHeight
@@ -197,120 +224,34 @@ Scope {
                     width: Math.min(implicitWidth, centerSection.x - Root.Theme.barPadding - Root.Theme.barSpacing)
                     clip: true
 
+                    WheelHandler {
+                        orientation: Qt.Vertical
+                        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                        onWheel: function(event) {
+                            let briSvc = Core.ServiceManager.brightness;
+                            if (!briSvc) return;
+                            if (event.angleDelta.y > 0) briSvc.increase(5);
+                            else if (event.angleDelta.y < 0) briSvc.decrease(5);
+                            event.accepted = true;
+                        }
+                    }
+
                     Repeater {
                         id: leftRepeater
                         model: Root.Config.bar.layoutLeft
-                        delegate: Item {
-                            required property string modelData
-                            required property int index
-                            implicitWidth: barScope.barEditMode
-                                ? leftEditGhost.width + (index > 0 ? Root.Theme.barSpacing : 0)
-                                : (leftSep.visible ? leftSep.width + Root.Theme.barSpacing + leftLoader.implicitWidth : leftLoader.implicitWidth)
-                            implicitHeight: Root.Theme.barHeight
-                            anchors.verticalCenter: parent.verticalCenter
-                            opacity: (barScope._dragActive && barScope._dragKey === modelData) ? 0.3 : 1.0
-
-                            Components.Separator {
-                                id: leftSep; vertical: true
-                                visible: {
-                                    if (barScope.barEditMode) return false;
-                                    if (index === 0) return false;
-                                    for (let i = index - 1; i >= 0; i--) {
-                                        let prev = leftRepeater.itemAt(i);
-                                        if (prev && prev.visible) return true;
-                                    }
-                                    return false;
-                                }
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-
-                            Loader {
-                                id: leftLoader
-                                visible: !barScope.barEditMode
-                                sourceComponent: barScope.componentMap[modelData] || null
-                                anchors.verticalCenter: parent.verticalCenter
-                                x: leftSep.visible ? leftSep.width + Root.Theme.barSpacing : 0
-                            }
-
-                            // Full ghost in edit mode
-                            Rectangle {
-                                id: leftEditGhost
-                                visible: barScope.barEditMode
-                                width: leftEditLabel.implicitWidth + 20
-                                height: Root.Theme.barHeight - 10
-                                x: index > 0 ? Root.Theme.barSpacing : 0
-                                anchors.verticalCenter: parent.verticalCenter
-                                radius: Root.Theme.radiusSmall
-                                color: leftDragMouse.containsMouse && !barScope._dragActive
-                                    ? Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.15)
-                                    : Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.1)
-                                border.width: 1
-                                border.color: leftDragMouse.containsMouse && !barScope._dragActive ? Root.Theme.accentPrimary : Root.Theme.textDimmed
-                                opacity: 0.8
-
-                                Text {
-                                    id: leftEditLabel; anchors.centerIn: parent
-                                    text: {
-                                        let modules = Core.Registry.barModules;
-                                        for (let i = 0; i < modules.length; i++) {
-                                            if (modules[i].key === modelData) return modules[i].label;
-                                        }
-                                        return modelData.charAt(0).toUpperCase() + modelData.slice(1);
-                                    }
-                                    color: Root.Theme.textPrimary
-                                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall; bold: true }
-                                }
-                            }
-
-                            MouseArea {
-                                id: leftDragMouse
-                                anchors.fill: parent
-                                enabled: barScope.barEditMode
-                                hoverEnabled: barScope.barEditMode
-                                cursorShape: barScope.barEditMode ? (pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor) : Qt.ArrowCursor
-                                propagateComposedEvents: !barScope.barEditMode
-
-                                property point _pressPos
-                                property bool _isDragging: false
-
-                                onPressed: function(mouse) {
-                                    if (!barScope.barEditMode) { mouse.accepted = false; return; }
-                                    _pressPos = Qt.point(mouse.x, mouse.y);
-                                    _isDragging = false;
-                                }
-
-                                onPositionChanged: function(mouse) {
-                                    if (!barScope.barEditMode || !pressed) return;
-                                    let dx = mouse.x - _pressPos.x;
-                                    let dy = mouse.y - _pressPos.y;
-                                    if (!_isDragging && Math.sqrt(dx*dx + dy*dy) > 5) {
-                                        _isDragging = true;
-                                        barScope._dragActive = true;
-                                        barScope._dragKey = modelData;
-                                        barScope._dragSourceSection = "left";
-                                    }
-                                    if (_isDragging) {
-                                        let mapped = mapToItem(bg, mouse.x, mouse.y);
-                                        dragProxy.x = mapped.x - dragProxy.width / 2;
-                                        dragProxy.y = mapped.y - dragProxy.height / 2;
-                                        barScope._updateDropTarget(mapped.x, mapped.y);
-                                    }
-                                }
-
-                                onReleased: function(mouse) {
-                                    if (_isDragging) {
-                                        let mapped = mapToItem(bg, mouse.x, mouse.y);
-                                        barScope._handleDrop(mapped.x, mapped.y);
-                                    }
-                                    _isDragging = false;
-                                    barScope._resetDrag();
-                                }
-
-                                onCanceled: {
-                                    _isDragging = false;
-                                    barScope._resetDrag();
-                                }
-                            }
+                        delegate: Components.BarSectionDelegate {
+                            sectionName: "left"
+                            editMode: barScope.barEditMode
+                            dragActive: barScope._dragActive
+                            dragKey: barScope._dragKey
+                            componentMap: barScope.componentMap
+                            bgItem: bg
+                            dragProxyItem: dragProxy
+                            sectionRepeater: leftRepeater
+                            onDragStart: (key, section) => barScope._startDrag(key, section)
+                            onDragMove: (x, y) => barScope._updateDropTarget(x, y)
+                            onDragDrop: (x, y) => barScope._handleDrop(x, y)
+                            onDragReset: () => barScope._resetDrag()
                         }
                     }
                 }
@@ -325,122 +266,24 @@ Scope {
                     Repeater {
                         id: centerRepeater
                         model: Root.Config.bar.layoutCenter
-                        delegate: Item {
-                            required property string modelData
-                            required property int index
-                            implicitWidth: barScope.barEditMode
-                                ? centerEditGhost.width + (index > 0 ? Root.Theme.barSpacing : 0)
-                                : (centerSep.visible ? centerSep.width + Root.Theme.barSpacing + centerLoader.implicitWidth : centerLoader.implicitWidth)
-                            implicitHeight: Root.Theme.barHeight
-                            anchors.verticalCenter: parent.verticalCenter
-                            opacity: (barScope._dragActive && barScope._dragKey === modelData) ? 0.3 : 1.0
-
-                            Components.Separator {
-                                id: centerSep; vertical: true
-                                visible: {
-                                    if (barScope.barEditMode) return false;
-                                    if (index === 0) return false;
-                                    for (let i = index - 1; i >= 0; i--) {
-                                        let prev = centerRepeater.itemAt(i);
-                                        if (prev && prev.visible) return true;
-                                    }
-                                    return false;
-                                }
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-
-                            Loader {
-                                id: centerLoader
-                                visible: !barScope.barEditMode
-                                sourceComponent: barScope.componentMap[modelData] || null
-                                anchors.verticalCenter: parent.verticalCenter
-                                x: centerSep.visible ? centerSep.width + Root.Theme.barSpacing : 0
-                            }
-
-                            // Full ghost in edit mode
-                            Rectangle {
-                                id: centerEditGhost
-                                visible: barScope.barEditMode
-                                width: centerEditLabel.implicitWidth + 20
-                                height: Root.Theme.barHeight - 10
-                                x: index > 0 ? Root.Theme.barSpacing : 0
-                                anchors.verticalCenter: parent.verticalCenter
-                                radius: Root.Theme.radiusSmall
-                                color: centerDragMouse.containsMouse && !barScope._dragActive
-                                    ? Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.15)
-                                    : Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.1)
-                                border.width: 1
-                                border.color: centerDragMouse.containsMouse && !barScope._dragActive ? Root.Theme.accentPrimary : Root.Theme.textDimmed
-                                opacity: 0.8
-
-                                Text {
-                                    id: centerEditLabel; anchors.centerIn: parent
-                                    text: {
-                                        let modules = Core.Registry.barModules;
-                                        for (let i = 0; i < modules.length; i++) {
-                                            if (modules[i].key === modelData) return modules[i].label;
-                                        }
-                                        return modelData.charAt(0).toUpperCase() + modelData.slice(1);
-                                    }
-                                    color: Root.Theme.textPrimary
-                                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall; bold: true }
-                                }
-                            }
-
-                            MouseArea {
-                                id: centerDragMouse
-                                anchors.fill: parent
-                                enabled: barScope.barEditMode
-                                hoverEnabled: barScope.barEditMode
-                                cursorShape: barScope.barEditMode ? (pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor) : Qt.ArrowCursor
-                                propagateComposedEvents: !barScope.barEditMode
-
-                                property point _pressPos
-                                property bool _isDragging: false
-
-                                onPressed: function(mouse) {
-                                    if (!barScope.barEditMode) { mouse.accepted = false; return; }
-                                    _pressPos = Qt.point(mouse.x, mouse.y);
-                                    _isDragging = false;
-                                }
-
-                                onPositionChanged: function(mouse) {
-                                    if (!barScope.barEditMode || !pressed) return;
-                                    let dx = mouse.x - _pressPos.x;
-                                    let dy = mouse.y - _pressPos.y;
-                                    if (!_isDragging && Math.sqrt(dx*dx + dy*dy) > 5) {
-                                        _isDragging = true;
-                                        barScope._dragActive = true;
-                                        barScope._dragKey = modelData;
-                                        barScope._dragSourceSection = "center";
-                                    }
-                                    if (_isDragging) {
-                                        let mapped = mapToItem(bg, mouse.x, mouse.y);
-                                        dragProxy.x = mapped.x - dragProxy.width / 2;
-                                        dragProxy.y = mapped.y - dragProxy.height / 2;
-                                        barScope._updateDropTarget(mapped.x, mapped.y);
-                                    }
-                                }
-
-                                onReleased: function(mouse) {
-                                    if (_isDragging) {
-                                        let mapped = mapToItem(bg, mouse.x, mouse.y);
-                                        barScope._handleDrop(mapped.x, mapped.y);
-                                    }
-                                    _isDragging = false;
-                                    barScope._resetDrag();
-                                }
-
-                                onCanceled: {
-                                    _isDragging = false;
-                                    barScope._resetDrag();
-                                }
-                            }
+                        delegate: Components.BarSectionDelegate {
+                            sectionName: "center"
+                            editMode: barScope.barEditMode
+                            dragActive: barScope._dragActive
+                            dragKey: barScope._dragKey
+                            componentMap: barScope.componentMap
+                            bgItem: bg
+                            dragProxyItem: dragProxy
+                            sectionRepeater: centerRepeater
+                            onDragStart: (key, section) => barScope._startDrag(key, section)
+                            onDragMove: (x, y) => barScope._updateDropTarget(x, y)
+                            onDragDrop: (x, y) => barScope._handleDrop(x, y)
+                            onDragReset: () => barScope._resetDrag()
                         }
                     }
                 }
 
-                // ── Right section ──
+                // ── Right section (scroll = volume) ──
                 Row {
                     id: rightSection
                     height: Root.Theme.barHeight
@@ -450,120 +293,34 @@ Scope {
                     }
                     spacing: Root.Theme.barSpacing
 
+                    WheelHandler {
+                        orientation: Qt.Vertical
+                        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                        onWheel: function(event) {
+                            let audioSvc = Core.ServiceManager.audio;
+                            if (!audioSvc) return;
+                            if (event.angleDelta.y > 0) audioSvc.setVolume(audioSvc.volume + 5);
+                            else if (event.angleDelta.y < 0) audioSvc.setVolume(audioSvc.volume - 5);
+                            event.accepted = true;
+                        }
+                    }
+
                     Repeater {
                         id: rightRepeater
                         model: Root.Config.bar.layoutRight
-                        delegate: Item {
-                            required property string modelData
-                            required property int index
-                            implicitWidth: barScope.barEditMode
-                                ? rightEditGhost.width + (index > 0 ? Root.Theme.barSpacing : 0)
-                                : (rightSep.visible ? rightSep.width + Root.Theme.barSpacing + rightLoader.implicitWidth : rightLoader.implicitWidth)
-                            implicitHeight: Root.Theme.barHeight
-                            anchors.verticalCenter: parent.verticalCenter
-                            opacity: (barScope._dragActive && barScope._dragKey === modelData) ? 0.3 : 1.0
-
-                            Components.Separator {
-                                id: rightSep; vertical: true
-                                visible: {
-                                    if (barScope.barEditMode) return false;
-                                    if (index === 0) return false;
-                                    for (let i = index - 1; i >= 0; i--) {
-                                        let prev = rightRepeater.itemAt(i);
-                                        if (prev && prev.visible) return true;
-                                    }
-                                    return false;
-                                }
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-
-                            Loader {
-                                id: rightLoader
-                                visible: !barScope.barEditMode
-                                sourceComponent: barScope.componentMap[modelData] || null
-                                anchors.verticalCenter: parent.verticalCenter
-                                x: rightSep.visible ? rightSep.width + Root.Theme.barSpacing : 0
-                            }
-
-                            // Full ghost in edit mode
-                            Rectangle {
-                                id: rightEditGhost
-                                visible: barScope.barEditMode
-                                width: rightEditLabel.implicitWidth + 20
-                                height: Root.Theme.barHeight - 10
-                                x: index > 0 ? Root.Theme.barSpacing : 0
-                                anchors.verticalCenter: parent.verticalCenter
-                                radius: Root.Theme.radiusSmall
-                                color: rightDragMouse.containsMouse && !barScope._dragActive
-                                    ? Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.15)
-                                    : Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.1)
-                                border.width: 1
-                                border.color: rightDragMouse.containsMouse && !barScope._dragActive ? Root.Theme.accentPrimary : Root.Theme.textDimmed
-                                opacity: 0.8
-
-                                Text {
-                                    id: rightEditLabel; anchors.centerIn: parent
-                                    text: {
-                                        let modules = Core.Registry.barModules;
-                                        for (let i = 0; i < modules.length; i++) {
-                                            if (modules[i].key === modelData) return modules[i].label;
-                                        }
-                                        return modelData.charAt(0).toUpperCase() + modelData.slice(1);
-                                    }
-                                    color: Root.Theme.textPrimary
-                                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall; bold: true }
-                                }
-                            }
-
-                            MouseArea {
-                                id: rightDragMouse
-                                anchors.fill: parent
-                                enabled: barScope.barEditMode
-                                hoverEnabled: barScope.barEditMode
-                                cursorShape: barScope.barEditMode ? (pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor) : Qt.ArrowCursor
-                                propagateComposedEvents: !barScope.barEditMode
-
-                                property point _pressPos
-                                property bool _isDragging: false
-
-                                onPressed: function(mouse) {
-                                    if (!barScope.barEditMode) { mouse.accepted = false; return; }
-                                    _pressPos = Qt.point(mouse.x, mouse.y);
-                                    _isDragging = false;
-                                }
-
-                                onPositionChanged: function(mouse) {
-                                    if (!barScope.barEditMode || !pressed) return;
-                                    let dx = mouse.x - _pressPos.x;
-                                    let dy = mouse.y - _pressPos.y;
-                                    if (!_isDragging && Math.sqrt(dx*dx + dy*dy) > 5) {
-                                        _isDragging = true;
-                                        barScope._dragActive = true;
-                                        barScope._dragKey = modelData;
-                                        barScope._dragSourceSection = "right";
-                                    }
-                                    if (_isDragging) {
-                                        let mapped = mapToItem(bg, mouse.x, mouse.y);
-                                        dragProxy.x = mapped.x - dragProxy.width / 2;
-                                        dragProxy.y = mapped.y - dragProxy.height / 2;
-                                        barScope._updateDropTarget(mapped.x, mapped.y);
-                                    }
-                                }
-
-                                onReleased: function(mouse) {
-                                    if (_isDragging) {
-                                        let mapped = mapToItem(bg, mouse.x, mouse.y);
-                                        barScope._handleDrop(mapped.x, mapped.y);
-                                    }
-                                    _isDragging = false;
-                                    barScope._resetDrag();
-                                }
-
-                                onCanceled: {
-                                    _isDragging = false;
-                                    barScope._resetDrag();
-                                }
-                            }
+                        delegate: Components.BarSectionDelegate {
+                            sectionName: "right"
+                            editMode: barScope.barEditMode
+                            dragActive: barScope._dragActive
+                            dragKey: barScope._dragKey
+                            componentMap: barScope.componentMap
+                            bgItem: bg
+                            dragProxyItem: dragProxy
+                            sectionRepeater: rightRepeater
+                            onDragStart: (key, section) => barScope._startDrag(key, section)
+                            onDragMove: (x, y) => barScope._updateDropTarget(x, y)
+                            onDragDrop: (x, y) => barScope._handleDrop(x, y)
+                            onDragReset: () => barScope._resetDrag()
                         }
                     }
                 }
@@ -632,6 +389,7 @@ Scope {
                 }
             }
         }
+
     }
 
     // ── Edit mode panel with ghost pool (bottom center) ──
@@ -734,6 +492,13 @@ Scope {
                 }
             }
         }
+    }
+
+    // Shared hover popup window for bar modules
+    BarPopup {
+        id: barPopup
+        barHeight: barScope.barTotalHeight
+        Component.onCompleted: Core.ServiceManager.barPopup = barPopup
     }
 
     // Media popup

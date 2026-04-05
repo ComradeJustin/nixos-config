@@ -8,7 +8,7 @@ Components.BarItem {
 
     property var svc: Core.ServiceManager.wifi
 
-    icon: Root.Theme.wifiIcon(svc)
+    icon: Root.Icons.wifiIcon(svc)
     value: {
         if (!svc || !svc.enabled) return "Off";
         if (!svc.connected) return "No net";

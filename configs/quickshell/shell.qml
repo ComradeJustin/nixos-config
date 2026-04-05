@@ -53,9 +53,7 @@ ShellRoot {
         notifService: notifSvc
         wifiService: wifiSvc
         bluetoothService: btSvc
-        widgetOverlayRef: widgetModule
         idleInhibitService: idleInhibitSvc
-        onWidgetEditRequested: widgetModule.toggleEditMode()
     }
     Modules.Spotlight { id: spotModule }
     Modules.Osd {
@@ -69,7 +67,8 @@ ShellRoot {
         playerService: playerSvc
     }
 
-    Modules.SettingsPanel { id: settingsPanel; barRef: barModule }
+    Modules.SettingsWindow { id: settingsWindow; barRef: barModule; widgetOverlayRef: widgetModule }
+    Modules.MonitorPanel { id: monitorPanel }
 
     // Background widgets overlay
     Modules.WidgetOverlay {
@@ -112,7 +111,8 @@ ShellRoot {
         function lockscreen(): string { lock(); return "ok" }
         function wakelock(): string { if (screenLocked) wakeCounter++; return "ok" }
         function widgetsettings(): string { widgetModule.toggleEditMode(); return "ok" }
-        function settings(): string { settingsPanel.toggle(); return "ok" }
+        function settings(): string { settingsWindow.toggle(); return "ok" }
+        function monitors(): string { monitorPanel.toggle(); return "ok" }
         function baredit(): string { barModule.toggleBarEdit(); return "ok" }
         function caffeine(): string { idleInhibitSvc.toggle(); return idleInhibitSvc.inhibited ? "on" : "off" }
         function volumeup(): string { audioSvc.setVolume(audioSvc.volume + 5); return "ok" }

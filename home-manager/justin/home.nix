@@ -117,7 +117,7 @@ in
   # Environment
   home.sessionVariables = {
     EDITOR = "nvim";
-    BROWSER = "firefox";
+    BROWSER = "firefox"; 
     TERMINAL = "ghostty";
     NIXOS_OZONE_WL = "1";
   };

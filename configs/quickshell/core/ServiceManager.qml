@@ -36,4 +36,7 @@ QtObject {
     readonly property var idleInhibit: _rev >= 0 ? (_services["idleInhibit"] || null) : null
     readonly property var weather:     _rev >= 0 ? (_services["weather"]     || null) : null
     readonly property var systemStats: _rev >= 0 ? (_services["systemStats"] || null) : null
+
+    // Shared bar popup window reference — registered by Bar.qml
+    property var barPopup: null
 }

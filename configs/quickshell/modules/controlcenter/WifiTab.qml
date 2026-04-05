@@ -30,7 +30,7 @@ Components.SmoothFlickable {
                 spacing: 10
 
                 Text {
-                    text: Root.Theme.iconWifiHi
+                    text: Root.Icons.wifiHi
                     color: Root.Theme.domainNetwork
                     font { family: Root.Theme.fontFamily; pixelSize: 18 }
                     anchors.verticalCenter: parent.verticalCenter
@@ -85,10 +85,10 @@ Components.SmoothFlickable {
                 visible: !model.wifiActive
                 width: wifiTabCol.width
                 height: visible ? 36 : 0
-                icon: model.wifiSignal > 75 ? Root.Theme.iconWifiHi
-                    : model.wifiSignal > 50 ? Root.Theme.iconWifiMid
-                    : model.wifiSignal > 25 ? Root.Theme.iconWifiLow
-                    : Root.Theme.iconWifiMin
+                icon: model.wifiSignal > 75 ? Root.Icons.wifiHi
+                    : model.wifiSignal > 50 ? Root.Icons.wifiMid
+                    : model.wifiSignal > 25 ? Root.Icons.wifiLow
+                    : Root.Icons.wifiMin
                 label: model.wifiSsid
                 isActive: false
                 accentColor: Root.Theme.domainNetwork

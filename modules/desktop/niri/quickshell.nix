@@ -66,5 +66,9 @@ in
       ];
 
     services.upower.enable = true;
+
+    # PAM service for lock screen authentication
+    # fingerprint.nix extends this with fprintAuth when available
+    security.pam.services.quickshell-bar = {};
   };
 }

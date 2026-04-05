@@ -10,6 +10,9 @@
     "network": true,
     "bluetooth": true,
     "battery": true,
+    "style": "flat",
+    "showGroups": false,
+    "showCpuGraph": true,
     "layoutLeft": [
       "power",
       "workspace",
@@ -55,6 +58,12 @@
     "mediaPopup": true,
     "clipboardHistory": true,
     "wallpaperSelector": true
+  },
+  "behavior": {
+    "weatherUpdateInterval": 900000,
+    "systemStatsInterval": 3000,
+    "notificationTimeout": 5000,
+    "maxClipboardItems": 30
   },
   "clock": {
     "timeFormat": "HH:mm",

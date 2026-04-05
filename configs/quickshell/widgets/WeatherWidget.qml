@@ -15,7 +15,7 @@ Components.WidgetFrame {
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: root.weatherService ? root.weatherService.icon : Root.Theme.iconWeatherDefault
+            text: root.weatherService ? root.weatherService.icon : Root.Icons.weatherDefault
             color: Root.Theme.widgetText
             font { family: Root.Theme.fontIcons; pixelSize: root.fontSize * 1.2 }
         }

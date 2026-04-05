@@ -75,7 +75,7 @@ Scope {
 
                             Components.IconButton {
                                 anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                                icon: Root.Theme.iconCancel
+                                icon: Root.Icons.cancel
                                 iconColor: Root.Theme.textDimmed
                                 onClicked: sp.showing = false
                             }
@@ -105,7 +105,7 @@ Scope {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    text: Root.Theme.iconDrag + "  Reorder Bar"
+                                    text: Root.Icons.drag + "  Reorder Bar"
                                     color: reorderMouse.containsMouse ? Root.Theme.accentPrimary : Root.Theme.textDimmed
                                     font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
                                 }

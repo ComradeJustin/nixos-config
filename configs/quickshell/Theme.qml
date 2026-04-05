@@ -213,132 +213,71 @@ QtObject {
     readonly property color  snapIndicatorBg:    Qt.rgba(accentPrimary.r, accentPrimary.g, accentPrimary.b, 0.15)
     readonly property color  snapIndicatorActive: Qt.rgba(accentPrimary.r, accentPrimary.g, accentPrimary.b, 0.4)
 
-    // ── Icons ──
-    readonly property string iconCpu:       "󰻠"
-    readonly property string iconRam:       "󰍛"
-    readonly property string iconVolHigh:   "󰕾"
-    readonly property string iconVolMid:    "󰖀"
-    readonly property string iconVolLow:    "󰕿"
-    readonly property string iconVolMute:   "󰖁"
-    readonly property string iconBriHigh:   "󰃠"
-    readonly property string iconBriMid:    "󰃝"
-    readonly property string iconBriLow:    "󰃞"
-    readonly property string iconBriOff:    "󰃜"
-    readonly property string iconWifiHi:    "󰤨"
-    readonly property string iconWifiMid:   "󰤥"
-    readonly property string iconWifiLow:   "󰤢"
-    readonly property string iconWifiMin:   "󰤟"
-    readonly property string iconWifiOff:   "󰤭"
-    readonly property string iconEth:       "󰈀"
-    readonly property string iconBatChg:    "󰂄"
-    readonly property string iconBat100:    "󰁹"
-    readonly property string iconBat80:     "󰂀"
-    readonly property string iconBat60:     "󰁾"
-    readonly property string iconBat40:     "󰁼"
-    readonly property string iconBat20:     "󰂃"
-    readonly property string iconBatNone:   "󰂑"
-    readonly property string iconPlug:      "󰚥"
-    readonly property string iconCal:       "󰃶"
-    readonly property string iconClock:     "󰥔"
-    readonly property string iconHeadphone: "󰋋"
-    readonly property string iconSpeaker:   "󰓃"
-    readonly property string iconMediaPlay: "󰐊"
-    readonly property string iconMediaPause:"󰏤"
-    readonly property string iconNixos:     ""
-    readonly property string iconPower:    "⏻"
-    readonly property string iconGear:     "󰒓"
-    readonly property string iconBell:      "󰂚"
-    readonly property string iconBellBadge: "󰂞"
-    readonly property string iconTrash:     "󰆴"
-    readonly property string iconDnd:       "󰂛"
-    readonly property string iconDndOff:    "󰂚"
-    readonly property string iconClipboard: "󰅍"
-    readonly property string iconCaffeine:    "󰛊"
-    readonly property string iconCaffeineOff: "󰛩"
-    readonly property color  caffeineAccent:  base0A
-    readonly property string iconBtOn:        "󰂯"
-    readonly property string iconBtOff:       "󰂲"
-    readonly property string iconBtConnected: "󰂱"
-    readonly property string iconSearch:       "󰍉"
-    readonly property string iconLaunch:       "󰍃"
-    readonly property string iconWifiLock:     "󰤪"
-    readonly property string iconWallpaper:    "󰸉"
-    readonly property string iconSkipBack:    "󰒮"
-    readonly property string iconSkipFwd:     "󰒭"
-    readonly property string iconPlay:        "󰐊"
-    readonly property string iconPause:       "󰏤"
-    readonly property string iconPrev:      "󰒮"
-    readonly property string iconNext:      "󰒭"
-    readonly property string iconCC:          "󱊖"
-    readonly property string iconLock:      "󰌾"
-    readonly property string iconLogout:    "󰍃"
-    readonly property string iconSuspend:   "󰤄"
-    readonly property string iconReboot:    "󰜉"
-    readonly property string iconShutdown:  "󰐥"
-    readonly property string iconStockUp:        "󰜷"
-    readonly property string iconStockDown:      "󰜮"
-    readonly property string iconStock:          "󰄪"
-    readonly property string iconWeatherSunny:   "󰖙"
-    readonly property string iconWeatherCloudy:  "󰖐"
-    readonly property string iconWeatherPartly:  "󰖕"
-    readonly property string iconWeatherRain:    "󰖗"
-    readonly property string iconWeatherSnow:    "󰖘"
-    readonly property string iconWeatherStorm:   "󰖓"
-    readonly property string iconWeatherFog:     "󰖑"
-    readonly property string iconWeatherNight:   "󰖔"
-    readonly property string iconWeatherDefault: "󰖐"
-    readonly property string iconUser:           "󰀄"
-    readonly property string iconMusic:          "󰎆"
-    readonly property string lockBackground:     configBase + "/assets/wallpapers/cloud.jpg"
-    readonly property string iconEdit:           "󰏫"
-    readonly property string iconSave:           "󰆓"
-    readonly property string iconCancel:         "󰅖"
-    readonly property string iconDrag:           "󰘕"
-    readonly property string iconWidgets:        "󰕰"
+    readonly property string lockBackground: configBase + "/assets/wallpapers/cloud.jpg"
 
-    // ── Domain color aliases (used by bar modules and widgets) ──
-    // Components use domain* colors directly — these aliases kept for backward compat
-    readonly property color powerAccent:   accentDanger
-    readonly property color powerSuspend:  accentWarning
-    readonly property color powerLock:     domainSettings
-    readonly property color barBatteryCharge: accentWarm
-    readonly property color barBatteryLow:    accentDanger
+    // ── Domain color aliases ──
+    readonly property color caffeineAccent:    base0A
+    readonly property color powerAccent:       accentDanger
+    readonly property color powerSuspend:      accentWarning
+    readonly property color powerLock:         domainSettings
+    readonly property color barBatteryCharge:  accentWarm
+    readonly property color barBatteryLow:     accentDanger
     readonly property color widgetStockAccent: base0B
 
-    // ── Icon threshold helpers ──
-    // Eliminates duplicated threshold logic in Osd, BatteryModule, AudioModule
-    function volumeIcon(vol, muted) {
-        if (vol < 0 || muted) return iconVolMute;
-        if (vol > 60) return iconVolHigh;
-        if (vol > 30) return iconVolMid;
-        if (vol > 0) return iconVolLow;
-        return iconVolMute;
-    }
+    // ── Layered elevation colors (surface → overlay depth) ──
+    readonly property color layer0: base00                                                  // Base surface
+    readonly property color layer1: base01                                                  // Cards, panels
+    readonly property color layer2: base02                                                  // Raised elements
+    readonly property color layer3: base03                                                  // Floating, popovers
+    readonly property color layer0Hover: Qt.rgba(base05.r, base05.g, base05.b, 0.06)       // Hover on base
+    readonly property color layer1Hover: Qt.rgba(base05.r, base05.g, base05.b, 0.08)       // Hover on cards
+    readonly property color layer2Hover: Qt.rgba(base05.r, base05.g, base05.b, 0.10)       // Hover on raised
+    readonly property color layerActive: Qt.rgba(base05.r, base05.g, base05.b, 0.14)       // Active/pressed state
+    readonly property color layerDisabled: Qt.rgba(base05.r, base05.g, base05.b, 0.04)     // Disabled state
 
-    function brightnessIcon(pct) {
-        if (pct > 66) return iconBriHigh;
-        if (pct > 33) return iconBriMid;
-        if (pct > 0)  return iconBriLow;
-        return iconBriOff;
-    }
+    // ── Animation presets ──
+    // Standard motion: most UI transitions
+    readonly property int animFast:       150
+    readonly property int animNormal:     250
+    readonly property int animSlow:       400
+    readonly property int animExpressive: 500
 
-    function batteryIcon(pct, charging) {
-        if (pct < 0) return iconBatNone;
-        if (charging) return iconBatChg;
-        if (pct > 80) return iconBat100;
-        if (pct > 60) return iconBat80;
-        if (pct > 40) return iconBat60;
-        if (pct > 20) return iconBat40;
-        return iconBat20;
-    }
+    // Named animation presets (duration + easing pairs)
+    readonly property QtObject anim: QtObject {
+        // Micro-interactions: hover, color shifts, opacity changes
+        readonly property int microDuration: 120
+        readonly property int microEasing: Easing.OutCubic
 
-    function wifiIcon(service) {
-        if (!service || !service.enabled) return iconWifiOff;
-        if (!service.connected) return iconWifiMin;
-        if (service.iface === "ethernet") return iconEth;
-        if (service.signal > 75) return iconWifiHi;
-        if (service.signal > 50) return iconWifiMid;
-        if (service.signal > 25) return iconWifiLow;
-        return iconWifiMin;
+        // Element movement: slides, position changes
+        readonly property int moveDuration: 250
+        readonly property int moveEasing: Easing.OutCubic
+
+        // Entrance animations: appear, scale in
+        readonly property int enterDuration: 300
+        readonly property int enterEasing: Easing.OutCubic
+
+        // Exit animations: disappear, scale out
+        readonly property int exitDuration: 200
+        readonly property int exitEasing: Easing.InCubic
+
+        // Expressive: bouncy, playful (for modals, popups)
+        readonly property int bounceDuration: 350
+        readonly property int bounceEasing: Easing.OutBack
+
+        // Resize: layout changes, width/height transitions
+        readonly property int resizeDuration: 200
+        readonly property int resizeEasing: Easing.InOutCubic
+
+        // Spring-like: for drag snap-back, elastic feel
+        readonly property int springDuration: 400
+        readonly property int springEasing: Easing.OutElastic
+
+        // Slide panel: for CC, sidebars
+        readonly property int slideDuration: 300
+        readonly property int slideEasing: Easing.OutCubic
+
+        // Scroll: smooth scroll transitions
+        readonly property int scrollDuration: 200
+        readonly property int scrollEasing: Easing.OutQuad
     }
 }

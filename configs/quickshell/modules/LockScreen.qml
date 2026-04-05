@@ -19,10 +19,11 @@ Item {
     property bool authDone: false
     property bool isAuthenticating: false
     property bool passwordMode: false
+    property bool hasFingerprint: false
     property var playerService: null
     property string pendingPassword: ""
     property int wakeSignal: 0
-    onWakeSignalChanged: if (wakeSignal > 0) resetToFingerprint()
+    onWakeSignalChanged: if (wakeSignal > 0 && hasFingerprint) resetToFingerprint()
 
     PamContext {
         id: pam
@@ -115,6 +116,7 @@ Item {
         lock.showError = false;
         lock.authDone = false;
         lock.isAuthenticating = false;
+        if (!lock.hasFingerprint) lock.passwordMode = true;
         if (!lock.passwordMode) {
             lock.statusText = "Swipe fingerprint to unlock";
         } else {
@@ -127,6 +129,7 @@ Item {
     }
 
     function resetToFingerprint() {
+        if (!lock.hasFingerprint) return;
         lock.passwordMode = false;
         lock.pendingPassword = "";
         passInput.text = "";
@@ -169,10 +172,21 @@ Item {
         }
     }
 
+    // Detect if fprintd is available (enrolled fingerprints exist)
+    Process {
+        id: fprintDetect
+        command: ["bash", "-c", "command -v fprintd-list >/dev/null 2>&1 && fprintd-list \"$USER\" 2>/dev/null | grep -qP '^\\s+-\\s+#\\d+'"]
+        running: true
+        onExited: function(code) {
+            lock.hasFingerprint = (code === 0);
+            if (!lock.hasFingerprint) lock.passwordMode = true;
+            pamDelay.delay = 150;
+            pamDelay.start();
+        }
+    }
+
     Component.onCompleted: {
-        // Small delay to ensure PAM is ready before prompting
-        pamDelay.delay = 150;
-        pamDelay.start();
+        // Auth starts after fprintDetect completes
     }
 
     // ── Timers ──
@@ -291,7 +305,7 @@ Item {
 
                 Text {
                     anchors.centerIn: parent
-                    text: Root.Theme.iconUser
+                    text: Root.Icons.user
                     color: Root.Theme.textDimmed
                     font { family: Root.Theme.fontFamily; pixelSize: 40 }
                 }
@@ -441,7 +455,7 @@ Item {
                       : Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.15)
                 border.width: 2
 
-                Behavior on border.color { ColorAnimation { duration: 150 } }
+                Behavior on border.color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
                 RowLayout {
                     anchors.fill: parent
@@ -526,7 +540,7 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: Root.Theme.iconMusic
+                        text: Root.Icons.music
                         color: Root.Theme.textDimmed
                         font { family: Root.Theme.fontFamily; pixelSize: 20 }
                         visible: lockAlbumArt.status !== Image.Ready
@@ -559,7 +573,7 @@ Item {
                 // Play/pause indicator
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: (lock.playerService && lock.playerService.isPlaying) ? Root.Theme.iconMediaPause : Root.Theme.iconMediaPlay
+                    text: (lock.playerService && lock.playerService.isPlaying) ? Root.Icons.mediaPause : Root.Icons.mediaPlay
                     color: Root.Theme.domainMedia
                     font { family: Root.Theme.fontFamily; pixelSize: 20 }
                 }

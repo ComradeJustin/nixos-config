@@ -26,7 +26,7 @@ Components.WidgetFrame {
             visible: root.showCpu
             spacing: 8
             Text {
-                text: Root.Theme.iconCpu
+                text: Root.Icons.cpu
                 color: root.cpuPercent >= 90 ? Root.Theme.textCritical : Root.Theme.widgetText
                 font { family: Root.Theme.fontIcons; pixelSize: root.fontSize }
                 anchors.verticalCenter: parent.verticalCenter
@@ -43,7 +43,7 @@ Components.WidgetFrame {
             visible: root.showRam
             spacing: 8
             Text {
-                text: Root.Theme.iconRam
+                text: Root.Icons.ram
                 color: root.ramPercent >= 90 ? Root.Theme.textCritical : Root.Theme.widgetText
                 font { family: Root.Theme.fontIcons; pixelSize: root.fontSize }
                 anchors.verticalCenter: parent.verticalCenter

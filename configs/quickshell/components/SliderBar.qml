@@ -1,7 +1,8 @@
 import QtQuick
+import Qt5Compat.GraphicalEffects
 import ".." as Root
 
-// Reusable slider/progress bar component with brutalist styling
+// Interactive slider/progress bar with rounded styling and smooth drag
 Item {
     id: slider
 
@@ -10,11 +11,11 @@ Item {
     property real maxValue: 100     // Maximum value
     property bool interactive: true // Whether dragging is enabled
     property bool showHandle: true  // Show the drag handle
-    property int trackHeight: 3     // Height of the track
-    property int handleSize: 12     // Size of the handle (square)
-    property color accentColor: Root.Theme.textAccent // Accent color for fill and handle
-
+    property int trackHeight: 4    // Height of the track
+    property int handleSize: 14    // Size of the handle
+    property color accentColor: Root.Theme.textAccent
     property bool liveUpdate: true
+    property bool showTooltip: false // Show percentage tooltip while dragging
 
     // Signals
     signal valueUpdated(real newValue)
@@ -46,7 +47,7 @@ Item {
 
     height: Math.max(trackHeight, handleSize)
 
-    // Background track
+    // Background track (rounded)
     Rectangle {
         anchors {
             left: parent.left
@@ -54,21 +55,26 @@ Item {
             verticalCenter: parent.verticalCenter
         }
         height: slider.trackHeight
-        radius: height / 2  // Fully rounded track
-        color: Root.Theme.textDimmed
-        opacity: 0.3
+        radius: height / 2
+        color: Root.Theme.layer2
     }
 
-    // Fill track
+    // Fill track with gradient
     Rectangle {
         anchors {
             left: parent.left
             verticalCenter: parent.verticalCenter
         }
         height: slider.trackHeight
-        radius: height / 2  // Fully rounded track
-        color: slider.accentColor
+        radius: height / 2
         width: parent.width * slider.ratio
+
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: Qt.darker(slider.accentColor, 1.15) }
+            GradientStop { position: 0.5; color: slider.accentColor }
+            GradientStop { position: 1.0; color: Qt.darker(slider.accentColor, 1.15) }
+        }
 
         Behavior on width {
             enabled: !slider.dragging
@@ -76,19 +82,52 @@ Item {
         }
     }
 
-    // Handle
+    // Handle (circular, with drag glow)
     Rectangle {
+        id: handleRect
         visible: slider.showHandle
-        width: slider.handleSize
-        height: slider.handleSize
-        radius: Root.Theme.radiusSmall  // Slightly rounded handle
+        width: slider.dragging ? slider.handleSize + 2 : slider.handleSize
+        height: width
+        radius: width / 2
         color: slider.accentColor
         y: (parent.height - height) / 2
         x: (parent.width - width) * slider.ratio
 
+        Behavior on width { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
+
+        layer.enabled: slider.dragging
+        layer.effect: DropShadow {
+            transparentBorder: true; color: slider.accentColor
+            radius: 10; samples: 21
+        }
+
         Behavior on x {
             enabled: !slider.dragging
             NumberAnimation { duration: 80; easing.type: Easing.OutQuad }
+        }
+    }
+
+    // Drag tooltip
+    Rectangle {
+        id: dragTooltip
+        visible: slider.showTooltip && slider.dragging
+        x: handleRect.x + handleRect.width / 2 - width / 2
+        y: handleRect.y - height - 6
+        width: tooltipLabel.implicitWidth + 10
+        height: tooltipLabel.implicitHeight + 6
+        radius: Root.Theme.radiusSmall
+        color: Root.Theme.layer2
+        border.width: 1
+        border.color: Root.Theme.borderColor
+        opacity: slider.dragging ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.microDuration } }
+
+        Text {
+            id: tooltipLabel
+            anchors.centerIn: parent
+            text: Math.round(slider.dragValue) + "%"
+            color: Root.Theme.textPrimary
+            font { family: Root.Theme.fontFamily; pixelSize: 10 }
         }
     }
 

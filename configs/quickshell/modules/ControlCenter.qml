@@ -19,10 +19,7 @@ Scope {
     property var notifService: null
     property var wifiService: null
     property var bluetoothService: null
-    property var widgetOverlayRef: null
     property var idleInhibitService: null
-
-    signal widgetEditRequested()
 
     function toggle() {
         showing = !showing;
@@ -86,13 +83,13 @@ Scope {
 
                     ParallelAnimation {
                         id: appearAnim
-                        NumberAnimation { target: toastCard; property: "x"; to: 0; duration: 250; easing.type: Easing.OutCubic }
-                        NumberAnimation { target: toastItem; property: "opacity"; to: 1; duration: 200; easing.type: Easing.OutCubic }
+                        NumberAnimation { target: toastCard; property: "x"; to: 0; duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic }
+                        NumberAnimation { target: toastItem; property: "opacity"; to: 1; duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic }
                     }
 
                     NumberAnimation {
                         id: dismissAnim
-                        target: toastItem; property: "opacity"; to: 0; duration: 300; easing.type: Easing.InCubic
+                        target: toastItem; property: "opacity"; to: 0; duration: Root.Theme.anim.exitDuration; easing.type: Easing.InCubic
                         onFinished: { if (cc.notifService) cc.notifService.removePopupApp(toastItem.appKey); }
                     }
 
@@ -137,6 +134,23 @@ Scope {
         }
     }
 
+    // ── Click-outside dismiss scrim ──
+    PanelWindow {
+        id: ccScrim
+        visible: cc.showing
+        anchors { top: true; bottom: true; left: true; right: true }
+        WlrLayershell.namespace: "quickshell-cc-scrim"
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+        exclusionMode: ExclusionMode.Ignore
+        color: "transparent"
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: cc.showing = false
+        }
+    }
+
     // ── Panel ──
     PanelWindow {
         id: ccPanel
@@ -144,8 +158,8 @@ Scope {
         anchors { top: true; right: true; bottom: true }
         margins.top: Root.Theme.barHeight + 6
         margins.bottom: 6
-        margins.right: 6
-        implicitWidth: Root.Theme.ccWidth
+        margins.right: 0
+        implicitWidth: Root.Theme.ccWidth + 6
         WlrLayershell.namespace: "quickshell-cc"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
@@ -162,9 +176,9 @@ Scope {
                 height: parent.height
                 radius: Root.Theme.radiusMedium
                 color: Root.Theme.barBackground
-                x: cc.showing ? 0 : Root.Theme.ccWidth
-                Behavior on x { NumberAnimation { duration: 250; easing.type: Easing.InOutCubic } }
-                onXChanged: { if (!cc.showing && x >= Root.Theme.ccWidth - 1) ccPanel.visible = false; }
+                x: cc.showing ? 0 : (Root.Theme.ccWidth + 6)
+                Behavior on x { NumberAnimation { duration: Root.Theme.anim.slideDuration; easing.type: Easing.OutCubic } }
+                onXChanged: { if (!cc.showing && x >= Root.Theme.ccWidth + 5) ccPanel.visible = false; }
 
                 layer.enabled: cc.showing
                 layer.effect: DropShadow {
@@ -188,23 +202,12 @@ Scope {
                             anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         }
 
-                        Row {
+                        Components.IconButton {
                             anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                            spacing: 6
-
-                            Components.IconButton {
-                                icon: Root.Theme.iconWidgets
-                                iconColor: Root.Theme.domainSettings
-                                hoverColor: Qt.rgba(Root.Theme.domainSettings.r, Root.Theme.domainSettings.g, Root.Theme.domainSettings.b, 0.15)
-                                onClicked: { cc.showing = false; cc.widgetEditRequested(); }
-                            }
-
-                            Components.IconButton {
-                                icon: Root.Theme.iconShutdown
-                                iconColor: Root.Theme.accentDanger
-                                hoverColor: Qt.rgba(Root.Theme.accentDanger.r, Root.Theme.accentDanger.g, Root.Theme.accentDanger.b, 0.15)
-                                onClicked: { cc.showing = false; if (cc.powerMenuRef) cc.powerMenuRef.toggle(); }
-                            }
+                            icon: Root.Icons.shutdown
+                            iconColor: Root.Theme.accentDanger
+                            hoverColor: Qt.rgba(Root.Theme.accentDanger.r, Root.Theme.accentDanger.g, Root.Theme.accentDanger.b, 0.15)
+                            onClicked: { cc.showing = false; if (cc.powerMenuRef) cc.powerMenuRef.toggle(); }
                         }
                     }
 
@@ -215,81 +218,110 @@ Scope {
 
                         Components.QuickToggle {
                             isOn: cc.wifiService && cc.wifiService.enabled
-                            iconOn: Root.Theme.iconWifiHi; iconOff: Root.Theme.iconWifiOff
+                            iconOn: Root.Icons.wifiHi; iconOff: Root.Icons.wifiOff
                             accent: Root.Theme.domainNetwork
                             onToggled: { if (cc.wifiService) cc.wifiService.toggle(); }
                         }
 
                         Components.QuickToggle {
                             isOn: cc.notifService ? cc.notifService.dnd : false
-                            iconOn: Root.Theme.iconDnd; iconOff: Root.Theme.iconDndOff
+                            iconOn: Root.Icons.dnd; iconOff: Root.Icons.dndOff
                             accent: Root.Theme.domainNotifications
                             onToggled: { if (cc.notifService) cc.notifService.dnd = !cc.notifService.dnd; }
                         }
 
                         Components.QuickToggle {
                             isOn: cc.audioService ? !cc.audioService.muted : true
-                            iconOn: Root.Theme.iconVolHigh; iconOff: Root.Theme.iconVolMute
+                            iconOn: Root.Icons.volHigh; iconOff: Root.Icons.volMute
                             accent: Root.Theme.domainMedia
                             onToggled: { if (cc.audioService) cc.audioService.toggleMute(); }
                         }
 
                         Components.QuickToggle {
                             isOn: cc.bluetoothService ? cc.bluetoothService.enabled : false
-                            iconOn: Root.Theme.iconBtOn; iconOff: Root.Theme.iconBtOff
+                            iconOn: Root.Icons.btOn; iconOff: Root.Icons.btOff
                             accent: Root.Theme.domainNetwork
                             onToggled: { if (cc.bluetoothService) cc.bluetoothService.toggle(); }
                         }
 
                         Components.QuickToggle {
                             isOn: cc.idleInhibitService ? cc.idleInhibitService.inhibited : false
-                            iconOn: Root.Theme.iconCaffeine; iconOff: Root.Theme.iconCaffeineOff
+                            iconOn: Root.Icons.caffeine; iconOff: Root.Icons.caffeineOff
                             accent: Root.Theme.caffeineAccent
                             onToggled: { if (cc.idleInhibitService) cc.idleInhibitService.toggle(); }
                         }
                     }
 
-                    // ── Tab bar ──
-                    Row {
-                        width: parent.width; height: 38; spacing: 0
+                    // ── Tab bar with sliding indicator ──
+                    Item {
+                        id: tabBar
+                        width: parent.width; height: 38
 
-                        Repeater {
-                            model: [
-                                { tab: "notifications", icon: Root.Theme.iconBell, label: "Notif", accent: Root.Theme.domainNotifications },
-                                { tab: "volume", icon: Root.Theme.iconVolHigh, label: "Vol", accent: Root.Theme.domainMedia },
-                                { tab: "wifi", icon: Root.Theme.iconWifiHi, label: "Net", accent: Root.Theme.domainNetwork },
-                                { tab: "bluetooth", icon: Root.Theme.iconBtOn, label: "Bt", accent: Root.Theme.domainNetwork }
-                            ]
+                        property var tabs: [
+                            { tab: "notifications", icon: Root.Icons.bell, label: "Notif", accent: Root.Theme.domainNotifications },
+                            { tab: "volume", icon: Root.Icons.volHigh, label: "Vol", accent: Root.Theme.domainMedia },
+                            { tab: "wifi", icon: Root.Icons.wifiHi, label: "Net", accent: Root.Theme.domainNetwork },
+                            { tab: "bluetooth", icon: Root.Icons.btOn, label: "Bt", accent: Root.Theme.domainNetwork }
+                        ]
 
-                            Rectangle {
-                                width: parent.width / 4; height: 38
-                                color: tabMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.06) : "transparent"
-                                radius: Root.Theme.radiusSmall
+                        property int activeIndex: {
+                            for (let i = 0; i < tabs.length; i++)
+                                if (tabs[i].tab === cc.activeTab) return i;
+                            return 0;
+                        }
 
-                                Column {
-                                    anchors.centerIn: parent; spacing: 2
-                                    Text {
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        text: modelData.icon
-                                        color: cc.activeTab === modelData.tab ? modelData.accent : (tabMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
-                                        font { family: Root.Theme.fontFamily; pixelSize: 16 }
+                        // Sliding indicator
+                        Rectangle {
+                            id: tabIndicator
+                            y: tabBar.height - 2
+                            width: tabBar.width / tabBar.tabs.length
+                            height: 2
+                            color: tabBar.tabs[tabBar.activeIndex].accent
+                            x: tabBar.activeIndex * width
+
+                            Behavior on x { NumberAnimation { duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: Root.Theme.anim.moveDuration } }
+                        }
+
+                        Row {
+                            anchors.fill: parent
+                            spacing: 0
+
+                            Repeater {
+                                model: tabBar.tabs
+
+                                Rectangle {
+                                    width: tabBar.width / tabBar.tabs.length; height: 38
+                                    color: tabMouse.containsMouse ? Root.Theme.layer1Hover : "transparent"
+                                    radius: Root.Theme.radiusSmall
+                                    Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
+
+                                    Column {
+                                        anchors.centerIn: parent; spacing: 2
+                                        Text {
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                            text: modelData.icon
+                                            color: cc.activeTab === modelData.tab ? modelData.accent : (tabMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
+                                            font { family: Root.Theme.fontFamily; pixelSize: 16 }
+                                            Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
+                                        }
+                                        Text {
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                            text: modelData.label
+                                            color: cc.activeTab === modelData.tab ? modelData.accent : (tabMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
+                                            font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                                            Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
+                                        }
                                     }
-                                    Text {
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        text: modelData.label
-                                        color: cc.activeTab === modelData.tab ? modelData.accent : (tabMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
-                                        font { family: Root.Theme.fontFamily; pixelSize: 11 }
-                                    }
-                                }
-                                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 2; color: cc.activeTab === modelData.tab ? modelData.accent : "transparent" }
-                                MouseArea {
-                                    id: tabMouse
-                                    anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        cc.activeTab = modelData.tab;
-                                        if (modelData.tab === "volume" && cc.audioService) { cc.audioService.refreshApps(); cc.audioService.refreshDevices(); }
-                                        if (modelData.tab === "wifi" && cc.wifiService) cc.wifiService.scan();
-                                        if (modelData.tab === "bluetooth" && cc.bluetoothService) cc.bluetoothService.scan(false);
+                                    MouseArea {
+                                        id: tabMouse
+                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            cc.activeTab = modelData.tab;
+                                            if (modelData.tab === "volume" && cc.audioService) { cc.audioService.refreshApps(); cc.audioService.refreshDevices(); }
+                                            if (modelData.tab === "wifi" && cc.wifiService) cc.wifiService.scan();
+                                            if (modelData.tab === "bluetooth" && cc.bluetoothService) cc.bluetoothService.scan(false);
+                                        }
                                     }
                                 }
                             }
@@ -305,26 +337,50 @@ Scope {
 
                         CCTabs.NotificationsTab {
                             anchors.fill: parent
-                            visible: cc.activeTab === "notifications"
+                            visible: opacity > 0
                             notifService: cc.notifService
+                            opacity: cc.activeTab === "notifications" ? 1 : 0
+                            transform: Translate {
+                                y: cc.activeTab === "notifications" ? 0 : 6
+                                Behavior on y { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
+                            }
+                            Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
                         }
 
                         CCTabs.VolumeTab {
                             anchors.fill: parent
-                            visible: cc.activeTab === "volume"
+                            visible: opacity > 0
                             audioService: cc.audioService
+                            opacity: cc.activeTab === "volume" ? 1 : 0
+                            transform: Translate {
+                                y: cc.activeTab === "volume" ? 0 : 6
+                                Behavior on y { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
+                            }
+                            Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
                         }
 
                         CCTabs.WifiTab {
                             anchors.fill: parent
-                            visible: cc.activeTab === "wifi"
+                            visible: opacity > 0
                             wifiService: cc.wifiService
+                            opacity: cc.activeTab === "wifi" ? 1 : 0
+                            transform: Translate {
+                                y: cc.activeTab === "wifi" ? 0 : 6
+                                Behavior on y { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
+                            }
+                            Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
                         }
 
                         CCTabs.BluetoothTab {
                             anchors.fill: parent
-                            visible: cc.activeTab === "bluetooth"
+                            visible: opacity > 0
                             bluetoothService: cc.bluetoothService
+                            opacity: cc.activeTab === "bluetooth" ? 1 : 0
+                            transform: Translate {
+                                y: cc.activeTab === "bluetooth" ? 0 : 6
+                                Behavior on y { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
+                            }
+                            Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
                         }
                     }
 
@@ -355,7 +411,7 @@ Scope {
                                     id: silentText
                                     anchors.centerIn: parent
                                     property bool isDnd: cc.notifService ? cc.notifService.dnd : false
-                                    text: isDnd ? Root.Theme.iconDnd + " Silent" : Root.Theme.iconDndOff + " Silent"
+                                    text: isDnd ? Root.Icons.dnd + " Silent" : Root.Icons.dndOff + " Silent"
                                     color: isDnd ? Root.Theme.domainNotifications : (silentMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
                                     font { family: Root.Theme.fontFamily; pixelSize: 12 }
                                 }
@@ -370,7 +426,7 @@ Scope {
                                 Text {
                                     id: clearText
                                     anchors.centerIn: parent
-                                    text: Root.Theme.iconTrash + " Clear"
+                                    text: Root.Icons.trash + " Clear"
                                     color: {
                                         if (!(cc.notifService && cc.notifService.items.length > 0))
                                             return Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.3);

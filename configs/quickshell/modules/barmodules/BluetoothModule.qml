@@ -9,9 +9,9 @@ Components.BarItem {
     property var svc: Core.ServiceManager.bluetooth
 
     icon: {
-        if (!svc || !svc.enabled) return Root.Theme.iconBtOff;
-        if (svc.connected) return Root.Theme.iconBtConnected;
-        return Root.Theme.iconBtOn;
+        if (!svc || !svc.enabled) return Root.Icons.btOff;
+        if (svc.connected) return Root.Icons.btConnected;
+        return Root.Icons.btOn;
     }
     value: {
         if (!svc || !svc.enabled) return "Off";

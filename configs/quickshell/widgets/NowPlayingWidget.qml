@@ -38,7 +38,7 @@ Components.WidgetFrame {
 
             Text {
                 anchors.centerIn: parent
-                text: Root.Theme.iconMusic
+                text: Root.Icons.music
                 color: Root.Theme.widgetTextDimmed
                 font { family: Root.Theme.fontIcons; pixelSize: root.artSize * 0.4 }
                 visible: !root.trackArtUrl || artImage.status !== Image.Ready
@@ -69,21 +69,21 @@ Components.WidgetFrame {
                 spacing: 16
 
                 Components.IconButton {
-                    icon: Root.Theme.iconSkipBack
+                    icon: Root.Icons.skipBack
                     iconColor: Root.Theme.textAccent
                     size: Math.round(root.fontSize * 1.5)
                     onClicked: if (root.playerService) root.playerService.previous()
                 }
 
                 Components.IconButton {
-                    icon: root.isPlaying ? Root.Theme.iconPause : Root.Theme.iconPlay
+                    icon: root.isPlaying ? Root.Icons.pause : Root.Icons.play
                     iconColor: Root.Theme.textAccent
                     size: Math.round(root.fontSize * 1.7)
                     onClicked: if (root.playerService) root.playerService.togglePlaying()
                 }
 
                 Components.IconButton {
-                    icon: Root.Theme.iconSkipFwd
+                    icon: Root.Icons.skipFwd
                     iconColor: Root.Theme.textAccent
                     size: Math.round(root.fontSize * 1.5)
                     onClicked: if (root.playerService) root.playerService.next()

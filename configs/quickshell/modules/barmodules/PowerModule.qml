@@ -11,7 +11,7 @@ Item {
 
     Text {
         id: powerText
-        text: Root.Theme.iconPower
+        text: Root.Icons.power
         color: Root.Theme.accentDanger
         font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize + 2 }
         anchors.verticalCenter: parent.verticalCenter

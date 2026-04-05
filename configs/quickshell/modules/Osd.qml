@@ -44,13 +44,20 @@ PanelWindow {
         function onBrightnessUpdated(oldValue, newValue) { osd.show("brightness"); }
     }
 
-    // Show / hide with fade
+    // Show / hide with slide + fade
     function show(mode) {
         activeMode = mode;
         visible = true;
-        content.opacity = 1;
+        showAnim.stop();
         fadeOut.stop();
+        showAnim.start();
         hideTimer.restart();
+    }
+
+    ParallelAnimation {
+        id: showAnim
+        NumberAnimation { target: content; property: "opacity"; from: content.opacity; to: 1; duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic }
+        NumberAnimation { target: slideEffect; property: "y"; from: slideEffect.y !== 0 ? slideEffect.y : 8; to: 0; duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic }
     }
 
     Timer {
@@ -59,22 +66,29 @@ PanelWindow {
         onTriggered: fadeOut.start()
     }
 
-    NumberAnimation {
+    ParallelAnimation {
         id: fadeOut
-        target: content
-        property: "opacity"
-        from: 1
-        to: 0
-        duration: Root.Theme.osdFadeMs
-        easing.type: Easing.InCubic
+        NumberAnimation { target: content; property: "opacity"; to: 0; duration: Root.Theme.osdFadeMs; easing.type: Easing.InCubic }
+        NumberAnimation { target: slideEffect; property: "y"; to: 8; duration: Root.Theme.osdFadeMs; easing.type: Easing.InCubic }
         onFinished: osd.visible = false
+    }
+
+    // Dismiss on hover (like end-4)
+    MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        onEntered: {
+            hideTimer.stop();
+            fadeOut.start();
+        }
     }
 
     // Visual display
     Rectangle {
         id: content
         anchors.fill: parent
-        radius: 0
+        transform: Translate { id: slideEffect; y: 0 }
+        radius: Root.Theme.radiusMedium
         color: Root.Theme.osdBackground
         border.width: Root.Theme.borderWidth
         border.color: Root.Theme.borderColor
@@ -89,31 +103,21 @@ PanelWindow {
             // Icon
             Text {
                 text: {
-                    if (osd.activeMode === "brightness") {
-                        if (osd.curBrightness > 66) return Root.Theme.iconBriHigh;
-                        if (osd.curBrightness > 33) return Root.Theme.iconBriMid;
-                        if (osd.curBrightness > 0)  return Root.Theme.iconBriLow;
-                        return Root.Theme.iconBriOff;
-                    }
-                    if (osd.curMuted)              return Root.Theme.iconVolMute;
-                    if (osd.curVolume > 60)        return Root.Theme.iconVolHigh;
-                    if (osd.curVolume > 30)        return Root.Theme.iconVolMid;
-                    if (osd.curVolume > 0)         return Root.Theme.iconVolLow;
-                    return Root.Theme.iconVolMute;
+                    if (osd.activeMode === "brightness")
+                        return Root.Icons.brightnessIcon(osd.curBrightness);
+                    return Root.Icons.volumeIcon(osd.curVolume, osd.curMuted);
                 }
                 color: Root.Theme.textPrimary
                 font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.osdIconSize }
                 anchors.verticalCenter: parent.verticalCenter
             }
 
-            // Progress bar
+            // Progress bar (rounded)
             Rectangle {
                 width: 140
                 height: 4
-                radius: 0
+                radius: 2
                 color: Root.Theme.osdBarBg
-                border.width: 1
-                border.color: Root.Theme.borderColor
                 anchors.verticalCenter: parent.verticalCenter
 
                 Rectangle {
@@ -123,11 +127,15 @@ PanelWindow {
                         return parent.width * Math.max(0, Math.min(100, pct)) / 100;
                     }
                     height: parent.height
-                    radius: 0
-                    color: Root.Theme.osdAccent
+                    radius: 2
+                    color: osd.activeMode === "volume" && osd.curMuted
+                        ? Root.Theme.textDimmed : Root.Theme.osdAccent
 
                     Behavior on width {
-                        NumberAnimation { duration: 50; easing.type: Easing.OutCubic }
+                        NumberAnimation { duration: 80; easing.type: Easing.OutCubic }
+                    }
+                    Behavior on color {
+                        ColorAnimation { duration: Root.Theme.anim.microDuration }
                     }
                 }
             }
@@ -158,8 +166,8 @@ PanelWindow {
                 text: {
                     let name = osd.deviceLabel.toLowerCase();
                     if (name.indexOf("headphone") !== -1 || name.indexOf("headset") !== -1)
-                        return Root.Theme.iconHeadphone;
-                    return Root.Theme.iconSpeaker;
+                        return Root.Icons.headphone;
+                    return Root.Icons.speaker;
                 }
                 color: Root.Theme.osdAccent
                 font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.osdIconSize }

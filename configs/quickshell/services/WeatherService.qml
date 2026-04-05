@@ -10,7 +10,7 @@ Scope {
     property string temperature: "--"
     property int weatherCode: -1
     property string condition: ""
-    property string icon: Root.Theme.iconWeatherDefault
+    property string icon: Root.Icons.weatherDefault
     property bool useMetric: true
     property int updateInterval: 900000  // 15 min
 
@@ -21,16 +21,16 @@ Scope {
 
     // WMO Weather codes to icons
     function codeToIcon(code) {
-        if (code === 0) return Root.Theme.iconWeatherSunny;
-        if (code === 1 || code === 2) return Root.Theme.iconWeatherPartly;
-        if (code === 3) return Root.Theme.iconWeatherCloudy;
-        if (code >= 45 && code <= 48) return Root.Theme.iconWeatherFog;
-        if (code >= 51 && code <= 67) return Root.Theme.iconWeatherRain;
-        if (code >= 71 && code <= 77) return Root.Theme.iconWeatherSnow;
-        if (code >= 80 && code <= 82) return Root.Theme.iconWeatherRain;
-        if (code >= 85 && code <= 86) return Root.Theme.iconWeatherSnow;
-        if (code >= 95 && code <= 99) return Root.Theme.iconWeatherStorm;
-        return Root.Theme.iconWeatherDefault;
+        if (code === 0) return Root.Icons.weatherSunny;
+        if (code === 1 || code === 2) return Root.Icons.weatherPartly;
+        if (code === 3) return Root.Icons.weatherCloudy;
+        if (code >= 45 && code <= 48) return Root.Icons.weatherFog;
+        if (code >= 51 && code <= 67) return Root.Icons.weatherRain;
+        if (code >= 71 && code <= 77) return Root.Icons.weatherSnow;
+        if (code >= 80 && code <= 82) return Root.Icons.weatherRain;
+        if (code >= 85 && code <= 86) return Root.Icons.weatherSnow;
+        if (code >= 95 && code <= 99) return Root.Icons.weatherStorm;
+        return Root.Icons.weatherDefault;
     }
 
     function codeToCondition(code) {

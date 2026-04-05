@@ -17,8 +17,8 @@ Scope {
     property bool editMode: false
     signal editModeToggled(bool enabled)
 
-    property var pendingPositions: ({})
-    property var cachedPositions: ({})
+    property var savedPositions: ({})    // persisted to disk
+    property var editPositions: ({})     // uncommitted edit-mode changes
 
     readonly property var validPositions: [
         "top-left", "top-center", "top-right",
@@ -35,32 +35,27 @@ Scope {
 
     function toggleEditMode() {
         editMode = !editMode;
-        if (!editMode) pendingPositions = {};
+        if (!editMode) editPositions = {};
         editModeToggled(editMode);
     }
 
-    function savePositions() {
-        for (let widget in pendingPositions) {
-            cachedPositions[widget] = pendingPositions[widget];
-        }
-        cachedPositions = Object.assign({}, cachedPositions);
+    function commit() {
+        Object.assign(savedPositions, editPositions);
+        savedPositions = Object.assign({}, savedPositions);
 
         let lines = [];
-        for (let widget in cachedPositions) {
-            let pos = cachedPositions[widget];
-            if (validPositions.indexOf(pos) !== -1) {
-                lines.push(widget + "=" + pos);
-            }
+        for (let key in savedPositions) {
+            if (validPositions.indexOf(savedPositions[key]) !== -1)
+                lines.push(key + "=" + savedPositions[key]);
         }
 
         if (lines.length > 0) {
-            let data = lines.join("\n");
             let path = Root.Theme.homeDir + "/.cache/quickshell-widget-positions";
-            saveProc.command = ["sh", "-c", "printf '%s\\n' \"$1\" > \"$2\"", "--", data, path];
+            saveProc.command = ["sh", "-c", "printf '%s\\n' \"$1\" > \"$2\"", "--", lines.join("\n"), path];
             saveProc.running = true;
         }
 
-        pendingPositions = {};
+        editPositions = {};
         editMode = false;
         editModeToggled(false);
     }
@@ -77,13 +72,13 @@ Scope {
                     let widget = parts[0].trim();
                     let pos = parts[1].trim();
                     if (root.validPositions.indexOf(pos) !== -1) {
-                        root.cachedPositions[widget] = pos;
+                        root.savedPositions[widget] = pos;
                     }
                 }
             }
         }
         onExited: {
-            root.cachedPositions = Object.assign({}, root.cachedPositions);
+            root.savedPositions = Object.assign({}, root.savedPositions);
         }
     }
 
@@ -103,8 +98,8 @@ Scope {
     }
 
     function findSnapPosition(x, y, itemWidth, itemHeight, areaWidth, areaHeight) {
-        let marginX = Root.Config.widgetMarginX;
-        let marginY = Root.Config.widgetMarginY;
+        let marginX = Root.Config.widgets.marginX;
+        let marginY = Root.Config.widgets.marginY;
         let centerX = x + itemWidth / 2;
         let centerY = y + itemHeight / 2;
         let bestPos = "center";
@@ -119,28 +114,28 @@ Scope {
     }
 
     function getEffectivePosition(widgetName, configPos) {
-        return pendingPositions[widgetName] || cachedPositions[widgetName] || configPos;
+        return editPositions[widgetName] || savedPositions[widgetName] || configPos;
     }
 
     // ── Swap Logic ──
-    // Snapshot of pendingPositions taken at drag start, so mid-drag
+    // Snapshot of editPositions taken at drag start, so mid-drag
     // hover-swaps always reset to the pre-drag state before applying.
-    property var preDragPending: ({})
+    property var preDragSnapshot: ({})
 
     function beginDrag(droppedKey) {
-        preDragPending = Object.assign({}, pendingPositions);
+        preDragSnapshot = Object.assign({}, editPositions);
     }
 
     // Swap: occupant goes to the dragged widget's pre-drag position.
-    // Each call rebuilds from preDragPending so only one swap is active.
+    // Each call rebuilds from preDragSnapshot so only one swap is active.
     function handleSwap(droppedKey, targetPosition, originPosition) {
         let origin = originPosition;
-        let fresh = Object.assign({}, preDragPending);
+        let fresh = Object.assign({}, preDragSnapshot);
 
         // Find which widget occupies the target in the pre-drag state
         for (let key of allWidgetKeys) {
             if (key !== droppedKey) {
-                let pos = fresh[key] || cachedPositions[key] || getDefaultPosition(key);
+                let pos = fresh[key] || savedPositions[key] || getDefaultPosition(key);
                 if (pos === targetPosition) {
                     fresh[key] = origin;
                     break;
@@ -148,7 +143,7 @@ Scope {
             }
         }
         fresh[droppedKey] = targetPosition;
-        pendingPositions = fresh;
+        editPositions = fresh;
     }
 
     function getDefaultPosition(key) {
@@ -161,7 +156,7 @@ Scope {
 
     // Per-screen widget visibility check
     function widgetsShownForScreen(screenName) {
-        if (root.editMode || !Root.Config.autoHideWidgets) return true;
+        if (root.editMode || !Root.Config.features.autoHideWidgets) return true;
         if (!root.windowService) return true;
         return root.windowService.screenEmpty(screenName) && !root.windowService.overviewOpen;
     }
@@ -198,7 +193,7 @@ Scope {
         property string posStr: root.getEffectivePosition(positionKey, defaultPosition)
         property point pos: root.getPosition(posStr, implicitWidth, implicitHeight,
             (parent ? parent.width : 1920), (parent ? parent.height : 1080),
-            Root.Config.widgetMarginX, Root.Config.widgetMarginY)
+            Root.Config.widgets.marginX, Root.Config.widgets.marginY)
         x: pos.x; y: pos.y
         Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
         Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
@@ -208,7 +203,7 @@ Scope {
     // ── Widget Overlay Panel ──
     // ══════════════════════════════════════════════════════════════════
     Variants {
-        model: Root.Config.enableWallpaperWidgets ? Quickshell.screens : []
+        model: Root.Config.features.wallpaperWidgets ? Quickshell.screens : []
 
         PanelWindow {
             id: widgetPanel
@@ -225,17 +220,17 @@ Scope {
 
             PositionedWidget {
                 positionKey: "clockWidgetPosition"
-                defaultPosition: Root.Config.clockWidgetPosition
-                configVisible: Root.Config.showClockWidget
+                defaultPosition: Root.Config.widgets.clockPosition
+                configVisible: Root.Config.widgets.clock
                 screenName: widgetPanel.panelScreenName
 
                 Widgets.ClockWidget {
                     id: clockW
-                    timeFormat: Root.Config.clockShowSeconds ? Root.Config.clockTimeFormat.replace("mm", "mm:ss") : Root.Config.clockTimeFormat
-                    dateFormat: Root.Config.clockDateFormat
-                    showDate: Root.Config.clockShowDate
-                    showSeconds: Root.Config.clockShowSeconds
-                    clockFontSize: Root.Config.clockFontSize
+                    timeFormat: Root.Config.clockConfig.showSeconds ? Root.Config.clockConfig.timeFormat.replace("mm", "mm:ss") : Root.Config.clockConfig.timeFormat
+                    dateFormat: Root.Config.clockConfig.dateFormat
+                    showDate: Root.Config.clockConfig.showDate
+                    showSeconds: Root.Config.clockConfig.showSeconds
+                    clockFontSize: Root.Config.clockConfig.fontSize
                     onImplicitWidthChanged: root.updateWidgetSize("clock", implicitWidth, implicitHeight)
                     onImplicitHeightChanged: root.updateWidgetSize("clock", implicitWidth, implicitHeight)
                 }
@@ -245,14 +240,14 @@ Scope {
 
             PositionedWidget {
                 positionKey: "weatherWidgetPosition"
-                defaultPosition: Root.Config.weatherWidgetPosition
-                configVisible: Root.Config.showWeatherWidget
+                defaultPosition: Root.Config.widgets.weatherPosition
+                configVisible: Root.Config.widgets.weather
                 screenName: widgetPanel.panelScreenName
 
                 Widgets.WeatherWidget {
                     id: weatherW
                     weatherService: root.weatherService
-                    fontSize: Root.Config.weatherFontSize
+                    fontSize: Root.Config.weatherConfig.fontSize
                     onImplicitWidthChanged: root.updateWidgetSize("weather", implicitWidth, implicitHeight)
                     onImplicitHeightChanged: root.updateWidgetSize("weather", implicitWidth, implicitHeight)
                 }
@@ -262,16 +257,16 @@ Scope {
 
             PositionedWidget {
                 positionKey: "systemWidgetPosition"
-                defaultPosition: Root.Config.systemWidgetPosition
-                configVisible: Root.Config.showSystemWidget
+                defaultPosition: Root.Config.widgets.systemPosition
+                configVisible: Root.Config.widgets.system
                 screenName: widgetPanel.panelScreenName
 
                 Widgets.SystemWidget {
                     id: systemW
                     statsService: Core.ServiceManager.systemStats
-                    showCpu: Root.Config.systemShowCpu
-                    showRam: Root.Config.systemShowRam
-                    fontSize: Root.Config.systemFontSize
+                    showCpu: Root.Config.systemConfig.showCpu
+                    showRam: Root.Config.systemConfig.showRam
+                    fontSize: Root.Config.systemConfig.fontSize
                     onImplicitWidthChanged: root.updateWidgetSize("system", implicitWidth, implicitHeight)
                     onImplicitHeightChanged: root.updateWidgetSize("system", implicitWidth, implicitHeight)
                 }
@@ -281,15 +276,15 @@ Scope {
 
             PositionedWidget {
                 positionKey: "quoteWidgetPosition"
-                defaultPosition: Root.Config.quoteWidgetPosition
-                configVisible: Root.Config.showQuoteWidget
+                defaultPosition: Root.Config.widgets.quotePosition
+                configVisible: Root.Config.widgets.quote
                 screenName: widgetPanel.panelScreenName
 
                 Widgets.QuoteWidget {
                     id: quoteW
-                    maxWidth: Root.Config.quoteMaxWidth
-                    fontSize: Root.Config.quoteFontSize
-                    refreshInterval: Root.Config.quoteRefreshInterval
+                    maxWidth: Root.Config.quoteConfig.maxWidth
+                    fontSize: Root.Config.quoteConfig.fontSize
+                    refreshInterval: Root.Config.quoteConfig.refreshInterval
                     onImplicitWidthChanged: root.updateWidgetSize("quote", implicitWidth, implicitHeight)
                     onImplicitHeightChanged: root.updateWidgetSize("quote", implicitWidth, implicitHeight)
                 }
@@ -299,17 +294,17 @@ Scope {
 
             PositionedWidget {
                 positionKey: "nowPlayingWidgetPosition"
-                defaultPosition: Root.Config.nowPlayingWidgetPosition
-                configVisible: Root.Config.showNowPlayingWidget
+                defaultPosition: Root.Config.widgets.nowPlayingPosition
+                configVisible: Root.Config.widgets.nowPlaying
                 screenName: widgetPanel.panelScreenName
                 extraVisible: nowPlayingW.hasMedia
 
                 Widgets.NowPlayingWidget {
                     id: nowPlayingW
                     playerService: root.playerService
-                    showArt: Root.Config.nowPlayingShowArt
-                    artSize: Root.Config.nowPlayingArtSize
-                    fontSize: Root.Config.nowPlayingFontSize
+                    showArt: Root.Config.nowPlayingConfig.showArt
+                    artSize: Root.Config.nowPlayingConfig.artSize
+                    fontSize: Root.Config.nowPlayingConfig.fontSize
                     onImplicitWidthChanged: root.updateWidgetSize("nowPlaying", implicitWidth, implicitHeight)
                     onImplicitHeightChanged: root.updateWidgetSize("nowPlaying", implicitWidth, implicitHeight)
                 }
@@ -319,14 +314,14 @@ Scope {
 
             PositionedWidget {
                 positionKey: "calendarWidgetPosition"
-                defaultPosition: Root.Config.calendarWidgetPosition
-                configVisible: Root.Config.showCalendarWidget
+                defaultPosition: Root.Config.widgets.calendarPosition
+                configVisible: Root.Config.widgets.calendar
                 screenName: widgetPanel.panelScreenName
 
                 Widgets.CalendarWidget {
                     id: calendarW
-                    showWeekNumbers: Root.Config.calendarShowWeekNumbers
-                    cellSize: Root.Config.calendarCellSize
+                    showWeekNumbers: Root.Config.calendarConfig.showWeekNumbers
+                    cellSize: Root.Config.calendarConfig.cellSize
                     onImplicitWidthChanged: root.updateWidgetSize("calendar", implicitWidth, implicitHeight)
                     onImplicitHeightChanged: root.updateWidgetSize("calendar", implicitWidth, implicitHeight)
                 }
@@ -336,15 +331,15 @@ Scope {
 
             PositionedWidget {
                 positionKey: "stockWidgetPosition"
-                defaultPosition: Root.Config.stockWidgetPosition
-                configVisible: Root.Config.showStockWidget
+                defaultPosition: Root.Config.widgets.stockPosition
+                configVisible: Root.Config.widgets.stock
                 screenName: widgetPanel.panelScreenName
 
                 Widgets.StockWidget {
                     id: stockW
-                    symbols: Root.Config.stockSymbols
-                    fontSize: Root.Config.stockFontSize
-                    refreshInterval: Root.Config.stockRefreshInterval
+                    symbols: Root.Config.stockConfig.symbols
+                    fontSize: Root.Config.stockConfig.fontSize
+                    refreshInterval: Root.Config.stockConfig.refreshInterval
                     onImplicitWidthChanged: root.updateWidgetSize("stock", implicitWidth, implicitHeight)
                     onImplicitHeightChanged: root.updateWidgetSize("stock", implicitWidth, implicitHeight)
                 }
@@ -398,7 +393,7 @@ Scope {
                     property real targetWidth: editOverlay.isDragging ? editOverlay.draggedSize.width : 60
                     property real targetHeight: editOverlay.isDragging ? editOverlay.draggedSize.height : 24
 
-                    property point pos: root.getPosition(posName, targetWidth, targetHeight, editOverlay.width, editOverlay.height, Root.Config.widgetMarginX, Root.Config.widgetMarginY)
+                    property point pos: root.getPosition(posName, targetWidth, targetHeight, editOverlay.width, editOverlay.height, Root.Config.widgets.marginX, Root.Config.widgets.marginY)
 
                     x: pos.x; y: pos.y
                     width: targetWidth; height: targetHeight
@@ -471,10 +466,10 @@ Scope {
                         border.width: 1; border.color: Root.Theme.textAccent
                         Row {
                             anchors.centerIn: parent; spacing: 6
-                            Text { text: Root.Theme.iconSave; color: Root.Theme.textAccent; font.family: Root.Theme.fontFamily; font.pixelSize: 14 }
+                            Text { text: Root.Icons.save; color: Root.Theme.textAccent; font.family: Root.Theme.fontFamily; font.pixelSize: 14 }
                             Text { text: "Save"; color: Root.Theme.textAccent; font { family: Root.Theme.fontFamily; pixelSize: 12; bold: true } }
                         }
-                        MouseArea { id: saveMA; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.savePositions() }
+                        MouseArea { id: saveMA; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.commit() }
                     }
 
                     Rectangle {
@@ -483,7 +478,7 @@ Scope {
                         border.width: 1; border.color: Root.Theme.textDimmed
                         Row {
                             anchors.centerIn: parent; spacing: 6
-                            Text { text: Root.Theme.iconCancel; color: Root.Theme.textDimmed; font.family: Root.Theme.fontFamily; font.pixelSize: 14 }
+                            Text { text: Root.Icons.cancel; color: Root.Theme.textDimmed; font.family: Root.Theme.fontFamily; font.pixelSize: 14 }
                             Text { text: "Cancel"; color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 12 } }
                         }
                         MouseArea { id: cancelMA; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.toggleEditMode() }

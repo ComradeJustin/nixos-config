@@ -39,7 +39,7 @@ Components.SmoothFlickable {
 
                     Text {
                         anchors.centerIn: parent
-                        text: (root.audioService && root.audioService.muted) ? Root.Theme.iconVolMute : Root.Theme.iconVolHigh
+                        text: (root.audioService && root.audioService.muted) ? Root.Icons.volMute : Root.Icons.volHigh
                         color: (root.audioService && root.audioService.muted) ? Root.Theme.textDimmed : Root.Theme.domainMedia
                         font { family: Root.Theme.fontFamily; pixelSize: 20 }
                     }
@@ -213,7 +213,7 @@ Components.SmoothFlickable {
             model: root.audioService ? root.audioService.sinks : null
             Components.DeviceListItem {
                 width: volCol.width
-                icon: Root.Theme.iconSpeaker
+                icon: Root.Icons.speaker
                 label: model.devDesc
                 isActive: model.devActive
                 showActiveBackground: true
@@ -239,7 +239,7 @@ Components.SmoothFlickable {
             model: root.audioService ? root.audioService.sources : null
             Components.DeviceListItem {
                 width: volCol.width
-                icon: Root.Theme.iconHeadphone
+                icon: Root.Icons.headphone
                 label: model.devDesc
                 isActive: model.devActive
                 showActiveBackground: true
