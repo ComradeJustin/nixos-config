@@ -25,9 +25,12 @@ Item {
     property var onDragDrop: null    // function(globalX, globalY)
     property var onDragReset: null   // function()
 
+    // Whether the loaded module has visible content with actual width
+    readonly property bool contentVisible: !editMode && loader.item !== null && loader.item.visible && loader.item.implicitWidth > 0
+
     implicitWidth: editMode
         ? editGhost.width + (index > 0 ? Root.Theme.barSpacing : 0)
-        : (sep.visible ? sep.width + Root.Theme.barSpacing + loader.implicitWidth : loader.implicitWidth)
+        : (contentVisible ? (sep.visible ? sep.width + Root.Theme.barSpacing + loader.implicitWidth : loader.implicitWidth) : 0)
     implicitHeight: Root.Theme.barHeight
     anchors.verticalCenter: parent ? parent.verticalCenter : undefined
     opacity: (dragActive && dragKey === modelData) ? 0.3 : _entranceOpacity
@@ -54,13 +57,14 @@ Item {
         visible: {
             if (delegate.editMode) return false;
             if (delegate.index === 0) return false;
+            if (!delegate.contentVisible) return false;
             // Hide separators when group backgrounds are showing
             if (Root.Config.bar.showGroups) return false;
             let rep = delegate.sectionRepeater;
             if (!rep) return false;
             for (let i = delegate.index - 1; i >= 0; i--) {
                 let prev = rep.itemAt(i);
-                if (prev && prev.visible) return true;
+                if (prev && prev.contentVisible) return true;
             }
             return false;
         }

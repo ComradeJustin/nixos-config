@@ -73,7 +73,6 @@ Item {
         textColor: mediaHover.containsMouse ? Root.Theme.domainMedia : Root.Theme.textPrimary
         textFont: Qt.font({ family: Root.Theme.fontFamily, pixelSize: Root.Theme.fontSize, bold: true })
         scrollEnabled: root.isPlaying
-        fadeColor: Root.Config.bar.showGroups ? Root.Theme.layer1 : Root.Theme.barBackground
 
         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.cavaToggled() }
     }
