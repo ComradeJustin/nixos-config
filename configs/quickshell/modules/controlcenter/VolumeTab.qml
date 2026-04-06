@@ -20,72 +20,7 @@ Components.SmoothFlickable {
 
         Item { width: 1; height: 2 }
 
-        // ── Master Volume ──
-        Rectangle {
-            width: parent.width
-            height: 56
-            radius: Root.Theme.ccSectionRadius
-            color: Root.Theme.ccSectionBg
-
-            Row {
-                anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
-                spacing: 10
-
-                Rectangle {
-                    width: 28; height: 28
-                    radius: Root.Theme.radiusSmall
-                    color: volMuteMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1) : "transparent"
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: (root.audioService && root.audioService.muted) ? Root.Icons.volMute : Root.Icons.volHigh
-                        color: (root.audioService && root.audioService.muted) ? Root.Theme.textDimmed : Root.Theme.domainMedia
-                        font { family: Root.Theme.fontFamily; pixelSize: 20 }
-                    }
-                    MouseArea {
-                        id: volMuteMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: { if (root.audioService) root.audioService.toggleMute(); }
-                    }
-                }
-
-                Components.SliderBar {
-                    id: masterSlider
-                    width: parent.width - 20 - 50 - 20
-                    height: 20
-                    anchors.verticalCenter: parent.verticalCenter
-                    accentColor: Root.Theme.domainMedia
-                    onValueUpdated: function(newValue) {
-                        if (root.audioService) root.audioService.setVolume(Math.round(newValue));
-                    }
-                    // Only sync from service when not dragging to prevent feedback jitter
-                    Binding {
-                        target: masterSlider
-                        property: "value"
-                        value: root.audioService ? root.audioService.volume : 0
-                        when: !masterSlider.dragging
-                    }
-                }
-
-                Text {
-                    text: (root.audioService ? root.audioService.volume : 0) + "%"
-                    color: Root.Theme.textPrimary
-                    font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
-                    width: 44
-                    anchors.verticalCenter: parent.verticalCenter
-                    horizontalAlignment: Text.AlignRight
-                }
-            }
-        }
-
         // ── Per-App Audio Mixer ──
-        Components.Separator {
-            visible: root.audioService ? root.audioService.appStreams.count > 0 : false
-        }
-
         Text {
             text: "App Mixer"
             color: Root.Theme.textPrimary

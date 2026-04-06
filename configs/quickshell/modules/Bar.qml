@@ -232,19 +232,34 @@ Scope {
                                         : (modelData.sec === "center" ? centerRepeater : rightRepeater)
                         property Item _row: modelData.sec === "left" ? leftSection
                                          : (modelData.sec === "center" ? centerSection : rightSection)
-                        // Track items reactively via repeater count dependency
-                        property var _firstItem: { void(_rep.count); return _rep.itemAt(modelData.startIdx); }
-                        property var _lastItem:  { void(_rep.count); return _rep.itemAt(modelData.endIdx); }
 
-                        visible: Root.Config.bar.showGroups && _firstItem !== null && _lastItem !== null
-                        x: _firstItem ? _row.x + _firstItem.x - _hPad : 0
-                        width: (_firstItem && _lastItem) ? (_lastItem.x + _lastItem.width - _firstItem.x + _hPad * 2) : 0
+                        // Compute visible bounds — reads contentVisible, x, implicitWidth from each item
+                        // so QML binding engine tracks all changes reactively
+                        property var _bounds: {
+                            void(_rep.count);
+                            let firstX = -1;
+                            let lastRight = -1;
+                            for (let i = modelData.startIdx; i <= modelData.endIdx; i++) {
+                                let item = _rep.itemAt(i);
+                                if (!item || !item.contentVisible) continue;
+                                let ix = item.x;
+                                let iw = item.implicitWidth;
+                                if (firstX < 0) firstX = ix;
+                                lastRight = ix + iw;
+                            }
+                            if (firstX < 0) return null;
+                            return { x: firstX, w: lastRight - firstX };
+                        }
+
+                        visible: Root.Config.bar.showGroups && _bounds !== null
+                        x: _bounds ? _row.x + _bounds.x - _hPad : 0
+                        width: _bounds ? _bounds.w + _hPad * 2 : 0
                         y: _vPad
                         height: bg.height - _vPad * 2
                         radius: Root.Theme.radiusSmall
                         color: Root.Theme.layer1
 
-                        property int _hPad: 5
+                        property int _hPad: 3
                         property int _vPad: 4
                     }
                 }

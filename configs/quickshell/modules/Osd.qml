@@ -48,11 +48,16 @@ PanelWindow {
     // Show / hide with slide + fade
     function show(mode) {
         activeMode = mode;
-        visible = true;
-        showAnim.stop();
-        fadeOut.stop();
-        showAnim.start();
         hideTimer.restart();
+
+        // Already fully visible — just reset the dismiss timer, skip animation
+        if (visible && !fadeOut.running) return;
+
+        // Either hidden or fading out — (re)play entrance
+        visible = true;
+        fadeOut.stop();
+        showAnim.stop();
+        showAnim.start();
     }
 
     ParallelAnimation {

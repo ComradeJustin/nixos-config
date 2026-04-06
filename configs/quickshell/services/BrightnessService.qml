@@ -19,6 +19,8 @@ Scope {
     property bool suppressPoll: false
     Timer { id: suppressTimer; interval: 300; onTriggered: root.suppressPoll = false }
 
+    property int _pendingBri: -1
+
     function setBrightness(percent) {
         percent = Math.max(0, Math.min(100, percent));
         let old = root.brightness;
@@ -27,7 +29,11 @@ Scope {
         root.suppressPoll = true;
         suppressTimer.restart();
         setProc.percent = percent;
-        setProc.running = true;
+        if (!setProc.running) {
+            setProc.running = true;
+        } else {
+            _pendingBri = percent;
+        }
     }
 
     function increase(step) {
@@ -111,5 +117,14 @@ Scope {
         command: ["brightnessctl", "set", percent + "%"]
 
         onStarted: root.markActive()
+        onExited: {
+            if (root._pendingBri >= 0) {
+                percent = root._pendingBri;
+                root._pendingBri = -1;
+                root.suppressPoll = true;
+                root.suppressTimer.restart();
+                running = true;
+            }
+        }
     }
 }

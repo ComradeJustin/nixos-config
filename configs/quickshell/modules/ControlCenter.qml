@@ -17,6 +17,7 @@ Scope {
 
     // Self-wired via ServiceManager
     readonly property var audioService: Core.ServiceManager.audio
+    readonly property var brightnessService: Core.ServiceManager.brightness
     readonly property var notifService: Core.ServiceManager.notif
     readonly property var wifiService: Core.ServiceManager.wifi
     readonly property var bluetoothService: Core.ServiceManager.bluetooth
@@ -247,6 +248,124 @@ Scope {
                         }
                     }
 
+                    // ── Always-visible sliders (volume + brightness) ──
+                    Column {
+                        width: parent.width
+                        spacing: 6
+
+                        // Volume slider
+                        Rectangle {
+                            width: parent.width; height: 40
+                            radius: Root.Theme.ccSectionRadius
+                            color: Root.Theme.ccSectionBg
+
+                            Row {
+                                anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+                                spacing: 8
+
+                                Rectangle {
+                                    width: 24; height: 24
+                                    radius: Root.Theme.radiusSmall
+                                    color: ccVolMuteMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1) : "transparent"
+                                    anchors.verticalCenter: parent.verticalCenter
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: (cc.audioService && cc.audioService.muted) ? Root.Icons.volMute : Root.Icons.volHigh
+                                        color: (cc.audioService && cc.audioService.muted) ? Root.Theme.textDimmed : Root.Theme.domainMedia
+                                        font { family: Root.Theme.fontFamily; pixelSize: 16 }
+                                    }
+                                    MouseArea {
+                                        id: ccVolMuteMouse
+                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                        onClicked: { if (cc.audioService) cc.audioService.toggleMute(); }
+                                    }
+                                }
+
+                                Components.SliderBar {
+                                    id: ccVolSlider
+                                    width: parent.width - 24 - 40 - 16
+                                    height: 16
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    accentColor: Root.Theme.domainMedia
+                                    trackHeight: 3
+                                    handleSize: 12
+                                    onValueUpdated: function(newValue) {
+                                        if (cc.audioService) cc.audioService.setVolume(Math.round(newValue));
+                                    }
+                                    Binding {
+                                        target: ccVolSlider
+                                        property: "value"
+                                        value: cc.audioService ? cc.audioService.volume : 0
+                                        when: !ccVolSlider.dragging
+                                    }
+                                }
+
+                                Text {
+                                    text: (cc.audioService ? cc.audioService.volume : 0) + "%"
+                                    color: Root.Theme.textPrimary
+                                    font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                                    width: 32
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    horizontalAlignment: Text.AlignRight
+                                }
+                            }
+                        }
+
+                        // Brightness slider (only visible when brightnessctl is available)
+                        Rectangle {
+                            visible: cc.brightnessService && cc.brightnessService.available
+                            width: parent.width; height: 40
+                            radius: Root.Theme.ccSectionRadius
+                            color: Root.Theme.ccSectionBg
+
+                            Row {
+                                anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+                                spacing: 8
+
+                                Item {
+                                    width: 24; height: 24
+                                    anchors.verticalCenter: parent.verticalCenter
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: Root.Icons.brightnessIcon(cc.brightnessService ? cc.brightnessService.brightness : 0)
+                                        color: Root.Theme.domainTime
+                                        font { family: Root.Theme.fontFamily; pixelSize: 16 }
+                                    }
+                                }
+
+                                Components.SliderBar {
+                                    id: ccBriSlider
+                                    width: parent.width - 24 - 40 - 16
+                                    height: 16
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    accentColor: Root.Theme.domainTime
+                                    trackHeight: 3
+                                    handleSize: 12
+                                    onValueUpdated: function(newValue) {
+                                        if (cc.brightnessService) cc.brightnessService.setBrightness(Math.round(newValue));
+                                    }
+                                    Binding {
+                                        target: ccBriSlider
+                                        property: "value"
+                                        value: cc.brightnessService ? cc.brightnessService.brightness : 0
+                                        when: !ccBriSlider.dragging
+                                    }
+                                }
+
+                                Text {
+                                    text: (cc.brightnessService ? cc.brightnessService.brightness : 0) + "%"
+                                    color: Root.Theme.textPrimary
+                                    font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                                    width: 32
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    horizontalAlignment: Text.AlignRight
+                                }
+                            }
+                        }
+                    }
+
                     // ── Tab bar with sliding indicator ──
                     Item {
                         id: tabBar
@@ -254,9 +373,8 @@ Scope {
 
                         property var tabs: [
                             { tab: "notifications", icon: Root.Icons.bell, label: "Notif", accent: Root.Theme.domainNotifications },
-                            { tab: "volume", icon: Root.Icons.volHigh, label: "Vol", accent: Root.Theme.domainMedia },
-                            { tab: "wifi", icon: Root.Icons.wifiHi, label: "Net", accent: Root.Theme.domainNetwork },
-                            { tab: "bluetooth", icon: Root.Icons.btOn, label: "Bt", accent: Root.Theme.domainNetwork }
+                            { tab: "volume", icon: Root.Icons.volHigh, label: "Mixer", accent: Root.Theme.domainMedia },
+                            { tab: "connections", icon: Root.Icons.wifiHi, label: "Connect", accent: Root.Theme.domainNetwork }
                         ]
 
                         property int activeIndex: {
@@ -314,8 +432,10 @@ Scope {
                                         onClicked: {
                                             cc.activeTab = modelData.tab;
                                             if (modelData.tab === "volume" && cc.audioService) { cc.audioService.refreshApps(); cc.audioService.refreshDevices(); }
-                                            if (modelData.tab === "wifi" && cc.wifiService) cc.wifiService.scan();
-                                            if (modelData.tab === "bluetooth" && cc.bluetoothService) cc.bluetoothService.scan(false);
+                                            if (modelData.tab === "connections") {
+                                                if (cc.wifiService) cc.wifiService.scan();
+                                                if (cc.bluetoothService) cc.bluetoothService.scan(false);
+                                            }
                                         }
                                     }
                                 }
@@ -328,7 +448,8 @@ Scope {
                     // ── Tab content ──
                     Item {
                         width: parent.width
-                        height: parent.height - 28 - 48 - 38 - 1 - 30 - 60
+                        // header(28) + toggles(40) + sliders(~86) + tabs(38) + sep(1) + footer(24) + 6×spacing(72) = 289
+                        height: parent.height - 289
 
                         CCTabs.NotificationsTab {
                             anchors.fill: parent
@@ -354,25 +475,14 @@ Scope {
                             Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
                         }
 
-                        CCTabs.WifiTab {
+                        CCTabs.ConnectionsTab {
                             anchors.fill: parent
                             visible: opacity > 0
                             wifiService: cc.wifiService
-                            opacity: cc.activeTab === "wifi" ? 1 : 0
-                            transform: Translate {
-                                y: cc.activeTab === "wifi" ? 0 : 6
-                                Behavior on y { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
-                            }
-                            Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
-                        }
-
-                        CCTabs.BluetoothTab {
-                            anchors.fill: parent
-                            visible: opacity > 0
                             bluetoothService: cc.bluetoothService
-                            opacity: cc.activeTab === "bluetooth" ? 1 : 0
+                            opacity: cc.activeTab === "connections" ? 1 : 0
                             transform: Translate {
-                                y: cc.activeTab === "bluetooth" ? 0 : 6
+                                y: cc.activeTab === "connections" ? 0 : 6
                                 Behavior on y { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
                             }
                             Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
@@ -381,7 +491,7 @@ Scope {
 
                     // ── Footer ──
                     Item {
-                        width: parent.width; height: 30
+                        width: parent.width; height: 24
 
                         Text {
                             anchors { left: parent.left; verticalCenter: parent.verticalCenter }
@@ -390,47 +500,27 @@ Scope {
                                 return c + " notification" + (c !== 1 ? "s" : "");
                             }
                             color: Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                            font { family: Root.Theme.fontFamily; pixelSize: 11 }
                         }
 
-                        Row {
+                        Rectangle {
                             anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                            spacing: 8
+                            width: clearText.implicitWidth + 12; height: 22
+                            radius: Root.Theme.radiusSmall
+                            color: clearMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.08) : "transparent"
 
-                            Rectangle {
-                                width: silentText.implicitWidth + 12; height: 24
-                                radius: Root.Theme.radiusSmall
-                                color: silentMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.08) : "transparent"
-
-                                Text {
-                                    id: silentText
-                                    anchors.centerIn: parent
-                                    property bool isDnd: cc.notifService ? cc.notifService.dnd : false
-                                    text: isDnd ? Root.Icons.dnd + " Silent" : Root.Icons.dndOff + " Silent"
-                                    color: isDnd ? Root.Theme.domainNotifications : (silentMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
-                                    font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                            Text {
+                                id: clearText
+                                anchors.centerIn: parent
+                                text: Root.Icons.trash + " Clear"
+                                color: {
+                                    if (!(cc.notifService && cc.notifService.items.length > 0))
+                                        return Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.3);
+                                    return clearMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed;
                                 }
-                                MouseArea { id: silentMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.notifService) cc.notifService.dnd = !cc.notifService.dnd; } }
+                                font { family: Root.Theme.fontFamily; pixelSize: 11 }
                             }
-
-                            Rectangle {
-                                width: clearText.implicitWidth + 12; height: 24
-                                radius: Root.Theme.radiusSmall
-                                color: clearMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.08) : "transparent"
-
-                                Text {
-                                    id: clearText
-                                    anchors.centerIn: parent
-                                    text: Root.Icons.trash + " Clear"
-                                    color: {
-                                        if (!(cc.notifService && cc.notifService.items.length > 0))
-                                            return Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.3);
-                                        return clearMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed;
-                                    }
-                                    font { family: Root.Theme.fontFamily; pixelSize: 12 }
-                                }
-                                MouseArea { id: clearMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.notifService) cc.notifService.clearAll(); } }
-                            }
+                            MouseArea { id: clearMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.notifService) cc.notifService.clearAll(); } }
                         }
                     }
                 }

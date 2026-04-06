@@ -25,6 +25,8 @@ Scope {
     property bool suppressPoll: false
     Timer { id: suppressTimer; interval: 300; onTriggered: root.suppressPoll = false }
 
+    property int _pendingVol: -1
+
     function setVolume(v) {
         v = Math.max(0, Math.min(100, v));
         let old = root.volume;
@@ -33,7 +35,11 @@ Scope {
         root.suppressPoll = true;
         suppressTimer.restart();
         setProc.vol = v;
-        setProc.running = true;
+        if (!setProc.running) {
+            setProc.running = true;
+        } else {
+            _pendingVol = v;
+        }
     }
 
     function toggleMute() {
@@ -112,7 +118,20 @@ Scope {
     function markActive() { recentlyActive = true; activityCooldown.restart(); }
 
     Timer { id: pollTimer; interval: root.recentlyActive ? 100 : 300; onTriggered: pollProc.running = true }
-    Process { id: setProc; property int vol: 0; command: ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", vol + "%"]; onStarted: root.markActive() }
+    Process {
+        id: setProc; property int vol: 0
+        command: ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", vol + "%"]
+        onStarted: root.markActive()
+        onExited: {
+            if (root._pendingVol >= 0) {
+                vol = root._pendingVol;
+                root._pendingVol = -1;
+                root.suppressPoll = true;
+                root.suppressTimer.restart();
+                running = true;
+            }
+        }
+    }
     Process { id: muteProc; command: ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"] }
 
     // ── Per-app volume (PipeWire native) ──
