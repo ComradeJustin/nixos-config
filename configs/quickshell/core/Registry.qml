@@ -19,7 +19,8 @@ QtObject {
         { key: "window",      consumers: ["widgetOverlay"] },
         { key: "idleInhibit", consumers: ["cc"] },
         { key: "weather",     consumers: ["bar.weather", "widget.weather"] },
-        { key: "systemStats", consumers: ["bar.resource", "widget.system"] }
+        { key: "systemStats", consumers: ["bar.resource", "widget.system"] },
+        { key: "hooks",       consumers: ["all"] }
     ]
 
     // ── Bar modules ──
@@ -36,6 +37,7 @@ QtObject {
         { key: "network",   label: "Network",   section: "right",  file: true, group: "conn", services: ["wifi"] },
         { key: "bluetooth", label: "Bluetooth", section: "right",  file: true, group: "conn", services: ["bluetooth"] },
         { key: "battery",   label: "Battery",   section: "right",  file: true, group: "battery" },
+        { key: "caffeine",  label: "Caffeine",  section: "right",  file: true, group: "utils", services: ["idleInhibit"] },
         { key: "tray",      label: "Tray",      section: "right",  file: true, group: "utils" },
         { key: "gear",      label: "Settings",  section: "right",  file: true, group: "utils" }
     ]

@@ -13,6 +13,7 @@
     "style": "flat",
     "showGroups": false,
     "showCpuGraph": true,
+    "showCaffeineWhenOff": false,
     "layoutLeft": [
       "power",
       "workspace",
@@ -25,10 +26,11 @@
       "media"
     ],
     "layoutRight": [
+      "caffeine",
       "bluetooth",
       "network",
-      "audio",
       "resource",
+      "audio",
       "battery",
       "gear"
     ]

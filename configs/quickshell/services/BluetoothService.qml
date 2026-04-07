@@ -18,6 +18,14 @@ Scope {
     property bool scanning: false
     property bool hasScanned: false  // Track if we've done initial scan
 
+    // Previous connected device name — used to emit deviceDisconnected with
+    // the *prior* device label even after `connectedDevice` has been cleared.
+    property string _prevConn: ""
+
+    // ── Signals (consumed by HooksService) ──
+    signal bluetoothDeviceConnected(string name, string type)
+    signal bluetoothDeviceDisconnected(string name)
+
     Component.onCompleted: statusProc.running = true
 
     // ── Quick status poll (bar) ──
@@ -63,6 +71,21 @@ Scope {
                     root.connected = true;
                     root.connectedDevice = parts[1] || "";
                     root.connectedType = parts[2] || "other";
+                }
+                // ── Edge detection for hooks ──
+                // Compute the "current connection" string and compare against
+                // the previous one. Doing it here (rather than in onConnectedChanged)
+                // catches device-switch transitions (A → B) which never see
+                // `connected` flip and would otherwise be missed.
+                var newName = root.connected ? root.connectedDevice : "";
+                if (newName !== root._prevConn) {
+                    if (root._prevConn.length > 0) {
+                        root.bluetoothDeviceDisconnected(root._prevConn);
+                    }
+                    if (newName.length > 0) {
+                        root.bluetoothDeviceConnected(newName, root.connectedType);
+                    }
+                    root._prevConn = newName;
                 }
             }
         }

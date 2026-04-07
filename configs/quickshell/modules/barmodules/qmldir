@@ -13,3 +13,4 @@ AudioModule 1.0 AudioModule.qml
 NetworkModule 1.0 NetworkModule.qml
 BluetoothModule 1.0 BluetoothModule.qml
 GearModule 1.0 GearModule.qml
+CaffeineModule 1.0 CaffeineModule.qml

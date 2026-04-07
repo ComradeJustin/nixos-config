@@ -34,19 +34,94 @@ PanelWindow {
         }
     }
 
+    // Open the settings window directly to a specific page by id (e.g.
+    // "bar", "widgets", "preferences", "about"). Falls back to the first
+    // page if the id is unknown. Used by IPC and from notifications/hooks.
+    function open(pageId) {
+        let idx = 0;
+        for (let i = 0; i < _pages.length; i++) {
+            if (_pages[i].id === pageId) { idx = i; break; }
+        }
+        if (visible) {
+            _switchPage(idx);
+        } else {
+            _open();
+            _activePage = idx;
+        }
+    }
+
     // ── Internal state ───────────────────────────────────────────────────
     property int _activePage: 0
     property int _pendingPage: -1         // page waiting for transition
     property bool _contentVisible: true   // drives fade in/out
     property bool _showing: false         // drives open/close animation
+    property string _searchQuery: ""      // when non-empty, search results replace the page
 
     // Page definitions — icon uses Nerd Font codepoints matching the spec
     readonly property var _pages: [
         { id: "bar",         label: "Bar",         icon: "󰍹" },
         { id: "widgets",     label: "Widgets",     icon: "󰕰" },
         { id: "preferences", label: "Preferences", icon: "󰒓" },
+        { id: "hooks",       label: "Hooks",       icon: "󰢩" },
         { id: "about",       label: "About",       icon: "󰋽" }
     ]
+
+    // ── Search index ──────────────────────────────────────────────────
+    // Static index mapping every settable option to its page. Adding a new
+    // toggle to a page also requires adding it here so search can find it.
+    // keywords are matched in addition to the label.
+    readonly property var _searchIndex: [
+        // Bar page
+        { label: "Modules",            keywords: "bar layout enable disable",        page: 0 },
+        { label: "Floating bar",       keywords: "bar style float flat detach",      page: 0 },
+        { label: "Module groups",      keywords: "bar groups card background",       page: 0 },
+        { label: "CPU sparkline",      keywords: "cpu graph chart resource",         page: 0 },
+        { label: "Reorder Bar",        keywords: "bar drag rearrange",               page: 0 },
+        // Widgets page
+        { label: "Desktop widgets",    keywords: "wallpaper widget enable",          page: 1 },
+        { label: "Edit Widget Layout", keywords: "widget drag rearrange position",   page: 1 },
+        { label: "Clock font size",    keywords: "clock time fontSize",              page: 1 },
+        { label: "Show seconds",       keywords: "clock time seconds",               page: 1 },
+        { label: "Show date",          keywords: "clock date",                       page: 1 },
+        { label: "Use metric units",   keywords: "weather metric celsius units",     page: 1 },
+        { label: "Weather font size",  keywords: "weather fontSize",                 page: 1 },
+        { label: "Show CPU",           keywords: "system cpu",                       page: 1 },
+        { label: "Show RAM",           keywords: "system ram memory",                page: 1 },
+        { label: "System font size",   keywords: "system fontSize",                  page: 1 },
+        { label: "Show album art",     keywords: "now playing media art",            page: 1 },
+        { label: "Album art size",     keywords: "now playing media art size",       page: 1 },
+        // Preferences page
+        { label: "Media popup",        keywords: "media popup floating",             page: 2 },
+        { label: "Clipboard history",  keywords: "clipboard copy paste history",     page: 2 },
+        { label: "Wallpaper selector", keywords: "wallpaper picker spotlight",       page: 2 },
+        { label: "Wallpaper widgets",  keywords: "wallpaper widget layer",           page: 2 },
+        { label: "Auto-hide widgets",  keywords: "auto hide widget windows",         page: 2 },
+        { label: "Auto-hide bar",      keywords: "auto hide bar fullscreen",         page: 2 },
+        { label: "Weather update",     keywords: "weather interval refresh timing",  page: 2 },
+        { label: "System stats",       keywords: "system stats interval timing",     page: 2 },
+        { label: "Notification timeout", keywords: "notification timeout timing",    page: 2 },
+        { label: "Max clipboard items", keywords: "clipboard max history",           page: 2 },
+        // Hooks page
+        { label: "Hooks events",        keywords: "hooks events list signal scripts", page: 3 },
+        { label: "Recent fires",        keywords: "hooks debug log fires history",    page: 3 },
+        { label: "Edit hooks.json",     keywords: "hooks edit json open file",        page: 3 },
+        { label: "Reload hooks",        keywords: "hooks reload refresh",             page: 3 },
+        // About page
+        { label: "Open Config Folder", keywords: "config folder open path",          page: 4 }
+    ]
+
+    // Reactive — re-evaluates whenever _searchQuery changes.
+    readonly property var _filteredResults: {
+        let q = _searchQuery.trim().toLowerCase();
+        if (q.length === 0) return [];
+        let out = [];
+        for (let i = 0; i < _searchIndex.length; i++) {
+            let e = _searchIndex[i];
+            let hay = (e.label + " " + (e.keywords || "")).toLowerCase();
+            if (hay.indexOf(q) !== -1) out.push(e);
+        }
+        return out;
+    }
 
     function _open() {
         visible = true;
@@ -303,9 +378,12 @@ PanelWindow {
                     }
                     height: 36
 
+                    // Page title (hidden while searching to give the input space)
                     Text {
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        text: win._pages[win._activePage] ? win._pages[win._activePage].label : ""
+                        text: win._searchQuery.length > 0
+                              ? "Search"
+                              : (win._pages[win._activePage] ? win._pages[win._activePage].label : "")
                         color: Root.Theme.textPrimary
                         font {
                             family: Root.Theme.fontFamily
@@ -314,7 +392,63 @@ PanelWindow {
                         }
                     }
 
+                    // ── Search box ──
+                    Rectangle {
+                        id: searchBox
+                        anchors {
+                            verticalCenter: parent.verticalCenter
+                            right: closeBtn.left
+                            rightMargin: 8
+                        }
+                        width: 200
+                        height: 28
+                        radius: Root.Theme.radiusSmall
+                        color: Qt.rgba(Root.Theme.base01.r, Root.Theme.base01.g, Root.Theme.base01.b, 0.7)
+                        border.width: 1
+                        border.color: searchInput.activeFocus
+                            ? Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.5)
+                            : Root.Theme.borderColor
+
+                        Behavior on border.color { ColorAnimation { duration: 120 } }
+
+                        Row {
+                            anchors { fill: parent; leftMargin: 8; rightMargin: 6 }
+                            spacing: 6
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: Root.Icons.search
+                                color: Root.Theme.textDimmed
+                                font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                            }
+
+                            TextInput {
+                                id: searchInput
+                                width: parent.width - 24
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: Root.Theme.textPrimary
+                                font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                                selectByMouse: true
+                                clip: true
+                                onTextChanged: win._searchQuery = text
+                                Keys.onEscapePressed: {
+                                    if (text.length > 0) { text = ""; }
+                                    else win._close();
+                                }
+
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "Search settings"
+                                    color: Root.Theme.textDimmed
+                                    font: searchInput.font
+                                    visible: searchInput.text.length === 0
+                                }
+                            }
+                        }
+                    }
+
                     Components.IconButton {
+                        id: closeBtn
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                         icon: Root.Icons.cancel
                         iconColor: Root.Theme.textDimmed
@@ -357,11 +491,13 @@ PanelWindow {
                         id: pageLoader
                         width: pageScroll.width
                         sourceComponent: {
+                            if (win._searchQuery.length > 0) return searchResultsPage;
                             switch (win._activePage) {
                                 case 0: return barPage
                                 case 1: return widgetsPage
                                 case 2: return preferencesPage
-                                case 3: return aboutPage
+                                case 3: return hooksPage
+                                case 4: return aboutPage
                                 default: return null
                             }
                         }
@@ -374,6 +510,97 @@ PanelWindow {
     // ════════════════════════════════════════════════════════════════════
     // ── Page components ─────────────────────────────────────────────────
     // ════════════════════════════════════════════════════════════════════
+
+    // ── Search results page ──────────────────────────────────────────────
+    Component {
+        id: searchResultsPage
+        Column {
+            id: searchCol
+            width: parent ? parent.width : 0
+            spacing: 6
+
+            Text {
+                visible: win._filteredResults.length === 0
+                text: "No matches"
+                color: Root.Theme.textDimmed
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
+                topPadding: 12
+                leftPadding: 4
+            }
+
+            Repeater {
+                model: win._filteredResults
+
+                Rectangle {
+                    required property var modelData
+                    width: searchCol.width
+                    height: 44
+                    radius: Root.Theme.radiusSmall
+                    color: resultMouse.containsMouse
+                        ? Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.10)
+                        : Qt.rgba(Root.Theme.base01.r, Root.Theme.base01.g, Root.Theme.base01.b, 0.5)
+                    Behavior on color { ColorAnimation { duration: 120 } }
+
+                    Column {
+                        anchors {
+                            left: parent.left; leftMargin: 12
+                            right: pageBadge.left; rightMargin: 8
+                            verticalCenter: parent.verticalCenter
+                        }
+                        spacing: 2
+
+                        Text {
+                            text: modelData.label
+                            color: Root.Theme.textPrimary
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
+                            elide: Text.ElideRight
+                            width: parent.width
+                        }
+                        Text {
+                            text: modelData.keywords
+                            color: Root.Theme.textDimmed
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall }
+                            elide: Text.ElideRight
+                            width: parent.width
+                        }
+                    }
+
+                    // Page indicator pill
+                    Rectangle {
+                        id: pageBadge
+                        anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                        width: pageBadgeText.implicitWidth + 14
+                        height: 20
+                        radius: 10
+                        color: Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.18)
+
+                        Text {
+                            id: pageBadgeText
+                            anchors.centerIn: parent
+                            text: win._pages[modelData.page] ? win._pages[modelData.page].label : ""
+                            color: Root.Theme.accentPrimary
+                            font { family: Root.Theme.fontFamily; pixelSize: 10; bold: true }
+                        }
+                    }
+
+                    MouseArea {
+                        id: resultMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            // Jump to the page and clear the search.
+                            win._switchPage(modelData.page);
+                            win._searchQuery = "";
+                            searchInput.text = "";
+                        }
+                    }
+                }
+            }
+
+            Item { width: 1; height: 8 }
+        }
+    }
 
     // ── Bar page ─────────────────────────────────────────────────────────
     Component {
@@ -448,6 +675,7 @@ PanelWindow {
             Components.SettingSection {
                 title: "BAR STYLE"
                 width: parent.width
+                resetCallback: () => Root.Config.resetSection("bar")
 
                 Components.SettingToggle {
                     label: "Floating bar"
@@ -475,6 +703,16 @@ PanelWindow {
                     isOn: Root.Config.bar.showCpuGraph
                     onToggled: {
                         Root.Config.bar.showCpuGraph = !Root.Config.bar.showCpuGraph
+                        Root.Config.save()
+                    }
+                }
+
+                Components.SettingToggle {
+                    label: "Always show caffeine"
+                    description: "Keep caffeine bar icon visible even when idle inhibit is off"
+                    isOn: Root.Config.bar.showCaffeineWhenOff
+                    onToggled: {
+                        Root.Config.bar.showCaffeineWhenOff = !Root.Config.bar.showCaffeineWhenOff
                         Root.Config.save()
                     }
                 }
@@ -558,6 +796,7 @@ PanelWindow {
             Components.SettingSection {
                 title: "CLOCK"
                 width: parent.width
+                resetCallback: () => Root.Config.resetSection("clock")
 
                 Components.SettingSlider {
                     label: "Font size"
@@ -589,6 +828,7 @@ PanelWindow {
             Components.SettingSection {
                 title: "WEATHER"
                 width: parent.width
+                resetCallback: () => Root.Config.resetSection("weather")
 
                 Components.SettingToggle {
                     label: "Use metric units"
@@ -612,6 +852,7 @@ PanelWindow {
             Components.SettingSection {
                 title: "SYSTEM"
                 width: parent.width
+                resetCallback: () => Root.Config.resetSection("system")
 
                 Components.SettingToggle {
                     label: "Show CPU"
@@ -643,6 +884,7 @@ PanelWindow {
             Components.SettingSection {
                 title: "NOW PLAYING"
                 width: parent.width
+                resetCallback: () => Root.Config.resetSection("nowPlaying")
 
                 Components.SettingToggle {
                     label: "Show album art"
@@ -677,6 +919,7 @@ PanelWindow {
             Components.SettingSection {
                 title: "FEATURES"
                 width: parent.width
+                resetCallback: () => Root.Config.resetSection("features")
 
                 Components.SettingToggle {
                     label: "Media popup"
@@ -719,6 +962,7 @@ PanelWindow {
             Components.SettingSection {
                 title: "BEHAVIOR"
                 width: parent.width
+                resetCallback: () => Root.Config.resetSection("features")
 
                 Components.SettingToggle {
                     label: "Auto-hide widgets"
@@ -743,6 +987,7 @@ PanelWindow {
             Components.SettingSection {
                 title: "TIMING"
                 width: parent.width
+                resetCallback: () => Root.Config.resetSection("behavior")
 
                 Components.SettingSlider {
                     label: "Weather update"
@@ -784,6 +1029,235 @@ PanelWindow {
 
             Item { width: 1; height: 8 }
         }
+    }
+
+    // ── Hooks page ───────────────────────────────────────────────────────
+    // Discovery + debug surface for HooksService.
+    // Lists every known event with its current binding (or "—") and shows
+    // a live tail of the most recent fires for "why isn't my hook firing?"
+    // troubleshooting.
+    Component {
+        id: hooksPage
+        Column {
+            id: hooksCol
+            width: parent ? parent.width : 0
+            spacing: 16
+
+            // Service handle — picked up reactively from ServiceManager.
+            property var hooksSvc: Core.ServiceManager.hooks
+
+            // ── Header / actions ────────────────────────────────────────
+            Components.SettingSection {
+                title: "HOOKS"
+                width: parent.width
+
+                Text {
+                    text: "Hooks bind shell events to shell commands.\nEdit ~/.config/quickshell/hooks.json — changes are picked up automatically."
+                    color: Root.Theme.textDimmed
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall }
+                    wrapMode: Text.WordWrap
+                    width: parent.width
+                    bottomPadding: 8
+                }
+
+                Row {
+                    width: parent.width
+                    spacing: 8
+
+                    // Edit button
+                    Rectangle {
+                        width: 140; height: 32
+                        radius: Root.Theme.radiusSmall
+                        color: editMouse.containsMouse
+                            ? Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.18)
+                            : Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.10)
+                        border.width: Root.Theme.borderWidth
+                        border.color: Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.3)
+                        Behavior on color { ColorAnimation { duration: 120 } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: Root.Icons.edit + "  Edit hooks.json"
+                            color: Root.Theme.accentPrimary
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall }
+                        }
+                        MouseArea {
+                            id: editMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: openHooksProc.running = true
+                        }
+                    }
+
+                    // Reload button
+                    Rectangle {
+                        width: 110; height: 32
+                        radius: Root.Theme.radiusSmall
+                        color: reloadMouse.containsMouse
+                            ? Qt.rgba(Root.Theme.base01.r, Root.Theme.base01.g, Root.Theme.base01.b, 0.95)
+                            : Qt.rgba(Root.Theme.base01.r, Root.Theme.base01.g, Root.Theme.base01.b, 0.6)
+                        border.width: Root.Theme.borderWidth
+                        border.color: Root.Theme.borderColor
+                        Behavior on color { ColorAnimation { duration: 120 } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: Root.Icons.reset + "  Reload"
+                            color: Root.Theme.textPrimary
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall }
+                        }
+                        MouseArea {
+                            id: reloadMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: { if (hooksCol.hooksSvc) hooksCol.hooksSvc.reload(); }
+                        }
+                    }
+                }
+            }
+
+            // ── Known events list ────────────────────────────────────────
+            Components.SettingSection {
+                title: "AVAILABLE EVENTS"
+                width: parent.width
+
+                Repeater {
+                    model: hooksCol.hooksSvc ? hooksCol.hooksSvc.knownEvents : []
+
+                    Rectangle {
+                        required property var modelData
+                        width: parent.width
+                        height: eventCol.implicitHeight + 14
+                        radius: Root.Theme.radiusSmall
+                        color: Qt.rgba(Root.Theme.base01.r, Root.Theme.base01.g, Root.Theme.base01.b, 0.5)
+
+                        // Reactive bound state — re-checks whenever the
+                        // hook table reloads from disk.
+                        readonly property bool isBound: hooksCol.hooksSvc
+                            && hooksCol.hooksSvc._table[modelData.name] !== undefined
+
+                        Column {
+                            id: eventCol
+                            anchors {
+                                left: parent.left; leftMargin: 12
+                                right: boundBadge.left; rightMargin: 8
+                                verticalCenter: parent.verticalCenter
+                            }
+                            spacing: 2
+
+                            Row {
+                                spacing: 8
+                                Text {
+                                    text: modelData.name
+                                    color: Root.Theme.textPrimary
+                                    font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall; bold: true }
+                                }
+                                Text {
+                                    text: "(" + modelData.args + ")"
+                                    color: Root.Theme.textDimmed
+                                    font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall }
+                                }
+                            }
+                            Text {
+                                text: modelData.desc
+                                color: Root.Theme.textDimmed
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall }
+                                wrapMode: Text.WordWrap
+                                width: eventCol.width
+                            }
+                        }
+
+                        // Bound / unbound pill
+                        Rectangle {
+                            id: boundBadge
+                            anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                            width: boundBadgeText.implicitWidth + 14
+                            height: 20
+                            radius: 10
+                            color: parent.isBound
+                                ? Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.20)
+                                : Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.15)
+
+                            Text {
+                                id: boundBadgeText
+                                anchors.centerIn: parent
+                                text: parent.parent.isBound ? "bound" : "—"
+                                color: parent.parent.isBound ? Root.Theme.accentPrimary : Root.Theme.textDimmed
+                                font { family: Root.Theme.fontFamily; pixelSize: 10; bold: true }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Recent fires ─────────────────────────────────────────────
+            Components.SettingSection {
+                title: "RECENT FIRES"
+                width: parent.width
+
+                Text {
+                    visible: !hooksCol.hooksSvc || hooksCol.hooksSvc.recentFires.length === 0
+                    text: "No events fired yet."
+                    color: Root.Theme.textDimmed
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall }
+                }
+
+                Repeater {
+                    // Reverse so newest is on top.
+                    model: hooksCol.hooksSvc
+                        ? hooksCol.hooksSvc.recentFires.slice().reverse().slice(0, 10)
+                        : []
+
+                    Row {
+                        required property var modelData
+                        width: parent.width
+                        height: 22
+                        spacing: 8
+
+                        Text {
+                            text: Qt.formatTime(new Date(modelData.ts), "hh:mm:ss")
+                            color: Root.Theme.textDimmed
+                            font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall }
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 60
+                        }
+                        Text {
+                            text: modelData.event
+                            color: modelData.bound ? Root.Theme.accentPrimary : Root.Theme.textPrimary
+                            font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall }
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 200
+                            elide: Text.ElideRight
+                        }
+                        Text {
+                            text: modelData.args && modelData.args.length > 0
+                                ? "[" + modelData.args.join(", ") + "]"
+                                : ""
+                            color: Root.Theme.textDimmed
+                            font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall }
+                            anchors.verticalCenter: parent.verticalCenter
+                            elide: Text.ElideRight
+                        }
+                    }
+                }
+            }
+
+            Item { width: 1; height: 8 }
+        }
+    }
+
+    // Process: open hooks.json in $EDITOR (or fall back to xdg-open)
+    Process {
+        id: openHooksProc
+        command: [
+            "sh", "-c",
+            "f=\"$HOME/.config/quickshell/hooks.json\"; " +
+            "mkdir -p \"$HOME/.config/quickshell\"; " +
+            "[ -f \"$f\" ] || echo '{}' > \"$f\"; " +
+            "xdg-open \"$f\""
+        ]
     }
 
     // ── About page ────────────────────────────────────────────────────────

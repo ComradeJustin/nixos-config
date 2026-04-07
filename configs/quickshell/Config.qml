@@ -25,10 +25,13 @@ QtObject {
         property bool showGroups: false
         // Show CPU sparkline graph in resource module
         property bool showCpuGraph: true
+        // Show the Caffeine bar module even when idle inhibit is off (default
+        // behavior is to only render it while caffeine is active, saving space)
+        property bool showCaffeineWhenOff: false
 
         property var layoutLeft: ["power", "workspace", "time", "weather", "window"]
         property var layoutCenter: ["media"]
-        property var layoutRight: ["resource", "audio", "network", "bluetooth", "battery", "tray", "gear"]
+        property var layoutRight: ["resource", "audio", "network", "bluetooth", "battery", "caffeine", "tray", "gear"]
     }
 
     // ── Widget settings ──
@@ -114,10 +117,95 @@ QtObject {
         property int refreshInterval: 300000
     }
 
+    // ══════════════════════════════════════════════════════════════════
+    // ── Defaults registry ──
+    // Single source of truth for every user-tweakable setting. Used by
+    // resetKey() / resetSection() / resetAll() and by the settings UI for
+    // showing reset affordances. When you add a new setting, add its
+    // default here as well.
+    // ══════════════════════════════════════════════════════════════════
+    readonly property var _defaults: ({
+        bar: {
+            workspace: true, time: true, weather: true, window: true,
+            media: true, resource: true, audio: true, network: true,
+            bluetooth: true, battery: true,
+            style: "flat", showGroups: false, showCpuGraph: true,
+            showCaffeineWhenOff: false,
+            layoutLeft: ["power", "workspace", "time", "weather", "window"],
+            layoutCenter: ["media"],
+            layoutRight: ["resource", "audio", "network", "bluetooth", "battery", "caffeine", "tray", "gear"]
+        },
+        widgets: {
+            clock: true, weather: true, system: false, quote: false,
+            nowPlaying: true, calendar: true, stock: false,
+            clockPosition: "bottom-right", weatherPosition: "top-right",
+            systemPosition: "top-left", quotePosition: "bottom-center",
+            nowPlayingPosition: "bottom-left", calendarPosition: "center-left",
+            stockPosition: "center-right",
+            marginX: 40, marginY: 40
+        },
+        features: {
+            wallpaperWidgets: true, autoHideWidgets: true,
+            autoHideBarInFullscreen: true, mediaPopup: true,
+            clipboardHistory: true, wallpaperSelector: true
+        },
+        behavior: {
+            weatherUpdateInterval: 900000, systemStatsInterval: 3000,
+            notificationTimeout: 5000, maxClipboardItems: 30
+        },
+        clock: {
+            timeFormat: "HH:mm", dateFormat: "dddd, MMMM d",
+            showDate: true, showSeconds: false, fontSize: 48
+        },
+        weather: { useMetric: true, fontSize: 32 },
+        system: { showCpu: true, showRam: true, fontSize: 24 },
+        quote: { maxWidth: 400, fontSize: 16, refreshInterval: 3600000 },
+        nowPlaying: { showArt: true, artSize: 80, fontSize: 14 },
+        calendar: { showWeekNumbers: false, cellSize: 28 },
+        stock: { symbols: ["SPY", "QQQ", "AAPL"], fontSize: 14, refreshInterval: 300000 }
+    })
+
+    // Look up a default value by section/key (e.g. "bar", "showCpuGraph").
+    // Returns undefined if no such default exists.
+    function getDefault(section, key) {
+        let s = _defaults[section];
+        if (!s) return undefined;
+        return s[key];
+    }
+
+    // Reset a single setting to its default and persist.
+    function resetKey(section, key) {
+        let dflt = getDefault(section, key);
+        if (dflt === undefined) return;
+        let target = _sections[section];
+        if (!target || target[key] === undefined) return;
+        // Arrays must be copied so QML detects the change.
+        target[key] = (dflt instanceof Array) ? dflt.slice() : dflt;
+        save();
+    }
+
+    // Reset every key in a section.
+    function resetSection(section) {
+        let dflts = _defaults[section];
+        let target = _sections[section];
+        if (!dflts || !target) return;
+        for (let k in dflts) {
+            if (target[k] === undefined) continue;
+            let v = dflts[k];
+            target[k] = (v instanceof Array) ? v.slice() : v;
+        }
+        save();
+    }
+
+    // Nuke all overrides.
+    function resetAll() {
+        for (let s in _defaults) resetSection(s);
+    }
+
     // ── Default layout order (mirrors Registry.barModules) ──
     readonly property var _defaultLayoutLeft: ["power", "workspace", "time", "weather", "window"]
     readonly property var _defaultLayoutCenter: ["media"]
-    readonly property var _defaultLayoutRight: ["resource", "audio", "network", "bluetooth", "battery", "tray", "gear"]
+    readonly property var _defaultLayoutRight: ["resource", "audio", "network", "bluetooth", "battery", "caffeine", "tray", "gear"]
 
     function _getDefaultOrder(section) {
         if (section === "left" || section === "layoutLeft") return _defaultLayoutLeft;

@@ -97,6 +97,8 @@ QtObject {
     readonly property string cancel:    "󰅖"
     readonly property string drag:      "󰘕"
     readonly property string widgets:   "󰕰"
+    readonly property string add:       "󰐕"
+    readonly property string reset:     "󰦝"
 
     // ── Monitor ──
     readonly property string monitor:    "󰍹"

@@ -14,8 +14,33 @@ Scope {
 
     // ── Network list (for CC wifi tab) ──
     property var networks: ListModel {}
+    property var savedNetworks: ListModel {}
+    property bool scanning: false
 
-    Component.onCompleted: statusProc.running = true
+    // ── Connection feedback ──
+    // Updates to "" while idle, "connecting", "ok", or an error message
+    property string lastConnectStatus: ""
+    property string lastConnectSsid: ""
+    signal connectFinished(string ssid, bool ok, string message)
+
+    // ── Connection edge events (for hooks + notifications) ──
+    // Fired on the *transition* — not on shell startup. _wifiInitialized
+    // suppresses the very first poll so we don't notify "Connected to X"
+    // every time the shell launches with wifi already up.
+    signal wifiConnected(string ssid)
+    signal wifiDisconnected(string ssid)
+    property string _prevSsid: ""
+    property bool _wifiInitialized: false
+
+    // Freeze flag: when true, scans/refreshes are suppressed (e.g. while
+    // a password dialog is open) so the network list doesn't reshuffle
+    // under the user's input.
+    property bool freezeUpdates: false
+
+    Component.onCompleted: {
+        statusProc.running = true;
+        savedProc.running = true;
+    }
 
     // ── Quick status poll (bar) ──
     Process {
@@ -77,20 +102,74 @@ Scope {
                     root.ssid = "";
                     root.signal = -1;
                 }
+
+                // ── Edge detection ──
+                // Compare against previous connection identity. Use SSID for
+                // wifi, "ethernet" for wired, "" for disconnected.
+                let nowSsid = root.connected ? (root.ssid || root.iface) : "";
+                if (!root._wifiInitialized) {
+                    root._prevSsid = nowSsid;
+                    root._wifiInitialized = true;
+                } else if (nowSsid !== root._prevSsid) {
+                    if (root._prevSsid.length > 0 && nowSsid.length === 0) {
+                        root.wifiDisconnected(root._prevSsid);
+                    } else if (nowSsid.length > 0) {
+                        // Direct switch (A → B) fires both events.
+                        if (root._prevSsid.length > 0) root.wifiDisconnected(root._prevSsid);
+                        root.wifiConnected(nowSsid);
+                        root._fireWifiNotify(nowSsid);
+                    }
+                    root._prevSsid = nowSsid;
+                }
             }
         }
 
         onExited: statusPoll.start()
     }
 
+    // Built-in notification — fires on every fresh connect transition.
+    // The `x-canonical-private-synchronous` hint causes mako/dunst to replace
+    // any prior wifi notification with this one rather than stacking, so
+    // toggling the network repeatedly produces at most one visible toast.
+    // Hooks can layer extra behavior via the `wifi.connected` event.
+    //
+    // Dynamic per-fire spawn (not a declarative Process) so the argv can't
+    // get cached at instantiation time — any future edit to the label or
+    // icon takes effect on the next fire instead of requiring a full shell
+    // restart.
+    property Component _wifiNotifyRunner: Component {
+        Process {
+            property var argv: []
+            command: argv
+            running: true
+            onExited: Qt.callLater(() => destroy())
+        }
+    }
+
+    function _fireWifiNotify(ssid) {
+        _wifiNotifyRunner.createObject(root, {
+            argv: [
+                "notify-send",
+                "-a", "System Information",
+                "-i", "network-wireless",
+                "-h", "string:x-canonical-private-synchronous:sysinfo-wifi",
+                "-t", "4000",
+                "Wi-Fi", "Connected to " + ssid
+            ]
+        });
+    }
+
     Timer {
         id: statusPoll
         interval: 10000
-        onTriggered: statusProc.running = true
+        onTriggered: { if (!root.freezeUpdates) statusProc.running = true; }
     }
 
     // ── Full scan (CC wifi tab) ──
-    function scan() { scanProc.running = true; }
+    function scan() {
+        if (root.freezeUpdates) return;
+        scanProc.running = true;
+    }
 
     Process {
         id: scanProc
@@ -111,7 +190,8 @@ Scope {
                     "wifiActive": isActive,
                     "wifiSsid": p[1],
                     "wifiSignal": parseInt(p[2]) || 0,
-                    "wifiSecurity": p[3] || ""
+                    "wifiSecurity": p[3] || "",
+                    "wifiSecured": (p[3] || "").length > 0 && p[3] !== "--"
                 });
                 if (isActive) {
                     root.ssid = p[1];
@@ -121,19 +201,66 @@ Scope {
         }
         onStarted: {
             root.networks.clear();
+            root.scanning = true;
+        }
+        onExited: {
+            root.scanning = false;
         }
     }
 
+    // ── Saved networks (nmcli connection list, type=wifi) ──
+    function loadSaved() {
+        if (root.freezeUpdates) return;
+        savedProc.running = true;
+    }
+
+    Process {
+        id: savedProc
+        command: [
+            "bash", "-c",
+            "nmcli -t -f NAME,TYPE connection show 2>/dev/null | " +
+            "awk -F: '$2==\"802-11-wireless\" || $2==\"wifi\" {print $1}'"
+        ]
+        stdout: SplitParser {
+            onRead: data => {
+                var name = (data || "").trim();
+                if (name.length === 0) return;
+                root.savedNetworks.append({ "savedSsid": name });
+            }
+        }
+        onStarted: { root.savedNetworks.clear(); }
+    }
+
     // ── Actions ──
-    function connectTo(networkSsid) {
+    // Connect to a visible network. password may be "" for open networks
+    // or already-saved networks.
+    function connectTo(networkSsid, password) {
+        root.lastConnectStatus = "connecting";
+        root.lastConnectSsid = networkSsid;
         connProc.ssid = networkSsid;
+        connProc.password = password || "";
+        connProc.hidden = false;
         connProc.running = true;
-        refreshAfter.start();
+    }
+
+    // Connect to a hidden network (must specify both SSID and password)
+    function connectHidden(networkSsid, password) {
+        root.lastConnectStatus = "connecting";
+        root.lastConnectSsid = networkSsid;
+        connProc.ssid = networkSsid;
+        connProc.password = password || "";
+        connProc.hidden = true;
+        connProc.running = true;
     }
 
     function disconnect() {
         discProc.running = true;
         refreshAfter.start();
+    }
+
+    function forget(networkSsid) {
+        forgetProc.ssid = networkSsid;
+        forgetProc.running = true;
     }
 
     function toggle() {
@@ -144,13 +271,67 @@ Scope {
         refreshAfter.start();
     }
 
-    Process { id: connProc; property string ssid: ""; command: ["nmcli", "dev", "wifi", "connect", ssid] }
+    Process {
+        id: connProc
+        property string ssid: ""
+        property string password: ""
+        property bool hidden: false
+        property string _err: ""
+
+        // Build the nmcli command dynamically. We use `nmcli -w 20 dev wifi connect`
+        // for visible networks (works for open + secured + already-saved) and
+        // `nmcli connection add` for hidden networks since `dev wifi connect`
+        // can't target a hidden SSID reliably.
+        command: {
+            if (hidden) {
+                return [
+                    "nmcli", "-w", "20", "dev", "wifi", "connect", ssid,
+                    "password", password, "hidden", "yes"
+                ];
+            }
+            if (password.length > 0) {
+                return ["nmcli", "-w", "20", "dev", "wifi", "connect", ssid, "password", password];
+            }
+            return ["nmcli", "-w", "20", "dev", "wifi", "connect", ssid];
+        }
+
+        stdout: SplitParser {
+            onRead: data => { /* ignore stdout, exit code is what matters */ }
+        }
+        stderr: SplitParser {
+            onRead: data => { connProc._err = (connProc._err + " " + data).trim(); }
+        }
+
+        onExited: code => {
+            var ok = (code === 0);
+            var msg = ok ? "Connected" : (connProc._err || "Failed to connect");
+            connProc._err = "";
+            root.lastConnectStatus = ok ? "ok" : "error";
+            root.connectFinished(connProc.ssid, ok, msg);
+            // On success, lift the freeze and refresh
+            if (ok) {
+                root.freezeUpdates = false;
+                refreshAfter.start();
+            }
+        }
+    }
     Process { id: discProc; command: ["nmcli", "dev", "disconnect", "wlan0"] }
     Process { id: toggleProc; property bool on: true; command: ["nmcli", "radio", "wifi", on ? "on" : "off"] }
+    Process {
+        id: forgetProc
+        property string ssid: ""
+        command: ["nmcli", "connection", "delete", ssid]
+        onExited: { root.loadSaved(); }
+    }
 
     Timer {
         id: refreshAfter
-        interval: 3000
-        onTriggered: { scanProc.running = true; statusProc.running = true; }
+        interval: 1500
+        onTriggered: {
+            if (root.freezeUpdates) return;
+            scanProc.running = true;
+            statusProc.running = true;
+            savedProc.running = true;
+        }
     }
 }

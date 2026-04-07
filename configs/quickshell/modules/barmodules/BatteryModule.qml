@@ -1,19 +1,21 @@
 import QtQuick
-import Quickshell.Io
 import "../.." as Root
 import "../../components" as Components
+import "../../core" as Core
 
+// BatteryModule — bar surface for battery state.
+// Polling lives in PowerService; this module is a pure read view.
 Components.BarItem {
     id: root
     custom: true
     accent: root.activeColor
     visible: hasBattery
 
-    property string device: "BAT0"
-    property int capacity: -1
-    property bool charging: false
-    property bool pluggedIn: false
-    property bool hasBattery: false
+    readonly property var svc: Core.ServiceManager.power
+    readonly property int capacity: svc ? svc.capacity : -1
+    readonly property bool charging: svc ? svc.charging : false
+    readonly property bool pluggedIn: svc ? svc.pluggedIn : false
+    readonly property bool hasBattery: svc ? svc.hasBattery : false
 
     property color activeColor: root.pluggedIn
         ? Root.Theme.barBatteryCharge
@@ -105,53 +107,5 @@ Components.BarItem {
         color: Root.Theme.barBatteryCharge
         font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
         anchors.verticalCenter: parent.verticalCenter
-    }
-
-    // ── Battery detection & polling ──
-    Process {
-        id: detectProc
-        command: ["test", "-d", "/sys/class/power_supply/" + root.device]
-        running: true
-        onExited: function(exitCode) {
-            root.hasBattery = (exitCode === 0);
-            if (root.hasBattery) {
-                capProc.running = true;
-                statusProc.running = true;
-            }
-        }
-    }
-
-    Process {
-        id: capProc
-        command: ["cat", "/sys/class/power_supply/" + root.device + "/capacity"]
-        stdout: SplitParser {
-            onRead: data => {
-                let val = parseInt(data);
-                if (!isNaN(val)) root.capacity = val;
-            }
-        }
-        onExited: pollTimer.start()
-    }
-
-    Process {
-        id: statusProc
-        command: ["cat", "/sys/class/power_supply/" + root.device + "/status"]
-        stdout: SplitParser {
-            onRead: data => {
-                root.charging = (data === "Charging");
-                root.pluggedIn = (data === "Charging" || data === "Not charging" || data === "Full");
-            }
-        }
-    }
-
-    Timer {
-        id: pollTimer
-        interval: 5000
-        onTriggered: {
-            if (root.hasBattery) {
-                capProc.running = true;
-                statusProc.running = true;
-            }
-        }
     }
 }

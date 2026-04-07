@@ -21,6 +21,20 @@ ShellRoot {
     Services.IdleInhibitService { id: idleInhibitSvc }
     Services.WeatherService { id: weatherSvc }
     Services.SystemStatsService { id: systemStatsSvc }
+    Services.HooksService {
+        id: hooksSvc
+        services: ({
+            "audio": audioSvc,
+            "brightness": briSvc,
+            "wifi": wifiSvc,
+            "bluetooth": btSvc,
+            "power": powerSvc,
+            "idleInhibit": idleInhibitSvc,
+            "notif": notifSvc,
+            "weather": weatherSvc,
+            "systemStats": systemStatsSvc
+        })
+    }
 
     // Register services and modules with ServiceManager for self-wiring
     Item {
@@ -38,6 +52,7 @@ ShellRoot {
             Core.ServiceManager.register("idleInhibit", idleInhibitSvc);
             Core.ServiceManager.register("weather", weatherSvc);
             Core.ServiceManager.register("systemStats", systemStatsSvc);
+            Core.ServiceManager.register("hooks", hooksSvc);
             // Modules
             Core.ServiceManager.register("bar", barModule);
             Core.ServiceManager.register("controlCenter", ccModule);
@@ -96,6 +111,7 @@ ShellRoot {
         function wakelock(): string { if (screenLocked) wakeCounter++; return "ok" }
         function widgetsettings(): string { widgetModule.toggleEditMode(); return "ok" }
         function settings(): string { settingsWindow.toggle(); return "ok" }
+        function settingsOpen(page: string): string { settingsWindow.open(page); return "ok" }
         function monitors(): string { monitorPanel.toggle(); return "ok" }
         function baredit(): string { barModule.toggleBarEdit(); return "ok" }
         function caffeine(): string { idleInhibitSvc.toggle(); return idleInhibitSvc.inhibited ? "on" : "off" }
@@ -104,5 +120,16 @@ ShellRoot {
         function volumemute(): string { audioSvc.toggleMute(); return "ok" }
         function brightnessup(): string { briSvc.increase(5); return "ok" }
         function brightnessdown(): string { briSvc.decrease(5); return "ok" }
+        function hooksReload(): string { hooksSvc.reload(); return "ok" }
+        function hooksFire(event: string): string { hooksSvc.fire(event); return "ok" }
+        function hooksList(): string { return JSON.stringify(hooksSvc.listEvents()); }
+        function hooksRecent(): string { return JSON.stringify(hooksSvc.recentFires); }
+
+        // Test handlers — fire the built-in power notifications on demand
+        // so you can verify the app-name/synchronous-hint config without
+        // waiting for a real AC plug or battery charge transition.
+        function testNotifyCharged(): string { powerSvc.testFireCharged(); return "ok" }
+        function testNotifyPlugged(): string { powerSvc.testFirePlugged(); return "ok" }
+        function testNotifyLow(): string { powerSvc.testFireLow(); return "ok" }
     }
 }

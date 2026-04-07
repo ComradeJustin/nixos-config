@@ -7,6 +7,9 @@ Item {
     property string title: ""
     property bool collapsible: false
     property bool collapsed: false
+    // Optional reset hook. Set this to a function and a small "Reset" link
+    // appears next to the title (e.g. `resetCallback: () => Config.resetSection("bar")`).
+    property var resetCallback: null
 
     default property alias content: contentCol.data
 
@@ -40,6 +43,29 @@ Item {
             text: root.collapsed ? "+" : "-"
             color: Root.Theme.textDimmed
             font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
+        }
+
+        // Reset link (only shown when a reset callback is provided)
+        Text {
+            id: resetLabel
+            visible: root.resetCallback !== null
+            anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+            text: "Reset"
+            color: resetMouse.containsMouse ? Root.Theme.accentPrimary : Root.Theme.textDimmed
+            font {
+                family: Root.Theme.fontFamily
+                pixelSize: Root.Theme.fontSizeSmall
+                letterSpacing: 1
+            }
+            Behavior on color { ColorAnimation { duration: 120 } }
+
+            MouseArea {
+                id: resetMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: { if (root.resetCallback) root.resetCallback(); }
+            }
         }
 
         MouseArea {

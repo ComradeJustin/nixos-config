@@ -144,13 +144,14 @@ Scope {
     Component { id: compBattery; BarModules.BatteryModule {} }
     Component { id: compTray; BarModules.TrayModule { barPanel: panel } }
     Component { id: compGear; BarModules.GearModule {} }
+    Component { id: compCaffeine; BarModules.CaffeineModule {} }
 
     property var componentMap: ({
         "power": compPower, "workspace": compWorkspace, "time": compTime,
         "weather": compWeather, "window": compWindow, "media": compMedia,
         "resource": compResource, "audio": compAudio, "network": compNetwork,
         "bluetooth": compBluetooth, "battery": compBattery, "tray": compTray,
-        "gear": compGear
+        "gear": compGear, "caffeine": compCaffeine
     })
 
     property bool isFloating: Root.Config.bar.style === "float"

@@ -36,6 +36,7 @@ QtObject {
     readonly property var idleInhibit: _rev >= 0 ? (_services["idleInhibit"] || null) : null
     readonly property var weather:     _rev >= 0 ? (_services["weather"]     || null) : null
     readonly property var systemStats: _rev >= 0 ? (_services["systemStats"] || null) : null
+    readonly property var hooks:       _rev >= 0 ? (_services["hooks"]       || null) : null
 
     // Module references — registered by shell.qml
     readonly property var bar:            _rev >= 0 ? (_services["bar"]            || null) : null
