@@ -5,6 +5,7 @@ import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
 import ".." as Root
+import "../components" as Components
 import "../core" as Core
 
 Item {
@@ -302,21 +303,14 @@ Item {
                 onFinished: lock.unlocked()
             }
 
-            // User icon
-            Rectangle {
+            // User identity hero — shared ProfileCard in non-compact mode.
+            // Same component the Control Center uses, so avatar/greeting/
+            // hostname stay in lockstep between surfaces.
+            Components.ProfileCard {
                 anchors.horizontalCenter: parent.horizontalCenter
-                y: parent.height * 0.08
-                width: 80
-                height: 80
-                radius: 40
-                color: Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1)
-
-                Text {
-                    anchors.centerIn: parent
-                    text: Root.Icons.user
-                    color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 40 }
-                }
+                y: parent.height * 0.06
+                width: 320
+                compact: false
             }
 
             // Clock

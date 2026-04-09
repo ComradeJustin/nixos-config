@@ -19,8 +19,25 @@ Scope {
     // Uptime
     property string uptime: ""
 
+    // User identity
+    // username comes from the USER env var (cheap, no subprocess). hostname
+    // is read once at startup from /proc/sys/kernel/hostname — it almost
+    // never changes during a session, so re-polling it is pointless.
+    readonly property string username: Quickshell.env("USER") || ""
+    property string hostname: ""
+
     property real prevIdle: 0
     property real prevTotal: 0
+
+    Component.onCompleted: hostProc.running = true
+
+    Process {
+        id: hostProc
+        command: ["cat", "/proc/sys/kernel/hostname"]
+        stdout: SplitParser {
+            onRead: data => { root.hostname = (data || "").trim(); }
+        }
+    }
 
     Process {
         id: cpuProc

@@ -1,0 +1,8 @@
+module SettingsPages
+BarPage 1.0 BarPage.qml
+WidgetsPage 1.0 WidgetsPage.qml
+ConnectionsPage 1.0 ConnectionsPage.qml
+DisplayPage 1.0 DisplayPage.qml
+PreferencesPage 1.0 PreferencesPage.qml
+HooksPage 1.0 HooksPage.qml
+AboutPage 1.0 AboutPage.qml

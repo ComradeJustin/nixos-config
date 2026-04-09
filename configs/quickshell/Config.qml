@@ -56,6 +56,21 @@ QtObject {
         property int marginY: 40
     }
 
+    // ── Control Center settings ──
+    // Scaffolding for pluggable CC cards. `cards` holds per-card enables,
+    // `cardLayout` is the ordered list of keys the CC will render (in order).
+    // Both are consumed via Core.Registry.ccCards for component resolution.
+    readonly property QtObject cc: QtObject {
+        readonly property QtObject cards: QtObject {
+            property bool profile: true
+            property bool network: true
+            property bool bluetooth: false
+            property bool nightLight: false
+            property bool player: true
+        }
+        property var cardLayout: ["profile", "player", "network", "bluetooth", "nightLight"]
+    }
+
     // ── Feature flags ──
     readonly property QtObject features: QtObject {
         property bool wallpaperWidgets: true
@@ -117,6 +132,17 @@ QtObject {
         property int refreshInterval: 300000
     }
 
+    // ── Night Light ──
+    // Persisted state for NightLightService. Auto mode only — wlsunset
+    // derives sunrise/sunset from latitude/longitude (pulled at runtime
+    // from WeatherService), so we only need to store the enable flag and
+    // the day/night Kelvin targets.
+    readonly property QtObject nightLight: QtObject {
+        property bool enabled: false
+        property int dayTemp: 6500
+        property int nightTemp: 4000
+    }
+
     // ══════════════════════════════════════════════════════════════════
     // ── Defaults registry ──
     // Single source of truth for every user-tweakable setting. Used by
@@ -162,7 +188,8 @@ QtObject {
         quote: { maxWidth: 400, fontSize: 16, refreshInterval: 3600000 },
         nowPlaying: { showArt: true, artSize: 80, fontSize: 14 },
         calendar: { showWeekNumbers: false, cellSize: 28 },
-        stock: { symbols: ["SPY", "QQQ", "AAPL"], fontSize: 14, refreshInterval: 300000 }
+        stock: { symbols: ["SPY", "QQQ", "AAPL"], fontSize: 14, refreshInterval: 300000 },
+        nightLight: { enabled: false, dayTemp: 6500, nightTemp: 4000 }
     })
 
     // Look up a default value by section/key (e.g. "bar", "showCpuGraph").
@@ -291,7 +318,8 @@ QtObject {
         bar: bar, widgets: widgets, features: features, behavior: behavior,
         clock: clockConfig, weather: weatherConfig, system: systemConfig,
         quote: quoteConfig, nowPlaying: nowPlayingConfig,
-        calendar: calendarConfig, stock: stockConfig
+        calendar: calendarConfig, stock: stockConfig,
+        nightLight: nightLight
     })
 
     function load() {

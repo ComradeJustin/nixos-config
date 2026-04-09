@@ -1,5 +1,5 @@
 import QtQuick
-import Qt5Compat.GraphicalEffects
+import QtQuick.Effects
 import ".." as Root
 
 // Interactive slider/progress bar with rounded styling and smooth drag
@@ -96,9 +96,12 @@ Item {
         Behavior on width { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
 
         layer.enabled: slider.dragging
-        layer.effect: DropShadow {
-            transparentBorder: true; color: slider.accentColor
-            radius: 10; samples: 21
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: slider.accentColor
+            shadowBlur: 0.8
+            shadowHorizontalOffset: 0
+            shadowVerticalOffset: 0
         }
 
         Behavior on x {

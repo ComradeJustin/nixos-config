@@ -1,0 +1,3 @@
+module ControlCenterCards
+PlayerCard 1.0 PlayerCard.qml
+NetworkCard 1.0 NetworkCard.qml

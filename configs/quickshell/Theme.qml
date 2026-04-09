@@ -70,9 +70,9 @@ QtObject {
     readonly property int unit: 8
 
     // ── Typography ──
-    readonly property string fontFamily: "JetBrains Mono Nerd Font"
-    readonly property string fontMono:   "JetBrains Mono Nerd Font"
-    readonly property string fontIcons:  "JetBrains Mono Nerd Font"
+    readonly property string fontFamily: "SFProDisplay Nerd Font"
+    readonly property string fontMono:   "SFProDisplay Nerd Font"
+    readonly property string fontIcons:  "SFProDisplay Nerd Font"
     readonly property int    fontSize:       11
     readonly property int    fontSizeSmall:  9
     readonly property int    fontSizeLarge:  13
@@ -157,8 +157,8 @@ QtObject {
 
     // ── Control Center ──
     readonly property int    ccWidth:         384
-    readonly property int    ccPadding:       18
-    readonly property int    ccSectionRadius: 6
+    readonly property int    ccPadding:       12
+    readonly property int    ccSectionRadius: 8
     readonly property color  ccSectionBg:     base01
     readonly property color  ccCardBg:        Qt.rgba(base01.r, base01.g, base01.b, 0.6)
     readonly property color  ccIconBg:        Qt.rgba(base02.r, base02.g, base02.b, 0.5)

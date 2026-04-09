@@ -1,5 +1,5 @@
 import QtQuick
-import Qt5Compat.GraphicalEffects
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Services.SystemTray
 import "../.." as Root
@@ -45,11 +45,12 @@ Item {
                     visible: status === Image.Ready
 
                     layer.enabled: itemMouse.containsMouse
-                    layer.effect: DropShadow {
-                        transparentBorder: true
-                        color: Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.4)
-                        radius: 6
-                        samples: 13
+                    layer.effect: MultiEffect {
+                        shadowEnabled: true
+                        shadowColor: Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.6)
+                        shadowBlur: 0.6
+                        shadowHorizontalOffset: 0
+                        shadowVerticalOffset: 0
                     }
                 }
 
@@ -120,11 +121,12 @@ Item {
                     z: 100
 
                     layer.enabled: visible
-                    layer.effect: DropShadow {
-                        transparentBorder: true
-                        color: Qt.rgba(0, 0, 0, 0.35)
-                        radius: 8
-                        samples: 17
+                    layer.effect: MultiEffect {
+                        shadowEnabled: true
+                        shadowColor: Qt.rgba(0, 0, 0, 0.35)
+                        shadowBlur: 0.8
+                        shadowHorizontalOffset: 0
+                        shadowVerticalOffset: 2
                     }
 
                     Text {

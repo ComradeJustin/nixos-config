@@ -1,5 +1,5 @@
 import QtQuick
-import Qt5Compat.GraphicalEffects
+import QtQuick.Effects
 import ".." as Root
 
 // Universal widget container with frame styling, hover effects, and animation
@@ -17,31 +17,7 @@ Item {
     scale: hoverArea.containsMouse ? 1.02 : 1.0
     Behavior on scale { NumberAnimation { duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic } }
 
-    // Shadow layer — grows on hover with blur
-    Rectangle {
-        id: shadow
-        anchors.fill: bg
-        anchors.margins: -2
-        anchors.topMargin: 2
-        radius: Root.Theme.widgetRadius + 2
-        color: "transparent"
-        visible: false
-    }
-
-    DropShadow {
-        anchors.fill: shadow
-        source: shadow
-        horizontalOffset: 0
-        verticalOffset: 2
-        radius: hoverArea.containsMouse ? Root.Theme.widgetShadowRadius + 4 : Root.Theme.widgetShadowRadius
-        samples: radius * 2 + 1
-        color: Root.Theme.widgetShadowColor
-        opacity: hoverArea.containsMouse ? 0.6 : 0.35
-        Behavior on radius { NumberAnimation { duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic } }
-        Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.moveDuration } }
-    }
-
-    // Widget background
+    // Widget background with MultiEffect shadow
     Rectangle {
         id: bg
         anchors.fill: parent
@@ -52,6 +28,18 @@ Item {
             ? Qt.rgba(frame.accentColor.r, frame.accentColor.g, frame.accentColor.b, 0.5)
             : Root.Theme.borderColor
         Behavior on border.color { ColorAnimation { duration: Root.Theme.anim.moveDuration } }
+
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: Root.Theme.widgetShadowColor
+            shadowBlur: hoverArea.containsMouse ? 1.0 : 0.7
+            shadowHorizontalOffset: 0
+            shadowVerticalOffset: 2
+            shadowOpacity: hoverArea.containsMouse ? 0.6 : 0.35
+            Behavior on shadowBlur { NumberAnimation { duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic } }
+            Behavior on shadowOpacity { NumberAnimation { duration: Root.Theme.anim.moveDuration } }
+        }
     }
 
     Item {

@@ -42,6 +42,12 @@ in
         default = true;
         description = "Enable audio controls and per-app volume mixer";
       };
+
+      nightLight = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Enable Night Light (blue-light reduction via wlsunset)";
+      };
     };
   };
 
@@ -63,6 +69,9 @@ in
       ]
       ++ lib.optionals cfg.features.mediaControls [
         cava
+      ]
+      ++ lib.optionals cfg.features.nightLight [
+        wlsunset
       ];
 
     services.upower.enable = true;

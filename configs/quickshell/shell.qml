@@ -13,6 +13,7 @@ ShellRoot {
     Services.AudioService { id: audioSvc }
     Services.PlayerService { id: playerSvc }
     Services.PowerService { id: powerSvc }
+    Services.PowerProfileService { id: powerProfileSvc }
     Services.NotifService { id: notifSvc }
     Services.WifiService { id: wifiSvc }
     Services.BluetoothService { id: btSvc }
@@ -21,6 +22,7 @@ ShellRoot {
     Services.IdleInhibitService { id: idleInhibitSvc }
     Services.WeatherService { id: weatherSvc }
     Services.SystemStatsService { id: systemStatsSvc }
+    Services.NightLightService { id: nightLightSvc }
     Services.HooksService {
         id: hooksSvc
         services: ({
@@ -29,10 +31,12 @@ ShellRoot {
             "wifi": wifiSvc,
             "bluetooth": btSvc,
             "power": powerSvc,
+            "powerProfile": powerProfileSvc,
             "idleInhibit": idleInhibitSvc,
             "notif": notifSvc,
             "weather": weatherSvc,
-            "systemStats": systemStatsSvc
+            "systemStats": systemStatsSvc,
+            "nightLight": nightLightSvc
         })
     }
 
@@ -44,6 +48,7 @@ ShellRoot {
             Core.ServiceManager.register("audio", audioSvc);
             Core.ServiceManager.register("player", playerSvc);
             Core.ServiceManager.register("power", powerSvc);
+            Core.ServiceManager.register("powerProfile", powerProfileSvc);
             Core.ServiceManager.register("notif", notifSvc);
             Core.ServiceManager.register("wifi", wifiSvc);
             Core.ServiceManager.register("bluetooth", btSvc);
@@ -52,6 +57,7 @@ ShellRoot {
             Core.ServiceManager.register("idleInhibit", idleInhibitSvc);
             Core.ServiceManager.register("weather", weatherSvc);
             Core.ServiceManager.register("systemStats", systemStatsSvc);
+            Core.ServiceManager.register("nightLight", nightLightSvc);
             Core.ServiceManager.register("hooks", hooksSvc);
             // Modules
             Core.ServiceManager.register("bar", barModule);
@@ -115,6 +121,7 @@ ShellRoot {
         function monitors(): string { monitorPanel.toggle(); return "ok" }
         function baredit(): string { barModule.toggleBarEdit(); return "ok" }
         function caffeine(): string { idleInhibitSvc.toggle(); return idleInhibitSvc.inhibited ? "on" : "off" }
+        function nightlight(): string { nightLightSvc.toggle(); return nightLightSvc.enabled ? "on" : "off" }
         function volumeup(): string { audioSvc.setVolume(audioSvc.volume + 5); return "ok" }
         function volumedown(): string { audioSvc.setVolume(audioSvc.volume - 5); return "ok" }
         function volumemute(): string { audioSvc.toggleMute(); return "ok" }

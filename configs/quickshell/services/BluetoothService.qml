@@ -1,252 +1,98 @@
 import Quickshell
-import Quickshell.Io
+import Quickshell.Bluetooth
 import QtQuick
 
-Scope {
+// Thin wrapper around Quickshell.Bluetooth.defaultAdapter.
+//
+// Talks to BlueZ over D-Bus directly (no bluetoothctl shelling), so
+// discovery actually finds new devices. Keeps the legacy property surface
+// (enabled / connected / connectedDevice / scanning / devices) that
+// BluetoothModule.qml, HooksService, and the ConnectionsPage already bind
+// to, and adds device-object helpers (connectDevice / disconnectDevice /
+// pairDevice / forgetDevice) that take a BluetoothDevice directly.
+QtObject {
     id: root
 
-    // ── Status (for bar display) ──
-    property bool enabled: true
-    property bool connected: false
-    property string connectedDevice: ""
-    property string connectedType: ""  // "audio", "input", "other"
+    // ── Direct adapter handles ───────────────────────────────────────
+    readonly property var adapter: Bluetooth.defaultAdapter
 
-    // ── Device list (for CC bluetooth tab) ──
-    property var devices: ListModel {}
+    // Raw reactive device list. Repeater can take `adapter.devices` as a
+    // model directly and use `required property var modelData` in the
+    // delegate. We also expose `.values` via `deviceList` for JS filtering.
+    readonly property var deviceList: adapter ? adapter.devices.values : []
 
-    // ── Internal state ──
-    property bool scanning: false
-    property bool hasScanned: false  // Track if we've done initial scan
+    // ── Legacy status surface ────────────────────────────────────────
+    readonly property bool enabled:  adapter ? adapter.enabled : false
+    readonly property bool scanning: adapter ? adapter.discovering : false
 
-    // Previous connected device name — used to emit deviceDisconnected with
-    // the *prior* device label even after `connectedDevice` has been cleared.
-    property string _prevConn: ""
+    // Filter connected devices for `connected` / `connectedDevice`. Re-
+    // evaluates whenever any device's `.connected` flips because the
+    // property system tracks the nested reads (Noctalia uses the same
+    // pattern).
+    readonly property var _connected: {
+        if (!adapter) return [];
+        return adapter.devices.values.filter(d => d && d.connected);
+    }
+    readonly property bool connected: _connected.length > 0
+    readonly property string connectedDevice: connected ? (_connected[0].name || _connected[0].deviceName || "") : ""
+    readonly property string connectedType:   connected ? (_connected[0].icon || "other") : ""
 
-    // ── Signals (consumed by HooksService) ──
+    // ── Edge signals (for HooksService) ──────────────────────────────
     signal bluetoothDeviceConnected(string name, string type)
     signal bluetoothDeviceDisconnected(string name)
+    property string _prevConn: ""
 
-    Component.onCompleted: statusProc.running = true
-
-    // ── Quick status poll (bar) ──
-    Process {
-        id: statusProc
-        command: [
-            "bash", "-c",
-            "if ! command -v bluetoothctl &>/dev/null; then echo 'unavailable'; exit; fi; " +
-            "powered=$(bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo yes || echo no); " +
-            "if [ \"$powered\" = \"no\" ]; then echo 'off'; exit; fi; " +
-            "conn=$(bluetoothctl devices Connected 2>/dev/null | head -1); " +
-            "if [ -n \"$conn\" ]; then " +
-            "  mac=$(echo \"$conn\" | awk '{print $2}'); " +
-            "  name=$(echo \"$conn\" | cut -d' ' -f3-); " +
-            "  type=$(bluetoothctl info \"$mac\" 2>/dev/null | grep -i 'Icon:' | awk '{print $2}'); " +
-            "  echo \"connected:$name:$type\"; " +
-            "else " +
-            "  echo 'on'; " +
-            "fi"
-        ]
-        running: true
-
-        stdout: SplitParser {
-            onRead: data => {
-                if (data === "unavailable") {
-                    root.enabled = false;
-                    root.connected = false;
-                    root.connectedDevice = "";
-                    root.connectedType = "";
-                } else if (data === "off") {
-                    root.enabled = false;
-                    root.connected = false;
-                    root.connectedDevice = "";
-                    root.connectedType = "";
-                } else if (data === "on") {
-                    root.enabled = true;
-                    root.connected = false;
-                    root.connectedDevice = "";
-                    root.connectedType = "";
-                } else if (data.indexOf("connected:") === 0) {
-                    var parts = data.split(":");
-                    root.enabled = true;
-                    root.connected = true;
-                    root.connectedDevice = parts[1] || "";
-                    root.connectedType = parts[2] || "other";
-                }
-                // ── Edge detection for hooks ──
-                // Compute the "current connection" string and compare against
-                // the previous one. Doing it here (rather than in onConnectedChanged)
-                // catches device-switch transitions (A → B) which never see
-                // `connected` flip and would otherwise be missed.
-                var newName = root.connected ? root.connectedDevice : "";
-                if (newName !== root._prevConn) {
-                    if (root._prevConn.length > 0) {
-                        root.bluetoothDeviceDisconnected(root._prevConn);
-                    }
-                    if (newName.length > 0) {
-                        root.bluetoothDeviceConnected(newName, root.connectedType);
-                    }
-                    root._prevConn = newName;
-                }
-            }
+    onConnectedDeviceChanged: {
+        if (connectedDevice !== _prevConn) {
+            if (_prevConn.length > 0) bluetoothDeviceDisconnected(_prevConn);
+            if (connectedDevice.length > 0) bluetoothDeviceConnected(connectedDevice, connectedType);
+            _prevConn = connectedDevice;
         }
-
-        onExited: statusPoll.start()
     }
 
-    Timer {
-        id: statusPoll
-        interval: 10000  // Poll every 10s (matches WifiService)
-        onTriggered: statusProc.running = true
-    }
-
-    // ── Device scan (CC bluetooth tab) - Only paired devices ──
+    // ── Scan / discovery ─────────────────────────────────────────────
+    // `force` arg is preserved for API compat with old call sites.
     function scan(force) {
-        // Don't rescan if we already have data, unless forced
-        if (root.hasScanned && !force && root.devices.count > 0) return;
-        root.scanning = true;
-        scanProc.running = true;
+        if (!adapter) return;
+        adapter.discovering = true;
     }
 
-    // Internal property to collect all output before parsing
-    property string scanBuffer: ""
-
-    Process {
-        id: scanProc
-        command: [
-            "bash", "-c",
-            "if ! command -v bluetoothctl &>/dev/null; then exit; fi; " +
-            // Only get PAIRED devices - no discovery scan needed
-            "bluetoothctl devices Paired 2>/dev/null | while IFS= read -r line; do " +
-            "  mac=$(echo \"$line\" | awk '{print $2}'); " +
-            "  [ -z \"$mac\" ] && continue; " +
-            // Get the name from bluetoothctl info (more reliable than devices output)
-            "  info=$(bluetoothctl info \"$mac\" 2>/dev/null); " +
-            "  name=$(echo \"$info\" | grep -m1 'Name:' | cut -d: -f2- | sed 's/^[[:space:]]*//'); " +
-            // Fallback to device list name if info doesn't have it
-            "  [ -z \"$name\" ] && name=$(echo \"$line\" | cut -d' ' -f3-); " +
-            "  conn=$(echo \"$info\" | grep -q 'Connected: yes' && echo yes || echo no); " +
-            "  type=$(echo \"$info\" | grep -i 'Icon:' | awk '{print $2}'); " +
-            "  [ -z \"$type\" ] && type='other'; " +
-            "  echo \"$mac\t$name\t$conn\t$type\"; " +
-            "done"
-        ]
-
-        onStarted: {
-            root.scanBuffer = "";
-        }
-
-        stdout: SplitParser {
-            onRead: data => {
-                // Collect all lines into buffer
-                root.scanBuffer += data + "\n";
-            }
-        }
-
-        onExited: {
-            // Parse all devices at once for instant UI update
-            root.devices.clear();
-            var lines = root.scanBuffer.trim().split("\n");
-            for (var i = 0; i < lines.length; i++) {
-                var line = lines[i].trim();
-                if (line.length === 0) continue;
-                var p = line.split("\t");
-                if (p.length < 4) continue;
-                root.devices.append({
-                    "btPaired": true,
-                    "btMac": p[0],
-                    "btName": p[1] || p[0],  // Fallback to MAC if name empty
-                    "btConnected": p[2] === "yes",
-                    "btType": p[3]
-                });
-            }
-            root.scanning = false;
-            root.hasScanned = true;
-        }
-    }
-
-    // ── Actions ──
-
-    // SECURITY: Validate MAC address format to prevent injection
-    function isValidMac(mac) {
-        return /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(mac);
+    function stopScan() {
+        if (adapter) adapter.discovering = false;
     }
 
     function toggle() {
-        root.enabled = !root.enabled;
-        toggleProc.on = root.enabled;
-        toggleProc.running = true;
-        if (!root.enabled) {
-            root.connected = false;
-            root.connectedDevice = "";
+        if (adapter) adapter.enabled = !adapter.enabled;
+    }
+
+    // ── Device-object actions (preferred API) ────────────────────────
+    function connectDevice(device) {
+        if (!device) return;
+        try { device.trusted = true; device.connect(); } catch (e) {}
+    }
+    function disconnectDevice(device) {
+        if (!device) return;
+        try { device.disconnect(); } catch (e) {}
+    }
+    function pairDevice(device) {
+        if (!device) return;
+        try { device.pair(); } catch (e) {}
+    }
+    function forgetDevice(device) {
+        if (!device) return;
+        try { device.trusted = false; device.forget(); } catch (e) {}
+    }
+
+    // ── Legacy MAC-based API (back-compat shim) ──────────────────────
+    function _findByMac(mac) {
+        let list = deviceList;
+        for (let i = 0; i < list.length; i++) {
+            if (list[i] && list[i].address === mac) return list[i];
         }
-        refreshAfter.start();
+        return null;
     }
-
-    function connect(mac) {
-        if (!isValidMac(mac)) return;
-        connProc.mac = mac;
-        connProc.running = true;
-        refreshAfter.start();
-    }
-
-    function disconnect(mac) {
-        if (!isValidMac(mac)) return;
-        discProc.mac = mac;
-        discProc.running = true;
-        refreshAfter.start();
-    }
-
-    function pair(mac) {
-        if (!isValidMac(mac)) return;
-        pairProc.mac = mac;
-        pairProc.running = true;
-        refreshAfter.start();
-    }
-
-    function remove(mac) {
-        if (!isValidMac(mac)) return;
-        removeProc.mac = mac;
-        removeProc.running = true;
-        refreshAfter.start();
-    }
-
-    Process {
-        id: toggleProc
-        property bool on: true
-        command: ["bluetoothctl", "power", on ? "on" : "off"]
-    }
-
-    Process {
-        id: connProc
-        property string mac: ""
-        command: ["bluetoothctl", "connect", mac]
-    }
-
-    Process {
-        id: discProc
-        property string mac: ""
-        command: ["bluetoothctl", "disconnect", mac]
-    }
-
-    Process {
-        id: pairProc
-        property string mac: ""
-        command: ["sh", "-c", "bluetoothctl pair \"$1\" && bluetoothctl trust \"$1\"", "--", mac]
-    }
-
-    Process {
-        id: removeProc
-        property string mac: ""
-        command: ["bluetoothctl", "remove", mac]
-    }
-
-    Timer {
-        id: refreshAfter
-        interval: 2000
-        onTriggered: {
-            root.hasScanned = false;  // Force rescan after actions
-            scanProc.running = true;
-            statusProc.running = true;
-        }
-    }
+    function connect(mac)    { connectDevice(_findByMac(mac)); }
+    function disconnect(mac) { disconnectDevice(_findByMac(mac)); }
+    function pair(mac)       { pairDevice(_findByMac(mac)); }
+    function remove(mac)     { forgetDevice(_findByMac(mac)); }
 }

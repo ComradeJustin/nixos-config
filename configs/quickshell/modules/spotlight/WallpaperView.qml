@@ -1,5 +1,5 @@
 import QtQuick
-import Qt5Compat.GraphicalEffects
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import "../.." as Root
@@ -425,6 +425,12 @@ Item {
                                             color: Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.15)
                                         }
 
+                                        Rectangle {
+                                            id: onlineMask
+                                            anchors.fill: parent; radius: 6; visible: false
+                                            layer.enabled: true
+                                        }
+
                                         Image {
                                             id: onlineThumb
                                             anchors.fill: parent
@@ -433,12 +439,12 @@ Item {
                                             asynchronous: true; smooth: true
                                             sourceSize.width: Root.Theme.wpThumbWidth * 2
                                             sourceSize.height: Root.Theme.wpThumbHeight * 2
-                                            visible: false
+                                            layer.enabled: true
+                                            layer.effect: MultiEffect {
+                                                maskEnabled: true
+                                                maskSource: onlineMask
+                                            }
                                         }
-
-                                        Rectangle { id: onlineMask; anchors.fill: parent; radius: 6; visible: false }
-
-                                        OpacityMask { anchors.fill: parent; source: onlineThumb; maskSource: onlineMask }
 
                                         Rectangle {
                                             anchors.fill: parent; color: "transparent"; radius: 6
@@ -538,7 +544,16 @@ Item {
                                     color: Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.15)
                                 }
 
-                                // Thumbnail image with rounded corners via OpacityMask
+                                // Mask used by MultiEffect for rounded corners
+                                Rectangle {
+                                    id: thumbMask
+                                    anchors.fill: parent
+                                    radius: 6
+                                    visible: false
+                                    layer.enabled: true
+                                }
+
+                                // Thumbnail image with rounded corners via MultiEffect
                                 Image {
                                     id: thumbImg
                                     anchors.fill: parent
@@ -549,20 +564,11 @@ Item {
                                     sourceSize.width: Root.Theme.wpThumbWidth * 2
                                     sourceSize.height: Root.Theme.wpThumbHeight * 2
                                     cache: true
-                                    visible: false  // Hidden, rendered via OpacityMask
-                                }
-
-                                Rectangle {
-                                    id: thumbMask
-                                    anchors.fill: parent
-                                    radius: 6
-                                    visible: false  // Hidden, used as mask
-                                }
-
-                                OpacityMask {
-                                    anchors.fill: parent
-                                    source: thumbImg
-                                    maskSource: thumbMask
+                                    layer.enabled: true
+                                    layer.effect: MultiEffect {
+                                        maskEnabled: true
+                                        maskSource: thumbMask
+                                    }
                                 }
 
                                 // Border overlays

@@ -2,25 +2,29 @@ import Quickshell
 import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
+import QtQuick.Effects
 import ".." as Root
 import "../components" as Components
 import "../core" as Core
 import "controlcenter" as CCTabs
+import "controlcenter/cards" as CCCards
 
 Scope {
     id: cc
 
     property bool showing: false
     property string activeTab: "notifications"
+    // Accordion-style tab content: collapsed by default, clicking the
+    // active tab toggles expansion; clicking an inactive tab switches
+    // and forces expanded. Reset to false on close so every open
+    // starts compact.
+    property bool tabExpanded: false
     property bool showHistory: showing
 
     // Self-wired via ServiceManager
     readonly property var audioService: Core.ServiceManager.audio
     readonly property var brightnessService: Core.ServiceManager.brightness
     readonly property var notifService: Core.ServiceManager.notif
-    readonly property var wifiService: Core.ServiceManager.wifi
-    readonly property var bluetoothService: Core.ServiceManager.bluetooth
     readonly property var idleInhibitService: Core.ServiceManager.idleInhibit
 
     function toggle() {
@@ -28,10 +32,11 @@ Scope {
         if (showing) {
             ccPanel.visible = true;
             if (notifService) notifService.unreadCount = 0;
-            if (wifiService) wifiService.scan();
-            if (bluetoothService) bluetoothService.scan(false);
             if (audioService) { audioService.refreshApps(); audioService.refreshDevices(); }
             if (notifService) notifService.rebuildStacks();
+        } else {
+            // Reset accordion state so the next open starts collapsed.
+            tabExpanded = false;
         }
     }
     function toggleHistory() { toggle(); }
@@ -108,10 +113,12 @@ Scope {
                         border.color: Root.Theme.borderColor
 
                         layer.enabled: true
-                        layer.effect: DropShadow {
-                            transparentBorder: true
-                            color: Qt.rgba(0, 0, 0, 0.35)
-                            radius: 12; samples: 25
+                        layer.effect: MultiEffect {
+                            shadowEnabled: true
+                            shadowColor: Qt.rgba(0, 0, 0, 0.35)
+                            shadowBlur: 1.0
+                            shadowHorizontalOffset: 0
+                            shadowVerticalOffset: 0
                         }
 
                         Components.NotificationCard {
@@ -174,19 +181,50 @@ Scope {
             clip: true
 
             Keys.onEscapePressed: cc.showing = false
+            // Arrow keys mirror the click-to-switch contract: moving to a
+            // different tab always expands the accordion so the user gets
+            // immediate visible feedback that the content area updated.
             Keys.onLeftPressed: {
                 let idx = tabBar.activeIndex;
-                if (idx > 0) cc.activeTab = tabBar.tabs[idx - 1].tab;
+                if (idx > 0) {
+                    cc.activeTab = tabBar.tabs[idx - 1].tab;
+                    cc.tabExpanded = true;
+                }
             }
             Keys.onRightPressed: {
                 let idx = tabBar.activeIndex;
-                if (idx < tabBar.tabs.length - 1) cc.activeTab = tabBar.tabs[idx + 1].tab;
+                if (idx < tabBar.tabs.length - 1) {
+                    cc.activeTab = tabBar.tabs[idx + 1].tab;
+                    cc.tabExpanded = true;
+                }
             }
 
             Rectangle {
                 id: ccRect
                 width: Root.Theme.ccWidth
-                height: parent.height
+                // Top-anchored and auto-sized to the ColumnLayout inside.
+                // The panel itself stays full screen height, but this
+                // Rectangle (the visible "card") only claims as much
+                // height as its content needs, which lets it grow and
+                // shrink as the tab content accordion expands/collapses.
+                anchors.top: parent.top
+                height: mainLayout.implicitHeight + Root.Theme.ccPadding * 2
+
+                // Animation driver for tab content expansion. contentFactor
+                // smoothly interpolates 0→1 when cc.tabExpanded flips, and
+                // the tab content Item below binds its Layout.preferredHeight
+                // and opacity to this single scalar. Everything downstream —
+                // mainLayout.implicitHeight, ccRect.height, the visible
+                // growing card — follows automatically through the binding
+                // chain. One Behavior, whole layout animates.
+                property real contentFactor: cc.tabExpanded ? 1 : 0
+                Behavior on contentFactor { NumberAnimation { duration: 280; easing.type: Easing.OutCubic } }
+
+                // Computed max height for the tab content when fully
+                // expanded. Scales with panel height; floors at 240 so
+                // notifications are always usable even on small displays.
+                readonly property int maxTabContentHeight: Math.max(240, ccPanel.height - 520)
+
                 radius: Root.Theme.radiusMedium
                 color: Root.Theme.barBackground
                 x: cc.showing ? 0 : (Root.Theme.ccWidth + 6)
@@ -194,187 +232,226 @@ Scope {
                 onXChanged: { if (!cc.showing && x >= Root.Theme.ccWidth + 5) ccPanel.visible = false; }
 
                 layer.enabled: cc.showing
-                layer.effect: DropShadow {
-                    transparentBorder: true
-                    color: Qt.rgba(0, 0, 0, 0.45)
-                    radius: 20; samples: 41; horizontalOffset: -4
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Qt.rgba(0, 0, 0, 0.45)
+                    shadowBlur: 1.0
+                    shadowHorizontalOffset: -4
+                    shadowVerticalOffset: 0
                 }
 
-                Column {
-                    anchors { fill: parent; margins: Root.Theme.ccPadding }
-                    spacing: 12
+                // ── CC body ──
+                // ColumnLayout lets the tab content area use Layout.fillHeight
+                // instead of the fragile `parent.height - 289 - ...` math the
+                // old plain Column required. That in turn lets us freely add
+                // new sections (cards, banners, etc.) without re-tuning a
+                // magic number every time.
+                ColumnLayout {
+                    id: mainLayout
+                    // Top-anchored only (not fill) so our implicit height
+                    // can flow upward to ccRect. `anchors.fill: parent`
+                    // would make ColumnLayout a slave to parent height,
+                    // which would itself depend on our implicit height —
+                    // a circular dependency.
+                    anchors {
+                        top: parent.top
+                        left: parent.left
+                        right: parent.right
+                        margins: Root.Theme.ccPadding
+                    }
+                    // 10px is the "major rhythm" spacing between CCSections;
+                    // inner Columns (slider stack, cards column) stay at 6
+                    // to create a visible hierarchy of major vs. minor gaps.
+                    spacing: 10
 
-                    // ── Header ──
-                    Item {
-                        width: parent.width; height: 28
-
-                        Text {
-                            text: "Control Center"
-                            color: Root.Theme.textPrimary
-                            font { family: Root.Theme.fontFamily; pixelSize: 12; bold: true; letterSpacing: 2 }
-                            anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        }
-
-                        Components.IconButton {
-                            anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                            icon: Root.Icons.shutdown
-                            iconColor: Root.Theme.accentDanger
-                            hoverColor: Qt.rgba(Root.Theme.accentDanger.r, Root.Theme.accentDanger.g, Root.Theme.accentDanger.b, 0.15)
-                            tooltipText: "Power menu"
-                            onClicked: { cc.showing = false; let pm = Core.ServiceManager.powerMenu; if (pm) pm.toggle(); }
-                        }
+                    // ── Profile slot (dedicated top card) ──
+                    // Pulled out of the cards area so it has a fixed
+                    // position as the CC's "header". Keeping it in
+                    // cardLayout would let the user reorder it, but it
+                    // consistently makes more sense as the identity
+                    // surface at the top of the panel. Visibility still
+                    // honors Config.cc.cards.profile for opt-out.
+                    Components.ProfileCard {
+                        Layout.fillWidth: true
+                        compact: true
+                        visible: Root.Config.cc.cards.profile
                     }
 
-                    // ── Quick toggles (data-driven from Registry) ──
-                    Row {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: 8; height: 40
+                    // ── Quick toggles (in a CCSection pill) ──
+                    // Noctalia-style: the toggle row sits in its own rounded
+                    // strip so it reads as a group rather than floating icons.
+                    // Header row is gone — ProfileCard below carries the
+                    // Settings/Lock/Power actions, so a separate title bar
+                    // would just be redundant chrome.
+                    Components.CCSection {
+                        Layout.fillWidth: true
+                        padding: 4
+                        // Explicit height: QuickToggle is 40x40, plus
+                        // 4px padding top+bottom → 48px total. CCSection's
+                        // auto-sizing can't feed off anchor-centered
+                        // children, so we declare the height directly.
+                        implicitHeight: 48
 
-                        Repeater {
-                            model: Core.Registry.quickToggles
-                            Components.QuickToggle {
-                                required property var modelData
-                                property var svc: Core.ServiceManager[modelData.service]
-                                isOn: {
-                                    if (!svc) return false;
-                                    let val = svc[modelData.stateProp];
-                                    return modelData.invertState ? !val : !!val;
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 8
+
+                            Repeater {
+                                model: Core.Registry.quickToggles
+                                Components.QuickToggle {
+                                    required property var modelData
+                                    property var svc: Core.ServiceManager[modelData.service]
+                                    isOn: {
+                                        if (!svc) return false;
+                                        let val = svc[modelData.stateProp];
+                                        return modelData.invertState ? !val : !!val;
+                                    }
+                                    iconOn: modelData.iconOn
+                                    iconOff: modelData.iconOff
+                                    accent: Root.Theme[modelData.accent]
+                                    onToggled: { if (svc && typeof svc[modelData.action] === "function") svc[modelData.action](); }
+                                    onSecondaryAction: {
+                                        if (!modelData.settingsPage) return;
+                                        cc.showing = false;
+                                        let sw = Core.ServiceManager.settingsWindow;
+                                        if (sw) sw.open(modelData.settingsPage);
+                                    }
                                 }
-                                iconOn: modelData.iconOn
-                                iconOff: modelData.iconOff
-                                accent: Root.Theme[modelData.accent]
-                                onToggled: { if (svc && typeof svc[modelData.action] === "function") svc[modelData.action](); }
                             }
                         }
                     }
 
                     // ── Always-visible sliders (volume + brightness) ──
+                    // CCSliderRow already paints its own ccSectionBg pill so
+                    // we don't wrap these in an outer CCSection — the rows
+                    // ARE sections, just each in its own strip. Stacking
+                    // them in a plain Column preserves the uniform-strip
+                    // look without the double-background cost.
                     Column {
-                        width: parent.width
+                        Layout.fillWidth: true
                         spacing: 6
 
-                        // Volume slider
-                        Rectangle {
-                            width: parent.width; height: 40
-                            radius: Root.Theme.ccSectionRadius
-                            color: Root.Theme.ccSectionBg
-
-                            Row {
-                                anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
-                                spacing: 8
-
-                                Rectangle {
-                                    width: 24; height: 24
-                                    radius: Root.Theme.radiusSmall
-                                    color: ccVolMuteMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1) : "transparent"
-                                    anchors.verticalCenter: parent.verticalCenter
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: (cc.audioService && cc.audioService.muted) ? Root.Icons.volMute : Root.Icons.volHigh
-                                        color: (cc.audioService && cc.audioService.muted) ? Root.Theme.textDimmed : Root.Theme.domainMedia
-                                        font { family: Root.Theme.fontFamily; pixelSize: 16 }
-                                    }
-                                    MouseArea {
-                                        id: ccVolMuteMouse
-                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                        onClicked: { if (cc.audioService) cc.audioService.toggleMute(); }
-                                    }
-                                }
-
-                                Components.SliderBar {
-                                    id: ccVolSlider
-                                    width: parent.width - 24 - 40 - 16
-                                    height: 16
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    accentColor: Root.Theme.domainMedia
-                                    trackHeight: 3
-                                    handleSize: 12
-                                    onValueUpdated: function(newValue) {
-                                        if (cc.audioService) cc.audioService.setVolume(Math.round(newValue));
-                                    }
-                                    Binding {
-                                        target: ccVolSlider
-                                        property: "value"
-                                        value: cc.audioService ? cc.audioService.volume : 0
-                                        when: !ccVolSlider.dragging
-                                    }
-                                }
-
-                                Text {
-                                    text: (cc.audioService ? cc.audioService.volume : 0) + "%"
-                                    color: Root.Theme.textPrimary
-                                    font { family: Root.Theme.fontFamily; pixelSize: 11 }
-                                    width: 32
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    horizontalAlignment: Text.AlignRight
-                                }
-                            }
+                        Components.CCSliderRow {
+                            width: parent.width
+                            icon: (cc.audioService && cc.audioService.muted) ? Root.Icons.volMute : Root.Icons.volHigh
+                            iconColor: (cc.audioService && cc.audioService.muted) ? Root.Theme.textDimmed : Root.Theme.domainMedia
+                            accentColor: Root.Theme.domainMedia
+                            value: cc.audioService ? cc.audioService.volume : 0
+                            iconClickable: true
+                            onIconClicked: if (cc.audioService) cc.audioService.toggleMute()
+                            onValueUpdated: function(v) { if (cc.audioService) cc.audioService.setVolume(Math.round(v)); }
                         }
 
-                        // Brightness slider (only visible when brightnessctl is available)
-                        Rectangle {
+                        Components.CCSliderRow {
+                            width: parent.width
                             visible: cc.brightnessService && cc.brightnessService.available
-                            width: parent.width; height: 40
-                            radius: Root.Theme.ccSectionRadius
-                            color: Root.Theme.ccSectionBg
-
-                            Row {
-                                anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
-                                spacing: 8
-
-                                Item {
-                                    width: 24; height: 24
-                                    anchors.verticalCenter: parent.verticalCenter
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: Root.Icons.brightnessIcon(cc.brightnessService ? cc.brightnessService.brightness : 0)
-                                        color: Root.Theme.domainTime
-                                        font { family: Root.Theme.fontFamily; pixelSize: 16 }
-                                    }
-                                }
-
-                                Components.SliderBar {
-                                    id: ccBriSlider
-                                    width: parent.width - 24 - 40 - 16
-                                    height: 16
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    accentColor: Root.Theme.domainTime
-                                    trackHeight: 3
-                                    handleSize: 12
-                                    onValueUpdated: function(newValue) {
-                                        if (cc.brightnessService) cc.brightnessService.setBrightness(Math.round(newValue));
-                                    }
-                                    Binding {
-                                        target: ccBriSlider
-                                        property: "value"
-                                        value: cc.brightnessService ? cc.brightnessService.brightness : 0
-                                        when: !ccBriSlider.dragging
-                                    }
-                                }
-
-                                Text {
-                                    text: (cc.brightnessService ? cc.brightnessService.brightness : 0) + "%"
-                                    color: Root.Theme.textPrimary
-                                    font { family: Root.Theme.fontFamily; pixelSize: 11 }
-                                    width: 32
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    horizontalAlignment: Text.AlignRight
-                                }
-                            }
+                            icon: Root.Icons.brightnessIcon(cc.brightnessService ? cc.brightnessService.brightness : 0)
+                            iconColor: Root.Theme.domainTime
+                            accentColor: Root.Theme.domainTime
+                            value: cc.brightnessService ? cc.brightnessService.brightness : 0
+                            onValueUpdated: function(v) { if (cc.brightnessService) cc.brightnessService.setBrightness(Math.round(v)); }
                         }
                     }
 
-                    // ── Tab bar with sliding indicator ──
-                    Item {
+                    // ── Cards area ──
+                    // Moved above the tab bar so the vertical flow reads
+                    // header → toggles → sliders → cards → tabs → content.
+                    // Previously cards sat between the tab bar and the tab
+                    // content which made them look like they belonged to a
+                    // specific tab.
+                    //
+                    // Data-driven: iterates Config.cc.cardLayout, filters by
+                    // Config.cc.cards[key] enables, and dispatches each card
+                    // key to a local Component via sourceComponent.
+                    Column {
+                        id: ccCardsCol
+                        Layout.fillWidth: true
+                        spacing: 6
+                        visible: enabledKeys.length > 0
+
+                        // Data-driven enabledKeys with per-card runtime
+                        // gating. A card only gets instantiated if:
+                        //   (a) the user has it toggled on in Config, AND
+                        //   (b) the card's service has something to show.
+                        // The service-state access inside this getter is
+                        // what makes hiding reactive — QML re-evaluates
+                        // the binding when e.g. player.hasMedia flips.
+                        readonly property var enabledKeys: {
+                            let out = [];
+                            let layout = Root.Config.cc.cardLayout || [];
+                            for (let i = 0; i < layout.length; i++) {
+                                let k = layout[i];
+                                if (!Root.Config.cc.cards[k]) continue;
+                                // Profile is rendered in a dedicated top
+                                // slot above the toggles — don't also
+                                // render it inside the cards area.
+                                if (k === "profile") continue;
+                                // Player card hides when nothing is playing —
+                                // no point taking 160px of CC real estate to
+                                // say "Nothing playing".
+                                if (k === "player") {
+                                    let ps = Core.ServiceManager.player;
+                                    if (!ps || !ps.hasMedia) continue;
+                                }
+                                out.push(k);
+                            }
+                            return out;
+                        }
+
+                        Repeater {
+                            model: ccCardsCol.enabledKeys
+
+                            Loader {
+                                id: cardLoader
+                                required property var modelData
+                                width: ccCardsCol.width
+                                height: item ? item.implicitHeight : 0
+                                active: true
+                                sourceComponent: {
+                                    switch (modelData) {
+                                    case "player":  return playerCardComp;
+                                    case "network": return networkCardComp;
+                                    }
+                                    return null;
+                                }
+                            }
+                        }
+
+                        Component { id: playerCardComp;  CCCards.PlayerCard  {} }
+                        Component { id: networkCardComp; CCCards.NetworkCard {} }
+                    }
+
+                    // ── Tab bar ──
+                    // Pill-style: wrapped in a CCSection so it reads as a
+                    // segmented control rather than a jarring underline bar.
+                    // The active tab gets a filled rounded background in its
+                    // accent color (alpha-ed) instead of the old 2px sliding
+                    // underline — more modern, less visually "loud".
+                    Components.CCSection {
                         id: tabBar
-                        width: parent.width; height: 38
+                        Layout.fillWidth: true
+                        padding: 4
+
+                        // Count hint callable — evaluated at render time
+                        // per tab so the labels pick up "Notifications (3)"
+                        // or "Mixer (2)" naturally. Returns empty string
+                        // when there's nothing to report, so the label
+                        // stays clean when counts are zero.
+                        function countFor(key) {
+                            if (key === "notifications") {
+                                let n = cc.notifService ? cc.notifService.items.length : 0;
+                                return n > 0 ? " (" + n + ")" : "";
+                            }
+                            if (key === "volume") {
+                                let a = cc.audioService && cc.audioService.appStreams ? cc.audioService.appStreams.count : 0;
+                                return a > 0 ? " (" + a + ")" : "";
+                            }
+                            return "";
+                        }
 
                         property var tabs: [
-                            { tab: "notifications", icon: Root.Icons.bell, label: "Notif", accent: Root.Theme.domainNotifications },
-                            { tab: "volume", icon: Root.Icons.volHigh, label: "Mixer", accent: Root.Theme.domainMedia },
-                            { tab: "connections", icon: Root.Icons.wifiHi, label: "Connect", accent: Root.Theme.domainNetwork }
+                            { tab: "notifications", icon: Root.Icons.bell, label: "Notifications", accent: Root.Theme.domainNotifications },
+                            { tab: "volume", icon: Root.Icons.volHigh, label: "Mixer", accent: Root.Theme.domainMedia }
                         ]
 
                         property int activeIndex: {
@@ -383,58 +460,111 @@ Scope {
                             return 0;
                         }
 
-                        // Sliding indicator
+                        implicitHeight: 32
+
+                        // Sliding filled pill indicator. The `x` binding
+                        // animates as activeIndex changes, giving the same
+                        // "slide between segments" feel the old underline
+                        // had, but with a filled pill footprint.
                         Rectangle {
-                            id: tabIndicator
-                            y: tabBar.height - 2
-                            width: tabBar.width / tabBar.tabs.length
-                            height: 2
-                            color: tabBar.tabs[tabBar.activeIndex].accent
-                            x: tabBar.activeIndex * width
+                            id: tabPill
+                            width: (parent.width - (tabBar.tabs.length - 1) * 2) / tabBar.tabs.length
+                            height: parent.height
+                            radius: Root.Theme.ccSectionRadius - 2
+                            color: Qt.rgba(tabBar.tabs[tabBar.activeIndex].accent.r,
+                                           tabBar.tabs[tabBar.activeIndex].accent.g,
+                                           tabBar.tabs[tabBar.activeIndex].accent.b, 0.18)
+                            border.width: 1
+                            border.color: Qt.rgba(tabBar.tabs[tabBar.activeIndex].accent.r,
+                                                  tabBar.tabs[tabBar.activeIndex].accent.g,
+                                                  tabBar.tabs[tabBar.activeIndex].accent.b, 0.35)
+                            x: tabBar.activeIndex * (width + 2)
 
                             Behavior on x { NumberAnimation { duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic } }
                             Behavior on color { ColorAnimation { duration: Root.Theme.anim.moveDuration } }
+                            Behavior on border.color { ColorAnimation { duration: Root.Theme.anim.moveDuration } }
                         }
 
                         Row {
                             anchors.fill: parent
-                            spacing: 0
+                            spacing: 2
 
                             Repeater {
                                 model: tabBar.tabs
 
-                                Rectangle {
-                                    width: tabBar.width / tabBar.tabs.length; height: 38
-                                    color: tabMouse.containsMouse ? Root.Theme.layer1Hover : "transparent"
-                                    radius: Root.Theme.radiusSmall
-                                    Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
+                                Item {
+                                    id: tabItem
+                                    width: (parent.width - (tabBar.tabs.length - 1) * 2) / tabBar.tabs.length
+                                    height: parent.height
 
-                                    Column {
-                                        anchors.centerIn: parent; spacing: 2
+                                    // 2F: hover background. Only visible
+                                    // on non-active tabs (the active tab
+                                    // already has the tabPill behind it)
+                                    // to avoid overlapping fills.
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        radius: Root.Theme.ccSectionRadius - 2
+                                        visible: cc.activeTab !== modelData.tab
+                                        opacity: tabMouse.containsMouse ? 1 : 0
+                                        color: Root.Theme.layer1Hover
+                                        Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.microDuration } }
+                                    }
+
+                                    Row {
+                                        anchors.centerIn: parent
+                                        spacing: 6
+
                                         Text {
-                                            anchors.horizontalCenter: parent.horizontalCenter
+                                            anchors.verticalCenter: parent.verticalCenter
                                             text: modelData.icon
                                             color: cc.activeTab === modelData.tab ? modelData.accent : (tabMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
-                                            font { family: Root.Theme.fontFamily; pixelSize: 16 }
+                                            font { family: Root.Theme.fontFamily; pixelSize: 14 }
                                             Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                                         }
                                         Text {
-                                            anchors.horizontalCenter: parent.horizontalCenter
-                                            text: modelData.label
-                                            color: cc.activeTab === modelData.tab ? modelData.accent : (tabMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
-                                            font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            // 1C: append count hint to the label. Zero-count tabs
+                                            // get an empty suffix so they don't carry dead weight.
+                                            text: modelData.label + tabBar.countFor(modelData.tab)
+                                            color: cc.activeTab === modelData.tab ? Root.Theme.textPrimary : (tabMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
+                                            font { family: Root.Theme.fontFamily; pixelSize: 11; bold: cc.activeTab === modelData.tab }
                                             Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                                         }
+                                        // 2E: chevron on active tab only. Rotates 180° when
+                                        // the accordion is expanded so the affordance is
+                                        // obvious at a glance: ▾ collapsed → ▴ expanded.
+                                        // Non-active tabs don't show the chevron so the
+                                        // active-tab affordance is unambiguous.
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            visible: cc.activeTab === modelData.tab
+                                            text: "▾"
+                                            color: modelData.accent
+                                            font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                                            rotation: cc.tabExpanded ? 180 : 0
+                                            Behavior on rotation { NumberAnimation { duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic } }
+                                        }
                                     }
+
                                     MouseArea {
                                         id: tabMouse
                                         anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                         onClicked: {
-                                            cc.activeTab = modelData.tab;
-                                            if (modelData.tab === "volume" && cc.audioService) { cc.audioService.refreshApps(); cc.audioService.refreshDevices(); }
-                                            if (modelData.tab === "connections") {
-                                                if (cc.wifiService) cc.wifiService.scan();
-                                                if (cc.bluetoothService) cc.bluetoothService.scan(false);
+                                            if (cc.activeTab === modelData.tab) {
+                                                // Clicking the already-active tab toggles expansion —
+                                                // this is the "accordion" affordance. First click
+                                                // opens it, second click closes it.
+                                                cc.tabExpanded = !cc.tabExpanded;
+                                            } else {
+                                                // Switching tabs forces the expansion on, so the
+                                                // user always gets visible feedback when moving
+                                                // between tabs.
+                                                cc.activeTab = modelData.tab;
+                                                cc.tabExpanded = true;
+                                            }
+                                            if (cc.activeTab === "volume" && cc.audioService) {
+                                                cc.audioService.refreshApps();
+                                                cc.audioService.refreshDevices();
                                             }
                                         }
                                     }
@@ -443,13 +573,24 @@ Scope {
                         }
                     }
 
-                    Rectangle { width: parent.width; height: 1; color: Root.Theme.textDimmed; opacity: 0.15 }
-
-                    // ── Tab content ──
+                    // ── Tab content (accordion) ──
+                    // Layout.preferredHeight is driven by ccRect.contentFactor
+                    // (0..1 animated scalar). opacity is bound to the same
+                    // factor so content fades in as it extends. clip: true
+                    // is required to keep the not-yet-revealed content from
+                    // bleeding past the shrinking box during the animation.
+                    //
+                    // Note the inversion here: the old layout had this Item
+                    // claim whatever space was left (fillHeight). Now this
+                    // Item DECIDES how much space exists (preferredHeight),
+                    // and mainLayout.implicitHeight flows the decision all
+                    // the way up to ccRect.
                     Item {
-                        width: parent.width
-                        // header(28) + toggles(40) + sliders(~86) + tabs(38) + sep(1) + footer(24) + 6×spacing(72) = 289
-                        height: parent.height - 289
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: ccRect.maxTabContentHeight * ccRect.contentFactor
+                        clip: true
+                        opacity: ccRect.contentFactor
+                        visible: opacity > 0.001
 
                         CCTabs.NotificationsTab {
                             anchors.fill: parent
@@ -474,24 +615,16 @@ Scope {
                             }
                             Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
                         }
-
-                        CCTabs.ConnectionsTab {
-                            anchors.fill: parent
-                            visible: opacity > 0
-                            wifiService: cc.wifiService
-                            bluetoothService: cc.bluetoothService
-                            opacity: cc.activeTab === "connections" ? 1 : 0
-                            transform: Translate {
-                                y: cc.activeTab === "connections" ? 0 : 6
-                                Behavior on y { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
-                            }
-                            Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
-                        }
                     }
 
                     // ── Footer ──
+                    // Contextual to the notifications tab AND only when the
+                    // accordion is expanded — an empty footer under a
+                    // collapsed tab bar is just dead chrome.
                     Item {
-                        width: parent.width; height: 24
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: visible ? 24 : 0
+                        visible: cc.activeTab === "notifications" && cc.tabExpanded
 
                         Text {
                             anchors { left: parent.left; verticalCenter: parent.verticalCenter }

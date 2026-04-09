@@ -5,7 +5,7 @@
   config = lib.mkIf config.modules.theming.enable {
     stylix.enable = true;
     stylix.targets.grub.enable = false;
-    stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-hard.yaml";
+    stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/kanagawa-dragon.yaml";
 
     stylix.polarity = "dark";
 

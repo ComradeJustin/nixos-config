@@ -13,21 +13,20 @@
     "style": "flat",
     "showGroups": false,
     "showCpuGraph": true,
-    "showCaffeineWhenOff": false,
+    "showCaffeineWhenOff": true,
     "layoutLeft": [
       "power",
       "workspace",
-      "tray",
       "time",
       "weather",
+      "caffeine",
       "window"
     ],
     "layoutCenter": [
       "media"
     ],
     "layoutRight": [
-      "caffeine",
-      "bluetooth",
+      "tray",
       "network",
       "resource",
       "audio",
@@ -37,10 +36,10 @@
   },
   "widgets": {
     "clock": true,
-    "weather": true,
+    "weather": false,
     "system": false,
     "quote": false,
-    "nowPlaying": true,
+    "nowPlaying": false,
     "calendar": true,
     "stock": false,
     "clockPosition": "bottom-right",
@@ -105,5 +104,10 @@
     ],
     "fontSize": 14,
     "refreshInterval": 300000
+  },
+  "nightLight": {
+    "enabled": true,
+    "dayTemp": 6500,
+    "nightTemp": 4006
   }
 }

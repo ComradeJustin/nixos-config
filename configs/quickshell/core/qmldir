@@ -2,4 +2,5 @@ module core
 singleton Utils 1.0 Utils.qml
 singleton Registry 1.0 Registry.qml
 singleton ServiceManager 1.0 ServiceManager.qml
+singleton Logger 1.0 Logger.qml
 PollCommand 1.0 PollCommand.qml

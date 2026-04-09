@@ -3,7 +3,7 @@ import Quickshell.Wayland
 import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
+import QtQuick.Effects
 import ".." as Root
 
 PanelWindow {
@@ -53,9 +53,12 @@ PanelWindow {
         border.color: Root.Theme.borderColor
 
         layer.enabled: true
-        layer.effect: DropShadow {
-            transparentBorder: true; color: Qt.rgba(0, 0, 0, 0.5)
-            radius: 16; samples: 33; verticalOffset: 4
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: Qt.rgba(0, 0, 0, 0.5)
+            shadowBlur: 1.0
+            shadowVerticalOffset: 4
+            shadowHorizontalOffset: 0
         }
 
         MouseArea { anchors.fill: parent } // block clicks through

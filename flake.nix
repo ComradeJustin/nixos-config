@@ -1,8 +1,7 @@
 {
   description = "New Nixos System";
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-unstable";
-
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     nixcord = {
       url = "github:FlameFlag/nixcord";
       inputs.nixpkgs.follows = "nixpkgs";

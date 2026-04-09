@@ -2,10 +2,11 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
 import QtQuick
-import Qt5Compat.GraphicalEffects
+import QtQuick.Effects
 import ".." as Root
 import "../components" as Components
 import "../core" as Core
+import "settings" as SettingsPages
 
 // Standalone settings window — multi-page app with left nav rail.
 // Toggle via: settingsWindow.toggle()
@@ -61,54 +62,89 @@ PanelWindow {
     readonly property var _pages: [
         { id: "bar",         label: "Bar",         icon: "󰍹" },
         { id: "widgets",     label: "Widgets",     icon: "󰕰" },
+        { id: "connections", label: "Connections", icon: "󰀂" },
+        { id: "display",     label: "Display",     icon: "󰃠" },
         { id: "preferences", label: "Preferences", icon: "󰒓" },
         { id: "hooks",       label: "Hooks",       icon: "󰢩" },
         { id: "about",       label: "About",       icon: "󰋽" }
     ]
 
     // ── Search index ──────────────────────────────────────────────────
-    // Static index mapping every settable option to its page. Adding a new
-    // toggle to a page also requires adding it here so search can find it.
-    // keywords are matched in addition to the label.
+    // Static index mapping every settable option to its page by STRING id.
+    // Adding a new page does not require touching any other entries — the
+    // id decouples search from `_pages` array position.
     readonly property var _searchIndex: [
         // Bar page
-        { label: "Modules",            keywords: "bar layout enable disable",        page: 0 },
-        { label: "Floating bar",       keywords: "bar style float flat detach",      page: 0 },
-        { label: "Module groups",      keywords: "bar groups card background",       page: 0 },
-        { label: "CPU sparkline",      keywords: "cpu graph chart resource",         page: 0 },
-        { label: "Reorder Bar",        keywords: "bar drag rearrange",               page: 0 },
+        { label: "Modules",            keywords: "bar layout enable disable",        page: "bar" },
+        { label: "Floating bar",       keywords: "bar style float flat detach",      page: "bar" },
+        { label: "Module groups",      keywords: "bar groups card background",       page: "bar" },
+        { label: "CPU sparkline",      keywords: "cpu graph chart resource",         page: "bar" },
+        { label: "Reorder Bar",        keywords: "bar drag rearrange",               page: "bar" },
         // Widgets page
-        { label: "Desktop widgets",    keywords: "wallpaper widget enable",          page: 1 },
-        { label: "Edit Widget Layout", keywords: "widget drag rearrange position",   page: 1 },
-        { label: "Clock font size",    keywords: "clock time fontSize",              page: 1 },
-        { label: "Show seconds",       keywords: "clock time seconds",               page: 1 },
-        { label: "Show date",          keywords: "clock date",                       page: 1 },
-        { label: "Use metric units",   keywords: "weather metric celsius units",     page: 1 },
-        { label: "Weather font size",  keywords: "weather fontSize",                 page: 1 },
-        { label: "Show CPU",           keywords: "system cpu",                       page: 1 },
-        { label: "Show RAM",           keywords: "system ram memory",                page: 1 },
-        { label: "System font size",   keywords: "system fontSize",                  page: 1 },
-        { label: "Show album art",     keywords: "now playing media art",            page: 1 },
-        { label: "Album art size",     keywords: "now playing media art size",       page: 1 },
+        { label: "Desktop widgets",    keywords: "wallpaper widget enable",          page: "widgets" },
+        { label: "Edit Widget Layout", keywords: "widget drag rearrange position",   page: "widgets" },
+        { label: "Clock font size",    keywords: "clock time fontSize",              page: "widgets" },
+        { label: "Show seconds",       keywords: "clock time seconds",               page: "widgets" },
+        { label: "Show date",          keywords: "clock date",                       page: "widgets" },
+        { label: "Use metric units",   keywords: "weather metric celsius units",     page: "widgets" },
+        { label: "Weather font size",  keywords: "weather fontSize",                 page: "widgets" },
+        { label: "Show CPU",           keywords: "system cpu",                       page: "widgets" },
+        { label: "Show RAM",           keywords: "system ram memory",                page: "widgets" },
+        { label: "System font size",   keywords: "system fontSize",                  page: "widgets" },
+        { label: "Show album art",     keywords: "now playing media art",            page: "widgets" },
+        { label: "Album art size",     keywords: "now playing media art size",       page: "widgets" },
+        // Connections page
+        { label: "Wi-Fi",              keywords: "wifi wireless network connect ssid password",        page: "connections" },
+        { label: "Saved networks",     keywords: "wifi saved forget networks",                         page: "connections" },
+        { label: "Hidden network",     keywords: "wifi hidden ssid manual connect",                    page: "connections" },
+        { label: "Bluetooth",          keywords: "bluetooth pair device audio headphones",             page: "connections" },
+        { label: "Rescan devices",     keywords: "bluetooth rescan discover refresh",                  page: "connections" },
+        // Display page
+        { label: "Night light",        keywords: "night light blue filter color temperature wlsunset", page: "display" },
+        { label: "Day temperature",    keywords: "night light day kelvin temperature", page: "display" },
+        { label: "Night temperature",  keywords: "night light night kelvin temperature", page: "display" },
         // Preferences page
-        { label: "Media popup",        keywords: "media popup floating",             page: 2 },
-        { label: "Clipboard history",  keywords: "clipboard copy paste history",     page: 2 },
-        { label: "Wallpaper selector", keywords: "wallpaper picker spotlight",       page: 2 },
-        { label: "Wallpaper widgets",  keywords: "wallpaper widget layer",           page: 2 },
-        { label: "Auto-hide widgets",  keywords: "auto hide widget windows",         page: 2 },
-        { label: "Auto-hide bar",      keywords: "auto hide bar fullscreen",         page: 2 },
-        { label: "Weather update",     keywords: "weather interval refresh timing",  page: 2 },
-        { label: "System stats",       keywords: "system stats interval timing",     page: 2 },
-        { label: "Notification timeout", keywords: "notification timeout timing",    page: 2 },
-        { label: "Max clipboard items", keywords: "clipboard max history",           page: 2 },
+        { label: "Media popup",        keywords: "media popup floating",             page: "preferences" },
+        { label: "Clipboard history",  keywords: "clipboard copy paste history",     page: "preferences" },
+        { label: "Wallpaper selector", keywords: "wallpaper picker spotlight",       page: "preferences" },
+        { label: "Wallpaper widgets",  keywords: "wallpaper widget layer",           page: "preferences" },
+        { label: "Auto-hide widgets",  keywords: "auto hide widget windows",         page: "preferences" },
+        { label: "Auto-hide bar",      keywords: "auto hide bar fullscreen",         page: "preferences" },
+        { label: "Weather update",     keywords: "weather interval refresh timing",  page: "preferences" },
+        { label: "System stats",       keywords: "system stats interval timing",     page: "preferences" },
+        { label: "Notification timeout", keywords: "notification timeout timing",    page: "preferences" },
+        { label: "Max clipboard items", keywords: "clipboard max history",           page: "preferences" },
         // Hooks page
-        { label: "Hooks events",        keywords: "hooks events list signal scripts", page: 3 },
-        { label: "Recent fires",        keywords: "hooks debug log fires history",    page: 3 },
-        { label: "Edit hooks.json",     keywords: "hooks edit json open file",        page: 3 },
-        { label: "Reload hooks",        keywords: "hooks reload refresh",             page: 3 },
+        { label: "Hooks events",        keywords: "hooks events list signal scripts", page: "hooks" },
+        { label: "Recent fires",        keywords: "hooks debug log fires history",    page: "hooks" },
+        { label: "Edit hooks.json",     keywords: "hooks edit json open file",        page: "hooks" },
+        { label: "Reload hooks",        keywords: "hooks reload refresh",             page: "hooks" },
         // About page
-        { label: "Open Config Folder", keywords: "config folder open path",          page: 4 }
+        { label: "Open Config Folder", keywords: "config folder open path",          page: "about" }
     ]
+
+    // ── Page component registry ──
+    // String id → Component. Inserting a new page means adding ONE entry
+    // here and ONE entry in `_pages` — no switch cases, no search shifts.
+    readonly property var _pageComponents: ({
+        "bar":         barPage,
+        "widgets":     widgetsPage,
+        "connections": connectionsPage,
+        "display":     displayPage,
+        "preferences": preferencesPage,
+        "hooks":       hooksPage,
+        "about":       aboutPage
+    })
+
+    // Look up a page's numeric index from its id (for nav rail selection
+    // state, which still uses int internally because the Repeater iterates
+    // the ordered `_pages` array).
+    function _pageIndexForId(id) {
+        for (let i = 0; i < _pages.length; i++) {
+            if (_pages[i].id === id) return i;
+        }
+        return -1;
+    }
 
     // Reactive — re-evaluates whenever _searchQuery changes.
     readonly property var _filteredResults: {
@@ -196,13 +232,12 @@ PanelWindow {
         MouseArea { anchors.fill: parent }
 
         layer.enabled: true
-        layer.effect: DropShadow {
-            transparentBorder: true
-            color: Qt.rgba(0, 0, 0, 0.55)
-            radius: 28
-            samples: 57
-            verticalOffset: 6
-            horizontalOffset: 0
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: Qt.rgba(0, 0, 0, 0.55)
+            shadowBlur: 1.0
+            shadowVerticalOffset: 6
+            shadowHorizontalOffset: 0
         }
 
         // ── Layout: nav rail (left) + content (right) ──────────────────
@@ -492,14 +527,8 @@ PanelWindow {
                         width: pageScroll.width
                         sourceComponent: {
                             if (win._searchQuery.length > 0) return searchResultsPage;
-                            switch (win._activePage) {
-                                case 0: return barPage
-                                case 1: return widgetsPage
-                                case 2: return preferencesPage
-                                case 3: return hooksPage
-                                case 4: return aboutPage
-                                default: return null
-                            }
+                            let page = win._pages[win._activePage];
+                            return page ? (win._pageComponents[page.id] || null) : null;
                         }
                     }
                 }
@@ -577,7 +606,10 @@ PanelWindow {
                         Text {
                             id: pageBadgeText
                             anchors.centerIn: parent
-                            text: win._pages[modelData.page] ? win._pages[modelData.page].label : ""
+                            text: {
+                                let idx = win._pageIndexForId(modelData.page);
+                                return idx >= 0 ? win._pages[idx].label : "";
+                            }
                             color: Root.Theme.accentPrimary
                             font { family: Root.Theme.fontFamily; pixelSize: 10; bold: true }
                         }
@@ -589,8 +621,9 @@ PanelWindow {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            // Jump to the page and clear the search.
-                            win._switchPage(modelData.page);
+                            // Jump to the page (looked up by id) and clear the search.
+                            let idx = win._pageIndexForId(modelData.page);
+                            if (idx >= 0) win._switchPage(idx);
                             win._searchQuery = "";
                             searchInput.text = "";
                         }
@@ -602,794 +635,16 @@ PanelWindow {
         }
     }
 
-    // ── Bar page ─────────────────────────────────────────────────────────
-    Component {
-        id: barPage
-        Column {
-            width: parent ? parent.width : 0
-            spacing: 16
-
-            Components.SettingSection {
-                title: "MODULES"
-                width: parent.width
-
-                Repeater {
-                    model: Core.Registry.barModules
-                    Components.SettingToggle {
-                        required property var modelData
-                        label: modelData.label
-                        isOn: Root.Config.isBarModuleEnabled(modelData.key)
-                        onToggled: Root.Config.toggleBarModule(modelData.key, modelData.section)
-                    }
-                }
-
-                // Spacer before reorder button
-                Item { width: 1; height: 4 }
-
-                // Reorder button
-                Rectangle {
-                    width: parent.width
-                    height: 32
-                    radius: Root.Theme.radiusSmall
-                    color: reorderMouse.containsMouse
-                        ? Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.15)
-                        : Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.08)
-
-                    Behavior on color { ColorAnimation { duration: 120 } }
-
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 6
-
-                        Text {
-                            text: Root.Icons.drag
-                            color: reorderMouse.containsMouse ? Root.Theme.accentPrimary : Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            Behavior on color { ColorAnimation { duration: 120 } }
-                        }
-                        Text {
-                            text: "Reorder Bar"
-                            color: reorderMouse.containsMouse ? Root.Theme.accentPrimary : Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            Behavior on color { ColorAnimation { duration: 120 } }
-                        }
-                    }
-
-                    MouseArea {
-                        id: reorderMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            win._close()
-                            let bar = Core.ServiceManager.bar; if (bar) bar.toggleBarEdit()
-                        }
-                    }
-                }
-            }
-
-            Components.SettingSection {
-                title: "BAR STYLE"
-                width: parent.width
-                resetCallback: () => Root.Config.resetSection("bar")
-
-                Components.SettingToggle {
-                    label: "Floating bar"
-                    description: "Detach bar from screen edge with rounded corners"
-                    isOn: Root.Config.bar.style === "float"
-                    onToggled: {
-                        Root.Config.bar.style = Root.Config.bar.style === "float" ? "flat" : "float"
-                        Root.Config.save()
-                    }
-                }
-
-                Components.SettingToggle {
-                    label: "Module groups"
-                    description: "Show card backgrounds around bar module groups"
-                    isOn: Root.Config.bar.showGroups
-                    onToggled: {
-                        Root.Config.bar.showGroups = !Root.Config.bar.showGroups
-                        Root.Config.save()
-                    }
-                }
-
-                Components.SettingToggle {
-                    label: "CPU sparkline"
-                    description: "Show mini graph next to CPU usage"
-                    isOn: Root.Config.bar.showCpuGraph
-                    onToggled: {
-                        Root.Config.bar.showCpuGraph = !Root.Config.bar.showCpuGraph
-                        Root.Config.save()
-                    }
-                }
-
-                Components.SettingToggle {
-                    label: "Always show caffeine"
-                    description: "Keep caffeine bar icon visible even when idle inhibit is off"
-                    isOn: Root.Config.bar.showCaffeineWhenOff
-                    onToggled: {
-                        Root.Config.bar.showCaffeineWhenOff = !Root.Config.bar.showCaffeineWhenOff
-                        Root.Config.save()
-                    }
-                }
-            }
-
-            // Bottom padding
-            Item { width: 1; height: 8 }
-        }
-    }
-
-    // ── Widgets page ──────────────────────────────────────────────────────
-    Component {
-        id: widgetsPage
-        Column {
-            width: parent ? parent.width : 0
-            spacing: 16
-
-            Components.SettingSection {
-                title: "DESKTOP WIDGETS"
-                width: parent.width
-
-                Repeater {
-                    model: Core.Registry.widgets
-                    Components.SettingToggle {
-                        required property var modelData
-                        label: modelData.label
-                        isOn: Root.Config.widgets[modelData.configKey] || false
-                        onToggled: Root.Config.toggleWidget(modelData.configKey)
-                    }
-                }
-
-                // Spacer before edit layout button
-                Item { width: 1; height: 4 }
-
-                // Edit widget layout button
-                Rectangle {
-                    width: parent.width
-                    height: 32
-                    radius: Root.Theme.radiusSmall
-                    color: widgetEditMouse.containsMouse
-                        ? Qt.rgba(Root.Theme.domainSettings.r, Root.Theme.domainSettings.g, Root.Theme.domainSettings.b, 0.15)
-                        : Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.08)
-
-                    Behavior on color { ColorAnimation { duration: 120 } }
-
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 6
-
-                        Text {
-                            text: Root.Icons.widgets
-                            color: widgetEditMouse.containsMouse ? Root.Theme.domainSettings : Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            Behavior on color { ColorAnimation { duration: 120 } }
-                        }
-                        Text {
-                            text: "Edit Widget Layout"
-                            color: widgetEditMouse.containsMouse ? Root.Theme.domainSettings : Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            Behavior on color { ColorAnimation { duration: 120 } }
-                        }
-                    }
-
-                    MouseArea {
-                        id: widgetEditMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            win._close()
-                            let wo = Core.ServiceManager.widgetOverlay; if (wo) wo.toggleEditMode()
-                        }
-                    }
-                }
-            }
-
-            Components.SettingSection {
-                title: "CLOCK"
-                width: parent.width
-                resetCallback: () => Root.Config.resetSection("clock")
-
-                Components.SettingSlider {
-                    label: "Font size"
-                    value: Root.Config.clockConfig.fontSize
-                    minValue: 12; maxValue: 72; suffix: "px"
-                    onSliderUpdated: newValue => {
-                        Root.Config.clockConfig.fontSize = Math.round(newValue)
-                        Root.Config.save()
-                    }
-                }
-                Components.SettingToggle {
-                    label: "Show seconds"
-                    isOn: Root.Config.clockConfig.showSeconds
-                    onToggled: {
-                        Root.Config.clockConfig.showSeconds = !Root.Config.clockConfig.showSeconds
-                        Root.Config.save()
-                    }
-                }
-                Components.SettingToggle {
-                    label: "Show date"
-                    isOn: Root.Config.clockConfig.showDate
-                    onToggled: {
-                        Root.Config.clockConfig.showDate = !Root.Config.clockConfig.showDate
-                        Root.Config.save()
-                    }
-                }
-            }
-
-            Components.SettingSection {
-                title: "WEATHER"
-                width: parent.width
-                resetCallback: () => Root.Config.resetSection("weather")
-
-                Components.SettingToggle {
-                    label: "Use metric units"
-                    isOn: Root.Config.weatherConfig.useMetric
-                    onToggled: {
-                        Root.Config.weatherConfig.useMetric = !Root.Config.weatherConfig.useMetric
-                        Root.Config.save()
-                    }
-                }
-                Components.SettingSlider {
-                    label: "Font size"
-                    value: Root.Config.weatherConfig.fontSize
-                    minValue: 12; maxValue: 48; suffix: "px"
-                    onSliderUpdated: newValue => {
-                        Root.Config.weatherConfig.fontSize = Math.round(newValue)
-                        Root.Config.save()
-                    }
-                }
-            }
-
-            Components.SettingSection {
-                title: "SYSTEM"
-                width: parent.width
-                resetCallback: () => Root.Config.resetSection("system")
-
-                Components.SettingToggle {
-                    label: "Show CPU"
-                    isOn: Root.Config.systemConfig.showCpu
-                    onToggled: {
-                        Root.Config.systemConfig.showCpu = !Root.Config.systemConfig.showCpu
-                        Root.Config.save()
-                    }
-                }
-                Components.SettingToggle {
-                    label: "Show RAM"
-                    isOn: Root.Config.systemConfig.showRam
-                    onToggled: {
-                        Root.Config.systemConfig.showRam = !Root.Config.systemConfig.showRam
-                        Root.Config.save()
-                    }
-                }
-                Components.SettingSlider {
-                    label: "Font size"
-                    value: Root.Config.systemConfig.fontSize
-                    minValue: 12; maxValue: 48; suffix: "px"
-                    onSliderUpdated: newValue => {
-                        Root.Config.systemConfig.fontSize = Math.round(newValue)
-                        Root.Config.save()
-                    }
-                }
-            }
-
-            Components.SettingSection {
-                title: "NOW PLAYING"
-                width: parent.width
-                resetCallback: () => Root.Config.resetSection("nowPlaying")
-
-                Components.SettingToggle {
-                    label: "Show album art"
-                    isOn: Root.Config.nowPlayingConfig.showArt
-                    onToggled: {
-                        Root.Config.nowPlayingConfig.showArt = !Root.Config.nowPlayingConfig.showArt
-                        Root.Config.save()
-                    }
-                }
-                Components.SettingSlider {
-                    label: "Art size"
-                    value: Root.Config.nowPlayingConfig.artSize
-                    minValue: 40; maxValue: 160; suffix: "px"
-                    onSliderUpdated: newValue => {
-                        Root.Config.nowPlayingConfig.artSize = Math.round(newValue)
-                        Root.Config.save()
-                    }
-                }
-            }
-
-            Item { width: 1; height: 8 }
-        }
-    }
-
-    // ── Preferences page (merged Features + Appearance) ─────────────────
-    Component {
-        id: preferencesPage
-        Column {
-            width: parent ? parent.width : 0
-            spacing: 16
-
-            Components.SettingSection {
-                title: "FEATURES"
-                width: parent.width
-                resetCallback: () => Root.Config.resetSection("features")
-
-                Components.SettingToggle {
-                    label: "Media popup"
-                    description: "Floating media controls overlay"
-                    isOn: Root.Config.features.mediaPopup
-                    onToggled: {
-                        Root.Config.features.mediaPopup = !Root.Config.features.mediaPopup
-                        Root.Config.save()
-                    }
-                }
-                Components.SettingToggle {
-                    label: "Clipboard history"
-                    description: "Track and browse clipboard entries"
-                    isOn: Root.Config.features.clipboardHistory
-                    onToggled: {
-                        Root.Config.features.clipboardHistory = !Root.Config.features.clipboardHistory
-                        Root.Config.save()
-                    }
-                }
-                Components.SettingToggle {
-                    label: "Wallpaper selector"
-                    description: "Enable wallpaper picker in Spotlight"
-                    isOn: Root.Config.features.wallpaperSelector
-                    onToggled: {
-                        Root.Config.features.wallpaperSelector = !Root.Config.features.wallpaperSelector
-                        Root.Config.save()
-                    }
-                }
-                Components.SettingToggle {
-                    label: "Wallpaper widgets"
-                    description: "Render widgets directly on the wallpaper layer"
-                    isOn: Root.Config.features.wallpaperWidgets
-                    onToggled: {
-                        Root.Config.features.wallpaperWidgets = !Root.Config.features.wallpaperWidgets
-                        Root.Config.save()
-                    }
-                }
-            }
-
-            Components.SettingSection {
-                title: "BEHAVIOR"
-                width: parent.width
-                resetCallback: () => Root.Config.resetSection("features")
-
-                Components.SettingToggle {
-                    label: "Auto-hide widgets"
-                    description: "Hide desktop widgets when windows are present"
-                    isOn: Root.Config.features.autoHideWidgets
-                    onToggled: {
-                        Root.Config.features.autoHideWidgets = !Root.Config.features.autoHideWidgets
-                        Root.Config.save()
-                    }
-                }
-                Components.SettingToggle {
-                    label: "Auto-hide bar in fullscreen"
-                    description: "Hide the bar when a window goes fullscreen"
-                    isOn: Root.Config.features.autoHideBarInFullscreen
-                    onToggled: {
-                        Root.Config.features.autoHideBarInFullscreen = !Root.Config.features.autoHideBarInFullscreen
-                        Root.Config.save()
-                    }
-                }
-            }
-
-            Components.SettingSection {
-                title: "TIMING"
-                width: parent.width
-                resetCallback: () => Root.Config.resetSection("behavior")
-
-                Components.SettingSlider {
-                    label: "Weather update"
-                    value: Math.round(Root.Config.behavior.weatherUpdateInterval / 60000)
-                    minValue: 1; maxValue: 30; suffix: " min"
-                    onSliderUpdated: newValue => {
-                        Root.Config.behavior.weatherUpdateInterval = Math.round(newValue) * 60000
-                        Root.Config.save()
-                    }
-                }
-                Components.SettingSlider {
-                    label: "System stats"
-                    value: Math.round(Root.Config.behavior.systemStatsInterval / 1000)
-                    minValue: 1; maxValue: 10; suffix: " sec"
-                    onSliderUpdated: newValue => {
-                        Root.Config.behavior.systemStatsInterval = Math.round(newValue) * 1000
-                        Root.Config.save()
-                    }
-                }
-                Components.SettingSlider {
-                    label: "Notification timeout"
-                    value: Math.round(Root.Config.behavior.notificationTimeout / 1000)
-                    minValue: 1; maxValue: 15; suffix: " sec"
-                    onSliderUpdated: newValue => {
-                        Root.Config.behavior.notificationTimeout = Math.round(newValue) * 1000
-                        Root.Config.save()
-                    }
-                }
-                Components.SettingSlider {
-                    label: "Max clipboard items"
-                    value: Root.Config.behavior.maxClipboardItems
-                    minValue: 10; maxValue: 100
-                    onSliderUpdated: newValue => {
-                        Root.Config.behavior.maxClipboardItems = Math.round(newValue)
-                        Root.Config.save()
-                    }
-                }
-            }
-
-            Item { width: 1; height: 8 }
-        }
-    }
-
-    // ── Hooks page ───────────────────────────────────────────────────────
-    // Discovery + debug surface for HooksService.
-    // Lists every known event with its current binding (or "—") and shows
-    // a live tail of the most recent fires for "why isn't my hook firing?"
-    // troubleshooting.
-    Component {
-        id: hooksPage
-        Column {
-            id: hooksCol
-            width: parent ? parent.width : 0
-            spacing: 16
-
-            // Service handle — picked up reactively from ServiceManager.
-            property var hooksSvc: Core.ServiceManager.hooks
-
-            // ── Header / actions ────────────────────────────────────────
-            Components.SettingSection {
-                title: "HOOKS"
-                width: parent.width
-
-                Text {
-                    text: "Hooks bind shell events to shell commands.\nEdit ~/.config/quickshell/hooks.json — changes are picked up automatically."
-                    color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall }
-                    wrapMode: Text.WordWrap
-                    width: parent.width
-                    bottomPadding: 8
-                }
-
-                Row {
-                    width: parent.width
-                    spacing: 8
-
-                    // Edit button
-                    Rectangle {
-                        width: 140; height: 32
-                        radius: Root.Theme.radiusSmall
-                        color: editMouse.containsMouse
-                            ? Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.18)
-                            : Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.10)
-                        border.width: Root.Theme.borderWidth
-                        border.color: Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.3)
-                        Behavior on color { ColorAnimation { duration: 120 } }
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: Root.Icons.edit + "  Edit hooks.json"
-                            color: Root.Theme.accentPrimary
-                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall }
-                        }
-                        MouseArea {
-                            id: editMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: openHooksProc.running = true
-                        }
-                    }
-
-                    // Reload button
-                    Rectangle {
-                        width: 110; height: 32
-                        radius: Root.Theme.radiusSmall
-                        color: reloadMouse.containsMouse
-                            ? Qt.rgba(Root.Theme.base01.r, Root.Theme.base01.g, Root.Theme.base01.b, 0.95)
-                            : Qt.rgba(Root.Theme.base01.r, Root.Theme.base01.g, Root.Theme.base01.b, 0.6)
-                        border.width: Root.Theme.borderWidth
-                        border.color: Root.Theme.borderColor
-                        Behavior on color { ColorAnimation { duration: 120 } }
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: Root.Icons.reset + "  Reload"
-                            color: Root.Theme.textPrimary
-                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall }
-                        }
-                        MouseArea {
-                            id: reloadMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: { if (hooksCol.hooksSvc) hooksCol.hooksSvc.reload(); }
-                        }
-                    }
-                }
-            }
-
-            // ── Known events list ────────────────────────────────────────
-            Components.SettingSection {
-                title: "AVAILABLE EVENTS"
-                width: parent.width
-
-                Repeater {
-                    model: hooksCol.hooksSvc ? hooksCol.hooksSvc.knownEvents : []
-
-                    Rectangle {
-                        required property var modelData
-                        width: parent.width
-                        height: eventCol.implicitHeight + 14
-                        radius: Root.Theme.radiusSmall
-                        color: Qt.rgba(Root.Theme.base01.r, Root.Theme.base01.g, Root.Theme.base01.b, 0.5)
-
-                        // Reactive bound state — re-checks whenever the
-                        // hook table reloads from disk.
-                        readonly property bool isBound: hooksCol.hooksSvc
-                            && hooksCol.hooksSvc._table[modelData.name] !== undefined
-
-                        Column {
-                            id: eventCol
-                            anchors {
-                                left: parent.left; leftMargin: 12
-                                right: boundBadge.left; rightMargin: 8
-                                verticalCenter: parent.verticalCenter
-                            }
-                            spacing: 2
-
-                            Row {
-                                spacing: 8
-                                Text {
-                                    text: modelData.name
-                                    color: Root.Theme.textPrimary
-                                    font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall; bold: true }
-                                }
-                                Text {
-                                    text: "(" + modelData.args + ")"
-                                    color: Root.Theme.textDimmed
-                                    font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall }
-                                }
-                            }
-                            Text {
-                                text: modelData.desc
-                                color: Root.Theme.textDimmed
-                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall }
-                                wrapMode: Text.WordWrap
-                                width: eventCol.width
-                            }
-                        }
-
-                        // Bound / unbound pill
-                        Rectangle {
-                            id: boundBadge
-                            anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                            width: boundBadgeText.implicitWidth + 14
-                            height: 20
-                            radius: 10
-                            color: parent.isBound
-                                ? Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.20)
-                                : Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.15)
-
-                            Text {
-                                id: boundBadgeText
-                                anchors.centerIn: parent
-                                text: parent.parent.isBound ? "bound" : "—"
-                                color: parent.parent.isBound ? Root.Theme.accentPrimary : Root.Theme.textDimmed
-                                font { family: Root.Theme.fontFamily; pixelSize: 10; bold: true }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // ── Recent fires ─────────────────────────────────────────────
-            Components.SettingSection {
-                title: "RECENT FIRES"
-                width: parent.width
-
-                Text {
-                    visible: !hooksCol.hooksSvc || hooksCol.hooksSvc.recentFires.length === 0
-                    text: "No events fired yet."
-                    color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall }
-                }
-
-                Repeater {
-                    // Reverse so newest is on top.
-                    model: hooksCol.hooksSvc
-                        ? hooksCol.hooksSvc.recentFires.slice().reverse().slice(0, 10)
-                        : []
-
-                    Row {
-                        required property var modelData
-                        width: parent.width
-                        height: 22
-                        spacing: 8
-
-                        Text {
-                            text: Qt.formatTime(new Date(modelData.ts), "hh:mm:ss")
-                            color: Root.Theme.textDimmed
-                            font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall }
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 60
-                        }
-                        Text {
-                            text: modelData.event
-                            color: modelData.bound ? Root.Theme.accentPrimary : Root.Theme.textPrimary
-                            font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall }
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 200
-                            elide: Text.ElideRight
-                        }
-                        Text {
-                            text: modelData.args && modelData.args.length > 0
-                                ? "[" + modelData.args.join(", ") + "]"
-                                : ""
-                            color: Root.Theme.textDimmed
-                            font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall }
-                            anchors.verticalCenter: parent.verticalCenter
-                            elide: Text.ElideRight
-                        }
-                    }
-                }
-            }
-
-            Item { width: 1; height: 8 }
-        }
-    }
-
-    // Process: open hooks.json in $EDITOR (or fall back to xdg-open)
-    Process {
-        id: openHooksProc
-        command: [
-            "sh", "-c",
-            "f=\"$HOME/.config/quickshell/hooks.json\"; " +
-            "mkdir -p \"$HOME/.config/quickshell\"; " +
-            "[ -f \"$f\" ] || echo '{}' > \"$f\"; " +
-            "xdg-open \"$f\""
-        ]
-    }
-
-    // ── About page ────────────────────────────────────────────────────────
-    Component {
-        id: aboutPage
-        Column {
-            width: parent ? parent.width : 0
-            spacing: 24
-
-            // Hero block
-            Column {
-                width: parent.width
-                spacing: 6
-                topPadding: 12
-
-                Text {
-                    text: "QuickShell"
-                    color: Root.Theme.textPrimary
-                    font {
-                        family: Root.Theme.fontFamily
-                        pixelSize: 28
-                        bold: true
-                    }
-                }
-                Text {
-                    text: "Desktop Shell for Niri"
-                    color: Root.Theme.textDimmed
-                    font {
-                        family: Root.Theme.fontFamily
-                        pixelSize: Root.Theme.fontSizeLarge
-                    }
-                }
-            }
-
-            // Info block
-            Rectangle {
-                width: parent.width
-                height: infoCol.implicitHeight + 24
-                radius: Root.Theme.radiusMedium
-                color: Qt.rgba(Root.Theme.base01.r, Root.Theme.base01.g, Root.Theme.base01.b, 0.6)
-                border.width: Root.Theme.borderWidth
-                border.color: Root.Theme.borderColor
-
-                Column {
-                    id: infoCol
-                    anchors {
-                        left: parent.left
-                        right: parent.right
-                        top: parent.top
-                        margins: 12
-                    }
-                    spacing: 8
-
-                    // Config path row
-                    Row {
-                        spacing: 8
-                        width: parent.width
-
-                        Text {
-                            text: "Config path"
-                            color: Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
-                            width: 90
-                        }
-                        Text {
-                            text: Root.Theme.configBase + "/configs/quickshell"
-                            color: Root.Theme.textPrimary
-                            font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall }
-                            elide: Text.ElideLeft
-                            width: parent.width - 98
-                        }
-                    }
-
-                    // Theming row
-                    Row {
-                        spacing: 8
-                        width: parent.width
-
-                        Text {
-                            text: "Theming"
-                            color: Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
-                            width: 90
-                        }
-                        Text {
-                            text: "Base16 / Stylix"
-                            color: Root.Theme.textPrimary
-                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
-                        }
-                    }
-                }
-            }
-
-            // Open config button
-            Rectangle {
-                width: parent.width
-                height: 36
-                radius: Root.Theme.radiusSmall
-                color: openMouse.containsMouse
-                    ? Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.18)
-                    : Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.10)
-                border.width: Root.Theme.borderWidth
-                border.color: Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.3)
-
-                Behavior on color { ColorAnimation { duration: 120 } }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: Root.Icons.edit + "  Open Config Folder"
-                    color: Root.Theme.accentPrimary
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
-                }
-
-                MouseArea {
-                    id: openMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: openConfigProc.running = true
-                }
-            }
-
-            Item { width: 1; height: 8 }
-        }
-    }
-
-    // ── Process: open config folder ──────────────────────────────────────
-    Process {
-        id: openConfigProc
-        command: [
-            "xdg-open",
-            Root.Theme.configBase + "/configs/quickshell"
-        ]
-    }
+    // ── Page component wrappers ─────────────────────────────────────────
+    // Thin Components that instantiate the actual page files under
+    // modules/settings/. Keeping them in SettingsWindow.qml (rather than
+    // inlining in the Loader) lets the Loader pick one by key from
+    // `_pageComponents` without re-creating the Component on every switch.
+    Component { id: barPage;         SettingsPages.BarPage {} }
+    Component { id: widgetsPage;     SettingsPages.WidgetsPage {} }
+    Component { id: connectionsPage; SettingsPages.ConnectionsPage {} }
+    Component { id: displayPage;     SettingsPages.DisplayPage {} }
+    Component { id: preferencesPage; SettingsPages.PreferencesPage {} }
+    Component { id: hooksPage;       SettingsPages.HooksPage {} }
+    Component { id: aboutPage;       SettingsPages.AboutPage {} }
 }

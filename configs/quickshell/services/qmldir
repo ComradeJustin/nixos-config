@@ -1,6 +1,8 @@
 AudioService 1.0 AudioService.qml
 PlayerService 1.0 PlayerService.qml
 PowerService 1.0 PowerService.qml
+PowerProfileService 1.0 PowerProfileService.qml
+NightLightService 1.0 NightLightService.qml
 NotifService 1.0 NotifService.qml
 WifiService 1.0 WifiService.qml
 BluetoothService 1.0 BluetoothService.qml

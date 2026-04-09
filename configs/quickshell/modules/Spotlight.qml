@@ -2,7 +2,7 @@ import Quickshell
 import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
+import QtQuick.Effects
 import ".." as Root
 import "../core" as Core
 import "spotlight" as Views
@@ -103,11 +103,12 @@ Scope {
             Behavior on width { NumberAnimation { duration: Root.Theme.anim.resizeDuration; easing.type: Easing.InOutCubic } }
 
             layer.enabled: spot.showing
-            layer.effect: DropShadow {
-                transparentBorder: true
-                color: Qt.rgba(0, 0, 0, 0.5)
-                radius: 24
-                samples: 49
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: Qt.rgba(0, 0, 0, 0.5)
+                shadowBlur: 1.0
+                shadowHorizontalOffset: 0
+                shadowVerticalOffset: 0
             }
 
             onOpacityChanged: {

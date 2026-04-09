@@ -13,6 +13,7 @@ Rectangle {
     property string label: ""
 
     signal toggled()
+    signal secondaryAction()
 
     width: 40; height: 40
     radius: Root.Theme.radiusSmall
@@ -51,9 +52,14 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: {
-            iconBounce.restart();
-            toggle.toggled();
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onClicked: function(mouseEvent) {
+            if (mouseEvent.button === Qt.RightButton) {
+                toggle.secondaryAction();
+            } else {
+                iconBounce.restart();
+                toggle.toggled();
+            }
         }
     }
 }

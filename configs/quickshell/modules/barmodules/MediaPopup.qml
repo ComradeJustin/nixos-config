@@ -1,7 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
-import Qt5Compat.GraphicalEffects
+import QtQuick.Effects
 import "../.." as Root
 import "../../core" as Core
 
@@ -48,12 +48,12 @@ PanelWindow {
             border.color: Root.Theme.borderColor
 
             layer.enabled: popup.cavaWanted
-            layer.effect: DropShadow {
-                transparentBorder: true
-                color: Qt.rgba(0, 0, 0, 0.4)
-                radius: 12
-                samples: 25
-                verticalOffset: 4
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: Qt.rgba(0, 0, 0, 0.4)
+                shadowBlur: 0.9
+                shadowHorizontalOffset: 0
+                shadowVerticalOffset: 4
             }
 
             y: popup.cavaWanted ? 6 : -(Root.Theme.cavaHeight + 6)
@@ -112,20 +112,21 @@ PanelWindow {
                     Item {
                         width: Root.Theme.cavaArtSize; height: Root.Theme.cavaArtSize
 
-                        // Ambient glow behind album art
+                        // Ambient glow behind album art (blurred via MultiEffect)
                         Image {
                             id: artGlow
                             anchors.centerIn: parent
                             width: parent.width + 16; height: parent.height + 16
                             source: popup.playerService ? popup.playerService.trackArtUrl : ""
                             fillMode: Image.PreserveAspectCrop; smooth: true; asynchronous: true
-                            visible: false
-                        }
-                        GaussianBlur {
-                            anchors.fill: artGlow; source: artGlow
-                            radius: 20; samples: 41
                             opacity: artImg.status === Image.Ready ? 0.35 : 0
                             Behavior on opacity { NumberAnimation { duration: 300 } }
+                            layer.enabled: true
+                            layer.effect: MultiEffect {
+                                blurEnabled: true
+                                blurMax: 32
+                                blur: 0.9
+                            }
                         }
 
                         Rectangle {
@@ -200,9 +201,12 @@ PanelWindow {
                         x: (parent.width - 10) * (seekBar.dragging ? seekBar.dragRatio : seekBar.ratio)
 
                         layer.enabled: seekBar.dragging
-                        layer.effect: DropShadow {
-                            transparentBorder: true; color: Root.Theme.textAccent
-                            radius: 6; samples: 13
+                        layer.effect: MultiEffect {
+                            shadowEnabled: true
+                            shadowColor: Root.Theme.textAccent
+                            shadowBlur: 0.6
+                            shadowHorizontalOffset: 0
+                            shadowVerticalOffset: 0
                         }
                     }
 

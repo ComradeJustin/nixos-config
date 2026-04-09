@@ -1,6 +1,7 @@
 import Quickshell
 import Quickshell.Io
 import QtQuick
+import "../core" as Core
 
 // HooksService — wire shell events to user-defined shell commands.
 //
@@ -23,9 +24,9 @@ import QtQuick
 // Hooks are stateless — the service spawns one Process per fire, no queueing.
 // If two events fire simultaneously, both run in parallel.
 //
-// Hot reload: HooksService polls the mtime of hooks.json every 3s and reloads
-// when it changes — no need to call `qs ipc call quickshell-bar hooksReload`
-// after editing the file.
+// Hot reload: HooksService uses Quickshell's reactive `FileView` to watch
+// hooks.json. Edits are picked up instantly via kernel filesystem events —
+// no 3-second polling timer, no `stat` subprocess, no mtime diffing.
 Scope {
     id: root
 
@@ -41,13 +42,8 @@ Scope {
     property var recentFires: []
     readonly property int _recentLimit: 50
 
-    // Last known hooks.json mtime, used for hot reload diffing.
-    property string _lastMtime: ""
-
     // Path to the JSON config
     readonly property string _path: Quickshell.env("HOME") + "/.config/quickshell/hooks.json"
-
-    Component.onCompleted: { _loadProc.running = true; }
 
     // ── Known events catalog ──
     // Drives the settings page's discovery UI and the `hooksList` IPC.
@@ -71,67 +67,57 @@ Scope {
         { name: "notification.received",    args: "appName, summary, body",    desc: "Notification received (when NotifService supports it)" }
     ]
 
-    // ── Loader ──
-    property var _loadProc: Process {
-        property string _buf: ""
-        command: ["cat", root._path]
-        stdout: SplitParser {
-            onRead: line => { _loadProc._buf += line + "\n"; }
+    // ── Reactive file loader ──
+    // FileView watches the file via the kernel (inotify on Linux) and emits
+    // `fileChanged` on any edit, `loaded` once on initial read, and
+    // `loadFailed` if the file doesn't exist. All three funnel into
+    // `_parseTable()`, which swallows errors and falls back to `{}` so a
+    // malformed or missing file never breaks the shell.
+    FileView {
+        id: _hooksFile
+        path: root._path
+        watchChanges: true
+        onLoaded: root._parseTable()
+        onFileChanged: {
+            Core.Logger.i("HooksService", "hooks.json changed, reloading");
+            reload();
+            root._parseTable();
         }
-        onExited: code => {
-            if (code === 0 && _loadProc._buf.trim().length > 0) {
-                try {
-                    root._table = JSON.parse(_loadProc._buf);
-                    root._loaded = true;
-                    console.log("HooksService: loaded", Object.keys(root._table).length, "hooks");
-                } catch (e) {
-                    console.log("HooksService: failed to parse hooks.json:", e);
-                    root._table = {};
-                }
-            } else {
-                // No hooks file is fine — service stays inert.
-                root._table = {};
-                root._loaded = true;
+        onLoadFailed: err => {
+            // Missing file is fine — service just stays inert until one
+            // exists. Other errors we log so the user knows.
+            if (err !== FileViewError.FileNotFound) {
+                Core.Logger.w("HooksService", "load failed:", FileViewError.toString(err));
             }
-            _loadProc._buf = "";
-            root._wire();
+            root._table = {};
+            root._loaded = true;
         }
     }
 
-    // Manual reload (e.g. after editing hooks.json)
-    function reload() { _loadProc.running = true; }
-
-    // ── Hot reload via mtime polling ──
-    // Cheap and dependency-free: a `stat` every 3 seconds is invisible
-    // even on a battery-powered laptop, and avoids needing inotifywait.
-    Timer {
-        id: mtimeWatcher
-        interval: 3000
-        running: true
-        repeat: true
-        onTriggered: mtimeProc.running = true
+    function _parseTable() {
+        var raw = "";
+        try { raw = _hooksFile.text(); } catch (e) { raw = ""; }
+        if (!raw || raw.trim().length === 0) {
+            root._table = {};
+            root._loaded = true;
+            return;
+        }
+        try {
+            root._table = JSON.parse(raw);
+            root._loaded = true;
+            Core.Logger.i("HooksService", "loaded", Object.keys(root._table).length, "hooks");
+        } catch (e) {
+            Core.Logger.w("HooksService", "failed to parse hooks.json:", e);
+            root._table = {};
+            root._loaded = true;
+        }
     }
 
-    Process {
-        id: mtimeProc
-        property string _buf: ""
-        command: ["stat", "-c", "%Y", root._path]
-        stdout: SplitParser {
-            onRead: line => { mtimeProc._buf += line; }
-        }
-        onExited: code => {
-            if (code === 0) {
-                let m = mtimeProc._buf.trim();
-                if (m.length > 0 && m !== root._lastMtime) {
-                    if (root._lastMtime.length > 0) {
-                        console.log("HooksService: hooks.json changed, reloading");
-                        root.reload();
-                    }
-                    root._lastMtime = m;
-                }
-            }
-            mtimeProc._buf = "";
-        }
+    // Manual reload entry point — still exposed over IPC so you can
+    // force a re-read without touching the file.
+    function reload() {
+        _hooksFile.reload();
+        _parseTable();
     }
 
     // ── Public API: fire an event by name ──
@@ -226,11 +212,9 @@ Scope {
     }
 
     // ── Wire known service signals to fire() ──
-    // Called once after the table loads. We attach Connections components
-    // declaratively below; this function only logs.
-    function _wire() {
-        // The Connections blocks below pick up `services` reactively.
-    }
+    // Connections blocks below bind reactively to `root.services.<key>`,
+    // which shell.qml populates after construction. When the service map
+    // lands, QML rebinds the targets automatically — no manual wiring.
 
     // Audio
     Connections {

@@ -1,7 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
-import Qt5Compat.GraphicalEffects
+import QtQuick.Effects
 import ".." as Root
 import "../core" as Core
 
@@ -114,10 +114,12 @@ Scope {
                         Behavior on color { ColorAnimation { duration: Root.Theme.anim.moveDuration } }
 
                         layer.enabled: pm.selectedIndex === index
-                        layer.effect: Glow {
-                            color: Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.5)
-                            radius: 16
-                            samples: 33
+                        layer.effect: MultiEffect {
+                            shadowEnabled: true
+                            shadowColor: Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.75)
+                            shadowBlur: 1.0
+                            shadowHorizontalOffset: 0
+                            shadowVerticalOffset: 0
                         }
 
                         Text {

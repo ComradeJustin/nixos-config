@@ -1,7 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
-import Qt5Compat.GraphicalEffects
+import QtQuick.Effects
 import ".." as Root
 import "../components" as Components
 import "../core" as Core
@@ -47,10 +47,12 @@ Scope {
                 onXChanged: { if (!sp.showing && x <= -319) spPanel.visible = false; }
 
                 layer.enabled: sp.showing
-                layer.effect: DropShadow {
-                    transparentBorder: true
-                    color: Qt.rgba(0, 0, 0, 0.45)
-                    radius: 20; samples: 41; horizontalOffset: 4
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Qt.rgba(0, 0, 0, 0.45)
+                    shadowBlur: 1.0
+                    shadowHorizontalOffset: 4
+                    shadowVerticalOffset: 0
                 }
 
                 Components.SmoothFlickable {

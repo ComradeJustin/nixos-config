@@ -60,14 +60,39 @@ QtObject {
         { key: "wallpaper", label: "Wallpaper", icon: "󰸉", configKey: "enableWallpaperSelector" }
     ]
 
+    // ── Control Center cards (scaffold) ──
+    // Declarative registry of pluggable "cards" that render inside the
+    // Control Center panel (below the tab bar content). Consumers resolve
+    // `file` via a Loader. Cards opt in via Config.cc.cards[key] and are
+    // rendered in the order specified by Config.cc.layout.
+    //
+    // Contract per card:
+    //   key:         unique id, used as Config.cc.cards[key] enable flag
+    //   label:       human-readable name (for Settings page listing)
+    //   icon:        nerd-font glyph
+    //   file:        path to the QML component (relative to quickshell/ root)
+    //   services:    service keys this card needs — CC will lazy-load them
+    //   settingsPage: optional — right-clicking the card header opens this page
+    //
+    // This is a scaffold: no consumer wired yet. See ControlCenter.qml
+    // integration marker `CC_CARDS_AREA` for where the Repeater will land.
+    readonly property var ccCards: [
+        { key: "profile",    label: "Profile",    icon: "󰀄", file: "components/ProfileCard.qml",                    services: ["systemStats"] },
+        { key: "network",    label: "Network",    icon: "󰤨", file: "modules/controlcenter/cards/NetworkCard.qml",    services: ["wifi"],        settingsPage: "connections" },
+        { key: "bluetooth",  label: "Bluetooth",  icon: "󰂯", file: "modules/controlcenter/cards/BluetoothCard.qml",  services: ["bluetooth"],   settingsPage: "connections" },
+        { key: "nightLight", label: "Night Light", icon: "󰽥", file: "modules/controlcenter/cards/NightLightCard.qml", services: [],              settingsPage: "display" },
+        { key: "player",     label: "Now Playing", icon: "󰎆", file: "modules/controlcenter/cards/PlayerCard.qml",     services: ["player"] }
+    ]
+
     // ── Quick toggles (for ControlCenter) ──
     // stateProp: which service property reflects the toggle state
     // invertState: if true, isOn = !service[stateProp] (e.g. audio: isOn when NOT muted)
+    // settingsPage: optional — right-click opens this Settings page id
     readonly property var quickToggles: [
-        { key: "wifi",      iconOn: "󰤨", iconOff: "󰤭", accent: "domainNetwork",       service: "wifi",        action: "toggle",     stateProp: "enabled" },
-        { key: "dnd",       iconOn: "󰂛", iconOff: "󰂚", accent: "domainNotifications", service: "notif",       action: "toggleDnd",  stateProp: "dnd" },
+        { key: "wifi",      iconOn: "󰤨", iconOff: "󰤭", accent: "domainNetwork",       service: "wifi",        action: "toggle",     stateProp: "enabled",                       settingsPage: "connections" },
+        { key: "dnd",       iconOn: "󰂛", iconOff: "󰂚", accent: "domainNotifications", service: "notif",       action: "toggleDnd",  stateProp: "dnd",                           settingsPage: "preferences" },
         { key: "mute",      iconOn: "󰕾", iconOff: "󰖁", accent: "domainMedia",         service: "audio",       action: "toggleMute", stateProp: "muted", invertState: true },
-        { key: "bluetooth", iconOn: "󰂯", iconOff: "󰂲", accent: "domainNetwork",       service: "bluetooth",   action: "toggle",     stateProp: "enabled" },
-        { key: "caffeine",  iconOn: "󰛊", iconOff: "󰛩", accent: "caffeineAccent",      service: "idleInhibit", action: "toggle",     stateProp: "inhibited" }
+        { key: "bluetooth", iconOn: "󰂯", iconOff: "󰂲", accent: "domainNetwork",       service: "bluetooth",   action: "toggle",     stateProp: "enabled",                       settingsPage: "connections" },
+        { key: "caffeine",  iconOn: "󰛊", iconOff: "󰛩", accent: "caffeineAccent",      service: "idleInhibit", action: "toggle",     stateProp: "inhibited",                     settingsPage: "preferences" }
     ]
 }
