@@ -14,7 +14,9 @@ Item {
     property string mediaText: playerService ? playerService.displayText : ""
     property bool hasMedia: mediaText.length > 0
 
-    implicitWidth: hasMedia ? playIcon.width + 6 + Math.min(scrollText.contentWidth, fixedTextWidth) : 0
+    // Left: icon glyph bearing provides ~3px visual padding
+    // Right: add 3px to match so text doesn't sit flush against group edge
+    implicitWidth: hasMedia ? playIcon.width + Math.min(scrollText.contentWidth, fixedTextWidth) + 3 : 0
     implicitHeight: Root.Theme.barHeight
     opacity: hasMedia ? 1 : 0
     clip: true
@@ -25,7 +27,11 @@ Item {
     // Hover background
     Rectangle {
         id: hoverBg
-        anchors.fill: parent; anchors.margins: -4
+        anchors {
+            fill: parent
+            topMargin: 4
+            bottomMargin: 4
+        }
         radius: Root.Theme.radiusSmall
         color: mediaHover.containsMouse
             ? Root.Theme.layer1Hover
@@ -67,7 +73,7 @@ Item {
 
     Components.ScrollingText {
         id: scrollText
-        anchors { left: playIcon.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
+        anchors { left: playIcon.right; leftMargin: 0; verticalCenter: parent.verticalCenter }
         fixedWidth: root.fixedTextWidth
         text: root.mediaText
         textColor: mediaHover.containsMouse ? Root.Theme.domainMedia : Root.Theme.textPrimary

@@ -27,6 +27,9 @@ Scope {
     readonly property var notifService: Core.ServiceManager.notif
     readonly property var idleInhibitService: Core.ServiceManager.idleInhibit
 
+    // Effective bar height including floating margins
+    readonly property int _barTotal: Root.Config.bar.style === "float" ? Root.Theme.barHeight + 12 : Root.Theme.barHeight
+
     function toggle() {
         showing = !showing;
         if (showing) {
@@ -48,13 +51,16 @@ Scope {
     }
 
     // ── Toast popups (stacked by app) ──
+    // Panel is flush to the right screen edge so toasts can slide
+    // in from off-screen, matching the CC's enter/exit style.
+    // notifMarginRight is applied as internal padding instead.
     PanelWindow {
         id: toastPanel
         visible: cc.notifService ? cc.notifService.popupStacks.count > 0 : false
         anchors { top: true; right: true }
-        margins.top: Root.Theme.barHeight + Root.Theme.notifMarginTop
-        margins.right: Root.Theme.notifMarginRight
-        implicitWidth: Root.Theme.notifWidth
+        margins.top: cc._barTotal + Root.Theme.notifMarginTop
+        margins.right: 0
+        implicitWidth: Root.Theme.notifWidth + Root.Theme.notifMarginRight
         implicitHeight: toastCol.implicitHeight
         WlrLayershell.namespace: "quickshell-toasts"
         WlrLayershell.layer: WlrLayer.Overlay
@@ -73,14 +79,20 @@ Scope {
                 Item {
                     id: toastItem
                     width: toastCol.width
-                    height: toastCard.height
+                    // Collapse height smoothly when dismissing
+                    implicitHeight: toastCard.height
+                    height: implicitHeight
                     clip: true
-                    opacity: 0
 
                     property string appKey: model.appName
+                    // Resting x: inset by the right margin so card doesn't touch screen edge
+                    readonly property real _restX: 0
+                    // Off-screen x: card fully past the right edge of the panel
+                    readonly property real _offX: toastItem.width
 
                     Component.onCompleted: {
-                        toastCard.x = toastItem.width;
+                        toastCard.x = _offX;
+                        toastItem.opacity = 0;
                         if (model.dismissing) {
                             toastItem.opacity = 0;
                         } else {
@@ -88,16 +100,22 @@ Scope {
                         }
                     }
 
+                    // Slide in from the screen edge
                     ParallelAnimation {
                         id: appearAnim
-                        NumberAnimation { target: toastCard; property: "x"; to: 0; duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic }
+                        NumberAnimation { target: toastCard; property: "x"; to: toastItem._restX; duration: Root.Theme.anim.slideDuration; easing.type: Easing.OutCubic }
                         NumberAnimation { target: toastItem; property: "opacity"; to: 1; duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic }
                     }
 
-                    NumberAnimation {
+                    // Slide back out to the edge, then collapse height
+                    SequentialAnimation {
                         id: dismissAnim
-                        target: toastItem; property: "opacity"; to: 0; duration: Root.Theme.anim.exitDuration; easing.type: Easing.InCubic
-                        onFinished: { if (cc.notifService) cc.notifService.removePopupApp(toastItem.appKey); }
+                        ParallelAnimation {
+                            NumberAnimation { target: toastCard; property: "x"; to: toastItem._offX; duration: Root.Theme.anim.slideDuration; easing.type: Easing.InOutCubic }
+                            NumberAnimation { target: toastItem; property: "opacity"; to: 0; duration: Root.Theme.anim.slideDuration; easing.type: Easing.InCubic }
+                        }
+                        NumberAnimation { target: toastItem; property: "height"; to: 0; duration: 150; easing.type: Easing.InCubic }
+                        ScriptAction { script: { if (cc.notifService) cc.notifService.removePopupApp(toastItem.appKey); } }
                     }
 
                     property bool isDismissing: model.dismissing
@@ -105,7 +123,7 @@ Scope {
 
                     Rectangle {
                         id: toastCard
-                        width: parent.width
+                        width: Root.Theme.notifWidth
                         height: toastContent.implicitHeight
                         radius: Root.Theme.notifRadius
                         color: Root.Theme.notifBackground
@@ -151,6 +169,9 @@ Scope {
         id: ccScrim
         visible: cc.showing
         anchors { top: true; bottom: true; left: true; right: true }
+        // Push below the bar so clicks on bar modules (gear, etc.)
+        // reach the bar surface instead of being swallowed here.
+        margins.top: cc._barTotal
         WlrLayershell.namespace: "quickshell-cc-scrim"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
@@ -168,7 +189,7 @@ Scope {
         id: ccPanel
         visible: false
         anchors { top: true; right: true; bottom: true }
-        margins.top: Root.Theme.barHeight + 6
+        margins.top: cc._barTotal + 6
         margins.bottom: 6
         margins.right: 0
         implicitWidth: Root.Theme.ccWidth + 6
@@ -184,23 +205,18 @@ Scope {
             clip: true
 
             Keys.onEscapePressed: cc.showing = false
-            // Arrow keys mirror the click-to-switch contract: moving to a
-            // different tab always expands the accordion so the user gets
-            // immediate visible feedback that the content area updated.
+            // Left/Right: switch tabs without changing expand state
             Keys.onLeftPressed: {
                 let idx = tabBar.activeIndex;
-                if (idx > 0) {
-                    cc.activeTab = tabBar.tabs[idx - 1].tab;
-                    cc.tabExpanded = true;
-                }
+                if (idx > 0) cc.activeTab = tabBar.tabs[idx - 1].tab;
             }
             Keys.onRightPressed: {
                 let idx = tabBar.activeIndex;
-                if (idx < tabBar.tabs.length - 1) {
-                    cc.activeTab = tabBar.tabs[idx + 1].tab;
-                    cc.tabExpanded = true;
-                }
+                if (idx < tabBar.tabs.length - 1) cc.activeTab = tabBar.tabs[idx + 1].tab;
             }
+            // Up/Down: expand/collapse the active tab's accordion
+            Keys.onUpPressed: cc.tabExpanded = false
+            Keys.onDownPressed: cc.tabExpanded = true
 
             // ── Notification keyboard navigation ──
             // j/k = move selection, d = dismiss, Enter = expand/collapse
@@ -427,16 +443,22 @@ Scope {
                                 active: true
                                 sourceComponent: {
                                     switch (modelData) {
-                                    case "player":  return playerCardComp;
-                                    case "network": return networkCardComp;
+                                    case "player":        return playerCardComp;
+                                    case "network":       return networkCardComp;
+                                    case "systemMonitor": return systemMonitorCardComp;
+                                    case "weather":       return weatherCardComp;
+                                    case "calendar":      return calendarCardComp;
                                     }
                                     return null;
                                 }
                             }
                         }
 
-                        Component { id: playerCardComp;  CCCards.PlayerCard  {} }
-                        Component { id: networkCardComp; CCCards.NetworkCard {} }
+                        Component { id: playerCardComp;         CCCards.PlayerCard        {} }
+                        Component { id: networkCardComp;        CCCards.NetworkCard       {} }
+                        Component { id: systemMonitorCardComp;  CCCards.SystemMonitorCard {} }
+                        Component { id: weatherCardComp;        CCCards.WeatherCard       {} }
+                        Component { id: calendarCardComp;       CCCards.CalendarCard      {} }
                     }
 
                     // ── Tab bar ──

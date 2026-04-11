@@ -11,15 +11,15 @@
     "bluetooth": true,
     "battery": true,
     "style": "float",
-    "showGroups": false,
+    "showGroups": true,
     "showCpuGraph": true,
     "showCaffeineWhenOff": true,
     "layoutLeft": [
       "workspace",
       "time",
+      "window",
       "weather",
-      "caffeine",
-      "window"
+      "caffeine"
     ],
     "layoutCenter": [
       "media"
@@ -29,8 +29,7 @@
       "network",
       "resource",
       "audio",
-      "battery",
-      "gear"
+      "battery"
     ]
   },
   "widgets": {
@@ -105,8 +104,30 @@
     "refreshInterval": 300000
   },
   "nightLight": {
-    "enabled": true,
+    "enabled": false,
     "dayTemp": 6500,
     "nightTemp": 4000
+  },
+  "cc": {
+    "cardLayout": [
+      "profile",
+      "player",
+      "network",
+      "bluetooth",
+      "nightLight",
+      "systemMonitor",
+      "weather",
+      "calendar"
+    ],
+    "cards": {
+      "profile": true,
+      "network": false,
+      "bluetooth": false,
+      "nightLight": false,
+      "player": true,
+      "systemMonitor": false,
+      "weather": true,
+      "calendar": false
+    }
   }
 }

@@ -3,6 +3,7 @@ import Quickshell.Wayland
 import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
+import Niri 0.1
 import ".." as Root
 import "../components" as Components
 import "barmodules" as BarModules
@@ -118,17 +119,7 @@ Scope {
         _dropTargetIndex = -1;
     }
 
-    onIsHiddenChanged: {
-        if (isHidden) {
-            zoneReleaseTimer.start();
-        } else {
-            panel.visible = true;
-            zoneRestoreTimer.start();
-        }
-    }
-
-    Timer { id: zoneReleaseTimer; interval: 220; onTriggered: panel.visible = false }
-    Timer { id: zoneRestoreTimer; interval: 220; onTriggered: {} }
+    // exclusiveZone is kept constant so windows never resize when bar hides/shows
 
     // ── Component map for Repeater-driven bar ──
     Component { id: compPower; BarModules.PowerModule {} }
@@ -203,7 +194,7 @@ Scope {
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         exclusionMode: ExclusionMode.Normal
-        exclusiveZone: barScope.isHidden ? 0 : barScope.barTotalHeight
+        exclusiveZone: barScope.barTotalHeight
 
         color: "transparent"
 
@@ -228,14 +219,11 @@ Scope {
                     model: barScope._allSubGroups
                     Rectangle {
                         required property var modelData
-                        // Resolve section-specific repeater and row
                         property var _rep: modelData.sec === "left" ? leftRepeater
                                         : (modelData.sec === "center" ? centerRepeater : rightRepeater)
                         property Item _row: modelData.sec === "left" ? leftSection
                                          : (modelData.sec === "center" ? centerSection : rightSection)
 
-                        // Compute visible bounds — reads contentVisible, x, implicitWidth from each item
-                        // so QML binding engine tracks all changes reactively
                         property var _bounds: {
                             void(_rep.count);
                             let firstX = -1;
@@ -260,7 +248,13 @@ Scope {
                         radius: Root.Theme.radiusSmall
                         color: Root.Theme.layer1
 
-                        property int _hPad: 3
+                        // No Behavior on x/width here — modules that change
+                        // size (WindowModule, MediaModule) already animate
+                        // their own implicitWidth.  Adding a second animation
+                        // on the group pill creates a visible chase/lag
+                        // because the pill reacts one frame late.
+
+                        property int _hPad: 6
                         property int _vPad: 4
                     }
                 }
@@ -659,37 +653,38 @@ Scope {
         barHidden: barScope.isHidden
     }
 
-    // Fullscreen detection — checks all windows on the bar's screen, not just focused
-    property string _barScreenName: panel.screen?.name ?? ""
+    // ── Fullscreen detection (focused window only) ──
+    // Hybrid: reactive events for instant focus-change response,
+    // plus a light poll to catch same-window fullscreen toggles.
+    Niri {
+        id: barNiri
+        Component.onCompleted: connect()
+        onFocusedWindowChanged: fsCheckProc.running = true
+    }
+
+    property int _screenW: panel.screen?.width ?? 0
+    property int _screenH: panel.screen?.height ?? 0
 
     Process {
-        id: fsProc
-        command: [
-            "bash", "-c",
-            "command -v jq >/dev/null || { echo 0; exit; }; " +
-            "BAR_SCREEN=\"$1\"; " +
-            "[ -z \"$BAR_SCREEN\" ] && { echo 0; exit; }; " +
-            "wsid=$(niri msg -j workspaces 2>/dev/null | jq -r --arg out \"$BAR_SCREEN\" " +
-            "  '.[] | select(.is_active and .output == $out) | .id // empty'); " +
-            "[ -z \"$wsid\" ] && { echo 0; exit; }; " +
-            "o=$(niri msg -j outputs 2>/dev/null) || { echo 0; exit; }; " +
-            "ow=$(echo \"$o\" | jq --arg n \"$BAR_SCREEN\" '.[$n].logical.width // 0'); " +
-            "oh=$(echo \"$o\" | jq --arg n \"$BAR_SCREEN\" '.[$n].logical.height // 0'); " +
-            "fs=$(niri msg -j windows 2>/dev/null | jq --argjson ws \"$wsid\" --argjson ow \"$ow\" --argjson oh \"$oh\" " +
-            "  '[.[] | select(.workspace_id == $ws and ((.layout.window_size[0] // 0) | floor) >= ($ow | floor) and ((.layout.window_size[1] // 0) | floor) >= ($oh | floor))] | length'); " +
-            "[ \"${fs:-0}\" -gt 0 ] && echo 1 || echo 0",
-            "--", barScope._barScreenName
-        ]
-        running: true
+        id: fsCheckProc
+        command: ["niri", "msg", "-j", "focused-window"]
+        running: true  // initial check on startup
 
         stdout: SplitParser {
             onRead: data => {
-                barScope.isHidden = data.trim() === "1";
+                try {
+                    var w = JSON.parse(data);
+                    var sz = w.layout && w.layout.window_size ? w.layout.window_size : [0, 0];
+                    barScope.isHidden = (sz[0] >= barScope._screenW && sz[1] >= barScope._screenH);
+                } catch(e) {
+                    barScope.isHidden = false;
+                }
             }
         }
 
         onExited: fsPollTimer.start()
     }
 
-    Timer { id: fsPollTimer; interval: 350; onTriggered: fsProc.running = true }
+    // Light poll catches same-window fullscreen toggle (focus doesn't change)
+    Timer { id: fsPollTimer; interval: 500; onTriggered: fsCheckProc.running = true }
 }

@@ -24,7 +24,7 @@ PanelWindow {
 
     anchors { top: true }
     implicitWidth: Root.Theme.cavaWidth
-    margins.top: Root.Theme.barHeight
+    margins.top: Root.Config.bar.style === "float" ? Root.Theme.barHeight + 12 : Root.Theme.barHeight
     implicitHeight: Root.Theme.cavaHeight + 6
 
     WlrLayershell.namespace: "quickshell-cava"

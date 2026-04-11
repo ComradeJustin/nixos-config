@@ -81,7 +81,10 @@ QtObject {
         { key: "network",    label: "Network",    icon: "󰤨", file: "modules/controlcenter/cards/NetworkCard.qml",    services: ["wifi"],        settingsPage: "connections" },
         { key: "bluetooth",  label: "Bluetooth",  icon: "󰂯", file: "modules/controlcenter/cards/BluetoothCard.qml",  services: ["bluetooth"],   settingsPage: "connections" },
         { key: "nightLight", label: "Night Light", icon: "󰽥", file: "modules/controlcenter/cards/NightLightCard.qml", services: [],              settingsPage: "display" },
-        { key: "player",     label: "Now Playing", icon: "󰎆", file: "modules/controlcenter/cards/PlayerCard.qml",     services: ["player"] }
+        { key: "player",        label: "Now Playing",    icon: "󰎆", file: "modules/controlcenter/cards/PlayerCard.qml",        services: ["player"] },
+        { key: "systemMonitor", label: "System Monitor", icon: "󰍹", file: "modules/controlcenter/cards/SystemMonitorCard.qml", services: ["systemStats"] },
+        { key: "weather",       label: "Weather",        icon: "󰖙", file: "modules/controlcenter/cards/WeatherCard.qml",       services: ["weather"] },
+        { key: "calendar",      label: "Calendar",       icon: "󰃶", file: "modules/controlcenter/cards/CalendarCard.qml",      services: [] }
     ]
 
     // ── Quick toggles (for ControlCenter) ──

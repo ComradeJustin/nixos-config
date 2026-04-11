@@ -66,7 +66,9 @@ Item {
         // Pause at start position
         PauseAnimation { duration: root.pauseDuration }
 
-        // Ease out of rest, cruise, ease into stop
+        // Scroll: the Row contains [text | 50px gap | text], so scrolling
+        // by -(contentWidth + 50) lands at the duplicate — visually identical
+        // to the start position. Then we snap x back to 0 with no visible jump.
         NumberAnimation {
             id: scrollMove
             target: scrollRow
@@ -76,21 +78,11 @@ Item {
             easing.type: Easing.InOutSine
         }
 
-        // Pause at end before fading reset
+        // Pause at end, then seamless snap reset (no opacity fade needed —
+        // the duplicate text is already showing at the same visual position)
         PauseAnimation { duration: 800 }
 
-        // Fade out, reset, fade in for seamless loop
-        NumberAnimation {
-            target: scrollRow; property: "opacity"
-            to: 0; duration: 250; easing.type: Easing.InCubic
-        }
-
         ScriptAction { script: scrollRow.x = 0 }
-
-        NumberAnimation {
-            target: scrollRow; property: "opacity"
-            to: 1; duration: 250; easing.type: Easing.OutCubic
-        }
 
         // Loop — defer restart so animation fully completes first
         ScriptAction { script: loopTimer.start() }

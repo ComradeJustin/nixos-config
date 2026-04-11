@@ -20,7 +20,7 @@ Scope {
         id: spPanel
         visible: false
         anchors { top: true; left: true; bottom: true }
-        margins.top: Root.Theme.barHeight + 6
+        margins.top: (Root.Config.bar.style === "float" ? Root.Theme.barHeight + 12 : Root.Theme.barHeight) + 6
         margins.bottom: 6
         margins.left: 6
         implicitWidth: 320

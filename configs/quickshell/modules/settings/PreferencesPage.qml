@@ -76,6 +76,127 @@ Column {
         }
     }
 
+    // ── CC Cards — toggle and reorder ──
+    Components.SettingSection {
+        title: "CONTROL CENTER CARDS"
+        width: parent.width
+
+        Column {
+            width: parent.width
+            spacing: 2
+
+            Repeater {
+                model: Root.Config.cc.cardLayout
+
+                Item {
+                    id: ccCardItem
+                    required property var modelData
+                    required property int index
+                    width: parent ? parent.width : 200
+                    height: 40
+
+                    property var _meta: {
+                        let cards = Core.Registry.ccCards;
+                        for (let i = 0; i < cards.length; i++)
+                            if (cards[i].key === modelData) return cards[i];
+                        return { label: modelData, icon: "" };
+                    }
+                    property bool _enabled: Root.Config.cc.cards[modelData] || false
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Root.Theme.radiusSmall
+                        color: ccCardMouse.containsMouse
+                            ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.04)
+                            : "transparent"
+                    }
+
+                    Row {
+                        anchors {
+                            left: parent.left; leftMargin: 4
+                            verticalCenter: parent.verticalCenter
+                        }
+                        spacing: 8
+
+                        // Reorder arrows
+                        Column {
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 0
+
+                            Text {
+                                text: "▲"
+                                color: ccUpMouse.containsMouse ? Root.Theme.accentPrimary : Root.Theme.textDimmed
+                                font { family: Root.Theme.fontFamily; pixelSize: 8 }
+                                opacity: ccCardItem.index > 0 ? 1 : 0.2
+                                MouseArea {
+                                    id: ccUpMouse
+                                    anchors.fill: parent; anchors.margins: -6
+                                    hoverEnabled: true
+                                    cursorShape: ccCardItem.index > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    onClicked: if (ccCardItem.index > 0) Root.Config.moveCcCard(ccCardItem.modelData, -1)
+                                }
+                            }
+                            Text {
+                                text: "▼"
+                                color: ccDownMouse.containsMouse ? Root.Theme.accentPrimary : Root.Theme.textDimmed
+                                font { family: Root.Theme.fontFamily; pixelSize: 8 }
+                                opacity: ccCardItem.index < Root.Config.cc.cardLayout.length - 1 ? 1 : 0.2
+                                MouseArea {
+                                    id: ccDownMouse
+                                    anchors.fill: parent; anchors.margins: -6
+                                    hoverEnabled: true
+                                    cursorShape: ccCardItem.index < Root.Config.cc.cardLayout.length - 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    onClicked: if (ccCardItem.index < Root.Config.cc.cardLayout.length - 1) Root.Config.moveCcCard(ccCardItem.modelData, 1)
+                                }
+                            }
+                        }
+
+                        // Card icon
+                        Text {
+                            text: ccCardItem._meta.icon
+                            color: ccCardItem._enabled ? Root.Theme.textPrimary : Root.Theme.textDimmed
+                            font { family: Root.Theme.fontFamily; pixelSize: 16 }
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        // Card label
+                        Text {
+                            text: ccCardItem._meta.label
+                            color: ccCardItem._enabled ? Root.Theme.textPrimary : Root.Theme.textDimmed
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+
+                    // Toggle pill
+                    Rectangle {
+                        anchors { right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter }
+                        width: 36; height: 20; radius: 10
+                        color: ccCardItem._enabled ? Root.Theme.accentPrimary : Root.Theme.textDimmed
+                        opacity: ccCardItem._enabled ? 1.0 : 0.3
+                        Behavior on color { ColorAnimation { duration: 150 } }
+
+                        Rectangle {
+                            width: 14; height: 14; radius: 7
+                            color: Root.Theme.textPrimary
+                            anchors.verticalCenter: parent.verticalCenter
+                            x: ccCardItem._enabled ? parent.width - width - 3 : 3
+                            Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.InOutCubic } }
+                        }
+                    }
+
+                    MouseArea {
+                        id: ccCardMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Root.Config.toggleCcCard(ccCardItem.modelData)
+                    }
+                }
+            }
+        }
+    }
+
     Components.SettingSection {
         title: "TIMING"
         width: parent.width

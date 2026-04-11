@@ -103,7 +103,14 @@ PanelWindow {
         { label: "Night light",        keywords: "night light blue filter color temperature wlsunset", page: "display" },
         { label: "Day temperature",    keywords: "night light day kelvin temperature", page: "display" },
         { label: "Night temperature",  keywords: "night light night kelvin temperature", page: "display" },
-        // Preferences page
+        // Preferences page — CC cards
+        { label: "CC Cards",           keywords: "control center cards toggle reorder", page: "preferences" },
+        { label: "System monitor card", keywords: "cc card system monitor cpu ram",    page: "preferences" },
+        { label: "Weather card",       keywords: "cc card weather temperature",        page: "preferences" },
+        { label: "Calendar card",      keywords: "cc card calendar date month",        page: "preferences" },
+        { label: "Player card",        keywords: "cc card player media music",         page: "preferences" },
+        { label: "Network card",       keywords: "cc card network wifi",               page: "preferences" },
+        // Preferences page — features
         { label: "Media popup",        keywords: "media popup floating",             page: "preferences" },
         { label: "Clipboard history",  keywords: "clipboard copy paste history",     page: "preferences" },
         { label: "Wallpaper selector", keywords: "wallpaper picker spotlight",       page: "preferences" },

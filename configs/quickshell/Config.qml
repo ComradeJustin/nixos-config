@@ -67,8 +67,11 @@ QtObject {
             property bool bluetooth: false
             property bool nightLight: false
             property bool player: true
+            property bool systemMonitor: true
+            property bool weather: true
+            property bool calendar: true
         }
-        property var cardLayout: ["profile", "player", "network", "bluetooth", "nightLight"]
+        property var cardLayout: ["profile", "player", "network", "bluetooth", "nightLight", "systemMonitor", "weather", "calendar"]
     }
 
     // ── Feature flags ──
@@ -297,6 +300,23 @@ QtObject {
         save();
     }
 
+    function toggleCcCard(key) {
+        cc.cards[key] = !cc.cards[key];
+        save();
+    }
+
+    function moveCcCard(key, delta) {
+        let arr = cc.cardLayout.slice();
+        let idx = arr.indexOf(key);
+        if (idx < 0) return;
+        let newIdx = idx + delta;
+        if (newIdx < 0 || newIdx >= arr.length) return;
+        arr.splice(idx, 1);
+        arr.splice(newIdx, 0, key);
+        cc.cardLayout = arr;
+        save();
+    }
+
     function reorderBarModule(key, section, newIndex) {
         let prop = "layout" + section.charAt(0).toUpperCase() + section.slice(1);
         let arr = bar[prop].slice();
@@ -341,6 +361,14 @@ QtObject {
             }
             data[key] = obj;
         }
+        // CC has nested QtObjects, so serialize manually
+        let ccData = { cardLayout: cc.cardLayout, cards: {} };
+        for (let k in cc.cards) {
+            if (k === "objectName" || k.endsWith("Changed") || typeof cc.cards[k] !== "boolean") continue;
+            ccData.cards[k] = cc.cards[k];
+        }
+        data["cc"] = ccData;
+
         let json = JSON.stringify(data, null, 2);
         _saveProc.command = ["sh", "-c",
             "mkdir -p \"$(dirname \"$1\")\" && printf '%s\\n' \"$2\" > \"$1\"",
@@ -356,6 +384,15 @@ QtObject {
                 let target = _sections[key];
                 for (let prop in d[key]) {
                     if (target[prop] !== undefined) target[prop] = d[key][prop];
+                }
+            }
+            // CC has nested QtObjects — apply manually
+            if (d["cc"]) {
+                if (d["cc"].cardLayout) cc.cardLayout = d["cc"].cardLayout;
+                if (d["cc"].cards) {
+                    for (let k in d["cc"].cards) {
+                        if (cc.cards[k] !== undefined) cc.cards[k] = d["cc"].cards[k];
+                    }
                 }
             }
         } catch(e) {
