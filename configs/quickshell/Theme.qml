@@ -70,9 +70,9 @@ QtObject {
     readonly property int unit: 8
 
     // ── Typography ──
-    readonly property string fontFamily: "SFProDisplay Nerd Font"
-    readonly property string fontMono:   "SFProDisplay Nerd Font"
-    readonly property string fontIcons:  "SFProDisplay Nerd Font"
+    readonly property string fontFamily: "Maple Mono NF"
+    readonly property string fontMono:   "Maple Mono NF"
+    readonly property string fontIcons:  "Maple Mono NF"
     readonly property int    fontSize:       11
     readonly property int    fontSizeSmall:  9
     readonly property int    fontSizeLarge:  13

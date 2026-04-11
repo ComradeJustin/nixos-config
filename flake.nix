@@ -136,7 +136,7 @@
               modules.compscijava.enable = true;
               modules.ai.enable = true;
               modules.distributed-builds.enable = true;
-              modules.distributed-builds.role = "client";
+              modules.distributed-builds.role = "both";
               modules.distributed-builds.builders = [
                 { hostName = "home-core"; maxJobs = 4; speedFactor = 2; }
               ];
@@ -160,6 +160,7 @@
               modules.distributed-builds.role = "client";
               modules.distributed-builds.builders = [
                 { hostName = "home-core"; maxJobs = 4; speedFactor = 2; }
+                { hostName = "nixpc"; maxJobs = 8; speedFactor = 2; }
               ];
             }
           ];
