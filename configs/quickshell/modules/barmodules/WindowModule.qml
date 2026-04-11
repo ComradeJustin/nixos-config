@@ -34,6 +34,7 @@ Item {
     }
 
     Components.ScrollingText {
+        id: titleText
         anchors {
             left: root.hasIcon ? winIcon.right : parent.left
             leftMargin: root.hasIcon ? 6 : 0
@@ -41,5 +42,24 @@ Item {
         fixedWidth: root.fixedTextWidth
         text: root.windowTitle
         textColor: Root.Theme.textDimmed
+    }
+
+    // Gradient fade-out at the right edge — overlays a smooth fade
+    // from transparent → bar background instead of a hard clip edge.
+    // Only visible when text is long enough to reach the edge.
+    Rectangle {
+        anchors {
+            right: titleText.right
+            verticalCenter: parent.verticalCenter
+        }
+        width: 24
+        height: titleText.height
+        visible: titleText.contentWidth > titleText.fixedWidth * 0.85
+
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: "transparent" }
+            GradientStop { position: 1.0; color: Root.Theme.barBackground }
+        }
     }
 }

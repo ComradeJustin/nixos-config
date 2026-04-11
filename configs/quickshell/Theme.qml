@@ -122,7 +122,7 @@ QtObject {
     readonly property int    osdHeight:   48
     readonly property int    osdIconSize: 20
     readonly property int    osdFontSize: 11
-    readonly property int    osdRadius:   0
+    readonly property int    osdRadius:   16
     readonly property int    osdTimeout:  1500
     readonly property int    osdFadeMs:   200
     readonly property color  osdBackground: base01

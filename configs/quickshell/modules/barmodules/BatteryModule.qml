@@ -17,6 +17,15 @@ Components.BarItem {
     readonly property bool pluggedIn: svc ? svc.pluggedIn : false
     readonly property bool hasBattery: svc ? svc.hasBattery : false
 
+    tooltipText: {
+        if (!hasBattery) return "";
+        let tip = capacity + "%";
+        if (charging) tip += " · Charging";
+        else if (pluggedIn) tip += " · Plugged in";
+        else tip += " · On battery";
+        return tip;
+    }
+
     property color activeColor: root.pluggedIn
         ? Root.Theme.barBatteryCharge
         : (root.capacity >= 0 && root.capacity <= 15

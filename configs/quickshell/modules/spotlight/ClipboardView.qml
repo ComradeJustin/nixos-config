@@ -5,16 +5,71 @@ import "../.." as Root
 import "../../components" as Components
 
 // Clipboard history view for the Spotlight popup.
-Item {
+SpotlightProvider {
     id: root
     implicitWidth: parent ? parent.width : 420
     implicitHeight: clipInner.implicitHeight
 
-    // Theme is now a singleton - access via Root.Theme.propertyName
+    // ── Provider identity ──
+    providerKey: "clipboard"
+    providerLabel: "Clipboard"
+    providerIcon: "󰅍"
+    hasSearch: true
+    hasGrid: false
+    preferredWidth: Root.Theme.clipWidth
+    preferredMaxHeight: Root.Theme.launchMaxHeight
+
+    // ── Provider interface ──
+    function activate() { refresh(); }
+    function deactivate() {}
+    function handleSearchText(text) {
+        searchText = text;
+        selectedIndex = 0;
+        updateFilter();
+    }
+    function moveUp() { if (selectedIndex > 0) selectedIndex--; clipFlick.ensureVisible(selectedIndex); }
+    function moveDown() { if (selectedIndex < filteredIndices.length - 1) selectedIndex++; clipFlick.ensureVisible(selectedIndex); }
+    function accept() { selectCurrent(); }
 
     signal itemSelected()
 
+    property string searchText: ""
+    property int selectedIndex: 0
+    property var filteredIndices: []
+
+    function updateFilter() {
+        let indices = [];
+        let query = searchText.toLowerCase();
+        for (let i = 0; i < clipModel.count; i++) {
+            let item = clipModel.get(i);
+            if (query.length === 0) { indices.push(i); continue; }
+            // Text items: match on content
+            if (!item.isImage && item.clipText.toLowerCase().indexOf(query) !== -1)
+                indices.push(i);
+            // Image items: match on mime type (e.g. "png", "jpeg")
+            else if (item.isImage && item.mime.toLowerCase().indexOf(query) !== -1)
+                indices.push(i);
+        }
+        filteredIndices = indices;
+        resultCount = indices.length;
+        totalCount = clipModel.count;
+        if (selectedIndex >= indices.length)
+            selectedIndex = Math.max(0, indices.length - 1);
+    }
+
+    function selectCurrent() {
+        if (filteredIndices.length === 0) return;
+        let idx = filteredIndices[selectedIndex];
+        let item = clipModel.get(idx);
+        copyProc.clipId = item.clipId;
+        copyProc.running = true;
+        root.itemSelected();
+    }
+
     function refresh() {
+        searchText = "";
+        selectedIndex = 0;
+        filteredIndices = [];
         refreshProc.running = true;
     }
 
@@ -41,6 +96,7 @@ Item {
             }
         }
         onStarted: { clipModel.clear(); thumbQueue = []; }
+        onExited: root.updateFilter()
     }
 
     property var thumbQueue: []
@@ -61,8 +117,22 @@ Item {
         }
         onExited: { root.thumbBusy = false; root.processThumbQueue(); }
     }
+    // Delete a single clipboard entry
+    function deleteSelected() {
+        if (filteredIndices.length === 0) return;
+        let idx = filteredIndices[selectedIndex];
+        let item = clipModel.get(idx);
+        deleteProc.clipId = item.clipId;
+        deleteProc.running = true;
+        clipModel.remove(idx);
+        updateFilter();
+        if (selectedIndex >= filteredIndices.length)
+            selectedIndex = Math.max(0, filteredIndices.length - 1);
+    }
+
     // SECURITY: Use positional parameter to prevent command injection
     Process { id: copyProc; property string clipId: ""; command: ["sh", "-c", "cliphist decode \"$1\" | wl-copy", "--", clipId] }
+    Process { id: deleteProc; property string clipId: ""; command: ["sh", "-c", "cliphist delete \"$1\"", "--", clipId] }
     Process { id: clearProc; command: ["cliphist", "wipe"] }
 
     Column {
@@ -91,8 +161,12 @@ Item {
         }
 
         Text {
-            visible: clipModel.count === 0
-            text: "No clipboard history"
+            visible: filteredIndices.length === 0
+            text: {
+                if (clipModel.count === 0) return "No clipboard history";
+                if (searchText.length > 0) return "No matches";
+                return "No clipboard history";
+            }
             color: Root.Theme.textDimmed
             font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.notifBodySize }
             width: parent.width; height: 60
@@ -100,49 +174,107 @@ Item {
         }
 
         Components.SmoothFlickable {
-            visible: clipModel.count > 0
+            id: clipFlick
+            visible: filteredIndices.length > 0
             width: parent.width
-            height: Math.min(clipCol.implicitHeight, Root.Theme.clipMaxHeight - 80)
+            height: Math.min(clipCol.implicitHeight, root.maxContentHeight - 53)  // 32px header + 1px divider + 20px footer
             contentHeight: clipCol.implicitHeight
             clip: true
+
+            function ensureVisible(selIdx) {
+                // Estimate row height (same as delegate Math.max)
+                let itemH = 36;
+                let y = selIdx * itemH;
+                if (y < contentY) contentY = y;
+                else if (y + itemH > contentY + height)
+                    contentY = y + itemH - height;
+            }
 
             Column {
                 id: clipCol; width: parent.width; spacing: 0
 
                 Repeater {
-                    model: clipModel
+                    model: root.filteredIndices.length
+
                     Rectangle {
+                        id: clipItem
                         width: clipCol.width
                         height: Math.max(clipRow.implicitHeight + 12, 36)
-                        color: clipMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.06) : "transparent"
+
+                        property int sourceIndex: root.filteredIndices[index] ?? -1
+                        property var entry: sourceIndex >= 0 ? clipModel.get(sourceIndex) : null
+                        property bool isSelected: index === root.selectedIndex
+
+                        color: isSelected
+                            ? Qt.rgba(Root.Theme.textAccent.r, Root.Theme.textAccent.g, Root.Theme.textAccent.b, 0.12)
+                            : clipMouse.containsMouse
+                              ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.06)
+                              : "transparent"
+
+                        // Detect content type for icon hint
+                        property string contentType: {
+                            if (!entry) return "text";
+                            if (entry.isImage) return "image";
+                            let t = entry.clipText || "";
+                            if (/^https?:\/\//.test(t)) return "url";
+                            if (/^\/[\w\/\-\.]+/.test(t)) return "path";
+                            if (/[{}\[\]<>]|function |=>|import |def |class /.test(t)) return "code";
+                            if (/^\d+(\.\d+)?$/.test(t.trim())) return "number";
+                            if (/^#[0-9a-fA-F]{3,8}$/.test(t.trim()) || /^rgba?\(/.test(t.trim())) return "color";
+                            return "text";
+                        }
+
+                        // Content type icon glyph
+                        property string typeIcon: {
+                            switch (contentType) {
+                                case "url":    return "󰌷";  // nf-md-link
+                                case "path":   return "󰈔";  // nf-md-file
+                                case "code":   return "󰅩";  // nf-md-code_braces
+                                case "number": return "󰎠";  // nf-md-numeric
+                                case "color":  return "󰏘";  // nf-md-palette
+                                case "image":  return "󰋩";  // nf-md-image
+                                default:       return "󰦪";  // nf-md-text_short
+                            }
+                        }
 
                         RowLayout {
                             id: clipRow
                             anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: Root.Theme.notifPadding; rightMargin: Root.Theme.notifPadding }
                             spacing: 10
 
+                            // Content type indicator
+                            Text {
+                                visible: clipItem.entry && !clipItem.entry.isImage
+                                text: clipItem.typeIcon
+                                color: clipItem.isSelected ? Root.Theme.textAccent : Root.Theme.textDimmed
+                                font { family: Root.Theme.fontFamily; pixelSize: 14 }
+                                Layout.preferredWidth: 18
+                                horizontalAlignment: Text.AlignHCenter
+                                opacity: 0.7
+                            }
+
                             Image {
-                                visible: model.isImage && model.imagePath !== ""
-                                source: model.imagePath !== "" ? "file://" + model.imagePath : ""
+                                visible: clipItem.entry && clipItem.entry.isImage && clipItem.entry.imagePath !== ""
+                                source: (clipItem.entry && clipItem.entry.imagePath !== "") ? "file://" + clipItem.entry.imagePath : ""
                                 sourceSize.width: Root.Theme.clipThumbSize; sourceSize.height: Root.Theme.clipThumbSize
                                 Layout.preferredWidth: Root.Theme.clipThumbSize; Layout.preferredHeight: Root.Theme.clipThumbSize
                                 fillMode: Image.PreserveAspectCrop; smooth: true
                             }
                             Rectangle {
-                                visible: model.isImage && model.imagePath === ""
+                                visible: clipItem.entry && clipItem.entry.isImage && clipItem.entry.imagePath === ""
                                 Layout.preferredWidth: Root.Theme.clipThumbSize; Layout.preferredHeight: Root.Theme.clipThumbSize
                                 color: Root.Theme.textDimmed; opacity: 0.2; radius: 4
                                 Text { anchors.centerIn: parent; text: "IMG"; color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 10 } }
                             }
                             Text {
-                                visible: !model.isImage
-                                text: { let t = (model.clipText || "").replace(/\s+/g, " "); return t.length > 100 ? t.substring(0, 100) + "…" : t; }
-                                color: Root.Theme.textPrimary
+                                visible: clipItem.entry && !clipItem.entry.isImage
+                                text: { if (!clipItem.entry) return ""; let t = (clipItem.entry.clipText || "").replace(/\s+/g, " "); return t.length > 100 ? t.substring(0, 100) + "…" : t; }
+                                color: clipItem.isSelected ? Root.Theme.textAccent : Root.Theme.textPrimary
                                 font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.notifBodySize }
                                 Layout.fillWidth: true; elide: Text.ElideRight; maximumLineCount: 2; wrapMode: Text.Wrap
                             }
                             Text {
-                                visible: model.isImage; text: model.mime || "image"
+                                visible: clipItem.entry && clipItem.entry.isImage; text: (clipItem.entry ? clipItem.entry.mime : "") || "image"
                                 color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 11 }
                                 Layout.fillWidth: true
                             }
@@ -150,7 +282,8 @@ Item {
 
                         MouseArea {
                             id: clipMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                            onClicked: { copyProc.clipId = model.clipId; copyProc.running = true; root.itemSelected(); }
+                            onClicked: { root.selectedIndex = index; root.selectCurrent(); }
+                            onPositionChanged: root.selectedIndex = index
                         }
 
                         Rectangle {
@@ -162,6 +295,20 @@ Item {
                     }
                 }
             }
+        }
+
+        // ── Result count footer ──
+        Text {
+            visible: filteredIndices.length > 0 || clipModel.count > 0
+            text: searchText.length > 0
+                ? filteredIndices.length + " of " + clipModel.count + " items"
+                : clipModel.count + " items"
+            color: Root.Theme.textDimmed
+            font { family: Root.Theme.fontFamily; pixelSize: 10 }
+            width: parent.width; height: 20
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            opacity: 0.6
         }
     }
 }

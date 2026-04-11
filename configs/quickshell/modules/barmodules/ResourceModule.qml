@@ -18,24 +18,13 @@ Components.BarItem {
     property int diskPercent: svc ? svc.diskPercent : -1
     property string uptime: svc ? svc.uptime : ""
 
-    // CPU history for mini graph
-    property var cpuHistory: []
-    property int historyMax: 20
-
-    onCpuPercentChanged: {
-        if (cpuPercent < 0) return;
-        let h = cpuHistory.slice();
-        h.push(cpuPercent / 100);
-        if (h.length > historyMax) h.shift();
-        cpuHistory = h;
-    }
-
-    // Mini CPU sparkline graph (toggleable)
+    // Mini CPU sparkline graph (toggleable) — reads history from the
+    // service so it survives bar feature toggles and config reloads.
     Components.Graph {
         visible: Root.Config.bar.showCpuGraph
         width: visible ? 32 : 0; height: 14
         anchors.verticalCenter: parent.verticalCenter
-        values: root.cpuHistory
+        values: root.svc ? root.svc.cpuHistory : []
         lineColor: root.cpuPercent >= 90
             ? Root.Theme.accentDanger
             : Root.Theme.domainSystem
@@ -55,6 +44,20 @@ Components.BarItem {
         anchors.verticalCenter: parent.verticalCenter
     }
     Item { width: 4; height: 1 }
+
+    // Mini RAM sparkline graph (toggleable)
+    Components.Graph {
+        visible: Root.Config.bar.showCpuGraph
+        width: visible ? 32 : 0; height: 14
+        anchors.verticalCenter: parent.verticalCenter
+        values: root.svc ? root.svc.ramHistory : []
+        lineColor: root.ramPercent >= 90
+            ? Root.Theme.accentDanger
+            : Root.Theme.domainSystem
+        lineWidth: 1
+        fillColor: Qt.rgba(lineColor.r, lineColor.g, lineColor.b, 0.10)
+    }
+
     Text {
         text: Root.Icons.ram
         color: Root.Theme.domainSystem

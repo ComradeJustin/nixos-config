@@ -18,6 +18,10 @@ Scope {
     property real longitude: 0
     property bool hasLocation: false
     property bool fetching: false
+    // True after the first fetch attempt has completed (success or failure).
+    // Used by bar modules to avoid showing a "degraded" dot during the
+    // initial startup delay before the first fetch fires.
+    property bool initialized: false
 
     // WMO Weather codes to icons
     function codeToIcon(code) {
@@ -69,7 +73,10 @@ Scope {
             }
         }
         onExited: (code) => {
-            if (code !== 0 || !svc.hasLocation) pollTimer.start();
+            if (code !== 0 || !svc.hasLocation) {
+                svc.initialized = true;
+                pollTimer.start();
+            }
         }
     }
 
@@ -100,6 +107,7 @@ Scope {
         }
         onExited: {
             svc.fetching = false;
+            svc.initialized = true;
             pollTimer.start();
         }
     }

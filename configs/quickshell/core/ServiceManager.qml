@@ -49,4 +49,7 @@ QtObject {
 
     // Shared bar popup window reference — registered by Bar.qml
     property var barPopup: null
+
+    // Shared bar tooltip window reference — registered by Bar.qml
+    property var barTooltip: null
 }

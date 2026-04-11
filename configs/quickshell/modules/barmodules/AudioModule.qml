@@ -13,4 +13,10 @@ Components.BarItem {
     icon: Root.Icons.volumeIcon(vol, muted)
     value: vol >= 0 ? vol + "%" : "--"
     accent: muted ? Root.Theme.textDimmed : Root.Theme.domainMedia
+    tooltipText: {
+        let tip = muted ? "Muted" : "Volume " + vol + "%";
+        if (svc && svc.activeDeviceLabel)
+            tip += " · " + svc.activeDeviceLabel;
+        return tip;
+    }
 }

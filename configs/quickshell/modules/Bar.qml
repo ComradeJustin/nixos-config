@@ -378,6 +378,36 @@ Scope {
                     }
                 }
 
+                // ── Section separators ──
+                // Subtle dots between left|center and center|right groups.
+                // Only visible when showGroups is off (groups already provide
+                // visual hierarchy) and the flanking sections have content.
+                Repeater {
+                    model: [
+                        { left: leftSection, right: centerSection },
+                        { left: centerSection, right: rightSection }
+                    ]
+
+                    Rectangle {
+                        required property var modelData
+                        property Item leftSec: modelData.left
+                        property Item rightSec: modelData.right
+
+                        visible: !Root.Config.bar.showGroups
+                                 && leftSec.implicitWidth > 0
+                                 && rightSec.implicitWidth > 0
+                        width: 3; height: 3; radius: 1.5
+                        color: Root.Theme.textDimmed
+                        opacity: 0.3
+                        anchors.verticalCenter: parent.verticalCenter
+                        x: {
+                            let lRight = leftSec.x + leftSec.implicitWidth;
+                            let rLeft = rightSec.x;
+                            return (lRight + rLeft) / 2 - 1;
+                        }
+                    }
+                }
+
                 // ── Insertion indicator ──
                 Rectangle {
                     id: insertIndicator
@@ -558,6 +588,69 @@ Scope {
         id: barPopup
         barHeight: barScope.barTotalHeight
         Component.onCompleted: Core.ServiceManager.barPopup = barPopup
+    }
+
+    // ── Shared tooltip window (renders outside bar clip) ──
+    PanelWindow {
+        id: barTooltipWindow
+        visible: false
+        color: "transparent"
+
+        anchors { top: true }
+        margins.top: barScope.barTotalHeight + 4
+        margins.left: _tipX
+        implicitWidth: _tipLabel.implicitWidth + 16
+        implicitHeight: _tipLabel.implicitHeight + 10
+
+        WlrLayershell.namespace: "quickshell-tooltip"
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+        exclusionMode: ExclusionMode.Ignore
+
+        property real _tipX: 0
+        property string _tipText: ""
+        property bool _showing: false
+
+        function show(sourceItem, text) {
+            if (!text || text.length === 0) return;
+            _tipText = text;
+            let mapped = sourceItem.mapToGlobal(sourceItem.width / 2, 0);
+            _tipX = Math.max(4, mapped.x - implicitWidth / 2);
+            _showDelay.restart();
+        }
+
+        function hide() {
+            _showDelay.stop();
+            _showing = false;
+            _closeDelay.start();
+        }
+
+        Timer { id: _showDelay; interval: 400; onTriggered: { barTooltipWindow.visible = true; barTooltipWindow._showing = true; } }
+        Timer { id: _closeDelay; interval: 150; onTriggered: { if (!barTooltipWindow._showing) barTooltipWindow.visible = false; } }
+
+        Rectangle {
+            anchors.fill: parent
+            radius: Root.Theme.radiusSmall
+            color: Root.Theme.layer2
+            border.width: 1
+            border.color: Root.Theme.borderColor
+            opacity: barTooltipWindow._showing ? 1 : 0
+            scale: barTooltipWindow._showing ? 1 : 0.95
+            transformOrigin: Item.Top
+
+            Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+            Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+
+            Text {
+                id: _tipLabel
+                anchors.centerIn: parent
+                text: barTooltipWindow._tipText
+                color: Root.Theme.textPrimary
+                font { family: Root.Theme.fontFamily; pixelSize: 11 }
+            }
+        }
+
+        Component.onCompleted: Core.ServiceManager.barTooltip = barTooltipWindow
     }
 
     // Media popup

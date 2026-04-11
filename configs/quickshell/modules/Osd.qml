@@ -1,6 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
+import QtQuick.Effects
 import ".." as Root
 import "../core" as Core
 
@@ -31,6 +32,13 @@ PanelWindow {
     readonly property bool curMuted: audioService ? audioService.muted : false
     readonly property int curBrightness: brightnessService ? brightnessService.brightness : 0
     readonly property string deviceLabel: audioService ? audioService.activeDeviceLabel : ""
+
+    // Active accent color — changes per mode
+    readonly property color activeAccent: {
+        if (activeMode === "volume") return curMuted ? Root.Theme.textDimmed : Root.Theme.domainMedia;
+        if (activeMode === "brightness") return Root.Theme.accentWarm;
+        return Root.Theme.osdAccent;
+    }
 
     // Connect to service signals
     Connections {
@@ -63,7 +71,8 @@ PanelWindow {
     ParallelAnimation {
         id: showAnim
         NumberAnimation { target: content; property: "opacity"; from: content.opacity; to: 1; duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic }
-        NumberAnimation { target: slideEffect; property: "y"; from: slideEffect.y !== 0 ? slideEffect.y : 8; to: 0; duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic }
+        NumberAnimation { target: content; property: "scale"; from: 0.92; to: 1; duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutBack; easing.overshoot: 0.3 }
+        NumberAnimation { target: slideEffect; property: "y"; from: slideEffect.y !== 0 ? slideEffect.y : 12; to: 0; duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic }
     }
 
     Timer {
@@ -75,6 +84,7 @@ PanelWindow {
     ParallelAnimation {
         id: fadeOut
         NumberAnimation { target: content; property: "opacity"; to: 0; duration: Root.Theme.osdFadeMs; easing.type: Easing.InCubic }
+        NumberAnimation { target: content; property: "scale"; to: 0.95; duration: Root.Theme.osdFadeMs; easing.type: Easing.InCubic }
         NumberAnimation { target: slideEffect; property: "y"; to: 8; duration: Root.Theme.osdFadeMs; easing.type: Easing.InCubic }
         onFinished: osd.visible = false
     }
@@ -94,11 +104,20 @@ PanelWindow {
         id: content
         anchors.fill: parent
         transform: Translate { id: slideEffect; y: 0 }
-        radius: Root.Theme.radiusMedium
+        radius: Root.Theme.osdRadius
         color: Root.Theme.osdBackground
         border.width: Root.Theme.borderWidth
         border.color: Root.Theme.borderColor
         opacity: 1
+
+        layer.enabled: osd.visible
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: Qt.rgba(0, 0, 0, 0.45)
+            shadowBlur: 0.8
+            shadowHorizontalOffset: 0
+            shadowVerticalOffset: 2
+        }
 
         // Volume/Brightness display
         Row {
@@ -106,23 +125,25 @@ PanelWindow {
             spacing: 14
             visible: osd.activeMode !== "device"
 
-            // Icon
+            // Icon with accent color
             Text {
                 text: {
                     if (osd.activeMode === "brightness")
                         return Root.Icons.brightnessIcon(osd.curBrightness);
                     return Root.Icons.volumeIcon(osd.curVolume, osd.curMuted);
                 }
-                color: Root.Theme.textPrimary
+                color: osd.activeAccent
                 font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.osdIconSize }
                 anchors.verticalCenter: parent.verticalCenter
+
+                Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
             }
 
-            // Progress bar (rounded)
+            // Progress bar (pill-shaped, thicker)
             Rectangle {
                 width: 140
-                height: 4
-                radius: 2
+                height: 6
+                radius: 3
                 color: Root.Theme.osdBarBg
                 anchors.verticalCenter: parent.verticalCenter
 
@@ -133,9 +154,8 @@ PanelWindow {
                         return parent.width * Math.max(0, Math.min(100, pct)) / 100;
                     }
                     height: parent.height
-                    radius: 2
-                    color: osd.activeMode === "volume" && osd.curMuted
-                        ? Root.Theme.textDimmed : Root.Theme.osdAccent
+                    radius: 3
+                    color: osd.activeAccent
 
                     Behavior on width {
                         NumberAnimation { duration: 80; easing.type: Easing.OutCubic }
@@ -143,6 +163,20 @@ PanelWindow {
                     Behavior on color {
                         ColorAnimation { duration: Root.Theme.anim.microDuration }
                     }
+                }
+
+                // Knob indicator at the end of the fill
+                Rectangle {
+                    visible: !(osd.activeMode === "volume" && osd.curMuted)
+                    x: {
+                        let pct = osd.activeMode === "brightness"
+                                  ? osd.curBrightness : osd.curVolume;
+                        return parent.width * Math.max(0, Math.min(100, pct)) / 100 - 4;
+                    }
+                    y: -1
+                    width: 8; height: 8; radius: 4
+                    color: Root.Theme.textPrimary
+                    Behavior on x { NumberAnimation { duration: 80; easing.type: Easing.OutCubic } }
                 }
             }
 
@@ -156,7 +190,7 @@ PanelWindow {
                 }
                 width: 36
                 color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.osdFontSize }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.osdFontSize; bold: true }
                 horizontalAlignment: Text.AlignRight
                 anchors.verticalCenter: parent.verticalCenter
             }
@@ -183,7 +217,7 @@ PanelWindow {
             Text {
                 text: osd.deviceLabel || "Audio Device"
                 color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.osdFontSize }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.osdFontSize; bold: true }
                 anchors.verticalCenter: parent.verticalCenter
                 elide: Text.ElideRight
                 width: Math.min(implicitWidth, Root.Theme.osdWidth - 80)

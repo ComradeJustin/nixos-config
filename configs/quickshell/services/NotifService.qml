@@ -19,6 +19,18 @@ Scope {
     property int counter: 0
     property var expanded: ({})
 
+    // Suppress popup creation during the first second after startup.
+    // When QuickShell reloads, the NotificationServer re-fires
+    // onNotification for every tracked notification. Without this
+    // guard, all existing notifications would pop up as toasts at once.
+    property bool _suppressPopups: true
+    Timer {
+        id: startupGrace
+        interval: 1500
+        running: true
+        onTriggered: root._suppressPopups = false
+    }
+
     // Quickshell-assigned notification id (from the D-Bus `id` field on the
     // Notification object) → our internal `nId`. Used to honor the freedesktop
     // `replaces_id` mechanism: when a sender calls `notify-send -r <id>`, the
@@ -213,7 +225,8 @@ Scope {
                     body: found.body,
                     imagePath: found.imagePath,
                     expiry: Date.now() + dur,
-                    syncTag: found.syncTag || ""
+                    syncTag: found.syncTag || "",
+                    urgency: found.urgency || 1
                 });
                 popupUpdated = true;
             }
@@ -227,6 +240,14 @@ Scope {
     }
 
     // ── Shared entry creation ──
+    // Urgency constants for ListModel serialization (QML enums can't go
+    // through ListModel, so we store as int: 0=low, 1=normal, 2=critical).
+    function _urgencyInt(urg) {
+        if (urg === NotificationUrgency.Critical || urg === 2) return 2;
+        if (urg === NotificationUrgency.Low || urg === 0) return 0;
+        return 1; // Normal
+    }
+
     function createEntry(appName, summary, body, img, appIcon, syncTag, qsId) {
         root.counter = root.counter + 1;
 
@@ -259,8 +280,46 @@ Scope {
             body: body,
             imagePath: displayImg,
             timestamp: h + ":" + (mn < 10 ? "0" : "") + mn,
-            syncTag: syncTag || ""
+            syncTag: syncTag || "",
+            actionsJson: "[]",
+            urgency: 1  // default normal, overridden by caller
         };
+    }
+
+    // Extract freedesktop notification actions into a serializable array.
+    // Filters out the implicit "default" action (click-to-activate).
+    function _extractActions(n) {
+        var actions = [];
+        try {
+            var raw = n.actions;
+            if (!raw) return "[]";
+            var len = raw.length !== undefined ? raw.length : (raw.count || 0);
+            for (var i = 0; i < len; i++) {
+                var act = raw[i];
+                if (!act || !act.text) continue;
+                var id = act.identifier !== undefined ? ("" + act.identifier) : "";
+                if (id === "default") continue;
+                actions.push({ id: id, text: "" + act.text });
+            }
+        } catch(e) {}
+        return JSON.stringify(actions);
+    }
+
+    // Invoke a notification action by looking up the live Notification
+    // object from the watcher and calling invoke() on the matching action.
+    function invokeAction(nId, actionId) {
+        var w = root._watchers[nId];
+        if (!w || !w.notifObj) return;
+        try {
+            var acts = w.notifObj.actions;
+            var len = acts.length !== undefined ? acts.length : (acts.count || 0);
+            for (var i = 0; i < len; i++) {
+                if (("" + acts[i].identifier) === actionId) {
+                    acts[i].invoke();
+                    return;
+                }
+            }
+        } catch(e) {}
     }
 
     function addEntryAndPopup(entry, dur) {
@@ -283,7 +342,8 @@ Scope {
                 body: entry.body,
                 imagePath: entry.imagePath,
                 expiry: newExpiry,
-                syncTag: entry.syncTag || ""
+                syncTag: entry.syncTag || "",
+                urgency: entry.urgency || 1
             });
             root.popupItems = pArr;
             root.rebuildPopupStacks();
@@ -425,7 +485,10 @@ Scope {
         var urg = n.urgency;
         var dur = root.timeout;
         if (urg === NotificationUrgency.Critical) dur = dur * 3;
-        var popupDur = (!root.dnd || urg === NotificationUrgency.Critical) ? dur : 0;
+        // Suppress popups during startup grace period (config reload) —
+        // still add to history, just don't create toast popups.
+        var popupDur = root._suppressPopups ? 0
+                     : (!root.dnd || urg === NotificationUrgency.Critical) ? dur : 0;
 
         var syncTag = getSyncTag(n);
 
@@ -492,6 +555,8 @@ Scope {
 
         // ── Fresh insert ──
         var entry = createEntry(appName, summary, body, img, appIcon, syncTag, qsId);
+        entry.actionsJson = _extractActions(n);
+        entry.urgency = _urgencyInt(urg);
         addEntryAndPopup(entry, popupDur);
 
         // Attach a watcher for live-mutation tracking (Spotify-style).
@@ -532,12 +597,19 @@ Scope {
             var list = grouped.groups[gKey];
             var found = false;
 
+            // Compute max urgency for the popup group
+            var maxUrg = 1;
+            for (var ui = 0; ui < list.length; ui++) {
+                if ((list[ui].urgency || 1) > maxUrg) maxUrg = list[ui].urgency;
+            }
+
             for (var k = 0; k < popupStacks.count; k++) {
                 if (popupStacks.get(k).appName === gKey) {
                     popupStacks.setProperty(k, "summary", list[0].summary);
                     popupStacks.setProperty(k, "body", list[0].body);
                     popupStacks.setProperty(k, "imagePath", list[0].imagePath);
                     popupStacks.setProperty(k, "count", list.length);
+                    popupStacks.setProperty(k, "urgency", maxUrg);
                     popupStacks.setProperty(k, "dismissing", false);
                     found = true;
                     break;
@@ -548,7 +620,8 @@ Scope {
                 popupStacks.append({
                     "appName": gKey, "summary": list[0].summary,
                     "body": list[0].body, "imagePath": list[0].imagePath,
-                    "count": list.length, "dismissing": false
+                    "count": list.length, "dismissing": false,
+                    "urgency": maxUrg
                 });
             }
             shown = shown + 1;
@@ -596,9 +669,51 @@ Scope {
 
     function removeOne(nId) {
         _detachWatcher(nId);
+
+        // Find the entry's qsId so we can untrack the D-Bus notification.
+        // Without this, the notification stays tracked in the server and
+        // reappears on config reload.
+        var qsId = -1;
+        for (var i = 0; i < root.items.length; i++) {
+            if (root.items[i].nId === nId) { qsId = root.items[i].qsId; break; }
+        }
+
         root.items = root.items.filter(function(x) { return x.nId !== nId; });
+        // Also remove from popups in case it's still showing
+        root.popupItems = root.popupItems.filter(function(x) { return x.nId !== nId; });
+
+        // Untrack from D-Bus server so it doesn't come back on reload
+        if (qsId > 0) {
+            try {
+                var tracked = server.trackedNotifications;
+                if (tracked) {
+                    var vals = tracked.values;
+                    if (vals) {
+                        for (var j = 0; j < vals.length; j++) {
+                            if (vals[j] && vals[j].id === qsId) {
+                                vals[j].tracked = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } catch(e) {}
+        }
+
         _pruneQsIdMap();
         rebuildStacks();
+        rebuildPopupStacks();
+    }
+
+    // Remove only the latest (first) notification from an app group.
+    // Used by directional swipe: right = dismiss latest, left = dismiss all.
+    function removeLatestFromApp(appName) {
+        for (var i = 0; i < root.items.length; i++) {
+            if (root.items[i].appName === appName) {
+                removeOne(root.items[i].nId);
+                return;
+            }
+        }
     }
 
     function removeApp(appName) {
@@ -671,11 +786,19 @@ Scope {
             var list = grouped.groups[gKey];
             var isExp = root.expanded[gKey] || false;
 
+            // Header urgency = max urgency across all items in the group
+            var maxUrg = 1;
+            for (var ui = 0; ui < list.length; ui++) {
+                if ((list[ui].urgency || 1) > maxUrg) maxUrg = list[ui].urgency;
+            }
+
             stacks.append({
                 isHeader: true, appName: gKey, count: list.length,
                 summary: list[0].summary, body: list[0].body,
                 imagePath: list[0].imagePath, nId: list[0].nId,
-                timestamp: list[0].timestamp, expanded: isExp
+                timestamp: list[0].timestamp, expanded: isExp,
+                actionsJson: list[0].actionsJson || "[]",
+                urgency: maxUrg
             });
 
             if (isExp) {
@@ -684,7 +807,9 @@ Scope {
                         isHeader: false, appName: gKey, count: 0,
                         summary: list[k].summary, body: list[k].body,
                         imagePath: list[k].imagePath, nId: list[k].nId,
-                        timestamp: list[k].timestamp, expanded: false
+                        timestamp: list[k].timestamp, expanded: false,
+                        actionsJson: list[k].actionsJson || "[]",
+                        urgency: list[k].urgency || 1
                     });
                 }
             }

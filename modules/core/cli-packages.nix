@@ -21,7 +21,7 @@
       git
       lazygit
       gh
-
+      nix-tree
       # Modern CLI replacements
       fd
       ripgrep

@@ -4,6 +4,7 @@ ControlCenter 1.0 ControlCenter.qml
 PowerMenu 1.0 PowerMenu.qml
 Spotlight 1.0 Spotlight.qml
 LockScreen 1.0 LockScreen.qml
+LockContext 1.0 LockContext.qml
 WidgetOverlay 1.0 WidgetOverlay.qml
 SettingsPanel 1.0 SettingsPanel.qml
 SettingsWindow 1.0 SettingsWindow.qml

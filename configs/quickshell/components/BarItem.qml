@@ -16,6 +16,9 @@ Item {
     property color criticalColor: Root.Theme.accentDanger
     property bool custom: false
     property string tooltipText: ""
+    // Service health: set true when the backing service is degraded
+    // (e.g. API unreachable, daemon not running). Shows a tiny amber dot.
+    property bool degraded: false
 
     // Set to a HoverPopup Item for hover popup support
     property Item popupContent: null
@@ -74,6 +77,22 @@ Item {
         }
     }
 
+    // Health warning dot — tiny amber circle at top-right corner
+    Rectangle {
+        id: healthDot
+        visible: root.degraded
+        width: 5; height: 5; radius: 2.5
+        color: Root.Theme.accentWarning
+        anchors { top: parent.top; right: parent.right; topMargin: -1; rightMargin: 0 }
+
+        SequentialAnimation {
+            running: root.degraded
+            loops: Animation.Infinite
+            NumberAnimation { target: healthDot; property: "opacity"; from: 0.9; to: 0.4; duration: 1200; easing.type: Easing.InOutSine }
+            NumberAnimation { target: healthDot; property: "opacity"; from: 0.4; to: 0.9; duration: 1200; easing.type: Easing.InOutSine }
+        }
+    }
+
     // Hover area on top for reliable hover detection
     MouseArea {
         id: hoverArea
@@ -84,25 +103,22 @@ Item {
 
         onContainsMouseChanged: {
             if (containsMouse) {
-                if (root.tooltipText.length > 0) barTooltip.show();
+                if (root.tooltipText.length > 0) {
+                    let bt = Core.ServiceManager.barTooltip;
+                    if (bt) bt.show(root, root.tooltipText);
+                }
                 if (root.popupContent) {
                     let bp = Core.ServiceManager.barPopup;
                     if (bp) bp.show(root, root.popupContent);
                 }
             } else {
-                barTooltip.hide();
+                let bt = Core.ServiceManager.barTooltip;
+                if (bt) bt.hide();
                 if (root.popupContent) {
                     let bp = Core.ServiceManager.barPopup;
                     if (bp) bp.hide();
                 }
             }
         }
-    }
-
-    Tooltip {
-        id: barTooltip
-        text: root.tooltipText
-        x: (root.width - width) / 2
-        y: root.height + 6
     }
 }

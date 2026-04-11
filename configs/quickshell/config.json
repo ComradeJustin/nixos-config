@@ -10,12 +10,11 @@
     "network": true,
     "bluetooth": true,
     "battery": true,
-    "style": "flat",
+    "style": "float",
     "showGroups": false,
     "showCpuGraph": true,
     "showCaffeineWhenOff": true,
     "layoutLeft": [
-      "power",
       "workspace",
       "time",
       "weather",
@@ -108,6 +107,6 @@
   "nightLight": {
     "enabled": true,
     "dayTemp": 6500,
-    "nightTemp": 4006
+    "nightTemp": 4000
   }
 }

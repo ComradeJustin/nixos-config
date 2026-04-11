@@ -109,8 +109,11 @@ Scope {
                         height: toastContent.implicitHeight
                         radius: Root.Theme.notifRadius
                         color: Root.Theme.notifBackground
-                        border.width: Root.Theme.borderWidth
-                        border.color: Root.Theme.borderColor
+                        property int _urg: model.urgency !== undefined ? model.urgency : 1
+                        border.width: _urg !== 1 ? 2 : Root.Theme.borderWidth
+                        border.color: _urg === 2 ? Root.Theme.notifUrgentBorder
+                                    : _urg === 0 ? Root.Theme.notifLowBorder
+                                    : Root.Theme.borderColor
 
                         layer.enabled: true
                         layer.effect: MultiEffect {
@@ -196,6 +199,21 @@ Scope {
                 if (idx < tabBar.tabs.length - 1) {
                     cc.activeTab = tabBar.tabs[idx + 1].tab;
                     cc.tabExpanded = true;
+                }
+            }
+
+            // ── Notification keyboard navigation ──
+            // j/k = move selection, d = dismiss, Enter = expand/collapse
+            Keys.onPressed: function(event) {
+                if (cc.activeTab !== "notifications" || !cc.tabExpanded) return;
+                if (event.key === Qt.Key_J) {
+                    notifTab.moveDown(); event.accepted = true;
+                } else if (event.key === Qt.Key_K) {
+                    notifTab.moveUp(); event.accepted = true;
+                } else if (event.key === Qt.Key_D) {
+                    notifTab.dismissSelected(); event.accepted = true;
+                } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    notifTab.activateSelected(); event.accepted = true;
                 }
             }
 
@@ -593,6 +611,7 @@ Scope {
                         visible: opacity > 0.001
 
                         CCTabs.NotificationsTab {
+                            id: notifTab
                             anchors.fill: parent
                             visible: opacity > 0
                             notifService: cc.notifService
@@ -618,13 +637,14 @@ Scope {
                     }
 
                     // ── Footer ──
-                    // Contextual to the notifications tab AND only when the
-                    // accordion is expanded — an empty footer under a
-                    // collapsed tab bar is just dead chrome.
+                    // Always visible when on the notifications tab and
+                    // there are notifications — NOT gated on tabExpanded
+                    // so the user can always see the count and clear button
+                    // even when the accordion is collapsed.
                     Item {
                         Layout.fillWidth: true
                         Layout.preferredHeight: visible ? 24 : 0
-                        visible: cc.activeTab === "notifications" && cc.tabExpanded
+                        visible: cc.activeTab === "notifications" && cc.notifService && cc.notifService.items.length > 0
 
                         Text {
                             anchors { left: parent.left; verticalCenter: parent.verticalCenter }
@@ -646,11 +666,7 @@ Scope {
                                 id: clearText
                                 anchors.centerIn: parent
                                 text: Root.Icons.trash + " Clear"
-                                color: {
-                                    if (!(cc.notifService && cc.notifService.items.length > 0))
-                                        return Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.3);
-                                    return clearMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed;
-                                }
+                                color: clearMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed
                                 font { family: Root.Theme.fontFamily; pixelSize: 11 }
                             }
                             MouseArea { id: clearMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.notifService) cc.notifService.clearAll(); } }

@@ -19,6 +19,70 @@ Scope {
     // Uptime
     property string uptime: ""
 
+    // ── CPU history (sparkline data) ──
+    // Lives here so it survives bar module re-creation (toggling features).
+    // Persisted to /tmp so it also survives config reloads.
+    property var cpuHistory: []
+    property int historyMax: 30
+    readonly property string _historyPath: "/tmp/qs-cpu-history.json"
+
+    onCpuPercentChanged: {
+        if (cpuPercent < 0) return;
+        let h = cpuHistory.slice();
+        h.push(cpuPercent / 100);
+        if (h.length > historyMax) h.shift();
+        cpuHistory = h;
+    }
+
+    // Persist history every 5 ticks (~10s at default poll rate) so we
+    // don't thrash disk on every sample. Also save on any push that
+    // fills the buffer to historyMax (ensures a full graph survives reload).
+    property int _saveCounter: 0
+    onCpuHistoryChanged: {
+        _saveCounter++;
+        if (_saveCounter >= 5 || cpuHistory.length === historyMax) {
+            _saveCounter = 0;
+            historySaveProc._json = JSON.stringify(cpuHistory);
+            historySaveProc.running = true;
+        }
+    }
+
+    Process {
+        id: historySaveProc
+        property string _json: "[]"
+        command: ["bash", "-c", "printf '%s' \"$1\" > \"$2\"", "--", _json, root._historyPath]
+    }
+
+    Process {
+        id: historyLoadProc
+        command: ["cat", root._historyPath]
+        running: true
+        stdout: SplitParser {
+            splitMarker: ""
+            onRead: data => {
+                try {
+                    let arr = JSON.parse(data);
+                    if (Array.isArray(arr) && arr.length > 0)
+                        root.cpuHistory = arr.slice(-root.historyMax);
+                } catch(e) {}
+            }
+        }
+    }
+
+    // ── RAM history (sparkline data) ──
+    // Driven by ramUsedGb (a real) rather than ramPercent (an int) because
+    // RAM usage is stable enough that the integer-rounded percentage often
+    // doesn't change between polls, which would starve the graph of data.
+    property var ramHistory: []
+
+    onRamUsedGbChanged: {
+        if (ramUsedGb < 0 || ramTotalGb <= 0) return;
+        let h = ramHistory.slice();
+        h.push(ramUsedGb / ramTotalGb);
+        if (h.length > historyMax) h.shift();
+        ramHistory = h;
+    }
+
     // User identity
     // username comes from the USER env var (cheap, no subprocess). hostname
     // is read once at startup from /proc/sys/kernel/hostname — it almost

@@ -7,37 +7,59 @@ import ".." as Root
 import "../core" as Core
 import "spotlight" as Views
 
-// Unified popup (rofi-style) with switchable views.
+// Unified popup (rofi-style) with switchable providers.
 // Toggle via IPC:
 //   qs ipc call quickshell-bar launcher
 //   qs ipc call quickshell-bar clipboard
 //   qs ipc call quickshell-bar wallpaper
+//
+// The provider architecture: each view (LauncherView, ClipboardView,
+// WallpaperView) extends SpotlightProvider and exposes a uniform API
+// (activate, deactivate, handleSearchText, moveUp/Down/Left/Right,
+// accept). Spotlight dispatches all search text and keyboard events
+// through the activeProvider without knowing its internals.
 Scope {
     id: spot
 
-    // Theme is now a singleton - access via Root.Theme.propertyName
-
     property bool showing: false
-    property string activeView: "launcher"  // "launcher" | "clipboard" | "wallpaper"
+    property string activeView: "launcher"
+
+    // ── Provider resolution ──
+    // Map from key → provider instance. Adding a new provider is:
+    //   1. Create FooView.qml extending SpotlightProvider
+    //   2. Instantiate it below
+    //   3. Add its key here
+    //   4. Register in Registry.spotlightViews for the tab icon
+    readonly property var providerMap: ({
+        "launcher": launcherView,
+        "clipboard": clipboardView,
+        "wallpaper": wallpaperView
+    })
+
+    readonly property var activeProvider: providerMap[activeView] || launcherView
 
     function open(view) {
+        // Deactivate the old provider before switching
+        let switching = activeView !== view;
+        if (switching && providerMap[activeView])
+            providerMap[activeView].deactivate();
+
         activeView = view;
         showing = true;
         spotPanel.visible = true;
 
-        if (view === "launcher") {
-            launcherView.resetSearch();
-        } else if (view === "clipboard") {
-            clipboardView.refresh();
-        } else if (view === "wallpaper") {
-            wallpaperView.resetSearch();
-            wallpaperView.refresh();
-        }
+        // Clear search text when switching tabs so the new provider
+        // starts fresh instead of receiving the previous query
+        if (switching)
+            searchInput.text = "";
+
+        activeProvider.activate();
         searchInput.forceActiveFocus();
     }
 
     function close() {
         showing = false;
+        activeProvider.deactivate();
     }
 
     function toggle(view) {
@@ -47,22 +69,19 @@ Scope {
             open(view);
     }
 
-    // Box width varies per view
-    property int boxWidth: {
-        if (activeView === "wallpaper") return Root.Theme.wpWidth;
-        if (activeView === "launcher") return Root.Theme.launchWidth;
-        return Root.Theme.clipWidth;
-    }
+    // Dimensions driven by the active provider — no per-view if/else.
+    property int boxWidth: activeProvider.preferredWidth
+    property int boxMaxHeight: activeProvider.preferredMaxHeight
 
-    // Max height varies per view
-    property int boxMaxHeight: {
-        if (activeView === "wallpaper") return Root.Theme.wpMaxHeight;
-        return Root.Theme.launchMaxHeight;
-    }
+    // Height budget the active view can use. Accounts for the search
+    // bar (46px) and divider (1px) that sit above the view in
+    // boxContent. Views bind their flickable heights to this instead
+    // of hardcoding magic deductions.
+    readonly property int viewBudget: boxMaxHeight - 47
 
-    // ══════════════════════════════════
+    // ════��═════════════════════════════
     // ── Full-screen overlay ──
-    // ══════════════════════════════════
+    // ═══════════��══════════════════════
     PanelWindow {
         id: spotPanel
         visible: false
@@ -91,6 +110,7 @@ Scope {
             height: Math.min(boxContent.implicitHeight, spot.boxMaxHeight)
             anchors.centerIn: parent
             radius: Root.Theme.radiusMedium
+            clip: true
             color: Root.Theme.barBackground
             border.width: Root.Theme.borderWidth
             border.color: Root.Theme.borderColor
@@ -144,26 +164,12 @@ Scope {
                         clip: true; selectByMouse: true
                         verticalAlignment: TextInput.AlignVCenter
 
-                        onTextChanged: {
-                            if (spot.activeView === "launcher") {
-                                launcherView.searchText = text;
-                                launcherView.selectedIndex = 0;
-                                launcherView.updateFilter();
-                            } else if (spot.activeView === "wallpaper") {
-                                wallpaperView.searchText = text;
-                                wallpaperView.selectedIndex = 0;
-                                wallpaperView.updateFilter();
-                                wallpaperView.onSearchTextChanged();
-                            }
-                        }
+                        // All search dispatch goes through the provider API
+                        onTextChanged: spot.activeProvider.handleSearchText(text)
 
                         Text {
                             anchors.fill: parent
-                            text: {
-                                if (spot.activeView === "launcher") return "Search applications…";
-                                if (spot.activeView === "wallpaper") return "Search wallpapers…";
-                                return "Clipboard history";
-                            }
+                            text: "Search " + spot.activeProvider.providerLabel.toLowerCase() + "…"
                             color: Root.Theme.textDimmed; font: parent.font
                             visible: parent.text.length === 0
                             verticalAlignment: Text.AlignVCenter
@@ -180,48 +186,49 @@ Scope {
                         }
 
                         Keys.onEscapePressed: spot.close()
+                        Keys.onReturnPressed: spot.activeProvider.accept()
+                        Keys.onDownPressed: spot.activeProvider.moveDown()
+                        Keys.onUpPressed: spot.activeProvider.moveUp()
 
-                        Keys.onReturnPressed: {
-                            if (spot.activeView === "launcher")
-                                launcherView.launchSelected();
-                            else if (spot.activeView === "wallpaper")
-                                wallpaperView.applySelected();
-                        }
-
-                        Keys.onDownPressed: {
-                            if (spot.activeView === "launcher")
-                                launcherView.moveDown();
-                            else if (spot.activeView === "wallpaper")
-                                wallpaperView.moveDown();
-                        }
-
-                        Keys.onUpPressed: {
-                            if (spot.activeView === "launcher")
-                                launcherView.moveUp();
-                            else if (spot.activeView === "wallpaper")
-                                wallpaperView.moveUp();
+                        // Ctrl+1/2/3 to switch tabs, Shift+Delete to remove item
+                        Keys.onPressed: function(event) {
+                            if (event.modifiers & Qt.ControlModifier) {
+                                let views = Core.Registry.spotlightViews;
+                                let idx = -1;
+                                if (event.key === Qt.Key_1) idx = 0;
+                                else if (event.key === Qt.Key_2) idx = 1;
+                                else if (event.key === Qt.Key_3) idx = 2;
+                                if (idx >= 0 && idx < views.length) {
+                                    spot.open(views[idx].key);
+                                    event.accepted = true;
+                                }
+                            }
+                            // Shift+Delete: delete selected item (clipboard, etc.)
+                            if (event.key === Qt.Key_Delete && (event.modifiers & Qt.ShiftModifier)) {
+                                spot.activeProvider.deleteSelected();
+                                event.accepted = true;
+                            }
                         }
 
                         Keys.onLeftPressed: function(event) {
-                            if (spot.activeView === "wallpaper")
-                                wallpaperView.moveLeft();
+                            if (spot.activeProvider.hasGrid)
+                                spot.activeProvider.moveLeft();
                             else
                                 event.accepted = false;
                         }
 
                         Keys.onRightPressed: function(event) {
-                            if (spot.activeView === "wallpaper")
-                                wallpaperView.moveRight();
+                            if (spot.activeProvider.hasGrid)
+                                spot.activeProvider.moveRight();
                             else
                                 event.accepted = false;
                         }
 
                         Keys.onTabPressed: {
-                            if (spot.activeView === "launcher") {
-                                launcherView.moveDown();
-                            } else if (spot.activeView === "wallpaper") {
-                                wallpaperView.moveRight();
-                            }
+                            if (spot.activeProvider.hasGrid)
+                                spot.activeProvider.moveRight();
+                            else
+                                spot.activeProvider.moveDown();
                         }
                     }
 
@@ -260,6 +267,10 @@ Scope {
                                 Item {
                                     required property var modelData
                                     width: 24; height: 28
+
+                                    property var provider: spot.providerMap[modelData.key] || null
+                                    property bool hasFilter: provider && provider.resultCount > 0 && provider.resultCount < provider.totalCount
+
                                     Text {
                                         anchors.centerIn: parent
                                         text: modelData.icon
@@ -267,6 +278,24 @@ Scope {
                                         font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize - 2 }
                                         Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                                     }
+
+                                    // Result count badge (visible when actively filtering)
+                                    Rectangle {
+                                        visible: parent.hasFilter && spot.activeView === modelData.key
+                                        anchors { top: parent.top; right: parent.right; topMargin: 1; rightMargin: -4 }
+                                        width: Math.max(badgeText.implicitWidth + 6, 14); height: 12
+                                        radius: 6
+                                        color: Root.Theme.textAccent
+
+                                        Text {
+                                            id: badgeText
+                                            anchors.centerIn: parent
+                                            text: parent.parent.provider ? parent.parent.provider.resultCount.toString() : ""
+                                            color: Root.Theme.barBackground
+                                            font { family: Root.Theme.fontFamily; pixelSize: 8; bold: true }
+                                        }
+                                    }
+
                                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: spot.open(modelData.key) }
                                 }
                             }
@@ -281,10 +310,17 @@ Scope {
                 }
 
                 // ── Views ──
+                // Each view extends SpotlightProvider and is shown/hidden
+                // based on activeView. The provider API handles all
+                // lifecycle, search, and navigation — no per-view logic
+                // leaks into Spotlight.qml.
                 Views.LauncherView {
                     id: launcherView
                     visible: spot.activeView === "launcher"
                     width: parent.width
+                    maxContentHeight: spot.viewBudget
+                    opacity: visible ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
                     onLaunched: spot.close()
                 }
 
@@ -292,6 +328,9 @@ Scope {
                     id: clipboardView
                     visible: spot.activeView === "clipboard"
                     width: parent.width
+                    maxContentHeight: spot.viewBudget
+                    opacity: visible ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
                     onItemSelected: spot.close()
                 }
 
@@ -299,7 +338,11 @@ Scope {
                     id: wallpaperView
                     visible: spot.activeView === "wallpaper"
                     width: parent.width
+                    maxContentHeight: spot.viewBudget
+                    opacity: visible ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
                     onWallpaperSet: spot.close()
+                    onSearchRequested: text => { searchInput.text = text; }
                 }
             }
         }

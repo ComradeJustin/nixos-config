@@ -8,6 +8,9 @@ Components.BarItem {
 
     property var svc: Core.ServiceManager.bluetooth
 
+    // Degraded when no bluetooth adapter is available (daemon not running)
+    degraded: svc ? !svc.adapter : false
+
     icon: {
         if (!svc || !svc.enabled) return Root.Icons.btOff;
         if (svc.connected) return Root.Icons.btConnected;
@@ -25,5 +28,10 @@ Components.BarItem {
         if (!svc || !svc.enabled) return Root.Theme.textDimmed;
         if (svc.connected) return Root.Theme.accentSuccess;
         return Root.Theme.domainNetwork;
+    }
+    tooltipText: {
+        if (!svc || !svc.enabled) return "Bluetooth off";
+        if (svc.connected) return svc.connectedDevice || "Connected";
+        return "Bluetooth on · No device";
     }
 }
