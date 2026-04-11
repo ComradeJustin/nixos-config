@@ -184,6 +184,19 @@ Scope {
         return l.concat(c).concat(r);
     }
 
+    // Delayed show: when detection says "no longer fullscreen", wait
+    // a beat so the compositor uncovers the Top-layer bar first, THEN
+    // slide the content in. This makes the slide-in visible.
+    property bool _barVisible: true
+    onIsHiddenChanged: {
+        if (isHidden) {
+            _barVisible = false;
+        } else {
+            _barShowDelay.start();
+        }
+    }
+    Timer { id: _barShowDelay; interval: 50; onTriggered: barScope._barVisible = true }
+
     PanelWindow {
         id: panel
 
@@ -191,7 +204,7 @@ Scope {
         implicitHeight: barScope.barTotalHeight
 
         WlrLayershell.namespace: "quickshell-bar"
-        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         exclusionMode: ExclusionMode.Normal
         exclusiveZone: barScope.barTotalHeight
@@ -211,7 +224,7 @@ Scope {
                 radius: barScope.isFloating ? Root.Theme.radiusMedium : 0
                 border.width: barScope.isFloating ? Root.Theme.borderWidth : 0
                 border.color: Root.Theme.borderColor
-                y: barScope.isHidden ? -barScope.barTotalHeight : (barScope.isFloating ? barScope.floatMargin : 0)
+                y: barScope._barVisible ? (barScope.isFloating ? barScope.floatMargin : 0) : -barScope.barTotalHeight
                 Behavior on y { NumberAnimation { duration: Root.Theme.anim.slideDuration; easing.type: Easing.InOutCubic } }
 
                 // ── Sub-group backgrounds (when showGroups is on) ──
@@ -653,22 +666,33 @@ Scope {
         barHidden: barScope.isHidden
     }
 
-    // ── Fullscreen detection (focused window only) ──
-    // Hybrid: reactive events for instant focus-change response,
-    // plus a light poll to catch same-window fullscreen toggles.
+    // ── Fullscreen detection (cosmetic animation) ──
+    // Bar is at WlrLayer.Top so input blocking is handled by the
+    // compositor. This detection only drives the slide animation.
+    // A pending flag prevents the race where focusedWindowChanged
+    // fires while the check process is still running.
     Niri {
         id: barNiri
         Component.onCompleted: connect()
-        onFocusedWindowChanged: fsCheckProc.running = true
+        onFocusedWindowChanged: barScope._requestFsCheck()
     }
 
     property int _screenW: panel.screen?.width ?? 0
     property int _screenH: panel.screen?.height ?? 0
+    property bool _fsPending: false
+
+    function _requestFsCheck() {
+        if (fsCheckProc.running) {
+            _fsPending = true;
+        } else {
+            fsCheckProc.running = true;
+        }
+    }
 
     Process {
         id: fsCheckProc
         command: ["niri", "msg", "-j", "focused-window"]
-        running: true  // initial check on startup
+        running: true
 
         stdout: SplitParser {
             onRead: data => {
@@ -682,9 +706,15 @@ Scope {
             }
         }
 
-        onExited: fsPollTimer.start()
+        onExited: {
+            if (barScope._fsPending) {
+                barScope._fsPending = false;
+                fsCheckProc.running = true;
+            } else {
+                fsPollTimer.start();
+            }
+        }
     }
 
-    // Light poll catches same-window fullscreen toggle (focus doesn't change)
-    Timer { id: fsPollTimer; interval: 500; onTriggered: fsCheckProc.running = true }
+    Timer { id: fsPollTimer; interval: 500; onTriggered: barScope._requestFsCheck() }
 }
