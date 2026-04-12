@@ -21,19 +21,39 @@ if [[ -z "$HOST" ]]; then
     echo ""
     echo "For remote hosts, optionally pass the target address:"
     echo "  $0 home-core justin@192.168.1.158"
-    echo "If omitted, uses justin@<hostname> (works with Tailscale/DNS)"
+    echo "  $0 nixpc root@nixpc"
+    echo "If omitted for server hosts, uses justin@<hostname> (works with Tailscale/DNS)"
+    echo "For local hosts, pass a target to deploy remotely instead of locally"
     exit 1
 fi
 
-if echo "$REMOTE_HOSTS" | grep -qw "$HOST"; then
+if [[ -n "$TARGET" ]] || echo "$REMOTE_HOSTS" | grep -qw "$HOST"; then
     REMOTE_TARGET="${TARGET:-justin@${HOST}}"
     echo "Updating flake inputs and rebuilding ${HOST} to ${REMOTE_TARGET}..."
     nix flake update "${FLAKE_DIR}"
     nixos-rebuild switch --flake "${FLAKE_DIR}#${HOST}" \
         --target-host "${REMOTE_TARGET}" \
         --build-host "${REMOTE_TARGET}" \
-        --sudo
+        --sudo --ask-sudo-password
 else
+    # Check if any remote builders are reachable
+    BUILDERS_ONLINE=0
+    if [[ -f /etc/nix/machines ]]; then
+        while IFS=' ' read -r uri _rest; do
+            [[ -z "$uri" ]] && continue
+            builder_host="${uri#*@}"
+            if sudo ssh -o ConnectTimeout=2 -o BatchMode=yes "root@${builder_host}" true 2>/dev/null; then
+                BUILDERS_ONLINE=$((BUILDERS_ONLINE + 1))
+            fi
+        done < /etc/nix/machines
+    fi
+
     echo "Updating flake inputs and rebuilding ${HOST}..."
-    nh os switch "${FLAKE_DIR}" -H "${HOST}" --update
+    if [[ "$BUILDERS_ONLINE" -gt 0 ]]; then
+        echo "Found ${BUILDERS_ONLINE} remote builder(s) online — limiting local jobs to 4"
+        nh os switch "${FLAKE_DIR}" -H "${HOST}" --update -- --max-jobs 4
+    else
+        echo "No remote builders reachable — using all local cores"
+        nh os switch "${FLAKE_DIR}" -H "${HOST}" --update
+    fi
 fi

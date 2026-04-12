@@ -14,12 +14,9 @@
     stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/terracotta-dark.yaml";
     #stylix.image = ../../../assets/wallpapers/koish.png;
     stylix.polarity = "dark";
-    stylix.cursor = {
-      package = pkgs.whitesur-cursors;
-      name = "WhiteSur-cursors";
-      size = 32;
-    };
-    
+    stylix.cursor.package = pkgs.capitaine-cursors;
+    stylix.cursor.name = "capitaine-cursors";
+    stylix.cursor.size = 32;
 
     stylix.fonts = {
       serif = {

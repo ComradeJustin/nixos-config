@@ -136,10 +136,7 @@
               modules.compscijava.enable = true;
               modules.ai.enable = true;
               modules.distributed-builds.enable = true;
-              modules.distributed-builds.role = "both";
-              modules.distributed-builds.builders = [
-                { hostName = "home-core"; maxJobs = 4; speedFactor = 2; }
-              ];
+              modules.distributed-builds.role = "builder";
             }
           ];
         };
@@ -150,6 +147,7 @@
             ./hosts/nixlaptop/networking.nix
             nixos-hardware.nixosModules.lenovo-thinkpad-t14-intel-gen1
             {
+              
               modules.profiles.desktop.enable = true;
               modules.hosts.laptop.enable = true;
               modules.fingerprint.enable = true;
@@ -159,7 +157,6 @@
               modules.distributed-builds.enable = true;
               modules.distributed-builds.role = "client";
               modules.distributed-builds.builders = [
-                { hostName = "home-core"; maxJobs = 4; speedFactor = 2; }
                 { hostName = "nixpc"; maxJobs = 8; speedFactor = 2; }
               ];
             }
@@ -179,8 +176,6 @@
               modules.tailscale.enable = true;
               modules.nginx.enable = true;
               modules.docker.enable = true;
-              modules.distributed-builds.enable = true;
-              modules.distributed-builds.role = "builder";
             }
           ];
         };
