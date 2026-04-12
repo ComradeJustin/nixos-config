@@ -166,7 +166,6 @@
         home-core = mkHost {
           hostModules = [
             { hardware.facter.reportPath = ./hosts/servers/home-core/facter.json; }
-            ./hosts/servers/home-core/disk-config.nix
             ./hosts/servers/home-core/filesystems.nix
             ./hosts/servers/home-core/networking.nix
             {

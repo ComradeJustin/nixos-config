@@ -7,6 +7,14 @@ FLAKE_DIR="$(dirname "$SCRIPT_DIR")"
 HOST="${1:-}"
 TARGET="${2:-}"
 
+# Auto-pull latest config if working tree is clean
+if git -C "${FLAKE_DIR}" diff --quiet && git -C "${FLAKE_DIR}" diff --cached --quiet; then
+    echo "Pulling latest config..."
+    git -C "${FLAKE_DIR}" pull --rebase --quiet 2>/dev/null || echo "Warning: git pull failed (offline or no remote?)"
+else
+    echo "Working tree is dirty — skipping git pull"
+fi
+
 # Auto-detect remote hosts from hosts/servers/ directory
 REMOTE_HOSTS=""
 if [[ -d "${FLAKE_DIR}/hosts/servers" ]]; then
@@ -29,10 +37,10 @@ fi
 
 if [[ -n "$TARGET" ]] || echo "$REMOTE_HOSTS" | grep -qw "$HOST"; then
     REMOTE_TARGET="${TARGET:-justin@${HOST}}"
-    echo "Building and deploying ${HOST} to ${REMOTE_TARGET}..."
+    echo "Building locally and deploying ${HOST} to ${REMOTE_TARGET}..."
     nixos-rebuild switch --flake "${FLAKE_DIR}#${HOST}" \
         --target-host "${REMOTE_TARGET}" \
-        --build-host "${REMOTE_TARGET}" \
+        --build-host localhost \
         --sudo --ask-sudo-password
 else
     # Check if any remote builders are reachable

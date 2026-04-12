@@ -27,11 +27,15 @@ if [[ -z "$MAC" ]]; then
 fi
 
 echo "Sending Wake-on-LAN packet to $HOST ($MAC)..."
-wol "$MAC" 2>/dev/null || wakeonlan "$MAC" 2>/dev/null || {
-    # Fallback: craft magic packet with socat
-    MAGIC=$(printf 'ff%.0s' {1..12}; printf "$(echo "$MAC" | tr -d ':')%.0s" {1..16})
-    echo "$MAGIC" | xxd -r -p | socat - UDP-DATAGRAM:255.255.255.255:9,broadcast
-}
+python3 -c "
+import socket, struct
+mac = '$MAC'.replace(':', '')
+magic = b'\xff' * 6 + bytes.fromhex(mac) * 16
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+s.sendto(magic, ('255.255.255.255', 9))
+s.close()
+"
 
 echo "Packet sent. Waiting for $HOST to come online..."
 for i in $(seq 1 30); do
