@@ -8,7 +8,7 @@ set -euo pipefail
 DEVICES=(
     "nixlaptop|client|"
     "nixpc|builder|"
-    "home-core|cache|harmonia,exit-node"
+    "home-core|cache|harmonia,exit-node,nginx,docker"
 )
 
 # ── Colors ──

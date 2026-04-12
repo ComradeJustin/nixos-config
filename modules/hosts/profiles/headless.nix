@@ -8,6 +8,11 @@
     systemd.targets.hibernate.enable = false;
     systemd.targets.hybrid-sleep.enable = false;
 
+    # Ignore lid close — server laptops run with lid closed
+    services.logind.settings.Login.HandleLidSwitch = "ignore";
+    services.logind.settings.Login.HandleLidSwitchExternalPower = "ignore";
+    services.logind.settings.Login.HandleLidSwitchDocked = "ignore";
+
     boot.kernelParams = [ "console=ttyS0,115200n8" ];
   };
 }

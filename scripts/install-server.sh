@@ -46,12 +46,15 @@ nix run github:nix-community/nixos-anywhere -- \
     --phases "kexec,disko,install"
 
 echo ""
-echo "=== Step 2: Waiting for ${REMOTE_HOST} to reboot ==="
-echo "The machine should reboot automatically after install."
-echo "Waiting for SSH to come back up..."
+echo "=== Step 2: Rebooting ${REMOTE_HOST} ==="
+ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 "${REMOTE_TARGET}" "sudo reboot" 2>/dev/null || true
+echo "Reboot triggered. Waiting for SSH to come back up..."
+
+# Remove old host key since the install generates new ones
+ssh-keygen -R "${REMOTE_HOST}" 2>/dev/null || true
 
 # Wait for the machine to go down
-sleep 10
+sleep 15
 
 # Wait for SSH to come back (now as justin, the configured user)
 DEPLOY_TARGET="justin@${REMOTE_HOST}"
@@ -86,6 +89,15 @@ echo "=== Step 4: Final rebuild ==="
 echo "Rebuilding ${HOST} with hardware-specific facter data..."
 
 "${SCRIPT_DIR}/rebuild.sh" "${HOST}" "${DEPLOY_TARGET}"
+
+echo ""
+echo "=== Step 5: Distributing harmonia cache key ==="
+if ssh -o ConnectTimeout=3 root@home-core "cat /var/lib/harmonia/cache-key.pem" 2>/dev/null | \
+    ssh "root@${REMOTE_HOST}" "tee /var/lib/harmonia-cache-key.pem > /dev/null && chmod 600 /var/lib/harmonia-cache-key.pem" 2>/dev/null; then
+    echo "Cache key installed on ${HOST}."
+else
+    echo "Warning: could not distribute cache key (home-core unreachable?)"
+fi
 
 echo ""
 echo "=== Done! ==="

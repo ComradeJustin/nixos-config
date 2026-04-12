@@ -6,6 +6,10 @@
       content = {
         type = "gpt";
         partitions = {
+          boot = {
+            size = "1M";
+            type = "EF02";  # BIOS boot partition for GRUB MBR
+          };
           root = {
             end = "-4G";
             content = {

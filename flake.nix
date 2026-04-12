@@ -14,7 +14,9 @@
     };
 
     awww = {
-      url = "git+https://codeberg.org/LGFae/awww";
+      # Pinned: crop_gravity merge (0a62aca) broke CacheEntry::new call sites
+      # url = "git+https://codeberg.org/LGFae/awww";
+      url = "git+https://codeberg.org/LGFae/awww?rev=efc4c492a30d7e098541ad0ca95c22287cbc26ba";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -135,6 +137,7 @@
               modules.gaming.enable = true;
               modules.compscijava.enable = true;
               modules.ai.enable = true;
+              modules.nix-settings.harmonia = true;
               modules.distributed-builds.enable = true;
               modules.distributed-builds.role = "builder";
             }
@@ -147,7 +150,7 @@
             ./hosts/nixlaptop/networking.nix
             nixos-hardware.nixosModules.lenovo-thinkpad-t14-intel-gen1
             {
-              
+              modules.nix-settings.harmonia = true;
               modules.profiles.desktop.enable = true;
               modules.hosts.laptop.enable = true;
               modules.fingerprint.enable = true;
@@ -166,15 +169,17 @@
         home-core = mkHost {
           hostModules = [
             { hardware.facter.reportPath = ./hosts/servers/home-core/facter.json; }
+            ./hosts/servers/home-core/disk-config.nix
             ./hosts/servers/home-core/filesystems.nix
             ./hosts/servers/home-core/networking.nix
             {
               modules.profiles.server.enable = true;
               modules.boot.loader = "grub-mbr";
-              modules.boot.grubDevice = "/dev/sda";  # TODO: verify actual disk
               modules.tailscale.enable = true;
+              modules.tailscale.exitNode = true;
               modules.nginx.enable = true;
               modules.docker.enable = true;
+              modules.harmonia.enable = true;
             }
           ];
         };

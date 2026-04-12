@@ -4,5 +4,12 @@
 
   config = lib.mkIf config.modules.profiles.server.enable {
     modules.hosts.headless.enable = lib.mkDefault true;
+    nix.settings.trusted-users = [ "root" "justin" ];
+
+    # Disable desktop services that fail on headless systems
+    home-manager.sharedModules = [{
+      dconf.enable = lib.mkForce false;
+      services.gnome-keyring.enable = lib.mkForce false;
+    }];
   };
 }

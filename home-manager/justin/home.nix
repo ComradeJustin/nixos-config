@@ -20,6 +20,10 @@ in
     enable = true;
     shellAliases = {
       ctf = "nix-shell ~/nixos-config/shells/ctf.nix";
+      rebuild = "~/nixos-config/scripts/rebuild.sh";
+      update = "~/nixos-config/scripts/update.sh";
+      wake = "~/nixos-config/scripts/wake.sh";
+      infra-status = "~/nixos-config/scripts/status.sh";
     };
     extraConfig = ''
       $env.config = {
