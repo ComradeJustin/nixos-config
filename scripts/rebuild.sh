@@ -79,6 +79,7 @@ if [[ -n "$TARGET" ]] || echo "$REMOTE_HOSTS" | grep -qw "$HOST"; then
 
     # Use root via Tailscale SSH to avoid sudo password prompts
     REMOTE_HOST="${REMOTE_TARGET#*@}"
+    set -o pipefail
     nixos-rebuild switch --flake "${FLAKE_DIR}#${HOST}" \
         --target-host "root@${REMOTE_HOST}" \
         ${MAX_JOBS_FLAG} |& nom
@@ -91,7 +92,7 @@ else
     else
         nh os switch "${FLAKE_DIR}" -H "${HOST}" --ask
     fi
-fi
+fi || { err "Build failed!"; exit 1; }
 
 # Sign and push current system to harmonia cache if reachable
 CACHE_KEY="/var/lib/harmonia-cache-key.pem"

@@ -111,6 +111,8 @@ ShellRoot {
         function launcher(): string { spotModule.toggle("launcher"); return "ok" }
         function clipboard(): string { spotModule.toggle("clipboard"); return "ok" }
         function wallpaper(): string { spotModule.toggle("wallpaper"); return "ok" }
+        function calculator(): string { spotModule.toggle("calculator"); return "ok" }
+        function emoji(): string { spotModule.toggle("emoji"); return "ok" }
         function controlcenter(): string { ccModule.toggle(); return "ok" }
         function powermenu(): string { pmModule.toggle(); return "ok" }
         function lockscreen(): string { lock(); return "ok" }

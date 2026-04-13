@@ -7,5 +7,6 @@
     ./tailscale.nix
     ./monitoring.nix
     ./distributed-builds.nix
+    ./mediastack.nix
   ];
 }

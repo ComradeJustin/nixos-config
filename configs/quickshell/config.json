@@ -121,12 +121,12 @@
     ],
     "cards": {
       "profile": true,
-      "network": false,
+      "network": true,
       "bluetooth": false,
       "nightLight": false,
       "player": true,
       "systemMonitor": false,
-      "weather": true,
+      "weather": false,
       "calendar": false
     }
   }

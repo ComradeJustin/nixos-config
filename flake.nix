@@ -180,6 +180,8 @@
               modules.nginx.enable = true;
               modules.docker.enable = true;
               modules.harmonia.enable = true;
+              modules.monitoring.enable = true;
+              modules.mediastack.enable = true;
             }
           ];
         };

@@ -1,4 +1,6 @@
 SpotlightProvider 1.0 SpotlightProvider.qml
+CalculatorView 1.0 CalculatorView.qml
 ClipboardView 1.0 ClipboardView.qml
+EmojiView 1.0 EmojiView.qml
 LauncherView 1.0 LauncherView.qml
 WallpaperView 1.0 WallpaperView.qml

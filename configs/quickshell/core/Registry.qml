@@ -55,9 +55,11 @@ QtObject {
 
     // ── Spotlight views ──
     readonly property var spotlightViews: [
-        { key: "launcher",  label: "Apps",      icon: "󰍃", configKey: "enableClipboardHistory" },
-        { key: "clipboard", label: "Clipboard", icon: "󰅍", configKey: "enableClipboardHistory" },
-        { key: "wallpaper", label: "Wallpaper", icon: "󰸉", configKey: "enableWallpaperSelector" }
+        { key: "launcher",   label: "Apps",       icon: "󰍃", configKey: "enableClipboardHistory" },
+        { key: "clipboard",  label: "Clipboard",  icon: "󰅍", configKey: "enableClipboardHistory" },
+        { key: "wallpaper",  label: "Wallpaper",  icon: "󰸉", configKey: "enableWallpaperSelector" },
+        { key: "calculator", label: "Calculator", icon: "󰃬", configKey: "" },
+        { key: "emoji",      label: "Emoji",      icon: "󰞅", configKey: "" }
     ]
 
     // ── Control Center cards (scaffold) ──

@@ -24,6 +24,7 @@ in
       update = "~/nixos-config/scripts/update.sh";
       wake = "~/nixos-config/scripts/wake.sh";
       infra-status = "~/nixos-config/scripts/status.sh";
+      fetch-cache-key = "ssh root@home-core 'cat /var/lib/harmonia/cache-key.pem' | sudo tee /var/lib/harmonia-cache-key.pem > /dev/null; sudo chmod 600 /var/lib/harmonia-cache-key.pem; echo 'Cache key synced.'";
     };
     extraConfig = ''
       $env.config = {

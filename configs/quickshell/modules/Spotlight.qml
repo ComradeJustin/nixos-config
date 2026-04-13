@@ -33,7 +33,9 @@ Scope {
     readonly property var providerMap: ({
         "launcher": launcherView,
         "clipboard": clipboardView,
-        "wallpaper": wallpaperView
+        "wallpaper": wallpaperView,
+        "calculator": calculatorView,
+        "emoji": emojiView
     })
 
     readonly property var activeProvider: providerMap[activeView] || launcherView
@@ -190,7 +192,7 @@ Scope {
                         Keys.onDownPressed: spot.activeProvider.moveDown()
                         Keys.onUpPressed: spot.activeProvider.moveUp()
 
-                        // Ctrl+1/2/3 to switch tabs, Shift+Delete to remove item
+                        // Ctrl+1..5 to switch tabs, Shift+Delete to remove item
                         Keys.onPressed: function(event) {
                             if (event.modifiers & Qt.ControlModifier) {
                                 let views = Core.Registry.spotlightViews;
@@ -198,6 +200,8 @@ Scope {
                                 if (event.key === Qt.Key_1) idx = 0;
                                 else if (event.key === Qt.Key_2) idx = 1;
                                 else if (event.key === Qt.Key_3) idx = 2;
+                                else if (event.key === Qt.Key_4) idx = 3;
+                                else if (event.key === Qt.Key_5) idx = 4;
                                 if (idx >= 0 && idx < views.length) {
                                     spot.open(views[idx].key);
                                     event.accepted = true;
@@ -343,6 +347,24 @@ Scope {
                     Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
                     onWallpaperSet: spot.close()
                     onSearchRequested: text => { searchInput.text = text; }
+                }
+
+                Views.CalculatorView {
+                    id: calculatorView
+                    visible: spot.activeView === "calculator"
+                    width: parent.width
+                    maxContentHeight: spot.viewBudget
+                    opacity: visible ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                }
+
+                Views.EmojiView {
+                    id: emojiView
+                    visible: spot.activeView === "emoji"
+                    width: parent.width
+                    maxContentHeight: spot.viewBudget
+                    opacity: visible ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
                 }
             }
         }
