@@ -22,37 +22,35 @@ in
     # ── Jellyfin ──
     services.jellyfin = {
       enable = true;
-      openFirewall = true;  # port 8096
+      openFirewall = false;  # reachable via trusted interfaces only
     };
     users.users.jellyfin.extraGroups = [ "media" ];
 
     # ── qBittorrent ──
     services.qbittorrent = {
       enable = true;
-      #port = 8080;
-      openFirewall = true;
-
+      openFirewall = false;  # reachable via trusted interfaces only
     };
     users.users.qbittorrent.extraGroups = [ "media" ];
 
     # ── Radarr (movies) ──
     services.radarr = {
       enable = true;
-      openFirewall = true;  # port 7878
+      openFirewall = false;
     };
     users.users.radarr.extraGroups = [ "media" ];
 
     # ── Sonarr (TV) ──
     services.sonarr = {
       enable = true;
-      openFirewall = true;  # port 8989
+      openFirewall = false;
     };
     users.users.sonarr.extraGroups = [ "media" ];
 
     # ── Prowlarr (indexers) ──
     services.prowlarr = {
       enable = true;
-      openFirewall = true;  # port 9696
+      openFirewall = false;
     };
 
     # Radarr, Sonarr, and Prowlarr need URL base set for subpath proxying

@@ -5,7 +5,7 @@
   config = lib.mkIf config.modules.adguard.enable {
     services.adguardhome = {
       enable = true;
-      openFirewall = true;
+      openFirewall = false;  # reachable via trusted interfaces only
       mutableSettings = false;
       port = 3080;
       host = "0.0.0.0";
@@ -39,8 +39,8 @@
       };
     };
 
-    # DNS port
+    # DNS must be globally open for LAN clients
     networking.firewall.allowedUDPPorts = [ 53 ];
-    networking.firewall.allowedTCPPorts = [ 3080 ];
+    # AdGuard UI: reachable via trusted interfaces only
   };
 }

@@ -141,6 +141,6 @@ in
       };
     };
 
-    networking.firewall.allowedTCPPorts = [ cfg.port ];
+    # Status reporter: reachable via trusted interfaces only
   };
 }

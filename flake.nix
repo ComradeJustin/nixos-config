@@ -179,6 +179,7 @@
               modules.tailscale.exitNode = true;
               modules.tailscale.funnel = true;
               modules.tailscale.funnelPort = 8443;
+              modules.tailscale.trustedLanInterfaces = [ "enp9s0" ];
               modules.nginx.enable = true;
               modules.docker.enable = true;
               modules.harmonia.enable = true;

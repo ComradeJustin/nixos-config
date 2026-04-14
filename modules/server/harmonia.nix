@@ -28,6 +28,6 @@
       '';
     };
 
-    networking.firewall.allowedTCPPorts = [ 5000 ];
+    # Harmonia: reachable via trusted interfaces only
   };
 }

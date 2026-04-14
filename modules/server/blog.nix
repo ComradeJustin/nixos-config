@@ -62,7 +62,6 @@ in
       };
     };
 
-    # Open admin port (internal network only — not exposed via Funnel)
-    networking.firewall.allowedTCPPorts = [ cfg.adminPort ];
+    # Blog admin: reachable via trusted interfaces only
   };
 }

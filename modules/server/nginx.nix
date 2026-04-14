@@ -185,6 +185,7 @@ in
       };
     };
 
-    networking.firewall.allowedTCPPorts = [ 80 443 8888 ];
+    # 80 = startpage, 443 = Tailscale Funnel. Dashboard (8888) via trusted interfaces only.
+    networking.firewall.allowedTCPPorts = [ 80 443 ];
   };
 }

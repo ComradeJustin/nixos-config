@@ -12,6 +12,11 @@ in
       default = 443;
       description = "Local port to expose via Tailscale Funnel";
     };
+    trustedLanInterfaces = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "LAN interfaces to trust alongside tailscale0";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -21,7 +26,9 @@ in
 
     # Allow Tailscale traffic through firewall
     networking.firewall = {
-      trustedInterfaces = [ "tailscale0" ];
+      # LAN + Tailscale get full access to all ports.
+      # Only globally opened ports are reachable from WAN if port-forwarded.
+      trustedInterfaces = [ "tailscale0" ] ++ config.modules.tailscale.trustedLanInterfaces;
       allowedUDPPorts = [ config.services.tailscale.port ];
     };
 

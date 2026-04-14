@@ -51,6 +51,6 @@
       };
     };
 
-    networking.firewall.allowedTCPPorts = [ 3000 ];
+    # Grafana: reachable via trusted interfaces (LAN + tailscale) only
   };
 }
