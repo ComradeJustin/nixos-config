@@ -26,6 +26,7 @@
     ],
     "layoutRight": [
       "tray",
+      "vpn",
       "network",
       "resource",
       "audio",
@@ -117,17 +118,19 @@
       "nightLight",
       "systemMonitor",
       "weather",
-      "calendar"
+      "calendar",
+      "serverStatus"
     ],
     "cards": {
       "profile": true,
-      "network": true,
+      "network": false,
       "bluetooth": false,
       "nightLight": false,
       "player": true,
       "systemMonitor": false,
       "weather": false,
-      "calendar": false
+      "calendar": false,
+      "serverStatus": true
     }
   }
 }

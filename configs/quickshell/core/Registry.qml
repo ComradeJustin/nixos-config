@@ -36,6 +36,7 @@ QtObject {
         { key: "audio",     label: "Audio",     section: "right",  file: true, group: "conn", services: ["audio"] },
         { key: "network",   label: "Network",   section: "right",  file: true, group: "conn", services: ["wifi"] },
         { key: "bluetooth", label: "Bluetooth", section: "right",  file: true, group: "conn", services: ["bluetooth"] },
+        { key: "vpn",       label: "VPN",       section: "right",  file: true, group: "conn" },
         { key: "battery",   label: "Battery",   section: "right",  file: true, group: "battery" },
         { key: "caffeine",  label: "Caffeine",  section: "right",  file: true, group: "utils", services: ["idleInhibit"] },
         { key: "tray",      label: "Tray",      section: "right",  file: true, group: "utils" },
@@ -86,7 +87,8 @@ QtObject {
         { key: "player",        label: "Now Playing",    icon: "󰎆", file: "modules/controlcenter/cards/PlayerCard.qml",        services: ["player"] },
         { key: "systemMonitor", label: "System Monitor", icon: "󰍹", file: "modules/controlcenter/cards/SystemMonitorCard.qml", services: ["systemStats"] },
         { key: "weather",       label: "Weather",        icon: "󰖙", file: "modules/controlcenter/cards/WeatherCard.qml",       services: ["weather"] },
-        { key: "calendar",      label: "Calendar",       icon: "󰃶", file: "modules/controlcenter/cards/CalendarCard.qml",      services: [] }
+        { key: "calendar",      label: "Calendar",       icon: "󰃶", file: "modules/controlcenter/cards/CalendarCard.qml",      services: [] },
+        { key: "serverStatus", label: "Server Status",  icon: "󰒋", file: "modules/controlcenter/cards/ServerStatusCard.qml",  services: [] }
     ]
 
     // ── Quick toggles (for ControlCenter) ──

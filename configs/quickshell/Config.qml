@@ -31,7 +31,7 @@ QtObject {
 
         property var layoutLeft: ["power", "workspace", "time", "weather", "window"]
         property var layoutCenter: ["media"]
-        property var layoutRight: ["resource", "audio", "network", "bluetooth", "battery", "caffeine", "tray", "gear"]
+        property var layoutRight: ["resource", "audio", "network", "bluetooth", "vpn", "battery", "caffeine", "tray", "gear"]
     }
 
     // ── Widget settings ──
@@ -70,8 +70,9 @@ QtObject {
             property bool systemMonitor: true
             property bool weather: true
             property bool calendar: true
+            property bool serverStatus: true
         }
-        property var cardLayout: ["profile", "player", "network", "bluetooth", "nightLight", "systemMonitor", "weather", "calendar"]
+        property var cardLayout: ["profile", "player", "network", "bluetooth", "nightLight", "systemMonitor", "serverStatus", "weather", "calendar"]
     }
 
     // ── Feature flags ──
@@ -162,7 +163,7 @@ QtObject {
             showCaffeineWhenOff: false,
             layoutLeft: ["power", "workspace", "time", "weather", "window"],
             layoutCenter: ["media"],
-            layoutRight: ["resource", "audio", "network", "bluetooth", "battery", "caffeine", "tray", "gear"]
+            layoutRight: ["resource", "audio", "network", "bluetooth", "vpn", "battery", "caffeine", "tray", "gear"]
         },
         widgets: {
             clock: true, weather: true, system: false, quote: false,
@@ -235,7 +236,7 @@ QtObject {
     // ── Default layout order (mirrors Registry.barModules) ──
     readonly property var _defaultLayoutLeft: ["power", "workspace", "time", "weather", "window"]
     readonly property var _defaultLayoutCenter: ["media"]
-    readonly property var _defaultLayoutRight: ["resource", "audio", "network", "bluetooth", "battery", "caffeine", "tray", "gear"]
+    readonly property var _defaultLayoutRight: ["resource", "audio", "network", "bluetooth", "vpn", "battery", "caffeine", "tray", "gear"]
 
     function _getDefaultOrder(section) {
         if (section === "left" || section === "layoutLeft") return _defaultLayoutLeft;

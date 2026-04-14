@@ -107,6 +107,10 @@ QtObject {
     readonly property string caffeine:    "󰛊"
     readonly property string caffeineOff: "󰛩"
 
+    // ── VPN ──
+    readonly property string vpnOn:    "󰖂"
+    readonly property string vpnOff:   "󰖃"
+
     // ── Stock ──
     readonly property string stockUp:   "󰜷"
     readonly property string stockDown: "󰜮"

@@ -29,10 +29,9 @@
       enable = true;
       settings = {
         server = {
-          http_addr = "127.0.0.1";
+          http_addr = "0.0.0.0";
           http_port = 3000;
-          root_url = "%(protocol)s://%(domain)s/grafana/";
-          serve_from_sub_path = true;
+          root_url = "%(protocol)s://%(domain)s:3000/";
         };
         security.secret_key = "$__file{/var/lib/grafana/secret_key}";
         "auth.anonymous" = {

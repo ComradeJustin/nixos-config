@@ -446,6 +446,7 @@ Scope {
                                     case "player":        return playerCardComp;
                                     case "network":       return networkCardComp;
                                     case "systemMonitor": return systemMonitorCardComp;
+                                    case "serverStatus":  return serverStatusCardComp;
                                     case "weather":       return weatherCardComp;
                                     case "calendar":      return calendarCardComp;
                                     }
@@ -457,6 +458,7 @@ Scope {
                         Component { id: playerCardComp;         CCCards.PlayerCard        {} }
                         Component { id: networkCardComp;        CCCards.NetworkCard       {} }
                         Component { id: systemMonitorCardComp;  CCCards.SystemMonitorCard {} }
+                        Component { id: serverStatusCardComp;   CCCards.ServerStatusCard  {} }
                         Component { id: weatherCardComp;        CCCards.WeatherCard       {} }
                         Component { id: calendarCardComp;       CCCards.CalendarCard      {} }
                     }

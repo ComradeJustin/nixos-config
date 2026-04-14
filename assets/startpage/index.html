@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>home-core</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Clock -->
+    <div class="clock-section">
+      <div class="time" id="time">00:00</div>
+      <div class="date" id="date">Loading...</div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-section">
+      <form id="searchForm" action="https://duckduckgo.com/" method="get">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" name="q" id="searchInput" placeholder="Search the web..." autocomplete="off" autofocus>
+        </div>
+      </form>
+    </div>
+
+    <!-- Quick links grid -->
+    <div class="links-section">
+      <div class="link-group">
+        <div class="group-label">Media</div>
+        <div class="link-row">
+          <a href="http://home-core:8096" class="link-card media">
+            <span class="link-icon">&#x25B6;</span>
+            <span class="link-name">Jellyfin</span>
+          </a>
+          <a href="https://youtube.com" class="link-card media">
+            <span class="link-icon">&#x25B6;</span>
+            <span class="link-name">YouTube</span>
+          </a>
+          <a href="https://open.spotify.com" class="link-card media">
+            <span class="link-icon">&#x266B;</span>
+            <span class="link-name">Spotify</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="link-group">
+        <div class="group-label">Services</div>
+        <div class="link-row">
+          <a href="http://home-core:8888" class="link-card infra">
+            <span class="link-icon">&#x2302;</span>
+            <span class="link-name">Dashboard</span>
+          </a>
+          <a href="http://home-core:3000" class="link-card infra">
+            <span class="link-icon">&#x2261;</span>
+            <span class="link-name">Grafana</span>
+          </a>
+          <a href="http://home-core:3080" class="link-card infra">
+            <span class="link-icon">&#x2638;</span>
+            <span class="link-name">AdGuard</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="link-group">
+        <div class="group-label">Downloads</div>
+        <div class="link-row">
+          <a href="http://home-core:7878" class="link-card downloads">
+            <span class="link-icon">&#x2605;</span>
+            <span class="link-name">Radarr</span>
+          </a>
+          <a href="http://home-core:8989" class="link-card downloads">
+            <span class="link-icon">&#x2605;</span>
+            <span class="link-name">Sonarr</span>
+          </a>
+          <a href="http://home-core:8080" class="link-card downloads">
+            <span class="link-icon">&#x2193;</span>
+            <span class="link-name">qBittorrent</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="link-group">
+        <div class="group-label">Bookmarks</div>
+        <div class="link-row">
+          <a href="https://github.com" class="link-card social">
+            <span class="link-icon">&#x2764;</span>
+            <span class="link-name">GitHub</span>
+          </a>
+          <a href="https://reddit.com" class="link-card social">
+            <span class="link-icon">&#x25CE;</span>
+            <span class="link-name">Reddit</span>
+          </a>
+          <a href="https://news.ycombinator.com" class="link-card social">
+            <span class="link-icon">&#x0059;</span>
+            <span class="link-name">HN</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Greeting -->
+    <div class="greeting" id="greeting"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>justin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Boot sequence -->
+    <div class="boot-screen" id="boot">
+        <div class="boot-log" id="boot-log"></div>
+        <div class="boot-skip" id="boot-skip">press <kbd>any key</kbd> to skip</div>
+    </div>
+
+    <!-- Background -->
+    <canvas id="topo-bg"></canvas>
+
+    <!-- Site -->
+    <div class="crt" id="site" style="display:none;">
+        <div class="site-content">
+            <main class="hero">
+                <aside class="status-panel" id="status-panel">
+                    <div class="status-header">
+                        <span class="status-title">SYSTEM STATUS</span>
+                        <span class="status-dot" id="status-dot"></span>
+                    </div>
+                    <div class="status-body" id="status-body">
+                        <div class="status-row"><span class="status-label">connecting...</span></div>
+                    </div>
+                </aside>
+
+                <div class="container">
+                    <pre class="ascii-name" aria-hidden="true">
+     _           _   _
+    (_)_   _ ___| |_(_)_ __
+    | | | | / __| __| | '_ \
+    | | |_| \__ \ |_| | | | |
+   _/ |\__,_|___/\__|_|_| |_|
+  |__/
+          </pre>
+
+                    <!-- <p class="typing">Software Developer / Systems Engineer</p> -->
+                    <p class="typing">About Me</p>
+                    <div class="hero-body">
+                        <p>I have been spending most of my time building tools and infrastructure for my network.</p>
+                        <p>Currently self-hosting everything on <span class="hl">NixOS</span>. Most of my network setup is reproduceable if anything went down.</p>
+                        <br>
+                        <p class="comment">// Im really bored as hell</p>
+                    </div>
+
+                    <div class="hero-nav">
+                        <a href="/projects.html">[projects]</a>
+                        <a href="/blog/">[blog]</a>
+                        <a href="/contact.html">[contact]</a>
+                        <a href="https://github.com/ComradeJustin">[github]</a>
+                    </div>
+
+                    <div class="prompt">
+                        <span class="user">guest@justin:~$</span>
+                        <span class="cursor">_</span>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

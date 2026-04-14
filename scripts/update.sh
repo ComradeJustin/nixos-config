@@ -73,6 +73,7 @@ else
     warn "No remote builders reachable — using all local cores"
 fi
 
+set -o pipefail
 if [[ -n "$TARGET" ]] || echo "$REMOTE_HOSTS" | grep -qw "$HOST"; then
     REMOTE_TARGET="${TARGET:-justin@${HOST}}"
     info "Updating flake inputs..."
@@ -82,20 +83,28 @@ if [[ -n "$TARGET" ]] || echo "$REMOTE_HOSTS" | grep -qw "$HOST"; then
 
     # Use root via Tailscale SSH to avoid sudo password prompts
     REMOTE_HOST="${REMOTE_TARGET#*@}"
-    set -o pipefail
-    nixos-rebuild switch --flake "${FLAKE_DIR}#${HOST}" \
+    if ! nixos-rebuild switch --flake "${FLAKE_DIR}#${HOST}" \
         --target-host "root@${REMOTE_HOST}" \
-        ${MAX_JOBS_FLAG} |& nom
+        ${MAX_JOBS_FLAG} |& nom; then
+        err "Build failed!"
+        exit 1
+    fi
 
     ok "Deploy to ${BOLD}${HOST}${RESET} complete!"
 else
     info "Updating flake inputs and rebuilding ${BOLD}${HOST}${RESET}..."
     if [[ -n "$MAX_JOBS_FLAG" ]]; then
-        nh os switch "${FLAKE_DIR}" -H "${HOST}" --update -- ${MAX_JOBS_FLAG}
+        if ! nh os switch "${FLAKE_DIR}" -H "${HOST}" --update -- ${MAX_JOBS_FLAG}; then
+            err "Build failed!"
+            exit 1
+        fi
     else
-        nh os switch "${FLAKE_DIR}" -H "${HOST}" --update
+        if ! nh os switch "${FLAKE_DIR}" -H "${HOST}" --update; then
+            err "Build failed!"
+            exit 1
+        fi
     fi
-fi || { err "Build failed!"; exit 1; }
+fi
 
 # Sign and push current system to harmonia cache if reachable
 CACHE_KEY="/var/lib/harmonia-cache-key.pem"

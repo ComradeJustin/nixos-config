@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>projects — justin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="crt">
+    <nav>
+      <span class="nav-prompt">guest@justin:~$</span>
+      <div class="nav-links">
+        <a href="/">home</a>
+        <a href="/projects.html">projects</a>
+        <a href="/blog/">blog</a>
+        <a href="/contact.html">contact</a>
+      </div>
+    </nav>
+
+    <div class="site-content">
+      <div class="page">
+        <div class="container">
+          <h2>## projects</h2>
+
+          <div class="project-grid">
+
+            <div class="project-card">
+              <h3>NixOS Infrastructure</h3>
+              <p>Declarative multi-host config managing desktops, laptops, and servers. Custom modules for networking, monitoring, and caching.</p>
+              <div class="project-tags">
+                <span class="tag">nix</span>
+                <span class="tag">linux</span>
+                <span class="tag">systemd</span>
+              </div>
+              <a href="https://github.com/ComradeJustin" class="project-link">[source]</a>
+            </div>
+
+            <div class="project-card">
+              <h3>QuickShell DE</h3>
+              <p>Custom Wayland shell built with QML. Modular bar, control center, notifications, and lock screen — declaratively configured.</p>
+              <div class="project-tags">
+                <span class="tag">qml</span>
+                <span class="tag">wayland</span>
+                <span class="tag">c++</span>
+              </div>
+            </div>
+
+            <div class="project-card">
+              <h3>Blog Platform</h3>
+              <p>Self-hosted blog with internal admin panel. Markdown to static HTML via pandoc, served through nginx + Tailscale Funnel.</p>
+              <div class="project-tags">
+                <span class="tag">python</span>
+                <span class="tag">self-hosted</span>
+              </div>
+            </div>
+
+            <div class="project-card">
+              <h3>Homelab Network</h3>
+              <p>Tailscale mesh connecting all devices. AdGuard DNS, Grafana monitoring, Harmonia binary cache, media stack.</p>
+              <div class="project-tags">
+                <span class="tag">networking</span>
+                <span class="tag">homelab</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

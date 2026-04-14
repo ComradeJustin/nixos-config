@@ -177,11 +177,28 @@
               modules.boot.loader = "grub-mbr";
               modules.tailscale.enable = true;
               modules.tailscale.exitNode = true;
+              modules.tailscale.funnel = true;
+              modules.tailscale.funnelPort = 8443;
               modules.nginx.enable = true;
               modules.docker.enable = true;
               modules.harmonia.enable = true;
               modules.monitoring.enable = true;
               modules.mediastack.enable = true;
+              modules.adguard.enable = true;
+              modules.blog.enable = true;
+
+              modules.status-reporter.enable = true;
+              modules.status-reporter.services = [
+                "nginx"
+                "tailscaled"
+                "harmonia"
+                "nix-daemon"
+                "grafana"
+                "adguardhome"
+                "jellyfin"
+                "radarr"
+                "sonarr"
+              ];
             }
           ];
         };

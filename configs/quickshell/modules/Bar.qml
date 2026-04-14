@@ -132,6 +132,7 @@ Scope {
     Component { id: compAudio; BarModules.AudioModule {} }
     Component { id: compNetwork; BarModules.NetworkModule {} }
     Component { id: compBluetooth; BarModules.BluetoothModule {} }
+    Component { id: compVpn; BarModules.VpnModule {} }
     Component { id: compBattery; BarModules.BatteryModule {} }
     Component { id: compTray; BarModules.TrayModule { barPanel: panel } }
     Component { id: compGear; BarModules.GearModule {} }
@@ -141,7 +142,7 @@ Scope {
         "power": compPower, "workspace": compWorkspace, "time": compTime,
         "weather": compWeather, "window": compWindow, "media": compMedia,
         "resource": compResource, "audio": compAudio, "network": compNetwork,
-        "bluetooth": compBluetooth, "battery": compBattery, "tray": compTray,
+        "bluetooth": compBluetooth, "vpn": compVpn, "battery": compBattery, "tray": compTray,
         "gear": compGear, "caffeine": compCaffeine
     })
 

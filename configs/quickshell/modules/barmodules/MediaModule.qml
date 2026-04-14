@@ -16,7 +16,7 @@ Item {
 
     // Left: icon glyph bearing provides ~3px visual padding
     // Right: add 3px to match so text doesn't sit flush against group edge
-    implicitWidth: hasMedia ? playIcon.width + Math.min(scrollText.contentWidth, fixedTextWidth) + 3 : 0
+    implicitWidth: hasMedia ? playIcon.width + 6 + Math.min(scrollText.contentWidth, fixedTextWidth) + 3 : 0
     implicitHeight: Root.Theme.barHeight
     opacity: hasMedia ? 1 : 0
     clip: true
@@ -73,7 +73,7 @@ Item {
 
     Components.ScrollingText {
         id: scrollText
-        anchors { left: playIcon.right; leftMargin: 0; verticalCenter: parent.verticalCenter }
+        anchors { left: playIcon.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
         fixedWidth: root.fixedTextWidth
         text: root.mediaText
         textColor: mediaHover.containsMouse ? Root.Theme.domainMedia : Root.Theme.textPrimary

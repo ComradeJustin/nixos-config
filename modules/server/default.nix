@@ -8,5 +8,8 @@
     ./monitoring.nix
     ./distributed-builds.nix
     ./mediastack.nix
+    ./adguard.nix
+    ./blog.nix
+    ./status-reporter.nix
   ];
 }
