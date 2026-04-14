@@ -13,6 +13,7 @@
       feh
       nmap
       ethtool
+      pavucontrol
     ];
   };
 }
