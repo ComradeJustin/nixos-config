@@ -35,6 +35,9 @@
       btop
       fastfetch
 
+      # Networking
+      wol
+
       # Man pages
       man-pages
       man-pages-posix

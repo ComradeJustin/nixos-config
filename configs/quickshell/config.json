@@ -105,7 +105,7 @@
     "refreshInterval": 300000
   },
   "nightLight": {
-    "enabled": false,
+    "enabled": true,
     "dayTemp": 6500,
     "nightTemp": 4000
   },
