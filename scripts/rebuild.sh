@@ -79,10 +79,9 @@ if [[ -n "$TARGET" ]] || echo "$REMOTE_HOSTS" | grep -qw "$HOST"; then
     info "Building locally and deploying ${BOLD}${HOST}${RESET} to ${CYAN}${REMOTE_TARGET}${RESET}..."
 
     REMOTE_HOST="${REMOTE_TARGET#*@}"
-    if ! nixos-rebuild switch --flake "${FLAKE_DIR}#${HOST}" \
+    if ! nh os switch "${FLAKE_DIR}" -H "${HOST}" --ask \
         --target-host "justin@${REMOTE_HOST}" \
-        --sudo \
-        ${MAX_JOBS_FLAG} |& nom; then
+        -- ${MAX_JOBS_FLAG}; then
         err "Build failed!"
         exit 1
     fi
@@ -90,16 +89,9 @@ if [[ -n "$TARGET" ]] || echo "$REMOTE_HOSTS" | grep -qw "$HOST"; then
     ok "Deploy to ${BOLD}${HOST}${RESET} complete!"
 else
     info "Building ${BOLD}${HOST}${RESET} locally..."
-    if [[ -n "$MAX_JOBS_FLAG" ]]; then
-        if ! nh os switch "${FLAKE_DIR}" -H "${HOST}" --ask -- ${MAX_JOBS_FLAG}; then
-            err "Build failed!"
-            exit 1
-        fi
-    else
-        if ! nh os switch "${FLAKE_DIR}" -H "${HOST}" --ask; then
-            err "Build failed!"
-            exit 1
-        fi
+    if ! nh os switch "${FLAKE_DIR}" -H "${HOST}" --ask -- ${MAX_JOBS_FLAG}; then
+        err "Build failed!"
+        exit 1
     fi
 fi
 
