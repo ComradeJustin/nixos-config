@@ -15,6 +15,9 @@
 
     # Root password managed by sops-nix (modules/core/sops.nix)
 
+    # justin needs trusted-users for remote deploys and distributed builds
+    nix.settings.trusted-users = [ "justin" ];
+
     system.stateVersion = "25.11";
   };
 }

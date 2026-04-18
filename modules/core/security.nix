@@ -29,6 +29,16 @@
       allowedUDPPorts = [ ];
     };
 
+    # Passwordless sudo for remote NixOS deploys only
+    security.sudo.extraRules = [{
+      users = [ "justin" ];
+      commands = [
+        { command = "/nix/store/*/bin/switch-to-configuration"; options = [ "NOPASSWD" ]; }
+        { command = "/nix/store/*/activate"; options = [ "NOPASSWD" ]; }
+        { command = "/run/current-system/sw/bin/nix-env -p /nix/var/nix/profiles/system --set *"; options = [ "NOPASSWD" ]; }
+      ];
+    }];
+
     services.fail2ban.enable = true;
   };
 }

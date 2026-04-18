@@ -56,7 +56,7 @@ if [[ -f /etc/nix/machines ]]; then
     while IFS=' ' read -r uri _rest; do
         [[ -z "$uri" ]] && continue
         builder_host="${uri#*@}"
-        if timeout 5 ssh -o ConnectTimeout=3 -o BatchMode=yes "root@${builder_host}" true 2>/dev/null; then
+        if timeout 5 ssh -o ConnectTimeout=3 -o BatchMode=yes "justin@${builder_host}" true 2>/dev/null; then
             BUILDERS_ONLINE=$((BUILDERS_ONLINE + 1))
             ok "  ${builder_host} ${GREEN}online${RESET}"
         else
@@ -78,10 +78,10 @@ if [[ -n "$TARGET" ]] || echo "$REMOTE_HOSTS" | grep -qw "$HOST"; then
     REMOTE_TARGET="${TARGET:-justin@${HOST}}"
     info "Building locally and deploying ${BOLD}${HOST}${RESET} to ${CYAN}${REMOTE_TARGET}${RESET}..."
 
-    # Use root via Tailscale SSH to avoid sudo password prompts
     REMOTE_HOST="${REMOTE_TARGET#*@}"
     if ! nixos-rebuild switch --flake "${FLAKE_DIR}#${HOST}" \
-        --target-host "root@${REMOTE_HOST}" \
+        --target-host "justin@${REMOTE_HOST}" \
+        --sudo \
         ${MAX_JOBS_FLAG} |& nom; then
         err "Build failed!"
         exit 1
@@ -105,11 +105,11 @@ fi
 
 # Sign and push current system to harmonia cache if reachable
 CACHE_KEY="/var/lib/harmonia-cache-key.pem"
-if [[ -f "$CACHE_KEY" ]] && timeout 5 ssh -o ConnectTimeout=3 -o BatchMode=yes root@home-core true 2>/dev/null; then
+if [[ -f "$CACHE_KEY" ]] && timeout 5 ssh -o ConnectTimeout=3 -o BatchMode=yes justin@home-core true 2>/dev/null; then
     SYSTEM_PATH="$(readlink -f /run/current-system)"
     info "Signing and pushing build to harmonia cache..."
     nix store sign --key-file "$CACHE_KEY" --recursive "$SYSTEM_PATH" 2>/dev/null
-    nix copy --to ssh-ng://root@home-core "$SYSTEM_PATH" 2>/dev/null \
+    nix copy --to ssh-ng://justin@home-core "$SYSTEM_PATH" 2>/dev/null \
         && ok "Cache updated!" \
         || warn "Cache push failed (non-fatal)"
 fi
