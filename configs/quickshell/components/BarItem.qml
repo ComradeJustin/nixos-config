@@ -93,7 +93,16 @@ Item {
         }
     }
 
-    // Hover area on top for reliable hover detection
+    // Click-to-toggle popup — TapHandler coexists with child MouseAreas
+    TapHandler {
+        enabled: root.popupContent !== null
+        onTapped: {
+            let bp = Core.ServiceManager.barPopup;
+            if (bp) bp.toggle(root, root.popupContent);
+        }
+    }
+
+    // Hover = tooltip only (does not intercept clicks)
     MouseArea {
         id: hoverArea
         anchors.fill: parent
@@ -102,22 +111,11 @@ Item {
         z: 998
 
         onContainsMouseChanged: {
+            let bt = Core.ServiceManager.barTooltip;
             if (containsMouse) {
-                if (root.tooltipText.length > 0) {
-                    let bt = Core.ServiceManager.barTooltip;
-                    if (bt) bt.show(root, root.tooltipText);
-                }
-                if (root.popupContent) {
-                    let bp = Core.ServiceManager.barPopup;
-                    if (bp) bp.show(root, root.popupContent);
-                }
+                if (root.tooltipText.length > 0 && bt) bt.show(root, root.tooltipText);
             } else {
-                let bt = Core.ServiceManager.barTooltip;
                 if (bt) bt.hide();
-                if (root.popupContent) {
-                    let bp = Core.ServiceManager.barPopup;
-                    if (bp) bp.hide();
-                }
             }
         }
     }

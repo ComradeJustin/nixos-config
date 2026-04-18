@@ -69,7 +69,7 @@
     "timeFormat": "HH:mm",
     "dateFormat": "dddd, MMMM d",
     "showDate": true,
-    "showSeconds": false,
+    "showSeconds": true,
     "fontSize": 48
   },
   "weather": {

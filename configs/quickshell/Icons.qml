@@ -44,6 +44,15 @@ QtObject {
     readonly property string btOff:       "󰂲"
     readonly property string btConnected: "󰂱"
 
+    // ── Night Light ──
+    readonly property string nightOn:     "󰽥"
+    readonly property string nightOff:    "󰽦"
+
+    // ── Power Profile ──
+    readonly property string powerPerf:     "󱐋"
+    readonly property string powerBalanced: "󰗑"
+    readonly property string powerSaver:   "󰌪"
+
     // ── Media ──
     readonly property string headphone: "󰋋"
     readonly property string speaker:   "󰓃"
@@ -56,6 +65,7 @@ QtObject {
     readonly property string prev:      "󰒮"
     readonly property string next:      "󰒭"
     readonly property string music:     "󰎆"
+    readonly property string equalizer: "󰺢"
 
     // ── Weather ──
     readonly property string weatherSunny:   "󰖙"

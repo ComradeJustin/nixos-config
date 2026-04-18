@@ -3,15 +3,16 @@ import Quickshell.Wayland
 import QtQuick
 import ".." as Root
 
-// Shared popup window that appears below the bar.
-// Modules call show(sourceItem, contentItem) / hide().
+// Shared popup window for bar modules — click-to-toggle.
+// Modules call toggle(sourceItem, contentItem) to open/close.
+// Escape dismisses. Clicking same module toggles off; clicking
+// a different module switches content.
 PanelWindow {
     id: popup
     visible: false
 
     property Item _sourceItem: null
     property Item _contentItem: null
-    property bool _hoveringSelf: false
     property bool _showing: false
     property int barHeight: Root.Theme.barHeight
     property real _targetX: 0
@@ -19,7 +20,7 @@ PanelWindow {
     anchors { top: true }
     margins.top: barHeight + 4
     implicitWidth: _contentItem ? _contentItem.width : 200
-    implicitHeight: (_contentItem ? _contentItem.height : 100) + 12
+    implicitHeight: (_contentItem ? _contentItem.height : 100) + 4
     margins.left: _targetX
 
     WlrLayershell.namespace: "quickshell-barpopup"
@@ -28,7 +29,13 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
 
-    function show(sourceItem, contentItem) {
+    // Toggle popup for a source. Same source while showing = close.
+    // Different source = switch content.
+    function toggle(sourceItem, contentItem) {
+        if (_sourceItem === sourceItem && _showing) {
+            dismiss();
+            return;
+        }
         _sourceItem = sourceItem;
         if (_contentItem && _contentItem !== contentItem) {
             _contentItem.parent = null;
@@ -42,24 +49,24 @@ PanelWindow {
             _contentItem.y = 0;
         }
         _updatePosition();
-        _hideTimer.stop();
-        _showTimer.start();
+        _closeTimer.stop();
+        visible = true;
+        _showing = true;
+    }
+
+    // Close unconditionally
+    function dismiss() {
+        _showing = false;
+        _closeTimer.start();
     }
 
     function _updatePosition() {
         if (!_sourceItem) return;
-        // Map source item center to global coordinates
         let mapped = _sourceItem.mapToGlobal(_sourceItem.width / 2, 0);
         _targetX = Math.max(0, mapped.x - implicitWidth / 2);
     }
 
-    function hide() {
-        _showTimer.stop();
-        _hideTimer.start();
-    }
-
     function _doHide() {
-        if (_hoveringSelf) return;
         visible = false;
         if (_contentItem) {
             _contentItem.parent = null;
@@ -69,26 +76,7 @@ PanelWindow {
         _contentItem = null;
     }
 
-    Timer {
-        id: _showTimer
-        interval: 350
-        onTriggered: {
-            popup.visible = true;
-            popup._showing = true;
-        }
-    }
-
-    Timer {
-        id: _hideTimer
-        interval: 250
-        onTriggered: {
-            if (popup._hoveringSelf) return;
-            popup._showing = false;
-            _closeTimer.start();
-        }
-    }
-
-    // Delay actual hide until fade-out completes
+    // Delay actual hide until fade-out animation completes
     Timer {
         id: _closeTimer
         interval: Root.Theme.anim.exitDuration
@@ -98,7 +86,7 @@ PanelWindow {
     Item {
         id: contentHost
         anchors.fill: parent
-        anchors.topMargin: 6
+        anchors.topMargin: 2
 
         opacity: popup._showing ? 1 : 0
         transform: Translate {
@@ -117,19 +105,12 @@ PanelWindow {
                 easing.type: Easing.OutCubic
             }
         }
+    }
 
-        MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            onContainsMouseChanged: {
-                popup._hoveringSelf = containsMouse;
-                if (!containsMouse) popup.hide();
-                else {
-                    _hideTimer.stop();
-                    _closeTimer.stop();
-                    popup._showing = true;
-                }
-            }
-        }
+    // Escape key closes popup
+    FocusScope {
+        anchors.fill: parent
+        focus: true
+        Keys.onEscapePressed: popup.dismiss()
     }
 }

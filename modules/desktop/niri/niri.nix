@@ -4,7 +4,7 @@
 
   config = lib.mkIf config.modules.niri.enable {
     environment.systemPackages = with pkgs; [
-      inputs.niri-beta.packages.${pkgs.system}.niri
+      inputs.niri.packages.${pkgs.system}.niri
       waybar
 
       wl-clipboard

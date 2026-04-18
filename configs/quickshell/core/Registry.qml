@@ -26,21 +26,21 @@ QtObject {
     // ── Bar modules ──
     // key: unique id, label: display name, section: left/center/right, file: true if file-based
     readonly property var barModules: [
-        { key: "power",     label: "Power",     section: "left",   file: true, group: "power" },
-        { key: "workspace", label: "Workspace", section: "left",   file: true, group: "nav" },
-        { key: "time",      label: "Time",      section: "left",   file: true, group: "nav" },
-        { key: "weather",   label: "Weather",   section: "left",   file: true, group: "weather", services: ["weather"] },
-        { key: "window",    label: "Window",    section: "left",   file: true, group: "window" },
-        { key: "media",     label: "Media",     section: "center", file: true, group: "media", services: ["player"] },
-        { key: "resource",  label: "Resources", section: "right",  file: true, group: "stats" },
-        { key: "audio",     label: "Audio",     section: "right",  file: true, group: "conn", services: ["audio"] },
-        { key: "network",   label: "Network",   section: "right",  file: true, group: "conn", services: ["wifi"] },
-        { key: "bluetooth", label: "Bluetooth", section: "right",  file: true, group: "conn", services: ["bluetooth"] },
-        { key: "vpn",       label: "VPN",       section: "right",  file: true, group: "conn" },
-        { key: "battery",   label: "Battery",   section: "right",  file: true, group: "battery" },
-        { key: "caffeine",  label: "Caffeine",  section: "right",  file: true, group: "utils", services: ["idleInhibit"] },
-        { key: "tray",      label: "Tray",      section: "right",  file: true, group: "utils" },
-        { key: "gear",      label: "Settings",  section: "right",  file: true, group: "utils" }
+        { key: "power",     label: "Power",     section: "left",   file: "modules/barmodules/PowerModule.qml",     group: "power" },
+        { key: "workspace", label: "Workspace", section: "left",   file: "modules/barmodules/WorkspaceModule.qml", group: "nav" },
+        { key: "time",      label: "Time",      section: "left",   file: "modules/barmodules/TimeModule.qml",      group: "nav" },
+        { key: "weather",   label: "Weather",   section: "left",   file: "modules/barmodules/WeatherModule.qml",   group: "weather", services: ["weather"] },
+        { key: "window",    label: "Window",    section: "left",   file: "modules/barmodules/WindowModule.qml",    group: "window" },
+        { key: "media",     label: "Media",     section: "center", file: "modules/barmodules/MediaModule.qml",     group: "media", services: ["player"] },
+        { key: "resource",  label: "Resources", section: "right",  file: "modules/barmodules/ResourceModule.qml",  group: "stats" },
+        { key: "audio",     label: "Audio",     section: "right",  file: "modules/barmodules/AudioModule.qml",     group: "conn", services: ["audio"] },
+        { key: "network",   label: "Network",   section: "right",  file: "modules/barmodules/NetworkModule.qml",   group: "conn", services: ["wifi"] },
+        { key: "bluetooth", label: "Bluetooth", section: "right",  file: "modules/barmodules/BluetoothModule.qml", group: "conn", services: ["bluetooth"] },
+        { key: "vpn",       label: "VPN",       section: "right",  file: "modules/barmodules/VpnModule.qml",       group: "conn" },
+        { key: "battery",   label: "Battery",   section: "right",  file: "modules/barmodules/BatteryModule.qml",   group: "battery" },
+        { key: "caffeine",  label: "Caffeine",  section: "right",  file: "modules/barmodules/CaffeineModule.qml",  group: "utils", services: ["idleInhibit"] },
+        { key: "tray",      label: "Tray",      section: "right",  file: "modules/barmodules/TrayModule.qml",      group: "utils" },
+        { key: "gear",      label: "Settings",  section: "right",  file: "modules/barmodules/GearModule.qml",      group: "utils" }
     ]
 
     // ── Widgets ──
@@ -100,6 +100,7 @@ QtObject {
         { key: "dnd",       iconOn: "󰂛", iconOff: "󰂚", accent: "domainNotifications", service: "notif",       action: "toggleDnd",  stateProp: "dnd",                           settingsPage: "preferences" },
         { key: "mute",      iconOn: "󰕾", iconOff: "󰖁", accent: "domainMedia",         service: "audio",       action: "toggleMute", stateProp: "muted", invertState: true },
         { key: "bluetooth", iconOn: "󰂯", iconOff: "󰂲", accent: "domainNetwork",       service: "bluetooth",   action: "toggle",     stateProp: "enabled",                       settingsPage: "connections" },
-        { key: "caffeine",  iconOn: "󰛊", iconOff: "󰛩", accent: "caffeineAccent",      service: "idleInhibit", action: "toggle",     stateProp: "inhibited",                     settingsPage: "preferences" }
+        { key: "caffeine",  iconOn: "󰛊", iconOff: "󰛩", accent: "caffeineAccent",      service: "idleInhibit", action: "toggle",     stateProp: "inhibited",                     settingsPage: "preferences" },
+        { key: "powerProfile", iconOn: "󰗑", iconOff: "󰌪", accent: "domainPower",    service: "powerProfile", action: "cycleProfile", stateProp: "profile", requireProp: "available", settingsPage: "preferences" }
     ]
 }

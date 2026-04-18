@@ -73,6 +73,7 @@ Components.BarItem {
 
     // ── Popup content (hosted in shared BarPopup window) ──
     property Components.HoverPopup resPopup: Components.HoverPopup {
+        visible: false
         popupWidth: 200
 
         Text {

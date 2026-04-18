@@ -1,6 +1,9 @@
 module ControlCenterCards
 PlayerCard 1.0 PlayerCard.qml
 NetworkCard 1.0 NetworkCard.qml
+BluetoothCard 1.0 BluetoothCard.qml
+NightLightCard 1.0 NightLightCard.qml
 SystemMonitorCard 1.0 SystemMonitorCard.qml
+ServerStatusCard 1.0 ServerStatusCard.qml
 WeatherCard 1.0 WeatherCard.qml
 CalendarCard 1.0 CalendarCard.qml

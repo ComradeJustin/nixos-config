@@ -122,29 +122,27 @@ Scope {
     // exclusiveZone is kept constant so windows never resize when bar hides/shows
 
     // ── Component map for Repeater-driven bar ──
-    Component { id: compPower; BarModules.PowerModule {} }
-    Component { id: compWorkspace; BarModules.WorkspaceModule {} }
-    Component { id: compTime; BarModules.TimeModule {} }
-    Component { id: compWeather; BarModules.WeatherModule {} }
-    Component { id: compWindow; BarModules.WindowModule {} }
-    Component { id: compMedia; BarModules.MediaModule { onCavaToggled: barScope.showCava = !barScope.showCava } }
-    Component { id: compResource; BarModules.ResourceModule {} }
-    Component { id: compAudio; BarModules.AudioModule {} }
-    Component { id: compNetwork; BarModules.NetworkModule {} }
-    Component { id: compBluetooth; BarModules.BluetoothModule {} }
-    Component { id: compVpn; BarModules.VpnModule {} }
-    Component { id: compBattery; BarModules.BatteryModule {} }
+    // Custom overrides for modules needing special initialization
+    Component { id: compMedia; BarModules.MediaModule { cavaOpen: barScope.showCava; onCavaToggled: barScope.showCava = !barScope.showCava } }
     Component { id: compTray; BarModules.TrayModule { barPanel: panel } }
-    Component { id: compGear; BarModules.GearModule {} }
-    Component { id: compCaffeine; BarModules.CaffeineModule {} }
 
-    property var componentMap: ({
-        "power": compPower, "workspace": compWorkspace, "time": compTime,
-        "weather": compWeather, "window": compWindow, "media": compMedia,
-        "resource": compResource, "audio": compAudio, "network": compNetwork,
-        "bluetooth": compBluetooth, "vpn": compVpn, "battery": compBattery, "tray": compTray,
-        "gear": compGear, "caffeine": compCaffeine
-    })
+    property var _customOverrides: ({ "media": compMedia, "tray": compTray })
+
+    // Auto-generated from Registry.barModules file paths
+    property var componentMap: ({})
+    Component.onCompleted: {
+        let map = {};
+        let mods = Core.Registry.barModules;
+        for (let i = 0; i < mods.length; i++) {
+            let m = mods[i];
+            if (_customOverrides[m.key]) {
+                map[m.key] = _customOverrides[m.key];
+            } else {
+                map[m.key] = Qt.createComponent("../" + m.file);
+            }
+        }
+        componentMap = map;
+    }
 
     property bool isFloating: Root.Config.bar.style === "float"
     property int floatMargin: 6

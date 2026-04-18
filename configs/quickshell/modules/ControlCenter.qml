@@ -335,6 +335,8 @@ Scope {
                                 Components.QuickToggle {
                                     required property var modelData
                                     property var svc: Core.ServiceManager[modelData.service]
+                                    // Hide toggles whose service isn't available (e.g. power profiles on desktops)
+                                    visible: !modelData.requireProp || (svc && svc[modelData.requireProp])
                                     isOn: {
                                         if (!svc) return false;
                                         let val = svc[modelData.stateProp];
@@ -432,6 +434,22 @@ Scope {
                             return out;
                         }
 
+                        // Data-driven card map — adding a card means:
+                        //   1. Create the QML file in cards/
+                        //   2. Register in cards/qmldir
+                        //   3. Add a Component + map entry here
+                        // No switch statement to maintain.
+                        property var cardComponentMap: ({
+                            "player":        playerCardComp,
+                            "network":       networkCardComp,
+                            "bluetooth":     bluetoothCardComp,
+                            "nightLight":    nightLightCardComp,
+                            "systemMonitor": systemMonitorCardComp,
+                            "serverStatus":  serverStatusCardComp,
+                            "weather":       weatherCardComp,
+                            "calendar":      calendarCardComp
+                        })
+
                         Repeater {
                             model: ccCardsCol.enabledKeys
 
@@ -441,22 +459,14 @@ Scope {
                                 width: ccCardsCol.width
                                 height: item ? item.implicitHeight : 0
                                 active: true
-                                sourceComponent: {
-                                    switch (modelData) {
-                                    case "player":        return playerCardComp;
-                                    case "network":       return networkCardComp;
-                                    case "systemMonitor": return systemMonitorCardComp;
-                                    case "serverStatus":  return serverStatusCardComp;
-                                    case "weather":       return weatherCardComp;
-                                    case "calendar":      return calendarCardComp;
-                                    }
-                                    return null;
-                                }
+                                sourceComponent: ccCardsCol.cardComponentMap[modelData] || null
                             }
                         }
 
                         Component { id: playerCardComp;         CCCards.PlayerCard        {} }
                         Component { id: networkCardComp;        CCCards.NetworkCard       {} }
+                        Component { id: bluetoothCardComp;      CCCards.BluetoothCard     {} }
+                        Component { id: nightLightCardComp;     CCCards.NightLightCard    {} }
                         Component { id: systemMonitorCardComp;  CCCards.SystemMonitorCard {} }
                         Component { id: serverStatusCardComp;   CCCards.ServerStatusCard  {} }
                         Component { id: weatherCardComp;        CCCards.WeatherCard       {} }

@@ -104,6 +104,7 @@ Components.BarItem {
 
     // ── Popup content (hosted in shared BarPopup window) ──
     property Components.HoverPopup timePopup: Components.HoverPopup {
+        visible: false
         popupWidth: 190
 
         Text {

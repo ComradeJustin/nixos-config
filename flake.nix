@@ -15,8 +15,8 @@
 
     awww = {
       # Pinned: crop_gravity merge (0a62aca) broke CacheEntry::new call sites
-      # url = "git+https://codeberg.org/LGFae/awww";
-      url = "git+https://codeberg.org/LGFae/awww?rev=efc4c492a30d7e098541ad0ca95c22287cbc26ba";
+      url = "git+https://codeberg.org/LGFae/awww";
+      #url = "git+https://codeberg.org/LGFae/awww?rev=efc4c492a30d7e098541ad0ca95c22287cbc26ba";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -57,8 +57,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    niri-beta = {
-      url = "github:niri-wm/niri/wip/branch";
+    niri = {
+      url = "github:niri-wm/niri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -80,7 +80,7 @@
       qml-niri,
       apple-fonts,
       nixos-hardware,
-      niri-beta,
+      niri,
       spotatui,
       disko,
       ...

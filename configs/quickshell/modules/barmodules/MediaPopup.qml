@@ -5,7 +5,8 @@ import QtQuick.Effects
 import "../.." as Root
 import "../../core" as Core
 
-// Media popup panel with visualizer and controls
+// Cava visualizer panel — slides down from bar when toggled.
+// Media controls have moved to MediaModule's click popup.
 PanelWindow {
     id: popup
 
@@ -13,7 +14,6 @@ PanelWindow {
     property bool showCava: false
     property bool barHidden: false
 
-    // Computed property for animation state
     readonly property bool cavaWanted: showCava && !barHidden
 
     onCavaWantedChanged: {
@@ -67,18 +67,16 @@ PanelWindow {
                     popup.visible = false;
             }
 
-            // Block all clicks from falling through to compositor
             MouseArea {
                 anchors.fill: parent
                 acceptedButtons: Qt.AllButtons
             }
 
-            // Cava bars as full background (from playerService)
+            // Cava bars
             Row {
                 anchors.fill: parent
                 anchors.margins: 0
                 spacing: 1
-                opacity: 0.2
 
                 Repeater {
                     model: Root.Theme.cavaBars
@@ -96,213 +94,6 @@ PanelWindow {
                             GradientStop { position: 1.0; color: Root.Theme.cavaBarColor }
                         }
                         Behavior on height { NumberAnimation { duration: 50 } }
-                    }
-                }
-            }
-
-            // Content
-            Column {
-                id: mediaContent
-                anchors { left: parent.left; right: parent.right; top: parent.top; margins: 10 }
-                spacing: 4
-
-                Row {
-                    width: parent.width; spacing: 10
-
-                    Item {
-                        width: Root.Theme.cavaArtSize; height: Root.Theme.cavaArtSize
-
-                        // Ambient glow behind album art (blurred via MultiEffect)
-                        Image {
-                            id: artGlow
-                            anchors.centerIn: parent
-                            width: parent.width + 16; height: parent.height + 16
-                            source: popup.playerService ? popup.playerService.trackArtUrl : ""
-                            fillMode: Image.PreserveAspectCrop; smooth: true; asynchronous: true
-                            opacity: artImg.status === Image.Ready ? 0.35 : 0
-                            Behavior on opacity { NumberAnimation { duration: 300 } }
-                            layer.enabled: true
-                            layer.effect: MultiEffect {
-                                blurEnabled: true
-                                blurMax: 32
-                                blur: 0.9
-                            }
-                        }
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: Root.Theme.radiusSmall; clip: true
-                            color: Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.2)
-                            border.width: Root.Theme.borderWidth
-                            border.color: Root.Theme.borderColor
-
-                            Image {
-                                id: artImg; anchors.fill: parent
-                                source: popup.playerService ? popup.playerService.trackArtUrl : ""
-                                fillMode: Image.PreserveAspectCrop; smooth: true; asynchronous: true
-                                visible: status === Image.Ready
-                            }
-                            Text {
-                                anchors.centerIn: parent; text: Root.Icons.mediaPlay; color: Root.Theme.textDimmed
-                                font { family: Root.Theme.fontFamily; pixelSize: 24 }
-                                visible: artImg.status !== Image.Ready
-                            }
-                        }
-                    }
-
-                    Column {
-                        width: parent.width - Root.Theme.cavaArtSize - 10
-                        anchors.verticalCenter: parent.verticalCenter; spacing: 2
-
-                        Text {
-                            text: popup.playerService ? popup.playerService.trackTitle : ""
-                            color: Root.Theme.textPrimary
-                            font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true }
-                            width: parent.width; elide: Text.ElideRight
-                        }
-                        Text {
-                            text: popup.playerService ? popup.playerService.trackArtist : ""
-                            color: Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 11 }
-                            width: parent.width; elide: Text.ElideRight
-                            visible: popup.playerService ? popup.playerService.trackArtist.length > 0 : false
-                        }
-                    }
-                }
-
-                // Seekable progress bar
-                Item {
-                    id: seekBar
-                    width: parent.width; height: 16
-                    property real pos: popup.playerService ? popup.playerService.position : 0
-                    property real len: popup.playerService ? popup.playerService.length : 0
-                    property real ratio: len > 0 ? pos / len : 0
-                    property bool dragging: false
-                    property real dragRatio: 0
-
-                    Rectangle {
-                        anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
-                        height: 3; radius: height / 2; color: Root.Theme.textDimmed; opacity: 0.3
-                    }
-                    Rectangle {
-                        anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        height: 3; radius: height / 2
-                        width: parent.width * (seekBar.dragging ? seekBar.dragRatio : seekBar.ratio)
-                        gradient: Gradient {
-                            orientation: Gradient.Horizontal
-                            GradientStop { position: 0.0; color: Root.Theme.textAccent }
-                            GradientStop { position: 1.0; color: Qt.lighter(Root.Theme.textAccent, 1.3) }
-                        }
-                    }
-                    Rectangle {
-                        id: seekHandle
-                        width: 10; height: 10; radius: 5; color: Root.Theme.textAccent
-                        y: (parent.height - 10) / 2
-                        x: (parent.width - 10) * (seekBar.dragging ? seekBar.dragRatio : seekBar.ratio)
-
-                        layer.enabled: seekBar.dragging
-                        layer.effect: MultiEffect {
-                            shadowEnabled: true
-                            shadowColor: Root.Theme.textAccent
-                            shadowBlur: 0.6
-                            shadowHorizontalOffset: 0
-                            shadowVerticalOffset: 0
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                        onPressed: function(mouse) {
-                            seekBar.dragging = true;
-                            seekBar.dragRatio = Math.max(0, Math.min(1, mouse.x / seekBar.width));
-                        }
-                        onPositionChanged: function(mouse) {
-                            if (pressed)
-                                seekBar.dragRatio = Math.max(0, Math.min(1, mouse.x / seekBar.width));
-                        }
-                        onReleased: {
-                            if (popup.playerService && seekBar.len > 0)
-                                popup.playerService.seek(seekBar.dragRatio * seekBar.len);
-                            seekBar.dragging = false;
-                        }
-                    }
-                }
-
-                // Time labels
-                Item {
-                    width: parent.width; height: 12
-                    Text {
-                        anchors.left: parent.left
-                        text: popup.playerService ? popup.playerService.formatTime(seekBar.dragging ? seekBar.dragRatio * seekBar.len : seekBar.pos) : "0:00"
-                        color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 10 }
-                    }
-                    Text {
-                        anchors.right: parent.right
-                        text: popup.playerService ? popup.playerService.formatTime(seekBar.len) : "0:00"
-                        color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 10 }
-                    }
-                }
-
-                // Controls
-                Row {
-                    anchors.horizontalCenter: parent.horizontalCenter; spacing: 16; height: 32
-
-                    Rectangle {
-                        width: 28; height: 28
-                        radius: Root.Theme.radiusSmall
-                        color: prevMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1) : "transparent"
-                        anchors.verticalCenter: parent.verticalCenter
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: Root.Icons.prev
-                            color: prevMouse.containsMouse ? Root.Theme.textAccent : Root.Theme.textPrimary
-                            font { family: Root.Theme.fontFamily; pixelSize: 16 }
-                        }
-                        MouseArea { id: prevMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (popup.playerService) popup.playerService.previous(); } }
-                    }
-
-                    Rectangle {
-                        id: playBtn
-                        width: 32; height: 32; radius: Root.Theme.radiusSmall
-                        color: playMouse.containsMouse ? Qt.lighter(Root.Theme.textAccent, 1.1) : Root.Theme.textAccent
-                        anchors.verticalCenter: parent.verticalCenter
-                        scale: 1.0
-
-                        SequentialAnimation {
-                            id: playBounce
-                            NumberAnimation { target: playBtn; property: "scale"; to: 0.85; duration: 60; easing.type: Easing.InQuad }
-                            NumberAnimation { target: playBtn; property: "scale"; to: 1.0; duration: 80; easing.type: Easing.OutBack; easing.overshoot: 1.5 }
-                        }
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: (popup.playerService && popup.playerService.isPlaying) ? Root.Icons.mediaPause : Root.Icons.mediaPlay
-                            color: Root.Theme.barBackground
-                            font { family: Root.Theme.fontFamily; pixelSize: 16 }
-                        }
-                        MouseArea {
-                            id: playMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                playBounce.start();
-                                if (popup.playerService) popup.playerService.togglePlaying();
-                            }
-                        }
-                    }
-
-                    Rectangle {
-                        width: 28; height: 28
-                        radius: Root.Theme.radiusSmall
-                        color: nextMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1) : "transparent"
-                        anchors.verticalCenter: parent.verticalCenter
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: Root.Icons.next
-                            color: nextMouse.containsMouse ? Root.Theme.textAccent : Root.Theme.textPrimary
-                            font { family: Root.Theme.fontFamily; pixelSize: 16 }
-                        }
-                        MouseArea { id: nextMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (popup.playerService) popup.playerService.next(); } }
                     }
                 }
             }
