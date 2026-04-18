@@ -70,7 +70,7 @@ in
     # Builder role: accept remote build jobs
     (lib.mkIf isBuilder (lib.mkMerge [
       {
-        nix.settings.trusted-users = [ "nix-builder" "root" ];
+        nix.settings.trusted-users = [ "nix-builder" "justin" ];
       }
 
       # SSH transport: create builder user with authorized keys
@@ -91,7 +91,7 @@ in
       nix.buildMachines = map (b: {
         inherit (b) hostName system maxJobs speedFactor supportedFeatures;
         protocol = "ssh-ng";
-        sshUser = if cfg.transport == "tailscale" then "root" else "nix-builder";
+        sshUser = if cfg.transport == "tailscale" then "justin" else "nix-builder";
         sshKey = if cfg.transport == "tailscale" then null else cfg.sshKey;
       }) cfg.builders;
     })

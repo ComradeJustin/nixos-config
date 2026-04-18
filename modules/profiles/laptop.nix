@@ -1,6 +1,6 @@
 { config, lib, pkgs, ... }:
 {
-  options.modules.hosts.laptop = {
+  options.modules.profiles.laptop = {
     enable = lib.mkEnableOption "laptop profile (tmpfs, thermald, auto-cpufreq)";
 
     tmpfsSize = lib.mkOption {
@@ -10,10 +10,10 @@
     };
   };
 
-  config = lib.mkIf config.modules.hosts.laptop.enable {
+  config = lib.mkIf config.modules.profiles.laptop.enable {
     boot.tmp = {
       useTmpfs = true;
-      tmpfsSize = config.modules.hosts.laptop.tmpfsSize;
+      tmpfsSize = config.modules.profiles.laptop.tmpfsSize;
     };
 
     powerManagement.enable = true;

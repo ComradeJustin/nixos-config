@@ -86,10 +86,6 @@ in
       source = link "${config.home.homeDirectory}/nixos-config/configs/niri";
       recursive = true;
     };
-    "waybar" = {
-      source = link "${config.home.homeDirectory}/nixos-config/configs/waybar";
-      recursive = true;
-    };
     "quickshell" = {
       source = link "${config.home.homeDirectory}/nixos-config/configs/quickshell";
       recursive = true;

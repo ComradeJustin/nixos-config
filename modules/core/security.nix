@@ -14,8 +14,13 @@
       enable = true;
       settings = {
         PermitRootLogin = "no";
-        PasswordAuthentication = true;
+        PasswordAuthentication = false;
       };
+      extraConfig = ''
+        # Allow root key-only login from LAN for emergency recovery
+        Match User root Address 192.168.1.0/24
+            PermitRootLogin prohibit-password
+      '';
     };
 
     networking.firewall = {

@@ -1,8 +1,8 @@
 { config, lib, ... }:
 {
-  options.modules.hosts.headless.enable = lib.mkEnableOption "headless profile (no suspend, serial console, no GUI)";
+  options.modules.profiles.headless.enable = lib.mkEnableOption "headless profile (no suspend, serial console, no GUI)";
 
-  config = lib.mkIf config.modules.hosts.headless.enable {
+  config = lib.mkIf config.modules.profiles.headless.enable {
     systemd.targets.sleep.enable = false;
     systemd.targets.suspend.enable = false;
     systemd.targets.hibernate.enable = false;

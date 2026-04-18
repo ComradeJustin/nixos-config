@@ -13,7 +13,7 @@
       shell = pkgs.nushell;
     };
 
-    users.users.root.initialHashedPassword = "$6$.4NRUvVflswGyxcb$pZJHgE2d/cY3N.WwZTm11NojG0YDotAfN4VeuLjeWaPsh3IgN/CyZhIjJJMrfITWT1Mk/Frl6RWSC8Ek/3o0C.";
+    # Root password managed by sops-nix (modules/core/sops.nix)
 
     system.stateVersion = "25.11";
   };

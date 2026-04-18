@@ -67,6 +67,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
   };
 
   outputs =
@@ -83,6 +88,7 @@
       niri,
       spotatui,
       disko,
+      sops-nix,
       ...
     }@inputs:
     let
@@ -97,11 +103,11 @@
         ./modules/desktop
         ./modules/server
         ./modules/hardware
-        ./modules/hosts
         ./modules/profiles
         stylix.nixosModules.stylix
         home-manager.nixosModules.home-manager
         disko.nixosModules.disko
+        sops-nix.nixosModules.sops
         inputs.spicetify-nix.nixosModules.default
         {
           home-manager = {
@@ -152,7 +158,7 @@
             {
               modules.nix-settings.harmonia = true;
               modules.profiles.desktop.enable = true;
-              modules.hosts.laptop.enable = true;
+              modules.profiles.laptop.enable = true;
               modules.fingerprint.enable = true;
               modules.bluetooth.enable = true;
               modules.compscijava.enable = true;

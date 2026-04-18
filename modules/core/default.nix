@@ -8,5 +8,6 @@
     ./networking.nix
     ./users.nix
     ./testing.nix
+    ./sops.nix
   ];
 }

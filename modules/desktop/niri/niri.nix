@@ -5,7 +5,6 @@
   config = lib.mkIf config.modules.niri.enable {
     environment.systemPackages = with pkgs; [
       inputs.niri.packages.${pkgs.system}.niri
-      waybar
 
       wl-clipboard
       cliphist
