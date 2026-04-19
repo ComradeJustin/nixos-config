@@ -16,8 +16,8 @@ include "unravel.kdl"
 prefer-no-csd
 
 cursor {
-    xcursor-theme "capitaine-cursors"
-    xcursor-size 28
+    xcursor-theme "phinger-cursors-light"
+    xcursor-size 32
 }
 
 hotkey-overlay {

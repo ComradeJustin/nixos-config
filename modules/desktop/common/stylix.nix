@@ -11,11 +11,12 @@
   config = lib.mkIf config.modules.theming.enable {
     stylix.enable = true;
     stylix.targets.grub.enable = false;
-    stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/terracotta-dark.yaml";
+    #stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/terracotta-dark.yaml";
+    stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/tender.yaml";
     #stylix.image = ../../../assets/wallpapers/koish.png;
     stylix.polarity = "dark";
-    stylix.cursor.package = pkgs.capitaine-cursors;
-    stylix.cursor.name = "capitaine-cursors";
+    stylix.cursor.package = pkgs.phinger-cursors;
+    stylix.cursor.name = "phinger-cursors-light";
     stylix.cursor.size = 32;
 
     stylix.fonts = {
