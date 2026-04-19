@@ -12,11 +12,11 @@
     stylix.enable = true;
     stylix.targets.grub.enable = false;
     #stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/terracotta-dark.yaml";
-    stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/tender.yaml";
+    stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/woodland.yaml";
     #stylix.image = ../../../assets/wallpapers/koish.png;
     stylix.polarity = "dark";
     stylix.cursor.package = pkgs.phinger-cursors;
-    stylix.cursor.name = "phinger-cursors-light";
+    stylix.cursor.name = "phinger-cursors-dark";
     stylix.cursor.size = 32;
 
     stylix.fonts = {
