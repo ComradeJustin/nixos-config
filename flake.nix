@@ -146,6 +146,8 @@
               modules.nix-settings.harmonia = true;
               modules.distributed-builds.enable = true;
               modules.distributed-builds.role = "builder";
+
+              modules.smb-client.enable = true;
             }
           ];
         };
@@ -168,6 +170,8 @@
               modules.distributed-builds.builders = [
                 { hostName = "nixpc"; maxJobs = 8; speedFactor = 2; }
               ];
+
+              modules.smb-client.enable = true;
             }
           ];
         };
@@ -206,6 +210,9 @@
                 "radarr"
                 "sonarr"
               ];
+
+              modules.samba.enable = true;
+              modules.samba.sambaUsers = [ "chris" ];
             }
           ];
         };

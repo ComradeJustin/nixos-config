@@ -9,5 +9,6 @@
     ./users.nix
     ./testing.nix
     ./sops.nix
+    ./smb-client.nix
   ];
 }

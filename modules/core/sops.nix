@@ -11,6 +11,9 @@
         root_hashed_password = {
           neededForUsers = true;
         };
+        smb_credentials = {
+          mode = "0400";
+        };
       };
     };
 

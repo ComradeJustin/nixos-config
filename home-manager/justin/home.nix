@@ -24,6 +24,7 @@ in
       update = "~/nixos-config/scripts/update.sh";
       wake = "~/nixos-config/scripts/wake.sh";
       infra-status = "~/nixos-config/scripts/status.sh";
+      secrets = "~/nixos-config/scripts/secrets.sh";
     };
     extraConfig = ''
       $env.config = {
