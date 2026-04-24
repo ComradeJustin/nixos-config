@@ -4,7 +4,7 @@
 
   config = lib.mkIf config.modules.media-cli.enable {
     environment.systemPackages = with pkgs; [
-      mpv
+      (mpv.override { scripts = [ mpvScripts.mpris ]; })
       imv
       ffmpeg
       imagemagick

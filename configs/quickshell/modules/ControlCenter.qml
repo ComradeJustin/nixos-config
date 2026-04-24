@@ -202,7 +202,6 @@ Scope {
         FocusScope {
             anchors.fill: parent
             focus: cc.showing
-            clip: true
 
             Keys.onEscapePressed: cc.showing = false
             // Left/Right: switch tabs without changing expand state
@@ -236,13 +235,12 @@ Scope {
             Rectangle {
                 id: ccRect
                 width: Root.Theme.ccWidth
-                // Top-anchored and auto-sized to the ColumnLayout inside.
-                // The panel itself stays full screen height, but this
-                // Rectangle (the visible "card") only claims as much
-                // height as its content needs, which lets it grow and
-                // shrink as the tab content accordion expands/collapses.
+                // Top-anchored and auto-sized to content, but capped
+                // to panel height so the card never overflows the
+                // screen edge — this keeps the footer visible and
+                // bottom corners rounded.
                 anchors.top: parent.top
-                height: mainLayout.implicitHeight + Root.Theme.ccPadding * 2
+                height: Math.min(mainLayout.implicitHeight + Root.Theme.ccPadding * 2 + ccFooter._reservedHeight, parent.height - 6)
 
                 // Animation driver for tab content expansion. contentFactor
                 // smoothly interpolates 0→1 when cc.tabExpanded flips, and
@@ -254,10 +252,14 @@ Scope {
                 property real contentFactor: cc.tabExpanded ? 1 : 0
                 Behavior on contentFactor { NumberAnimation { duration: 280; easing.type: Easing.OutCubic } }
 
-                // Computed max height for the tab content when fully
-                // expanded. Scales with panel height; floors at 240 so
-                // notifications are always usable even on small displays.
-                readonly property int maxTabContentHeight: Math.max(240, ccPanel.height - 520)
+                // Height of the footer row when visible (count + clear button)
+                readonly property int _footerHeight: ccFooter.visible ? 34 : 0
+                // Computed max height for the tab content. We take the
+                // tab content's y position (set by the layout engine)
+                // once it's rendered to know exactly how much vertical
+                // space sits above it, then subtract from the panel.
+                // tabContentItem.y is relative to mainLayout, add ccPadding for the layout's top margin
+                readonly property int maxTabContentHeight: Math.max(120, parent.height - tabContentItem.y - Root.Theme.ccPadding * 2 - _footerHeight)
 
                 radius: Root.Theme.radiusMedium
                 color: Root.Theme.barBackground
@@ -265,13 +267,17 @@ Scope {
                 Behavior on x { NumberAnimation { duration: Root.Theme.anim.slideDuration; easing.type: Easing.OutCubic } }
                 onXChanged: { if (!cc.showing && x >= Root.Theme.ccWidth + 5) ccPanel.visible = false; }
 
-                layer.enabled: cc.showing
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.45)
-                    shadowBlur: 1.0
-                    shadowHorizontalOffset: -4
-                    shadowVerticalOffset: 0
+                // Left-edge shadow: a gradient strip instead of
+                // MultiEffect so there's no corner bleed on the
+                // transparent panel window.
+                Rectangle {
+                    anchors { right: parent.left; top: parent.top; bottom: parent.bottom }
+                    width: 6
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: "transparent" }
+                        GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.25) }
+                    }
                 }
 
                 // ── CC body ──
@@ -638,6 +644,7 @@ Scope {
                     // and mainLayout.implicitHeight flows the decision all
                     // the way up to ccRect.
                     Item {
+                        id: tabContentItem
                         Layout.fillWidth: true
                         Layout.preferredHeight: ccRect.maxTabContentHeight * ccRect.contentFactor
                         clip: true
@@ -670,41 +677,47 @@ Scope {
                         }
                     }
 
-                    // ── Footer ──
-                    // Always visible when on the notifications tab and
-                    // there are notifications — NOT gated on tabExpanded
-                    // so the user can always see the count and clear button
-                    // even when the accordion is collapsed.
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: visible ? 24 : 0
-                        visible: cc.activeTab === "notifications" && cc.notifService && cc.notifService.items.length > 0
+                }
+
+                // ── Footer ──
+                // Pinned to the bottom of ccRect, outside mainLayout,
+                // so it's never pushed out by tab content overflow.
+                Item {
+                    id: ccFooter
+                    // Total space reserved: height + bottom margin + spacing from content above
+                    readonly property int _reservedHeight: visible ? height + Root.Theme.ccPadding + 6 : 0
+                    anchors {
+                        left: parent.left; right: parent.right; bottom: parent.bottom
+                        leftMargin: Root.Theme.ccPadding; rightMargin: Root.Theme.ccPadding
+                        bottomMargin: Root.Theme.ccPadding
+                    }
+                    height: 24
+                    visible: cc.activeTab === "notifications" && cc.notifService && cc.notifService.items.length > 0
+
+                    Text {
+                        anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                        text: {
+                            let c = cc.notifService ? cc.notifService.items.length : 0;
+                            return c + " notification" + (c !== 1 ? "s" : "");
+                        }
+                        color: Root.Theme.textDimmed
+                        font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                    }
+
+                    Rectangle {
+                        anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                        width: clearText.implicitWidth + 12; height: 22
+                        radius: Root.Theme.radiusSmall
+                        color: clearMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.08) : "transparent"
 
                         Text {
-                            anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                            text: {
-                                let c = cc.notifService ? cc.notifService.items.length : 0;
-                                return c + " notification" + (c !== 1 ? "s" : "");
-                            }
-                            color: Root.Theme.textDimmed
+                            id: clearText
+                            anchors.centerIn: parent
+                            text: Root.Icons.trash + " Clear"
+                            color: clearMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed
                             font { family: Root.Theme.fontFamily; pixelSize: 11 }
                         }
-
-                        Rectangle {
-                            anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                            width: clearText.implicitWidth + 12; height: 22
-                            radius: Root.Theme.radiusSmall
-                            color: clearMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.08) : "transparent"
-
-                            Text {
-                                id: clearText
-                                anchors.centerIn: parent
-                                text: Root.Icons.trash + " Clear"
-                                color: clearMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed
-                                font { family: Root.Theme.fontFamily; pixelSize: 11 }
-                            }
-                            MouseArea { id: clearMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.notifService) cc.notifService.clearAll(); } }
-                        }
+                        MouseArea { id: clearMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.notifService) cc.notifService.clearAll(); } }
                     }
                 }
             }

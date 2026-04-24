@@ -14,6 +14,7 @@
       nmap
       ethtool
       pavucontrol
+      nicotine-plus
     ];
   };
 }

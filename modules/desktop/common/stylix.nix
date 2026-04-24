@@ -11,8 +11,8 @@
   config = lib.mkIf config.modules.theming.enable {
     stylix.enable = true;
     stylix.targets.grub.enable = false;
-    stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/terracotta-dark.yaml";
-    #stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/woodland.yaml";
+    #stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/terracotta-dark.yaml";
+    stylix.base16Scheme = ../../../assets/colour-schemes/terracotta-modified.yaml;
     #stylix.image = ../../../assets/wallpapers/koish.png;
     stylix.polarity = "dark";
     stylix.cursor.package = pkgs.phinger-cursors;

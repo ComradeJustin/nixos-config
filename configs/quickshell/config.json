@@ -130,7 +130,7 @@
       "systemMonitor": false,
       "weather": false,
       "calendar": false,
-      "serverStatus": true
+      "serverStatus": false
     }
   }
 }

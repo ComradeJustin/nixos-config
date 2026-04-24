@@ -104,6 +104,7 @@ in
   imports = [
     ./modules/git.nix
     ./modules/rofi.nix
+    ./modules/mpd.nix
   ];
   services.cliphist = {
 

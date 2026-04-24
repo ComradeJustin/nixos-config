@@ -270,6 +270,92 @@ Item {
             }
         }
 
+        // Synced lyrics
+        Column {
+            width: parent.width
+            visible: root.playerService && root.playerService.hasLyrics
+            spacing: 0
+
+            Rectangle {
+                width: parent.width; height: 1
+                color: Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.15)
+            }
+
+            Item {
+                width: parent.width; height: 44
+                clip: true
+
+                Column {
+                    id: lyricsSlider
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: parent.width
+                    y: 6
+                    spacing: 4
+
+                    property string _prevLyric: ""
+
+                    Text {
+                        id: currentLyricText
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: root.playerService ? root.playerService.currentLyric : ""
+                        color: Root.Theme.textPrimary
+                        font { family: Root.Theme.fontFamily; pixelSize: 12; bold: true }
+                        horizontalAlignment: Text.AlignHCenter
+                        width: lyricsSlider.width
+                        wrapMode: Text.WordWrap
+                        elide: Text.ElideRight
+                        maximumLineCount: 2
+                    }
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: root.playerService ? root.playerService.nextLyric : ""
+                        color: Root.Theme.textDimmed
+                        font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                        horizontalAlignment: Text.AlignHCenter
+                        width: lyricsSlider.width
+                        wrapMode: Text.WordWrap
+                        elide: Text.ElideRight
+                        maximumLineCount: 1
+                        opacity: text.length > 0 ? 0.5 : 0
+                    }
+
+                    Connections {
+                        target: root.playerService
+                        function onCurrentLyricChanged() {
+                            let cur = root.playerService.currentLyric;
+                            if (cur.length > 0 && cur !== lyricsSlider._prevLyric) {
+                                lyricsSlider._prevLyric = cur;
+                                lyricSlideAnim.restart();
+                            }
+                        }
+                    }
+
+                    SequentialAnimation {
+                        id: lyricSlideAnim
+                        NumberAnimation {
+                            target: lyricsSlider; property: "opacity"
+                            from: 1; to: 0; duration: 80; easing.type: Easing.InQuad
+                        }
+                        NumberAnimation {
+                            target: lyricsSlider; property: "y"
+                            from: 14; to: 6; duration: 0
+                        }
+                        ParallelAnimation {
+                            NumberAnimation {
+                                target: lyricsSlider; property: "opacity"
+                                from: 0; to: 1; duration: 180; easing.type: Easing.OutCubic
+                            }
+                            NumberAnimation {
+                                target: lyricsSlider; property: "y"
+                                from: 14; to: 6; duration: 200; easing.type: Easing.OutCubic
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Cava visualizer toggle
         Rectangle {
             width: parent.width; height: 28; radius: Root.Theme.radiusSmall
