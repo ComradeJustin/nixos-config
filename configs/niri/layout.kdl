@@ -45,7 +45,7 @@ layout {
 	
     // You can also add a border. It's similar to the focus ring, but always visible.
     border {
-        // Monochrome brutalist borders
+	off
         width 2
         active-color "#b1b1b1"
         inactive-color "#252525"

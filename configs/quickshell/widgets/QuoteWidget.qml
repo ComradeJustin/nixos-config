@@ -8,9 +8,9 @@ Components.WidgetFrame {
     id: root
     widgetName: "quote"
 
-    property int maxWidth: 400
-    property int fontSize: 16
-    property int refreshInterval: 3600000
+    property int maxWidth: Root.Config.quoteConfig.maxWidth
+    property int fontSize: Root.Config.quoteConfig.fontSize
+    property int refreshInterval: Root.Config.quoteConfig.refreshInterval
 
     property string quoteText: ""
     property string quoteAuthor: ""

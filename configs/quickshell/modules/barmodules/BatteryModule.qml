@@ -31,19 +31,27 @@ Components.BarItem {
         : (root.capacity >= 0 && root.capacity <= 15
            ? Root.Theme.barBatteryLow : Root.Theme.domainPower)
 
-    // Battery icon inside ring
+    // Secondary color for gradient arc
+    property color arcEndColor: root.pluggedIn
+        ? Qt.lighter(Root.Theme.barBatteryCharge, 1.4)
+        : (root.capacity >= 0 && root.capacity <= 15
+           ? Qt.lighter(Root.Theme.barBatteryLow, 1.3) : Qt.lighter(Root.Theme.domainPower, 1.4))
+
+    // Battery ring with gradient arc and segments
     Item {
-        implicitWidth: 20; implicitHeight: 20
+        implicitWidth: 22; implicitHeight: 22
         anchors.verticalCenter: parent.verticalCenter
 
         Canvas {
             id: batteryRing
             anchors.fill: parent
             property real animatedCapacity: root.capacity
+            property real waveOffset: 0
 
-            Behavior on animatedCapacity { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
+            Behavior on animatedCapacity { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
 
             onAnimatedCapacityChanged: requestPaint()
+            onWaveOffsetChanged: requestPaint()
             Component.onCompleted: requestPaint()
 
             onPaint: {
@@ -51,29 +59,73 @@ Components.BarItem {
                 let w = width, h = height;
                 let cx = w / 2, cy = h / 2;
                 let r = (Math.min(w, h) - 3) / 2;
-                let lineWidth = 2;
+                let lineWidth = 2.5;
                 let startAngle = -Math.PI / 2;
                 let pct = Math.max(0, Math.min(100, animatedCapacity)) / 100;
 
                 ctx.clearRect(0, 0, w, h);
 
-                // Background track
-                ctx.beginPath();
-                ctx.arc(cx, cy, r, 0, 2 * Math.PI);
-                ctx.lineWidth = lineWidth;
-                ctx.strokeStyle = Qt.rgba(root.activeColor.r, root.activeColor.g, root.activeColor.b, 0.15);
-                ctx.stroke();
-
-                // Fill arc
-                if (pct > 0) {
+                // Background track — segmented ticks
+                let segments = 12;
+                let gapAngle = 0.08;
+                let segAngle = (2 * Math.PI - segments * gapAngle) / segments;
+                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = Qt.rgba(root.activeColor.r, root.activeColor.g, root.activeColor.b, 0.12);
+                for (let i = 0; i < segments; i++) {
+                    let a0 = startAngle + i * (segAngle + gapAngle);
                     ctx.beginPath();
-                    ctx.arc(cx, cy, r, startAngle, startAngle + pct * 2 * Math.PI);
+                    ctx.arc(cx, cy, r, a0, a0 + segAngle);
+                    ctx.stroke();
+                }
+
+                // Fill arc — gradient from activeColor to arcEndColor
+                if (pct > 0) {
+                    let endAngle = startAngle + pct * 2 * Math.PI;
+
+                    // Create gradient along the arc direction
+                    let grd = ctx.createLinearGradient(
+                        cx + r * Math.cos(startAngle), cy + r * Math.sin(startAngle),
+                        cx + r * Math.cos(endAngle), cy + r * Math.sin(endAngle)
+                    );
+                    grd.addColorStop(0, root.activeColor);
+                    grd.addColorStop(1, root.arcEndColor);
+
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r, startAngle, endAngle);
                     ctx.lineWidth = lineWidth;
                     ctx.lineCap = "round";
-                    ctx.strokeStyle = root.activeColor;
+                    ctx.strokeStyle = grd;
+                    ctx.stroke();
+
+                    // End dot — bright cap at the arc tip
+                    let dotX = cx + r * Math.cos(endAngle);
+                    let dotY = cy + r * Math.sin(endAngle);
+                    ctx.beginPath();
+                    ctx.arc(dotX, dotY, 1.5, 0, 2 * Math.PI);
+                    ctx.fillStyle = root.arcEndColor;
+                    ctx.fill();
+                }
+
+                // Charging wave effect — subtle inner ripple
+                if (root.charging && pct > 0) {
+                    let waveR = r - 3;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, waveR, startAngle, startAngle + pct * 2 * Math.PI);
+                    ctx.lineWidth = 1;
+                    ctx.lineCap = "round";
+                    ctx.strokeStyle = Qt.rgba(root.activeColor.r, root.activeColor.g, root.activeColor.b,
+                        0.15 + 0.15 * Math.sin(waveOffset));
                     ctx.stroke();
                 }
             }
+        }
+
+        // Charging wave animation
+        NumberAnimation {
+            target: batteryRing; property: "waveOffset"
+            from: 0; to: Math.PI * 2
+            duration: 2000; loops: Animation.Infinite
+            running: root.charging
         }
 
         // Battery/charging icon centered in ring
@@ -81,7 +133,7 @@ Components.BarItem {
             anchors.centerIn: parent
             text: root.charging ? Root.Icons.batChg : Root.Icons.batteryIcon(root.capacity, false)
             color: root.activeColor
-            font { family: Root.Theme.fontFamily; pixelSize: 9 }
+            font { family: Root.Theme.fontFamily; pixelSize: 8 }
 
             // Charging pulse
             SequentialAnimation on opacity {

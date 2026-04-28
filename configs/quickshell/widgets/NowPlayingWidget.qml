@@ -1,16 +1,17 @@
 import QtQuick
 import ".." as Root
 import "../components" as Components
+import "../core" as Core
 
 // Background now playing widget with media info and controls
 Components.WidgetFrame {
     id: root
     widgetName: "nowPlaying"
 
-    property var playerService: null
-    property bool showArt: true
-    property int artSize: 80
-    property int fontSize: 14
+    property var playerService: Core.ServiceManager.player
+    property bool showArt: Root.Config.nowPlayingConfig.showArt
+    property int artSize: Root.Config.nowPlayingConfig.artSize
+    property int fontSize: Root.Config.nowPlayingConfig.fontSize
 
     property bool hasMedia: playerService ? playerService.hasMedia : false
     property bool isPlaying: playerService ? playerService.isPlaying : false

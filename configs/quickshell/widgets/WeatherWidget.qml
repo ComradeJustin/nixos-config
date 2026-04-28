@@ -1,14 +1,15 @@
 import QtQuick
 import ".." as Root
 import "../components" as Components
+import "../core" as Core
 
 // Background weather widget — binds to WeatherService
 Components.WidgetFrame {
     id: root
     widgetName: "weather"
 
-    property var weatherService: null
-    property int fontSize: 32
+    property var weatherService: Core.ServiceManager.weather
+    property int fontSize: Root.Config.weatherConfig.fontSize
 
     Row {
         spacing: 12

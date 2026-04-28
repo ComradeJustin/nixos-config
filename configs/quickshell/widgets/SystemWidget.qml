@@ -1,17 +1,18 @@
 import QtQuick
 import ".." as Root
 import "../components" as Components
+import "../core" as Core
 
 // Background system stats widget with CPU and RAM usage
 Components.WidgetFrame {
     id: root
     widgetName: "system"
 
-    property bool showCpu: true
-    property bool showRam: true
-    property int fontSize: 24
+    property bool showCpu: Root.Config.systemConfig.showCpu
+    property bool showRam: Root.Config.systemConfig.showRam
+    property int fontSize: Root.Config.systemConfig.fontSize
 
-    property var statsService: null
+    property var statsService: Core.ServiceManager.systemStats
 
     // System state — bound to shared service
     property int cpuPercent: statsService ? statsService.cpuPercent : 0

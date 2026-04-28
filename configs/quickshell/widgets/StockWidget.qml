@@ -8,9 +8,9 @@ Components.WidgetFrame {
     id: root
     widgetName: "stock"
 
-    property var symbols: ["SPY", "QQQ", "AAPL"]
-    property int fontSize: 14
-    property int refreshInterval: 300000
+    property var symbols: Root.Config.stockConfig.symbols
+    property int fontSize: Root.Config.stockConfig.fontSize
+    property int refreshInterval: Root.Config.stockConfig.refreshInterval
 
     property var stockData: []
     property bool fetching: false

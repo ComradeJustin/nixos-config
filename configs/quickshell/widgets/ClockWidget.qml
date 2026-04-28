@@ -7,11 +7,12 @@ Components.WidgetFrame {
     id: root
     widgetName: "clock"
 
-    property string timeFormat: "HH:mm"
-    property string dateFormat: "dddd, MMMM d"
-    property bool showDate: true
-    property bool showSeconds: false
-    property int clockFontSize: 48
+    readonly property var cfg: Root.Config.clockConfig
+    property string timeFormat: cfg.showSeconds ? cfg.timeFormat.replace("mm", "mm:ss") : cfg.timeFormat
+    property string dateFormat: cfg.dateFormat
+    property bool showDate: cfg.showDate
+    property bool showSeconds: cfg.showSeconds
+    property int clockFontSize: cfg.fontSize
 
     property string currentTime: ""
     property string currentDate: ""

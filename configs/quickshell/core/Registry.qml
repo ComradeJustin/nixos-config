@@ -45,13 +45,13 @@ QtObject {
 
     // ── Widgets ──
     readonly property var widgets: [
-        { key: "clock",      label: "Clock",       configKey: "clock",      positionKey: "clockWidgetPosition",      defaultPos: "bottom-right" },
-        { key: "weather",    label: "Weather",      configKey: "weather",    positionKey: "weatherWidgetPosition",    defaultPos: "top-right",    services: ["weather"] },
-        { key: "system",     label: "System",       configKey: "system",     positionKey: "systemWidgetPosition",     defaultPos: "top-left" },
-        { key: "quote",      label: "Quote",        configKey: "quote",      positionKey: "quoteWidgetPosition",      defaultPos: "bottom-center" },
-        { key: "nowPlaying", label: "Now Playing",  configKey: "nowPlaying", positionKey: "nowPlayingWidgetPosition", defaultPos: "bottom-left",  services: ["player"] },
-        { key: "calendar",   label: "Calendar",     configKey: "calendar",   positionKey: "calendarWidgetPosition",   defaultPos: "center-left" },
-        { key: "stock",      label: "Stocks",       configKey: "stock",      positionKey: "stockWidgetPosition",      defaultPos: "center-right" }
+        { key: "clock",      label: "Clock",       file: "widgets/ClockWidget.qml",      configKey: "clock",      positionKey: "clockWidgetPosition",      defaultPos: "bottom-right" },
+        { key: "weather",    label: "Weather",      file: "widgets/WeatherWidget.qml",    configKey: "weather",    positionKey: "weatherWidgetPosition",    defaultPos: "top-right",    services: ["weather"] },
+        { key: "system",     label: "System",       file: "widgets/SystemWidget.qml",     configKey: "system",     positionKey: "systemWidgetPosition",     defaultPos: "top-left" },
+        { key: "quote",      label: "Quote",        file: "widgets/QuoteWidget.qml",      configKey: "quote",      positionKey: "quoteWidgetPosition",      defaultPos: "bottom-center" },
+        { key: "nowPlaying", label: "Now Playing",  file: "widgets/NowPlayingWidget.qml", configKey: "nowPlaying", positionKey: "nowPlayingWidgetPosition", defaultPos: "bottom-left",  services: ["player"] },
+        { key: "calendar",   label: "Calendar",     file: "widgets/CalendarWidget.qml",   configKey: "calendar",   positionKey: "calendarWidgetPosition",   defaultPos: "center-left" },
+        { key: "stock",      label: "Stocks",       file: "widgets/StockWidget.qml",      configKey: "stock",      positionKey: "stockWidgetPosition",      defaultPos: "center-right" }
     ]
 
     // ── Spotlight views ──

@@ -7,8 +7,8 @@ Components.WidgetFrame {
     id: root
     widgetName: "calendar"
 
-    property bool showWeekNumbers: false
-    property int cellSize: 28
+    property bool showWeekNumbers: Root.Config.calendarConfig.showWeekNumbers
+    property int cellSize: Root.Config.calendarConfig.cellSize
 
     property date currentDate: new Date()
     property int currentYear: currentDate.getFullYear()

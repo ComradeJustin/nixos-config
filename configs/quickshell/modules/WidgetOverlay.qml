@@ -3,7 +3,6 @@ import Quickshell.Wayland
 import Quickshell.Io
 import QtQuick
 import ".." as Root
-import "../widgets" as Widgets
 import "../components" as Components
 import "../core" as Core
 
@@ -56,7 +55,17 @@ Scope {
         editModeToggled(false);
     }
 
-    Component.onCompleted: loadProc.running = true
+    Component.onCompleted: {
+        loadProc.running = true;
+
+        // Auto-generate widget component map from Registry file paths
+        let map = {};
+        let ws = Core.Registry.widgets;
+        for (let i = 0; i < ws.length; i++) {
+            map[ws[i].key] = Qt.createComponent("../" + ws[i].file);
+        }
+        widgetComponentMap = map;
+    }
 
     Process {
         id: loadProc
@@ -196,54 +205,12 @@ Scope {
         Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
     }
 
-    // ── Widget Component definitions (config bindings baked in) ──
-    Component { id: compClock; Widgets.ClockWidget {
-        timeFormat: Root.Config.clockConfig.showSeconds ? Root.Config.clockConfig.timeFormat.replace("mm", "mm:ss") : Root.Config.clockConfig.timeFormat
-        dateFormat: Root.Config.clockConfig.dateFormat
-        showDate: Root.Config.clockConfig.showDate
-        showSeconds: Root.Config.clockConfig.showSeconds
-        clockFontSize: Root.Config.clockConfig.fontSize
-    }}
-    Component { id: compWeather; Widgets.WeatherWidget {
-        weatherService: Core.ServiceManager.weather
-        fontSize: Root.Config.weatherConfig.fontSize
-    }}
-    Component { id: compSystem; Widgets.SystemWidget {
-        statsService: Core.ServiceManager.systemStats
-        showCpu: Root.Config.systemConfig.showCpu
-        showRam: Root.Config.systemConfig.showRam
-        fontSize: Root.Config.systemConfig.fontSize
-    }}
-    Component { id: compQuote; Widgets.QuoteWidget {
-        maxWidth: Root.Config.quoteConfig.maxWidth
-        fontSize: Root.Config.quoteConfig.fontSize
-        refreshInterval: Root.Config.quoteConfig.refreshInterval
-    }}
-    Component { id: compNowPlaying; Widgets.NowPlayingWidget {
-        playerService: Core.ServiceManager.player
-        showArt: Root.Config.nowPlayingConfig.showArt
-        artSize: Root.Config.nowPlayingConfig.artSize
-        fontSize: Root.Config.nowPlayingConfig.fontSize
-    }}
-    Component { id: compCalendar; Widgets.CalendarWidget {
-        showWeekNumbers: Root.Config.calendarConfig.showWeekNumbers
-        cellSize: Root.Config.calendarConfig.cellSize
-    }}
-    Component { id: compStock; Widgets.StockWidget {
-        symbols: Root.Config.stockConfig.symbols
-        fontSize: Root.Config.stockConfig.fontSize
-        refreshInterval: Root.Config.stockConfig.refreshInterval
-    }}
-
-    property var widgetComponentMap: ({
-        "clock": compClock,
-        "weather": compWeather,
-        "system": compSystem,
-        "quote": compQuote,
-        "nowPlaying": compNowPlaying,
-        "calendar": compCalendar,
-        "stock": compStock
-    })
+    // Auto-generated from Registry.widgets file paths — each widget
+    // reads its own config from Root.Config internally, so no property
+    // bindings are needed here. Adding a new widget requires only:
+    //   1. Create the QML file in widgets/
+    //   2. Add a Registry entry with a `file` path
+    property var widgetComponentMap: ({})
 
     // ══════════════════════════════════════════════════════════════════
     // ── Widget Overlay Panel ──
