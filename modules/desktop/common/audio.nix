@@ -42,19 +42,6 @@
           }
         ];
       };
-      # Prevent cava from blocking sample rate switching.
-      # node.want-driver = false removes cava from clock/rate negotiation
-      # while still allowing it to receive audio data.
-      wireplumber.extraConfig."91-cava-rate" = {
-        "monitor.stream.rules" = [
-          {
-            matches = [ { "node.name" = "cava"; } ];
-            actions.update-props = {
-              "node.want-driver" = false;
-            };
-          }
-        ];
-      };
     };
 
     environment.systemPackages = [
