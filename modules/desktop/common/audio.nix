@@ -42,16 +42,15 @@
           }
         ];
       };
-      # Prevent low-rate streams (like cava) from blocking sample rate switching.
-      # node.lock-rate = false allows the node to follow the driver's rate.
+      # Prevent cava from blocking sample rate switching.
+      # node.want-driver = false removes cava from clock/rate negotiation
+      # while still allowing it to receive audio data.
       wireplumber.extraConfig."91-cava-rate" = {
         "monitor.stream.rules" = [
           {
             matches = [ { "node.name" = "cava"; } ];
             actions.update-props = {
-              "node.lock-rate" = false;
-              "node.force-rate" = 0;
-              "resample.prefill" = true;
+              "node.want-driver" = false;
             };
           }
         ];
