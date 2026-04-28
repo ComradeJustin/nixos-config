@@ -15,19 +15,9 @@
       alsa.support32Bit = true;
       extraConfig.pipewire."92-low-latency" = {
         "context.properties" = {
-          "default.clock.rate" = 48000;
+          "default.clock.rate" = 96000;
           "default.clock.quantum" = 1024;
           "default.clock.min-quantum" = 512;
-          # Allow sample rate switching to match source material
-          # instead of resampling everything to 48kHz
-          "default.clock.allowed-rates" = [
-            44100
-            48000
-            88200
-            96000
-            176400
-            192000
-          ];
         };
       };
       # Cap volume at 100% (0dB) to prevent digital clipping
