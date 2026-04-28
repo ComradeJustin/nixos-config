@@ -1,26 +1,12 @@
 { config, lib, pkgs, ... }:
 {
-  options.modules.greetd.enable = lib.mkEnableOption "greetd login manager, Xserver, PipeWire, printing, gvfs";
+  options.modules.greetd.enable = lib.mkEnableOption "greetd login manager, Xserver, printing, gvfs";
 
   config = lib.mkIf config.modules.greetd.enable {
     services.xserver = {
       enable = true;
       autoRepeatDelay = 200;
       autoRepeatInterval = 35;
-    };
-
-    services.pipewire = {
-      enable = true;
-      pulse.enable = true;
-      alsa.enable = true;
-      alsa.support32Bit = true;
-      extraConfig.pipewire."92-low-latency" = {
-        "context.properties" = {
-          "default.clock.rate" = 48000;
-          "default.clock.quantum" = 1024;
-          "default.clock.min-quantum" = 512;
-        };
-      };
     };
 
     services.gvfs.enable = true;
@@ -32,10 +18,6 @@
       nssmdns4 = true;
       openFirewall = true;
     };
-
-    environment.systemPackages = [
-      pkgs.wiremix
-    ];
 
     services.flatpak.enable = true;
     services.greetd = {

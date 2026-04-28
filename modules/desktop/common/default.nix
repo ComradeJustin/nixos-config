@@ -1,5 +1,6 @@
 {
   imports = [
+    ./audio.nix
     ./fonts.nix
     ./greetd.nix
     ./gui-packages.nix

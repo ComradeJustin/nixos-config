@@ -12,6 +12,7 @@
 
   config = lib.mkIf config.modules.profiles.desktop.enable {
     # Desktop infrastructure
+    modules.audio.enable = lib.mkDefault true;
     modules.fonts.enable = lib.mkDefault true;
     modules.greetd.enable = lib.mkDefault true;
     modules.gui-packages.enable = lib.mkDefault true;
