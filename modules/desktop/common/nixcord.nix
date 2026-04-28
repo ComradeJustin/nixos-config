@@ -1,6 +1,6 @@
 { config, lib, inputs, ... }:
 {
-  options.modules.nixcord.enable = lib.mkEnableOption "Nixcord (Discord via Vencord/Vesktop)";
+  options.modules.nixcord.enable = lib.mkEnableOption "Nixcord";
 
   config = lib.mkIf config.modules.nixcord.enable {
     home-manager.sharedModules = [
@@ -9,9 +9,9 @@
         {
           imports = [ inputs.nixcord.homeModules.nixcord ];
           programs.nixcord = {
-            enable = true;
-            discord.vencord.enable = true;
+            #discord.vencord.enable = true;
             vesktop.enable = true;
+            enable = true;
           };
         }
       )
