@@ -203,7 +203,7 @@ Scope {
     Process {
         id: cavaProc
         command: ["bash", "-c",
-            "cava -p /dev/stdin <<'EOF'\n[general]\nbars = 24\nframerate = 30\n[input]\nmethod = pipewire\nsource = auto\n[output]\nmethod = raw\nraw_target = /dev/stdout\ndata_format = ascii\nascii_max_range = 100\nEOF"
+            "cava -p /dev/stdin <<'EOF'\n[general]\nbars = 24\nframerate = 30\n[output]\nmethod = raw\nraw_target = /dev/stdout\ndata_format = ascii\nascii_max_range = 100\nEOF"
         ]
         running: true
         stdout: SplitParser {

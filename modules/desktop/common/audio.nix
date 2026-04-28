@@ -42,6 +42,17 @@
           }
         ];
       };
+      # Mark cava as a passive stream so it doesn't prevent sample rate switching
+      wireplumber.extraConfig."91-cava-passive" = {
+        "monitor.playback.rules" = [
+          {
+            matches = [ { "application.name" = "cava"; } ];
+            actions.update-props = {
+              "node.passive" = true;
+            };
+          }
+        ];
+      };
     };
 
     environment.systemPackages = [
