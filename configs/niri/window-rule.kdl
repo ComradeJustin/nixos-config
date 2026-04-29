@@ -37,7 +37,7 @@ window-rule {
         blur true
         xray true
         noise 0.02
-        saturation 1
+        saturation 1.25
     }
     geometry-corner-radius 0
     clip-to-geometry true
@@ -48,7 +48,7 @@ window-rule {
     match app-id=r#"ghostty"#
     match app-id=r#"spotify"#
     match app-id=r#"code"#
-    opacity 0.85
+    opacity 0.75
     draw-border-with-background false
 }
 
