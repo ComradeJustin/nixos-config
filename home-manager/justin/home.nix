@@ -20,6 +20,7 @@ in
     enable = true;
     shellAliases = {
       ctf = "nix-shell ~/nixos-config/shells/ctf.nix";
+      rust = "nix-shell ~/nixos-config/shells/rust.nix";
       rebuild = "~/nixos-config/scripts/rebuild.sh";
       update = "~/nixos-config/scripts/update.sh";
       wake = "~/nixos-config/scripts/wake.sh";
@@ -58,6 +59,12 @@ in
         ssh root@home-core 'cat /var/lib/harmonia/cache-key.pem' | sudo tee /var/lib/harmonia-cache-key.pem | ignore; sudo chmod 600 /var/lib/harmonia-cache-key.pem; echo 'Cache key synced.'
       }
     '';
+  };
+
+  programs.direnv = {
+    enable = true;
+    enableNushellIntegration = true;
+    nix-direnv.enable = true;
   };
 
   programs.atuin = {

@@ -48,7 +48,6 @@
       man-pages-posix
 
       # Notifications
-      glib
       libnotify
     ];
   };

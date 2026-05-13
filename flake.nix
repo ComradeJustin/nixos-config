@@ -146,7 +146,7 @@
               modules.nix-settings.harmonia = true;
               modules.distributed-builds.enable = true;
               modules.distributed-builds.role = "builder";
-
+              modules.godot.enable = true;
               modules.smb-client.enable = true;
             }
           ];

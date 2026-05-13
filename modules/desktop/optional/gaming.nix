@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   options.modules.gaming.enable = lib.mkEnableOption "gaming packages (Steam, Prismlauncher, Gamescope, Wine)";
 
@@ -9,6 +14,7 @@
       prismlauncher
       gamescope
       wineWowPackages.waylandFull
+      rimsort
     ];
   };
 }

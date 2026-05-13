@@ -14,6 +14,7 @@
       nixfmt
       tmux
       nix-output-monitor
+      steam-run
     ];
   };
 }

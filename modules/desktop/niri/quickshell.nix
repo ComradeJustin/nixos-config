@@ -61,6 +61,7 @@ in
     # Packages already provided by cli-packages.nix: curl, jq
     environment.systemPackages = with pkgs;
       [
+        glib
         inputs.qml-niri.packages.${pkgs.system}.quickshell
         libsForQt5.qt5.qtgraphicaleffects
         kdePackages.qt5compat

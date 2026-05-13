@@ -45,8 +45,7 @@ Item {
     visible: implicitWidth > 0 || widthAnim.running
 
     Behavior on implicitWidth {
-        id: widthAnim
-        NumberAnimation { duration: 150; easing.type: Easing.InOutCubic }
+        NumberAnimation { id: widthAnim; duration: 150; easing.type: Easing.InOutCubic }
     }
 
     // Crossfade: fade out, let bindings update, fade back in
