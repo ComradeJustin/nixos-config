@@ -12,5 +12,6 @@
     ./media-cli.nix
     ./devtools.nix
     ./network-tools.nix
+    ./input-method.nix
   ];
 }

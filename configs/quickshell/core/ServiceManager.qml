@@ -39,6 +39,7 @@ QtObject {
     readonly property var systemStats: _rev >= 0 ? (_services["systemStats"] || null) : null
     readonly property var nightLight:  _rev >= 0 ? (_services["nightLight"]  || null) : null
     readonly property var hooks:       _rev >= 0 ? (_services["hooks"]       || null) : null
+    readonly property var inputMethod: _rev >= 0 ? (_services["inputMethod"] || null) : null
 
     // Module references — registered by shell.qml
     readonly property var bar:            _rev >= 0 ? (_services["bar"]            || null) : null

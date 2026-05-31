@@ -18,6 +18,7 @@ QtObject {
         property bool network: true
         property bool bluetooth: true
         property bool battery: true
+        property bool inputMethod: true
 
         // Bar style: "flat" (default, hugs screen edge) or "float" (floating with margin + rounded)
         property string style: "flat"
@@ -31,7 +32,7 @@ QtObject {
 
         property var layoutLeft: ["power", "workspace", "time", "weather", "window"]
         property var layoutCenter: ["media"]
-        property var layoutRight: ["resource", "audio", "network", "bluetooth", "vpn", "battery", "caffeine", "tray", "gear"]
+        property var layoutRight: ["resource", "audio", "network", "bluetooth", "vpn", "inputMethod", "battery", "caffeine", "tray", "gear"]
     }
 
     // ── Widget settings ──
@@ -136,6 +137,12 @@ QtObject {
         property int refreshInterval: 300000
     }
 
+    // ── Input Method ──
+    readonly property QtObject inputMethod: QtObject {
+        property bool liveConversion: false
+        property bool prediction: true
+    }
+
     // ── Night Light ──
     // Persisted state for NightLightService. Auto mode only — wlsunset
     // derives sunrise/sunset from latitude/longitude (pulled at runtime
@@ -158,12 +165,12 @@ QtObject {
         bar: {
             workspace: true, time: true, weather: true, window: true,
             media: true, resource: true, audio: true, network: true,
-            bluetooth: true, battery: true,
+            bluetooth: true, battery: true, inputMethod: true,
             style: "flat", showGroups: false, showCpuGraph: true,
             showCaffeineWhenOff: false,
             layoutLeft: ["power", "workspace", "time", "weather", "window"],
             layoutCenter: ["media"],
-            layoutRight: ["resource", "audio", "network", "bluetooth", "vpn", "battery", "caffeine", "tray", "gear"]
+            layoutRight: ["resource", "audio", "network", "bluetooth", "vpn", "inputMethod", "battery", "caffeine", "tray", "gear"]
         },
         widgets: {
             clock: true, weather: true, system: false, quote: false,
@@ -193,7 +200,8 @@ QtObject {
         nowPlaying: { showArt: true, artSize: 80, fontSize: 14 },
         calendar: { showWeekNumbers: false, cellSize: 28 },
         stock: { symbols: ["SPY", "QQQ", "AAPL"], fontSize: 14, refreshInterval: 300000 },
-        nightLight: { enabled: false, dayTemp: 6500, nightTemp: 4000 }
+        nightLight: { enabled: false, dayTemp: 6500, nightTemp: 4000 },
+        inputMethod: { liveConversion: false, prediction: true }
     })
 
     // Look up a default value by section/key (e.g. "bar", "showCpuGraph").
@@ -236,7 +244,7 @@ QtObject {
     // ── Default layout order (mirrors Registry.barModules) ──
     readonly property var _defaultLayoutLeft: ["power", "workspace", "time", "weather", "window"]
     readonly property var _defaultLayoutCenter: ["media"]
-    readonly property var _defaultLayoutRight: ["resource", "audio", "network", "bluetooth", "vpn", "battery", "caffeine", "tray", "gear"]
+    readonly property var _defaultLayoutRight: ["resource", "audio", "network", "bluetooth", "vpn", "inputMethod", "battery", "caffeine", "tray", "gear"]
 
     function _getDefaultOrder(section) {
         if (section === "left" || section === "layoutLeft") return _defaultLayoutLeft;
@@ -340,7 +348,8 @@ QtObject {
         clock: clockConfig, weather: weatherConfig, system: systemConfig,
         quote: quoteConfig, nowPlaying: nowPlayingConfig,
         calendar: calendarConfig, stock: stockConfig,
-        nightLight: nightLight
+        nightLight: nightLight,
+        inputMethod: inputMethod
     })
 
     function load() {

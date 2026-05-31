@@ -1,7 +1,8 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, osConfig ? {}, ... }:
 let
+  stylixEnabled = (osConfig.modules.theming.enable or false);
   # Read base16 colours from Stylix for rmpc theming
-  scheme = config.lib.stylix.colors.withHashtag;
+  scheme = lib.optionalAttrs stylixEnabled config.lib.stylix.colors.withHashtag;
 in
 {
   services.mpd = {
@@ -118,7 +119,8 @@ in
     )
   '';
 
-  xdg.configFile."rmpc/theme.ron".text = ''
+  xdg.configFile."rmpc/theme.ron" = lib.mkIf stylixEnabled {
+    text = ''
     #![enable(implicit_some)]
     #![enable(unwrap_newtypes)]
     #![enable(unwrap_variant_newtypes)]
@@ -169,4 +171,5 @@ in
         ),
     )
   '';
+  };
 }

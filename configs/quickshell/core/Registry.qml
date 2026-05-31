@@ -20,7 +20,8 @@ QtObject {
         { key: "idleInhibit", consumers: ["cc"] },
         { key: "weather",     consumers: ["bar.weather", "widget.weather"] },
         { key: "systemStats", consumers: ["bar.resource", "widget.system"] },
-        { key: "hooks",       consumers: ["all"] }
+        { key: "hooks",       consumers: ["all"] },
+        { key: "inputMethod", consumers: ["bar.inputMethod"] }
     ]
 
     // ── Bar modules ──
@@ -38,6 +39,7 @@ QtObject {
         { key: "bluetooth", label: "Bluetooth", section: "right",  file: "modules/barmodules/BluetoothModule.qml", group: "conn", services: ["bluetooth"] },
         { key: "vpn",       label: "VPN",       section: "right",  file: "modules/barmodules/VpnModule.qml",       group: "conn" },
         { key: "battery",   label: "Battery",   section: "right",  file: "modules/barmodules/BatteryModule.qml",   group: "battery" },
+        { key: "inputMethod", label: "Input Method", section: "right", file: "modules/barmodules/InputMethodModule.qml", group: "lang", services: ["inputMethod"] },
         { key: "caffeine",  label: "Caffeine",  section: "right",  file: "modules/barmodules/CaffeineModule.qml",  group: "utils", services: ["idleInhibit"] },
         { key: "tray",      label: "Tray",      section: "right",  file: "modules/barmodules/TrayModule.qml",      group: "utils" },
         { key: "gear",      label: "Settings",  section: "right",  file: "modules/barmodules/GearModule.qml",      group: "utils" }

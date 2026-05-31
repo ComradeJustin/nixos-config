@@ -10,6 +10,7 @@
     "network": true,
     "bluetooth": true,
     "battery": true,
+    "inputMethod": true,
     "style": "float",
     "showGroups": true,
     "showCpuGraph": true,
@@ -25,6 +26,7 @@
       "media"
     ],
     "layoutRight": [
+      "inputMethod",
       "tray",
       "vpn",
       "network",
@@ -108,6 +110,10 @@
     "enabled": true,
     "dayTemp": 6500,
     "nightTemp": 3666
+  },
+  "inputMethod": {
+    "liveConversion": false,
+    "prediction": false
   },
   "cc": {
     "cardLayout": [

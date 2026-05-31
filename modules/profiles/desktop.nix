@@ -31,5 +31,6 @@
     modules.devtools.enable = lib.mkDefault true;
     modules.media-cli.enable = lib.mkDefault true;
     modules.network-tools.enable = lib.mkDefault true;
+    modules.inputMethod.enable = lib.mkDefault true;
   };
 }

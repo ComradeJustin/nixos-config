@@ -121,6 +121,10 @@ QtObject {
     readonly property string vpnOn:    "󰖂"
     readonly property string vpnOff:   "󰖃"
 
+    // ── Input Method ──
+    readonly property string keyboard:  "󰌌"
+    readonly property string language:  "󰗊"
+
     // ── Stock ──
     readonly property string stockUp:   "󰜷"
     readonly property string stockDown: "󰜮"

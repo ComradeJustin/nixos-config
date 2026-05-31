@@ -23,6 +23,7 @@ ShellRoot {
     Services.WeatherService { id: weatherSvc }
     Services.SystemStatsService { id: systemStatsSvc }
     Services.NightLightService { id: nightLightSvc }
+    Services.InputMethodService { id: imSvc }
     Services.HooksService {
         id: hooksSvc
         services: ({
@@ -36,7 +37,8 @@ ShellRoot {
             "notif": notifSvc,
             "weather": weatherSvc,
             "systemStats": systemStatsSvc,
-            "nightLight": nightLightSvc
+            "nightLight": nightLightSvc,
+            "inputMethod": imSvc
         })
     }
 
@@ -59,6 +61,7 @@ ShellRoot {
             Core.ServiceManager.register("systemStats", systemStatsSvc);
             Core.ServiceManager.register("nightLight", nightLightSvc);
             Core.ServiceManager.register("hooks", hooksSvc);
+            Core.ServiceManager.register("inputMethod", imSvc);
             // Modules
             Core.ServiceManager.register("bar", barModule);
             Core.ServiceManager.register("controlCenter", ccModule);
@@ -137,6 +140,8 @@ ShellRoot {
         // Test handlers — fire the built-in power notifications on demand
         // so you can verify the app-name/synchronous-hint config without
         // waiting for a real AC plug or battery charge transition.
+        function inputtoggle(): string { imSvc.toggle(); return imSvc.active ? "jp" : "en" }
+
         function testNotifyCharged(): string { powerSvc.testFireCharged(); return "ok" }
         function testNotifyPlugged(): string { powerSvc.testFirePlugged(); return "ok" }
         function testNotifyLow(): string { powerSvc.testFireLow(); return "ok" }
