@@ -225,7 +225,7 @@ SpotlightProvider {
         // Mode toggle: Local | Online | Settings gear
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 4
+            spacing: Root.Theme.spacingXS
             height: 28
             topPadding: 4
             bottomPadding: 4
@@ -236,7 +236,7 @@ SpotlightProvider {
                 Text {
                     anchors.centerIn: parent; text: "Local"
                     color: root.mode === "local" ? Root.Theme.barBackground : Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 11; bold: root.mode === "local" }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS; bold: root.mode === "local" }
                 }
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.mode = "local" }
             }
@@ -246,7 +246,7 @@ SpotlightProvider {
                 Text {
                     anchors.centerIn: parent; text: "Online"
                     color: root.mode === "online" ? Root.Theme.barBackground : Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 11; bold: root.mode === "online" }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS; bold: root.mode === "online" }
                 }
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.mode = "online" }
             }
@@ -261,7 +261,7 @@ SpotlightProvider {
                 Text {
                     anchors.centerIn: parent; text: "󰒓"
                     color: root.showSettings ? Root.Theme.textAccent : Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                    font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSizeM }
                 }
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.showSettings = !root.showSettings }
             }
@@ -284,7 +284,7 @@ SpotlightProvider {
                 Text {
                     text: "Category"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                     width: 55; y: 3
                 }
                 Repeater {
@@ -305,7 +305,7 @@ SpotlightProvider {
                             id: labelText; anchors.centerIn: parent
                             text: modelData.label
                             color: root[modelData.prop] ? Root.Theme.textAccent : Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                         }
                         MouseArea {
                             anchors.fill: parent; cursorShape: Qt.PointingHandCursor
@@ -321,7 +321,7 @@ SpotlightProvider {
                 Text {
                     text: "Purity"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                     width: 55; y: 3
                 }
                 Repeater {
@@ -341,7 +341,7 @@ SpotlightProvider {
                             id: purLabel; anchors.centerIn: parent
                             text: modelData.label
                             color: root[modelData.prop] ? Root.Theme.textAccent : Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                         }
                         MouseArea {
                             anchors.fill: parent; cursorShape: Qt.PointingHandCursor
@@ -357,7 +357,7 @@ SpotlightProvider {
                 Text {
                     text: "Min res"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                     width: 55; y: 3
                 }
                 Repeater {
@@ -375,7 +375,7 @@ SpotlightProvider {
                             id: resLabel; anchors.centerIn: parent
                             text: modelData === "1920x1080" ? "1080p" : modelData === "2560x1440" ? "1440p" : "4K"
                             color: active ? Root.Theme.textAccent : Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                         }
                         MouseArea {
                             anchors.fill: parent; cursorShape: Qt.PointingHandCursor
@@ -391,7 +391,7 @@ SpotlightProvider {
                 Text {
                     text: "Sort"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                     width: 55; y: 3
                 }
                 Repeater {
@@ -415,7 +415,7 @@ SpotlightProvider {
                             id: sortLabel; anchors.centerIn: parent
                             text: modelData.label
                             color: active ? Root.Theme.textAccent : Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                         }
                         MouseArea {
                             anchors.fill: parent; cursorShape: Qt.PointingHandCursor
@@ -436,14 +436,14 @@ SpotlightProvider {
             visible: root.mode === "online" && root.tagSuggestions.length > 0 && root.searchText.trim().length >= 2
             width: parent.width - Root.Theme.notifPadding * 2
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 4
+            spacing: Root.Theme.spacingXS
             topPadding: 4
             bottomPadding: 4
 
             Text {
                 text: "Tags:"
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 9 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXXS }
                 height: 18
                 verticalAlignment: Text.AlignVCenter
             }
@@ -458,7 +458,7 @@ SpotlightProvider {
                         id: tagName; anchors.centerIn: parent
                         text: tag ? tag.name : ""
                         color: tagMouse.containsMouse ? Root.Theme.textAccent : Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: 9 }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXXS }
                     }
                     MouseArea {
                         id: tagMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -551,7 +551,7 @@ SpotlightProvider {
                                           : "transparent"
 
                                     Column {
-                                        anchors.fill: parent; anchors.margins: 4; spacing: 2
+                                        anchors.fill: parent; anchors.margins: Root.Theme.spacingXS; spacing: 2
 
                                         Item {
                                             width: parent.width; height: Root.Theme.wpThumbHeight
@@ -593,7 +593,7 @@ SpotlightProvider {
                                             width: parent.width
                                             text: onlineCard.entry ? onlineCard.entry.resolution : ""
                                             color: onlineCard.isSelected ? Root.Theme.textPrimary : Root.Theme.textDimmed
-                                            font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                                             elide: Text.ElideRight; horizontalAlignment: Text.AlignHCenter
                                         }
                                     }
@@ -625,7 +625,7 @@ SpotlightProvider {
                                 anchors.centerIn: parent
                                 text: root.onlineLoadingMore ? "Loading…" : "Load more (" + root.onlinePage + "/" + root.onlineTotalPages + ")"
                                 color: loadMoreMouse.containsMouse ? Root.Theme.textAccent : Root.Theme.textDimmed
-                                font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                             }
 
                             MouseArea {
@@ -689,7 +689,7 @@ SpotlightProvider {
 
                         Column {
                             anchors.fill: parent
-                            anchors.margins: 4
+                            anchors.margins: Root.Theme.spacingXS
                             spacing: 2
 
                             Item {
@@ -757,7 +757,7 @@ SpotlightProvider {
                                      : wpCard.isSelected ? Root.Theme.textPrimary
                                      : Root.Theme.textDimmed
                                 font {
-                                    family: Root.Theme.fontFamily; pixelSize: 10
+                                    family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS
                                     bold: wpCard.isCurrent || wpCard.isSelected
                                 }
                                 elide: Text.ElideRight
@@ -794,7 +794,7 @@ SpotlightProvider {
                     : wpModel.count + " wallpapers";
             }
             color: Root.Theme.textDimmed
-            font { family: Root.Theme.fontFamily; pixelSize: 10 }
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
             width: parent.width; height: 20
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter

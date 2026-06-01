@@ -118,8 +118,7 @@
     "prediction": false
   },
   "appearance": {
-    "uiScale": 1,
-    "panelOpacity": 0.7
+    "uiScale": 1
   },
   "cc": {
     "cardLayout": [

@@ -1,4 +1,5 @@
 import QtQuick
+import ".." as Root
 
 // Flickable with momentum scrolling for trackpad/mouse wheel
 // Drop-in replacement: use exactly like Flickable

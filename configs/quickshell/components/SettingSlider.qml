@@ -35,8 +35,8 @@ Item {
 
     SliderBar {
         anchors {
-            left: labelText.right; leftMargin: 12
-            right: valueText.left; rightMargin: 12
+            left: labelText.right; leftMargin: Root.Theme.spacingM
+            right: valueText.left; rightMargin: Root.Theme.spacingM
             verticalCenter: parent.verticalCenter
         }
         value: root.value

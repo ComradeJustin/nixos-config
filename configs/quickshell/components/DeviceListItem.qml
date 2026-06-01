@@ -28,23 +28,23 @@ Rectangle {
         anchors {
             verticalCenter: parent.verticalCenter
             left: parent.left
-            leftMargin: 12
+            leftMargin: Root.Theme.spacingM
             right: parent.right
-            rightMargin: 12
+            rightMargin: Root.Theme.spacingM
         }
         spacing: 10
 
         Text {
             text: item.icon
             color: item.isActive ? item.accentColor : Root.Theme.textDimmed
-            font { family: Root.Theme.fontFamily; pixelSize: 16 }
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize2XL }
             anchors.verticalCenter: parent.verticalCenter
         }
 
         Text {
             text: item.label
             color: item.isActive ? item.accentColor : Root.Theme.textPrimary
-            font { family: Root.Theme.fontFamily; pixelSize: 13; bold: item.isActive }
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL; bold: item.isActive }
             anchors.verticalCenter: parent.verticalCenter
             elide: Text.ElideRight
             width: parent.width - 30

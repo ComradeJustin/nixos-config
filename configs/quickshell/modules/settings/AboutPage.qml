@@ -5,7 +5,7 @@ import "../.." as Root
 // About page — hero title, config path, open-folder action.
 Column {
     width: parent ? parent.width : 0
-    spacing: 24
+    spacing: Root.Theme.spacingXL
 
     // Hero block
     Column {
@@ -18,7 +18,7 @@ Column {
             color: Root.Theme.textPrimary
             font {
                 family: Root.Theme.fontFamily
-                pixelSize: 28
+                pixelSize: Root.Theme.fontSize5XL
                 bold: true
             }
         }
@@ -47,13 +47,13 @@ Column {
                 left: parent.left
                 right: parent.right
                 top: parent.top
-                margins: 12
+                margins: Root.Theme.spacingM
             }
-            spacing: 8
+            spacing: Root.Theme.spacingS
 
             // Config path row
             Row {
-                spacing: 8
+                spacing: Root.Theme.spacingS
                 width: parent.width
 
                 Text {
@@ -73,7 +73,7 @@ Column {
 
             // Theming row
             Row {
-                spacing: 8
+                spacing: Root.Theme.spacingS
                 width: parent.width
 
                 Text {
@@ -108,7 +108,7 @@ Column {
             anchors.centerIn: parent
             text: Root.Icons.edit + "  Open Config Folder"
             color: Root.Theme.accentPrimary
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
+            font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize }
         }
 
         MouseArea {

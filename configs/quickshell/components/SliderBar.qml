@@ -130,7 +130,7 @@ Item {
             anchors.centerIn: parent
             text: Math.round(slider.dragValue) + "%"
             color: Root.Theme.textPrimary
-            font { family: Root.Theme.fontFamily; pixelSize: 10 }
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
         }
     }
 

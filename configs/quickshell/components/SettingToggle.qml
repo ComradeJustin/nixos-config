@@ -22,7 +22,7 @@ Item {
 
     // Label column
     Column {
-        anchors { left: parent.left; verticalCenter: parent.verticalCenter; right: pill.left; rightMargin: 8 }
+        anchors { left: parent.left; verticalCenter: parent.verticalCenter; right: pill.left; rightMargin: Root.Theme.spacingS }
         spacing: 2
 
         Text {
@@ -59,7 +59,7 @@ Item {
             width: 14
             height: 14
             radius: 7
-            color: Root.Theme.textPrimary
+            color: Root.Theme.base02
             anchors.verticalCenter: parent.verticalCenter
             x: root.isOn ? pill.width - width - 3 : 3
 

@@ -133,7 +133,7 @@ Components.BarItem {
             anchors.centerIn: parent
             text: root.charging ? Root.Icons.batChg : Root.Icons.batteryIcon(root.capacity, false)
             color: root.activeColor
-            font { family: Root.Theme.fontFamily; pixelSize: 8 }
+            font { family: Root.Theme.fontMono; pixelSize: 8 }
 
             // Charging pulse
             SequentialAnimation on opacity {
@@ -166,7 +166,7 @@ Components.BarItem {
         visible: root.pluggedIn && !root.charging
         text: Root.Icons.plug
         color: Root.Theme.barBatteryCharge
-        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
+        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.iconSize }
         anchors.verticalCenter: parent.verticalCenter
     }
 }

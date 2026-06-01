@@ -27,11 +27,11 @@ Item {
     readonly property bool hovered: hoverArea.containsMouse
 
     readonly property font iconFont: Qt.font({
-        family: Root.Theme.fontFamily,
+        family: Root.Theme.fontMono,
         pixelSize: Root.Theme.iconSize
     })
     readonly property font valueFont: Qt.font({
-        family: Root.Theme.fontFamily,
+        family: Root.Theme.fontMono,
         pixelSize: Root.Theme.fontSize,
         bold: true
     })
@@ -52,7 +52,7 @@ Item {
 
     Row {
         id: row
-        spacing: 4
+        spacing: Root.Theme.spacingXS
         anchors.centerIn: parent
 
         // Simple mode children (hidden when custom: true)

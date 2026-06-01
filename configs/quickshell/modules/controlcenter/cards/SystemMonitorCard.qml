@@ -39,9 +39,9 @@ Rectangle {
             left: parent.left
             right: parent.right
             verticalCenter: parent.verticalCenter
-            margins: 12
+            margins: Root.Theme.spacingM
         }
-        spacing: 12
+        spacing: Root.Theme.spacingM
 
         // Icon tile
         Rectangle {
@@ -60,7 +60,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: Root.Icons.monitor
                 color: Root.Theme.domainSystem
-                font { family: Root.Theme.fontFamily; pixelSize: 28 }
+                font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize5XL }
             }
         }
 
@@ -73,7 +73,7 @@ Rectangle {
             // CPU row
             Row {
                 width: parent.width
-                spacing: 8
+                spacing: Root.Theme.spacingS
 
                 Column {
                     width: parent.width - cpuGraph.width - 8
@@ -82,12 +82,12 @@ Rectangle {
                     Text {
                         text: "CPU"
                         color: Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                     }
                     Text {
                         text: card.svc ? card.svc.cpuPercent + "%" : "--"
                         color: Root.Theme.textPrimary
-                        font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL; bold: true }
                     }
                 }
 
@@ -103,7 +103,7 @@ Rectangle {
             // RAM row
             Row {
                 width: parent.width
-                spacing: 8
+                spacing: Root.Theme.spacingS
 
                 Column {
                     width: parent.width - ramGraph.width - 8
@@ -112,12 +112,12 @@ Rectangle {
                     Text {
                         text: "RAM"
                         color: Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                     }
                     Text {
                         text: card.svc ? card.svc.ramUsedGb.toFixed(1) + " / " + card.svc.ramTotalGb.toFixed(1) + " GB" : "--"
                         color: Root.Theme.textPrimary
-                        font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL; bold: true }
                     }
                 }
 
@@ -133,14 +133,14 @@ Rectangle {
             // Disk + uptime footer
             Row {
                 width: parent.width
-                spacing: 12
+                spacing: Root.Theme.spacingM
 
                 Text {
                     text: card.svc && card.svc.diskPercent >= 0
                         ? "Disk " + card.svc.diskPercent + "%"
                         : ""
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                     visible: text.length > 0
                 }
 
@@ -149,7 +149,7 @@ Rectangle {
                         ? "Up " + card.svc.uptime
                         : ""
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                     visible: text.length > 0
                 }
             }

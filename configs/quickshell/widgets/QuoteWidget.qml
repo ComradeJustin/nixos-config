@@ -76,7 +76,7 @@ Components.WidgetFrame {
     Timer { id: pollTimer; interval: root.refreshInterval; onTriggered: root.fetchQuote() }
 
     Column {
-        spacing: 8
+        spacing: Root.Theme.spacingS
         width: Math.min(quoteTextItem.implicitWidth, root.maxWidth)
 
         Text {

@@ -8,6 +8,10 @@
       "/share/applications"
     ];
     services.gnome.gnome-keyring.enable = true;
+    # Provides the ScreenCast impl that xdg-desktop-portal-gnome delegates to.
+    # Required when running under non-GNOME compositors (e.g. niri) so that
+    # ScreenCast portal requests get serviced without gnome-shell running.
+    services.gnome.gnome-remote-desktop.enable = true;
     security.polkit.enable = true;
 
     systemd.user.services.polkit-gnome-authentication-agent-1 = {

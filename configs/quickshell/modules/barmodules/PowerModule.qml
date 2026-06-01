@@ -12,7 +12,7 @@ Item {
         id: powerText
         text: Root.Icons.power
         color: Root.Theme.accentDanger
-        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize + 2 }
+        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.iconSize + 2 }
         anchors.verticalCenter: parent.verticalCenter
     }
 

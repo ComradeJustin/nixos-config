@@ -338,7 +338,7 @@ Scope {
                         horizontalAlignment: Text.AlignHCenter
                         color: snapIndicator.isActive ? Root.Theme.textAccent : Root.Theme.textDimmed
                         opacity: snapIndicator.showBorder ? (snapIndicator.isActive ? 1 : 0.7) : 0.4
-                        font { family: Root.Theme.fontFamily; pixelSize: 9 }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXXS }
                         Behavior on color { ColorAnimation { duration: Root.Theme.animFast } }
                         Behavior on opacity { NumberAnimation { duration: Root.Theme.animFast } }
                     }
@@ -372,7 +372,7 @@ Scope {
 
                 Row {
                     id: controlsRow
-                    anchors.centerIn: parent; spacing: 16
+                    anchors.centerIn: parent; spacing: Root.Theme.spacingL
 
                     Rectangle {
                         width: 90; height: 32; radius: Root.Theme.radiusSmall
@@ -380,8 +380,8 @@ Scope {
                         border.width: 1; border.color: Root.Theme.textAccent
                         Row {
                             anchors.centerIn: parent; spacing: 6
-                            Text { text: Root.Icons.save; color: Root.Theme.textAccent; font.family: Root.Theme.fontFamily; font.pixelSize: 14 }
-                            Text { text: "Save"; color: Root.Theme.textAccent; font { family: Root.Theme.fontFamily; pixelSize: 12; bold: true } }
+                            Text { text: Root.Icons.save; color: Root.Theme.textAccent; font.family: Root.Theme.fontIcons; font.pixelSize: Root.Theme.fontSizeXL }
+                            Text { text: "Save"; color: Root.Theme.textAccent; font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM; bold: true } }
                         }
                         MouseArea { id: saveMA; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.commit() }
                     }
@@ -392,8 +392,8 @@ Scope {
                         border.width: 1; border.color: Root.Theme.textDimmed
                         Row {
                             anchors.centerIn: parent; spacing: 6
-                            Text { text: Root.Icons.cancel; color: Root.Theme.textDimmed; font.family: Root.Theme.fontFamily; font.pixelSize: 14 }
-                            Text { text: "Cancel"; color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 12 } }
+                            Text { text: Root.Icons.cancel; color: Root.Theme.textDimmed; font.family: Root.Theme.fontIcons; font.pixelSize: Root.Theme.fontSizeXL }
+                            Text { text: "Cancel"; color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM } }
                         }
                         MouseArea { id: cancelMA; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.toggleEditMode() }
                     }
@@ -406,7 +406,7 @@ Scope {
                 anchors.topMargin: Root.Theme.barHeight + 16
                 text: "Drag widgets to reposition"
                 color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontFamily; pixelSize: 13 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL }
                 opacity: 0.7
             }
         }

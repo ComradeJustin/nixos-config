@@ -24,8 +24,8 @@ Item {
     Rectangle {
         anchors {
             fill: parent
-            topMargin: 4
-            bottomMargin: 4
+            topMargin: Root.Theme.spacingXS
+            bottomMargin: Root.Theme.spacingXS
         }
         color: showBackground ? Root.Theme.layer1 : "transparent"
         radius: Root.Theme.radiusSmall
@@ -40,6 +40,6 @@ Item {
             right: parent.right
             margins: group.padding
         }
-        spacing: 4
+        spacing: Root.Theme.spacingXS
     }
 }

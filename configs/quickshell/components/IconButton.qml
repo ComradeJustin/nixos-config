@@ -29,7 +29,7 @@ ClickableItem {
         text: root.tooltipText
         anchors.bottom: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottomMargin: 4
+        anchors.bottomMargin: Root.Theme.spacingXS
     }
 
     onHoveredChanged: {

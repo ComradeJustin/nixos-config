@@ -610,6 +610,7 @@ Scope {
                     popupStacks.setProperty(k, "imagePath", list[0].imagePath);
                     popupStacks.setProperty(k, "count", list.length);
                     popupStacks.setProperty(k, "urgency", maxUrg);
+                    popupStacks.setProperty(k, "expiry", maxExpiry);
                     popupStacks.setProperty(k, "dismissing", false);
                     found = true;
                     break;
@@ -621,7 +622,7 @@ Scope {
                     "appName": gKey, "summary": list[0].summary,
                     "body": list[0].body, "imagePath": list[0].imagePath,
                     "count": list.length, "dismissing": false,
-                    "urgency": maxUrg
+                    "urgency": maxUrg, "expiry": maxExpiry
                 });
             }
             shown = shown + 1;
@@ -639,6 +640,39 @@ Scope {
         for (var i = popupStacks.count - 1; i >= 0; i--) {
             if (popupStacks.get(i).appName === appName) { popupStacks.setProperty(i, "dismissing", true); break; }
         }
+    }
+
+    // ── Hover-to-pause ──
+    // While the cursor rests on a toast we freeze its auto-dismiss by pushing
+    // each underlying popup item's expiry far into the future, banking the time
+    // that was left. resumePopups() restores `expiry = now + banked`, so the
+    // countdown resumes exactly where it paused instead of restarting.
+    function pausePopups(appName) {
+        var now = Date.now();
+        var arr = root.popupItems.slice();
+        var changed = false;
+        for (var i = 0; i < arr.length; i++) {
+            if (arr[i].appName === appName && !arr[i]._paused) {
+                arr[i]._remaining = Math.max(0, arr[i].expiry - now);
+                arr[i]._paused = true;
+                arr[i].expiry = now + 36000000; // ~10h — effectively paused
+                changed = true;
+            }
+        }
+        if (changed) root.popupItems = arr;
+    }
+    function resumePopups(appName) {
+        var now = Date.now();
+        var arr = root.popupItems.slice();
+        var changed = false;
+        for (var i = 0; i < arr.length; i++) {
+            if (arr[i].appName === appName && arr[i]._paused) {
+                arr[i].expiry = now + (arr[i]._remaining || 0);
+                arr[i]._paused = false;
+                changed = true;
+            }
+        }
+        if (changed) { root.popupItems = arr; rebuildPopupStacks(); }
     }
 
     Timer {

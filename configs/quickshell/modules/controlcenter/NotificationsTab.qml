@@ -51,7 +51,7 @@ Components.SmoothFlickable {
     Column {
         id: notifCol
         width: parent.width
-        spacing: 4
+        spacing: Root.Theme.spacingXS
 
         Components.EmptyState {
             visible: root.notifService ? root.notifService.stacks.count === 0 : true
@@ -148,7 +148,7 @@ Components.SmoothFlickable {
                                 Text {
                                     text: model.appName
                                     color: Root.Theme.notifAppName
-                                    font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                                     Layout.fillWidth: true
                                     elide: Text.ElideRight
                                 }
@@ -156,7 +156,7 @@ Components.SmoothFlickable {
                                 Text {
                                     text: model.timestamp
                                     color: Root.Theme.textSubtle
-                                    font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                                 }
 
                                 Rectangle {
@@ -171,7 +171,7 @@ Components.SmoothFlickable {
                                         anchors.centerIn: parent
                                         text: model.count
                                         color: Root.Theme.barBackground
-                                        font { family: Root.Theme.fontFamily; pixelSize: 10; bold: true }
+                                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS; bold: true }
                                     }
                                 }
 
@@ -179,7 +179,7 @@ Components.SmoothFlickable {
                                     visible: model.isHeader && model.count > 1
                                     text: model.expanded ? "▾" : "▸"
                                     color: Root.Theme.textDimmed
-                                    font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM }
                                 }
                             }
 
@@ -210,7 +210,7 @@ Components.SmoothFlickable {
                         id: actionFlow
                         Layout.fillWidth: true
                         Layout.topMargin: visible ? 4 : 0
-                        spacing: 4
+                        spacing: Root.Theme.spacingXS
                         visible: _actions.length > 0
 
                         property var _actions: {
@@ -236,7 +236,7 @@ Components.SmoothFlickable {
                                     anchors.centerIn: parent
                                     text: modelData.text
                                     color: actMouse.containsMouse ? Root.Theme.domainNotifications : Root.Theme.textDimmed
-                                    font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                                 }
 
                                 MouseArea {

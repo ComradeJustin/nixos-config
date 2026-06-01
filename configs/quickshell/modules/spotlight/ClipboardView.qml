@@ -147,7 +147,7 @@ SpotlightProvider {
             Text {
                 text: Root.Icons.trash
                 color: clipModel.count > 0 ? Root.Theme.textDimmed : "transparent"
-                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
+                font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.iconSize }
                 Layout.rightMargin: Root.Theme.notifPadding
                 verticalAlignment: Text.AlignVCenter
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { clearProc.running = true; clipModel.clear(); } }
@@ -247,7 +247,7 @@ SpotlightProvider {
                                 visible: clipItem.entry && !clipItem.entry.isImage
                                 text: clipItem.typeIcon
                                 color: clipItem.isSelected ? Root.Theme.textAccent : Root.Theme.textDimmed
-                                font { family: Root.Theme.fontFamily; pixelSize: 14 }
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXL }
                                 Layout.preferredWidth: 18
                                 horizontalAlignment: Text.AlignHCenter
                                 opacity: 0.7
@@ -264,7 +264,7 @@ SpotlightProvider {
                                 visible: clipItem.entry && clipItem.entry.isImage && clipItem.entry.imagePath === ""
                                 Layout.preferredWidth: Root.Theme.clipThumbSize; Layout.preferredHeight: Root.Theme.clipThumbSize
                                 color: Root.Theme.textDimmed; opacity: 0.2; radius: 4
-                                Text { anchors.centerIn: parent; text: "IMG"; color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 10 } }
+                                Text { anchors.centerIn: parent; text: "IMG"; color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS } }
                             }
                             Text {
                                 visible: clipItem.entry && !clipItem.entry.isImage
@@ -275,7 +275,7 @@ SpotlightProvider {
                             }
                             Text {
                                 visible: clipItem.entry && clipItem.entry.isImage; text: (clipItem.entry ? clipItem.entry.mime : "") || "image"
-                                color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                                color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                                 Layout.fillWidth: true
                             }
                         }
@@ -304,7 +304,7 @@ SpotlightProvider {
                 ? filteredIndices.length + " of " + clipModel.count + " items"
                 : clipModel.count + " items"
             color: Root.Theme.textDimmed
-            font { family: Root.Theme.fontFamily; pixelSize: 10 }
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
             width: parent.width; height: 20
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter

@@ -47,11 +47,15 @@ PanelWindow {
             return;
         aboutToOpen();
         visible = true;
-        isOpen = true;
+        // Defer the reveal by one tick so the content lays out at its final size
+        // *before* the scale/fade-in plays. Without this the card animates from a
+        // stale (often zero) geometry and visibly snaps into place on first open.
+        _revealTimer.restart();
     }
     function close() {
         if (!isOpen)
             return;
+        _revealTimer.stop();
         isOpen = false;
         // `visible` is flipped false once the fade-out completes (below),
         // so the panel keeps painting during its exit animation.
@@ -61,6 +65,14 @@ PanelWindow {
             close();
         else
             open();
+    }
+
+    // Drives the deferred reveal (see open()). Stopped by close() so a rapid
+    // open→close within the same tick never leaves the panel stuck open.
+    Timer {
+        id: _revealTimer
+        interval: 1
+        onTriggered: root.isOpen = true
     }
 
     visible: false

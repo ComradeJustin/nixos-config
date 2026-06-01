@@ -8,7 +8,7 @@ Text {
 
     text: message
     color: Root.Theme.textDimmed
-    font { family: Root.Theme.fontFamily; pixelSize: 13 }
+    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL }
     width: parent ? parent.width : 100
     height: preferredHeight
     horizontalAlignment: Text.AlignHCenter

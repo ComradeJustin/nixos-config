@@ -41,7 +41,7 @@ QtObject {
     readonly property color textDeprecated: base0F
 
     // ── Multi-accent system ──
-    readonly property color accentPrimary:   base0D
+    readonly property color accentPrimary:   base0F
     readonly property color accentSecondary: base0E
     readonly property color accentSuccess:   base0B
     readonly property color accentWarning:   base0A
@@ -85,15 +85,38 @@ QtObject {
     // ── Grid System ──
     readonly property int unit: scaled(8)
 
+    // ── Spacing scale (px @ uiScaleRatio = 1; built on the 8pt unit) ──
+    // Prefer these over literal margins / spacing / padding.
+    readonly property int spacingXS:  scaled(4)
+    readonly property int spacingS:   scaled(8)
+    readonly property int spacingM:   scaled(12)
+    readonly property int spacingL:   scaled(16)
+    readonly property int spacingXL:  scaled(24)
+    readonly property int spacing2XL: scaled(32)
+    readonly property int spacing3XL: scaled(48)
+
     // ── Typography ──
-    readonly property string fontFamily: "Maple Mono NF"
-    readonly property string fontMono:   "Maple Mono NF"
-    readonly property string fontIcons:  "Maple Mono NF"
-    readonly property int    fontSize:       scaled(11)
-    readonly property int    fontSizeSmall:  scaled(9)
-    readonly property int    fontSizeLarge:  scaled(13)
-    readonly property int    iconSize:       scaled(16)
-    readonly property bool   fontBold:       false
+    readonly property string fontFamily:  "Hanken Grotesk"   // UI / body text
+    readonly property string fontMono:    "Maple Mono NF"    // data / tabular (bar)
+    readonly property string fontIcons:   "Maple Mono NF"    // Nerd Font glyphs
+    readonly property string fontDisplay: "Fraunces"         // large display moments
+    // Type scale (px @ uiScaleRatio = 1) — prefer these over literal pixelSize.
+    readonly property int    fontSizeXXS:  scaled(9)
+    readonly property int    fontSizeXS:   scaled(10)
+    readonly property int    fontSizeS:    scaled(11)
+    readonly property int    fontSizeM:    scaled(12)
+    readonly property int    fontSizeL:    scaled(13)
+    readonly property int    fontSizeXL:   scaled(14)
+    readonly property int    fontSize2XL:  scaled(16)
+    readonly property int    fontSize3XL:  scaled(18)
+    readonly property int    fontSize4XL:  scaled(22)
+    readonly property int    fontSize5XL:  scaled(28)
+    readonly property int    iconSize:     scaled(16)
+    readonly property bool   fontBold:     false
+    // Legacy aliases — keep existing call sites + the font objects below working
+    readonly property int    fontSize:      fontSizeS    // 11
+    readonly property int    fontSizeSmall: fontSizeXXS  // 9
+    readonly property int    fontSizeLarge: fontSizeL    // 13
 
     // ── Font aliases (replace verbose font blocks everywhere) ──
     readonly property font fontBody: Qt.font({

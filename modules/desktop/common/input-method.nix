@@ -31,5 +31,13 @@
       [GroupOrder]
       0=Default
     '';
+
+    # System-wide fcitx5 hotkeys: switch IM with Alt+Space instead of Ctrl+Space.
+    environment.etc."xdg/fcitx5/config".text = ''
+      [Hotkey]
+      EnumerateWithTriggerKeys=True
+      TriggerKeys=
+      TriggerKeys[0]=Alt+space
+    '';
   };
 }

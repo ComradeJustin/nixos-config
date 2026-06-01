@@ -10,7 +10,7 @@ import "../../core" as Core
 Column {
     id: root
     width: parent ? parent.width : 0
-    spacing: 12
+    spacing: Root.Theme.spacingM
 
     // ── Service handles (reactive via ServiceManager._rev) ──
     readonly property var wifiSvc: Core.ServiceManager.wifi
@@ -102,7 +102,7 @@ Column {
                         anchors.centerIn: parent
                         text: modelData.icon + "  " + modelData.label
                         color: root.activeSection === modelData.key ? Root.Theme.domainNetwork : Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: 13 }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL }
                         Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                     }
                     MouseArea {
@@ -131,7 +131,7 @@ Column {
     // ════════════════════════════════════════════════════════════════
     Column {
         width: parent.width
-        spacing: 12
+        spacing: Root.Theme.spacingM
         visible: root.activeSection === "wifi"
 
         // Connected network card
@@ -141,13 +141,13 @@ Column {
             visible: root.wifiSvc && root.wifiSvc.connected
 
             Row {
-                spacing: 12
+                spacing: Root.Theme.spacingM
                 width: parent.width
 
                 Text {
                     text: Root.Icons.wifiHi
                     color: Root.Theme.domainNetwork
-                    font { family: Root.Theme.fontFamily; pixelSize: 22 }
+                    font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize4XL }
                     anchors.verticalCenter: parent.verticalCenter
                 }
                 Column {
@@ -155,12 +155,12 @@ Column {
                     Text {
                         text: root.wifiSvc ? root.wifiSvc.ssid : ""
                         color: Root.Theme.textPrimary
-                        font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXL; bold: true }
                     }
                     Text {
                         text: "Connected"
                         color: Root.Theme.accentSuccess
-                        font { family: Root.Theme.fontFamily; pixelSize: 10; letterSpacing: 1 }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS; letterSpacing: 1 }
                     }
                 }
             }
@@ -180,7 +180,7 @@ Column {
                     height: 32
 
                     Components.DeviceListItem {
-                        anchors { left: parent.left; right: forgetBtn.left; rightMargin: 4 }
+                        anchors { left: parent.left; right: forgetBtn.left; rightMargin: Root.Theme.spacingXS }
                         height: 32
                         icon: Root.Icons.wifiHi
                         label: model.savedSsid
@@ -206,7 +206,7 @@ Column {
                             anchors.centerIn: parent
                             text: "Forget"
                             color: forgetMouse.containsMouse ? Root.Theme.accentDanger : Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                         }
                         MouseArea {
                             id: forgetMouse
@@ -230,7 +230,7 @@ Column {
                 visible: (root.wifiSvc ? root.wifiSvc.networks.count : 0) === 0
                 text: "Scanning…"
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM }
                 leftPadding: 4
                 bottomPadding: 4
             }
@@ -290,7 +290,7 @@ Column {
                                 width: parent.width - connectBtn.width - 12
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: Root.Theme.textPrimary
-                                font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM }
                                 echoMode: TextInput.Password
                                 selectByMouse: true
                                 clip: true
@@ -326,7 +326,7 @@ Column {
                                            && root.wifiSvc.lastConnectSsid === model.wifiSsid)
                                           ? "…" : "Connect"
                                     color: Root.Theme.textPrimary
-                                    font { family: Root.Theme.fontFamily; pixelSize: 10; bold: true }
+                                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS; bold: true }
                                 }
                                 MouseArea {
                                     id: connectMouse
@@ -359,18 +359,18 @@ Column {
                         : "transparent"
 
                     Row {
-                        anchors { verticalCenter: parent.verticalCenter; left: parent.left; leftMargin: 12 }
+                        anchors { verticalCenter: parent.verticalCenter; left: parent.left; leftMargin: Root.Theme.spacingM }
                         spacing: 10
                         Text {
                             text: Root.Icons.add
                             color: Root.Theme.domainNetwork
-                            font { family: Root.Theme.fontFamily; pixelSize: 14 }
+                            font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSizeXL }
                             anchors.verticalCenter: parent.verticalCenter
                         }
                         Text {
                             text: "Connect to hidden network"
                             color: Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM }
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }
@@ -395,7 +395,7 @@ Column {
 
                     Column {
                         anchors { fill: parent; margins: 6 }
-                        spacing: 4
+                        spacing: Root.Theme.spacingXS
 
                         Rectangle {
                             width: parent.width; height: 22
@@ -403,9 +403,9 @@ Column {
                             color: Qt.rgba(0,0,0,0.25)
                             TextInput {
                                 id: hiddenSsidInput
-                                anchors { fill: parent; leftMargin: 8; rightMargin: 8 }
+                                anchors { fill: parent; leftMargin: Root.Theme.spacingS; rightMargin: Root.Theme.spacingS }
                                 color: Root.Theme.textPrimary
-                                font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                                 verticalAlignment: TextInput.AlignVCenter
                                 selectByMouse: true; clip: true
                                 focus: root.hiddenExpanded
@@ -430,9 +430,9 @@ Column {
                                 color: Qt.rgba(0,0,0,0.25)
                                 TextInput {
                                     id: hiddenPassInput
-                                    anchors { fill: parent; leftMargin: 8; rightMargin: 8 }
+                                    anchors { fill: parent; leftMargin: Root.Theme.spacingS; rightMargin: Root.Theme.spacingS }
                                     color: Root.Theme.textPrimary
-                                    font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                                     echoMode: TextInput.Password
                                     verticalAlignment: TextInput.AlignVCenter
                                     selectByMouse: true; clip: true
@@ -463,7 +463,7 @@ Column {
                                     anchors.centerIn: parent
                                     text: "Join"
                                     color: Root.Theme.textPrimary
-                                    font { family: Root.Theme.fontFamily; pixelSize: 10; bold: true }
+                                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS; bold: true }
                                 }
                                 MouseArea {
                                     id: hiddenConnectMouse
@@ -489,7 +489,7 @@ Column {
     Column {
         id: btCol
         width: parent.width
-        spacing: 12
+        spacing: Root.Theme.spacingM
         visible: root.activeSection === "bluetooth"
 
         // Derived sorted device lists. Paired devices first (connected on
@@ -517,7 +517,7 @@ Column {
             Text {
                 text: !root.btSvc ? "Service unavailable" : "No Bluetooth adapter detected"
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM }
                 leftPadding: 4
             }
         }
@@ -546,7 +546,7 @@ Column {
                 visible: btCol._pairedDevs.length === 0
                 text: "No paired devices"
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM }
                 leftPadding: 4
                 bottomPadding: 4
             }
@@ -560,7 +560,7 @@ Column {
                     height: 34
 
                     Components.DeviceListItem {
-                        anchors { left: parent.left; right: forgetBtn.left; rightMargin: 4 }
+                        anchors { left: parent.left; right: forgetBtn.left; rightMargin: Root.Theme.spacingXS }
                         height: 34
                         icon: modelData.connected ? Root.Icons.btConnected : Root.Icons.btOn
                         label: (modelData.name || modelData.deviceName || modelData.address)
@@ -588,7 +588,7 @@ Column {
                             anchors.centerIn: parent
                             text: "Forget"
                             color: forgetMouse.containsMouse ? Root.Theme.accentDanger : Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                         }
                         MouseArea {
                             id: forgetMouse
@@ -611,7 +611,7 @@ Column {
             // Scan status + toggle button
             Row {
                 width: parent.width
-                spacing: 8
+                spacing: Root.Theme.spacingS
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
@@ -619,7 +619,7 @@ Column {
                           ? "Scanning for devices…"
                           : "Tap a device to pair"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                     width: parent.width - scanBtn.width - 8
                     elide: Text.ElideRight
                 }
@@ -640,7 +640,7 @@ Column {
                         anchors.centerIn: parent
                         text: (root.btSvc && root.btSvc.scanning) ? "Stop" : "Scan"
                         color: Root.Theme.domainNetwork
-                        font { family: Root.Theme.fontFamily; pixelSize: 11; bold: true }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS; bold: true }
                     }
                     MouseArea {
                         id: scanMouse
@@ -662,7 +662,7 @@ Column {
                 visible: btCol._discoveredDevs.length === 0 && root.btSvc && !root.btSvc.scanning
                 text: "No devices found yet"
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                 leftPadding: 4
             }
 

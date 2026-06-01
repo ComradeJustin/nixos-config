@@ -474,7 +474,7 @@ SpotlightProvider {
                         Text {
                             anchors.centerIn: parent
                             text: modelData.icon
-                            font { family: Root.Theme.fontFamily; pixelSize: 14 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXL }
                             color: emojiView.activeCategory === modelData.key ? Root.Theme.accentPrimary : Root.Theme.textDimmed
                         }
 
@@ -520,7 +520,7 @@ SpotlightProvider {
             Grid {
                 id: emojiGrid
                 columns: emojiView.columns
-                anchors { top: parent.top; topMargin: 8; horizontalCenter: parent.horizontalCenter }
+                anchors { top: parent.top; topMargin: Root.Theme.spacingS; horizontalCenter: parent.horizontalCenter }
                 spacing: 0
 
                 Repeater {
@@ -541,7 +541,7 @@ SpotlightProvider {
                         Text {
                             anchors.centerIn: parent
                             text: modelData.e
-                            font.pixelSize: 22
+                            font.pixelSize: Root.Theme.fontSize4XL
                         }
 
                         MouseArea {
@@ -573,7 +573,7 @@ SpotlightProvider {
                     return em ? (em.e + "  " + em.n) : "";
                 }
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                 opacity: 0.6
             }
         }
@@ -588,7 +588,7 @@ SpotlightProvider {
                 anchors.centerIn: parent
                 text: "No emoji found"
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM }
                 opacity: 0.5
             }
         }

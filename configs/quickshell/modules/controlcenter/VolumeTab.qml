@@ -16,7 +16,7 @@ Components.SmoothFlickable {
     Column {
         id: volCol
         width: parent.width
-        spacing: 8
+        spacing: Root.Theme.spacingS
 
         Item { width: 1; height: 2 }
 
@@ -24,7 +24,7 @@ Components.SmoothFlickable {
         Text {
             text: "App Mixer"
             color: Root.Theme.textPrimary
-            font { family: Root.Theme.fontFamily; pixelSize: 12; bold: true }
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM; bold: true }
             leftPadding: 4
             visible: root.audioService ? root.audioService.appStreams.count > 0 : false
         }
@@ -73,7 +73,7 @@ Components.SmoothFlickable {
                                 anchors.centerIn: parent
                                 text: (model.appName || "?").charAt(0).toUpperCase()
                                 color: Root.Theme.textSubtle
-                                font { family: Root.Theme.fontFamily; pixelSize: 11; bold: true }
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS; bold: true }
                             }
                         }
                     }
@@ -86,14 +86,14 @@ Components.SmoothFlickable {
                         Text {
                             text: model.appName
                             color: Root.Theme.textPrimary
-                            font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM }
                             elide: Text.ElideRight
                             width: parent.width
                         }
 
                         Row {
                             width: parent.width
-                            spacing: 8
+                            spacing: Root.Theme.spacingS
 
                             Components.SliderBar {
                                 id: appSlider
@@ -115,7 +115,7 @@ Components.SmoothFlickable {
                             Text {
                                 text: (model.appVol || 0) + "%"
                                 color: Root.Theme.textDimmed
-                                font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                                 width: 36
                                 horizontalAlignment: Text.AlignRight
                             }
@@ -139,7 +139,7 @@ Components.SmoothFlickable {
         Text {
             text: "Output"
             color: Root.Theme.textPrimary
-            font { family: Root.Theme.fontFamily; pixelSize: 12; bold: true }
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM; bold: true }
             leftPadding: 4
             visible: root.audioService ? root.audioService.sinks.count > 0 : false
         }
@@ -165,7 +165,7 @@ Components.SmoothFlickable {
         Text {
             text: "Input"
             color: Root.Theme.textPrimary
-            font { family: Root.Theme.fontFamily; pixelSize: 12; bold: true }
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM; bold: true }
             leftPadding: 4
             visible: root.audioService ? root.audioService.sources.count > 0 : false
         }

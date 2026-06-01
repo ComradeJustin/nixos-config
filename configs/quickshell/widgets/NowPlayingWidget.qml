@@ -20,7 +20,7 @@ Components.WidgetFrame {
     property string trackArtUrl: playerService ? playerService.trackArtUrl : ""
 
     Row {
-        spacing: 12
+        spacing: Root.Theme.spacingM
 
         Rectangle {
             visible: root.showArt
@@ -48,7 +48,7 @@ Components.WidgetFrame {
 
         Column {
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 4
+            spacing: Root.Theme.spacingXS
 
             Text {
                 text: root.trackTitle || "Unknown"
@@ -67,7 +67,7 @@ Components.WidgetFrame {
             }
 
             Row {
-                spacing: 16
+                spacing: Root.Theme.spacingL
 
                 Components.IconButton {
                     icon: Root.Icons.skipBack

@@ -79,7 +79,7 @@ Components.BarItem {
         Text {
             text: "System Resources"
             color: Root.Theme.domainSystem
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall; bold: true }
+            font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall; bold: true }
             width: parent ? parent.width : 0
         }
 

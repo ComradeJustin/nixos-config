@@ -54,7 +54,7 @@ Item {
             anchors.centerIn: parent
             text: tooltip.text
             color: Root.Theme.textPrimary
-            font { family: Root.Theme.fontFamily; pixelSize: 11 }
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
         }
     }
 

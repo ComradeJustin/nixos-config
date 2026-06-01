@@ -350,7 +350,7 @@ SpotlightProvider {
                                 verticalCenter: parent.verticalCenter
                                 leftMargin: Root.Theme.notifPadding; rightMargin: Root.Theme.notifPadding
                             }
-                            spacing: 12
+                            spacing: Root.Theme.spacingM
 
                             Image {
                                 id: appIconImg
@@ -375,7 +375,7 @@ SpotlightProvider {
                                     anchors.centerIn: parent
                                     text: appItem.entry ? appItem.entry.appName.charAt(0).toUpperCase() : ""
                                     color: Root.Theme.textPrimary
-                                    font { family: Root.Theme.fontFamily; pixelSize: 16; bold: true }
+                                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize2XL; bold: true }
                                 }
                             }
 
@@ -398,7 +398,7 @@ SpotlightProvider {
                                     visible: sub.length > 0
                                     text: sub
                                     color: Root.Theme.textDimmed
-                                    font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                                     width: parent.width; elide: Text.ElideRight
                                 }
                             }
@@ -421,7 +421,7 @@ SpotlightProvider {
                 ? filteredIndices.length + " of " + appModel.count + " apps"
                 : appModel.count + " apps"
             color: Root.Theme.textDimmed
-            font { family: Root.Theme.fontFamily; pixelSize: 10 }
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
             width: parent.width; height: 20
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter

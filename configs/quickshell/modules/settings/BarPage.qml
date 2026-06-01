@@ -8,7 +8,7 @@ import "../../core" as Core
 // auto-fills its parent's width so the Loader can size it via `width:`.
 Column {
     width: parent ? parent.width : 0
-    spacing: 16
+    spacing: Root.Theme.spacingL
 
     Components.SettingSection {
         title: "MODULES"
@@ -45,7 +45,7 @@ Column {
                 Text {
                     text: Root.Icons.drag
                     color: reorderMouse.containsMouse ? Root.Theme.accentPrimary : Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
+                    font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize }
                     anchors.verticalCenter: parent.verticalCenter
 
                     Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }

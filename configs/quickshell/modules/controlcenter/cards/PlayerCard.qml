@@ -80,7 +80,7 @@ Rectangle {
     // progress bar, with a radial fade so the center bars read brighter.
     Canvas {
         id: spectrum
-        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: 4 }
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: Root.Theme.spacingXS }
         height: 36
         opacity: card.isPlaying ? 0.55 : 0.0
         Behavior on opacity { NumberAnimation { duration: Root.Theme.animNormal } }
@@ -121,9 +121,9 @@ Rectangle {
             left: parent.left
             right: parent.right
             top: parent.top
-            margins: 12
+            margins: Root.Theme.spacingM
         }
-        spacing: 12
+        spacing: Root.Theme.spacingM
 
         // Foreground album art thumbnail (sharp, not blurred)
         Rectangle {
@@ -149,14 +149,14 @@ Rectangle {
                 visible: !card.artUrl || card.artUrl.length === 0
                 text: Root.Icons.music
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontIcons; pixelSize: 28 }
+                font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize5XL }
             }
         }
 
         // Title / artist / transport column
         Column {
             width: parent.width - artFg.width - 12
-            spacing: 4
+            spacing: Root.Theme.spacingXS
 
             // Title — scrolling text handles overflow gracefully if available,
             // but a straight elide keeps this card dependency-free.
@@ -164,7 +164,7 @@ Rectangle {
                 width: parent.width
                 text: card.hasMedia ? card.title : "Nothing playing"
                 color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL; bold: true }
                 elide: Text.ElideRight
             }
 
@@ -172,7 +172,7 @@ Rectangle {
                 width: parent.width
                 text: card.hasMedia ? card.artist : ""
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                 elide: Text.ElideRight
                 visible: text.length > 0
             }
@@ -213,7 +213,7 @@ Rectangle {
                         anchors.centerIn: parent
                         text: card.isPlaying ? Root.Icons.pause : Root.Icons.play
                         color: Root.Theme.domainMedia
-                        font { family: Root.Theme.fontFamily; pixelSize: 16 }
+                        font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize2XL }
                     }
 
                     MouseArea {

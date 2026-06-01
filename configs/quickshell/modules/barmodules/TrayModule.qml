@@ -14,7 +14,7 @@ Item {
 
     Row {
         id: trayRow
-        spacing: 4
+        spacing: Root.Theme.spacingXS
         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
 
         Repeater {
@@ -59,7 +59,7 @@ Item {
                     anchors.centerIn: parent
                     text: trayItem.modelData.title ? trayItem.modelData.title.charAt(0).toUpperCase() : "?"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 10; bold: true }
+                    font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeXS; bold: true }
                     visible: trayIcon.status !== Image.Ready
                 }
 
@@ -134,7 +134,7 @@ Item {
                         anchors.centerIn: parent
                         text: trayItem.modelData.tooltipTitle || trayItem.modelData.title || ""
                         color: Root.Theme.textPrimary
-                        font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeS }
                     }
                 }
             }

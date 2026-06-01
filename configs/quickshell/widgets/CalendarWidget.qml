@@ -40,12 +40,12 @@ Components.WidgetFrame {
     }
 
     Column {
-        spacing: 8
+        spacing: Root.Theme.spacingS
 
         // Header: Month navigation
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 16
+            spacing: Root.Theme.spacingL
 
             Components.IconButton {
                 icon: "<"
@@ -60,7 +60,7 @@ Components.WidgetFrame {
             Text {
                 text: root.monthNames[root.displayMonth] + " " + root.displayYear
                 color: Root.Theme.widgetText
-                font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXL; bold: true }
                 width: 120; horizontalAlignment: Text.AlignHCenter
                 MouseArea {
                     anchors.fill: parent; cursorShape: Qt.PointingHandCursor
@@ -88,7 +88,7 @@ Components.WidgetFrame {
                 Text {
                     width: root.cellSize; height: root.cellSize
                     text: modelData; color: Root.Theme.widgetTextDimmed
-                    font { family: Root.Theme.fontMono; pixelSize: 10 }
+                    font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeXS }
                     horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
                 }
             }
@@ -110,7 +110,7 @@ Components.WidgetFrame {
                         property date weekDate: new Date(root.displayYear, root.displayMonth, Math.max(1, dayNum))
                         text: root.getWeekNumber(weekDate)
                         color: Root.Theme.widgetTextDimmed
-                        font { family: Root.Theme.fontMono; pixelSize: 10 }
+                        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeXS }
                         horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
                         opacity: 0.6
                     }
@@ -132,7 +132,7 @@ Components.WidgetFrame {
                                 text: parent.isCurrentMonth ? parent.dayIndex : ""
                                 color: parent.isToday ? Root.Theme.base00 :
                                        (index === 0 || index === 6) ? Root.Theme.widgetTextDimmed : Root.Theme.widgetText
-                                font { family: Root.Theme.fontMono; pixelSize: 12; bold: parent.isToday }
+                                font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeM; bold: parent.isToday }
                             }
                         }
                     }

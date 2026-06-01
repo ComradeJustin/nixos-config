@@ -28,7 +28,7 @@ Components.BarItem {
     Text {
         text: Root.Icons.cal
         color: Root.Theme.domainTime
-        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
+        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.iconSize }
         anchors.verticalCenter: parent.verticalCenter
     }
 
@@ -46,7 +46,7 @@ Components.BarItem {
                 required property int index
                 text: modelData
                 color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
+                font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSize; bold: true }
                 opacity: index < root.revealedChars ? 1 : 0
 
                 Behavior on opacity {
@@ -60,7 +60,7 @@ Components.BarItem {
         visible: root.startupDone
         text: root.dateText || "--"
         color: Root.Theme.textPrimary
-        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
+        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSize; bold: true }
         anchors.verticalCenter: parent.verticalCenter
     }
 
@@ -69,14 +69,14 @@ Components.BarItem {
     Text {
         text: Root.Icons.clock
         color: Root.Theme.domainTime
-        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
+        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.iconSize }
         anchors.verticalCenter: parent.verticalCenter
     }
 
     Text {
         text: root.timeHours
         color: Root.Theme.textPrimary
-        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
+        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSize; bold: true }
         anchors.verticalCenter: parent.verticalCenter
     }
 
@@ -84,7 +84,7 @@ Components.BarItem {
         id: colonText
         text: ":"
         color: Root.Theme.textPrimary
-        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
+        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSize; bold: true }
         anchors.verticalCenter: parent.verticalCenter
 
         SequentialAnimation on opacity {
@@ -98,7 +98,7 @@ Components.BarItem {
     Text {
         text: root.timeMinutes
         color: Root.Theme.textPrimary
-        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
+        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSize; bold: true }
         anchors.verticalCenter: parent.verticalCenter
     }
 
@@ -110,7 +110,7 @@ Components.BarItem {
         Text {
             text: root.timeText || "--:--"
             color: Root.Theme.textPrimary
-            font { family: Root.Theme.fontFamily; pixelSize: 28; bold: true }
+            font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSize5XL; bold: true }
             width: parent ? parent.width : 0
             horizontalAlignment: Text.AlignHCenter
         }
@@ -118,7 +118,7 @@ Components.BarItem {
         Text {
             text: root.longDateText || "--"
             color: Root.Theme.textDimmed
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall }
+            font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall }
             width: parent ? parent.width : 0
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap

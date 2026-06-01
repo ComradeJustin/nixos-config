@@ -41,8 +41,8 @@ Rectangle {
     color: Root.Theme.ccSectionBg
 
     Row {
-        anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
-        spacing: 8
+        anchors { fill: parent; leftMargin: Root.Theme.spacingM; rightMargin: Root.Theme.spacingM }
+        spacing: Root.Theme.spacingS
 
         // Leading icon. When iconClickable is true it picks up a hover
         // highlight + pointer cursor and emits iconClicked(); otherwise it
@@ -64,7 +64,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: row.icon
                 color: row.iconColor
-                font { family: Root.Theme.fontFamily; pixelSize: 16 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize2XL }
             }
 
             MouseArea {
@@ -109,7 +109,7 @@ Rectangle {
             id: valueLabel
             text: Math.round(row.value) + row.suffix
             color: Root.Theme.textPrimary
-            font { family: Root.Theme.fontFamily; pixelSize: 11 }
+            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
             width: 32
             anchors.verticalCenter: parent.verticalCenter
             horizontalAlignment: Text.AlignRight

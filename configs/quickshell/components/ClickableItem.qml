@@ -37,6 +37,10 @@ Rectangle {
 
     // ── Interaction config ──
     property int buttons: Qt.LeftButton | Qt.RightButton
+    // Opt in to keyboard (Tab) focus. The focus ring below shows whenever the
+    // item has active focus regardless, so focused content always indicates it.
+    property bool focusable: false
+    activeFocusOnTab: focusable
 
     // ── Signals ──
     signal clicked()
@@ -57,6 +61,21 @@ Rectangle {
     scale: (pressScale && _mouse.pressed) ? pressScaleAmount : 1.0
     Behavior on scale {
         NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic }
+    }
+
+    // ── Keyboard focus ring (shows whenever the item has active focus) ──
+    Rectangle {
+        anchors.fill: parent
+        z: 3
+        radius: root.radius
+        color: "transparent"
+        border.width: Root.Theme.borderWidthThick
+        border.color: Root.Theme.borderFocus
+        opacity: root.activeFocus ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity {
+            NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Root.Theme.anim.microEasing }
+        }
     }
 
     // ── Hover / press state overlay (composites over the resting surface) ──

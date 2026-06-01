@@ -31,8 +31,8 @@ Item {
         id: hoverBg
         anchors {
             fill: parent
-            topMargin: 4
-            bottomMargin: 4
+            topMargin: Root.Theme.spacingXS
+            bottomMargin: Root.Theme.spacingXS
         }
         radius: Root.Theme.radiusSmall
         color: mediaHover.containsMouse
@@ -53,7 +53,7 @@ Item {
         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
         text: root.isPlaying ? Root.Icons.mediaPlay : Root.Icons.mediaPause
         color: Root.Theme.domainMedia
-        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
+        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.iconSize }
 
         // Bounce animation on play/pause toggle
         scale: 1.0
@@ -79,7 +79,7 @@ Item {
         fixedWidth: root.fixedTextWidth
         text: root.mediaText
         textColor: mediaHover.containsMouse ? Root.Theme.domainMedia : Root.Theme.textPrimary
-        textFont: Qt.font({ family: Root.Theme.fontFamily, pixelSize: Root.Theme.fontSize, bold: true })
+        textFont: Qt.font({ family: Root.Theme.fontMono, pixelSize: Root.Theme.fontSize, bold: true })
         scrollEnabled: root.isPlaying
 
         MouseArea {
@@ -112,7 +112,7 @@ Item {
 
         // Album art + track info
         Row {
-            width: parent.width; spacing: 8
+            width: parent.width; spacing: Root.Theme.spacingS
 
             Item {
                 width: 48; height: 48
@@ -146,7 +146,7 @@ Item {
                     Text {
                         anchors.centerIn: parent; text: Root.Icons.mediaPlay
                         color: Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: 18 }
+                        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSize3XL }
                         visible: artImg.status !== Image.Ready
                     }
                 }
@@ -159,13 +159,13 @@ Item {
                 Text {
                     text: root.playerService ? root.playerService.trackTitle : ""
                     color: Root.Theme.textPrimary
-                    font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true }
+                    font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeL; bold: true }
                     width: parent.width; elide: Text.ElideRight
                 }
                 Text {
                     text: root.playerService ? root.playerService.trackArtist : ""
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                    font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeS }
                     width: parent.width; elide: Text.ElideRight
                     visible: root.playerService ? root.playerService.trackArtist.length > 0 : false
                 }
@@ -225,24 +225,24 @@ Item {
             Text {
                 anchors.left: parent.left
                 text: root.playerService ? root.playerService.formatTime(seekBar.dragging ? seekBar.dragRatio * seekBar.len : seekBar.pos) : "0:00"
-                color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                color: Root.Theme.textDimmed; font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeXS }
             }
             Text {
                 anchors.right: parent.right
                 text: root.playerService ? root.playerService.formatTime(seekBar.len) : "0:00"
-                color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                color: Root.Theme.textDimmed; font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeXS }
             }
         }
 
         // Transport controls
         Row {
-            anchors.horizontalCenter: parent.horizontalCenter; spacing: 12; height: 32
+            anchors.horizontalCenter: parent.horizontalCenter; spacing: Root.Theme.spacingM; height: 32
 
             Rectangle {
                 width: 28; height: 28; radius: Root.Theme.radiusSmall
                 color: prevMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1) : "transparent"
                 anchors.verticalCenter: parent.verticalCenter
-                Text { anchors.centerIn: parent; text: Root.Icons.prev; color: prevMouse.containsMouse ? Root.Theme.domainMedia : Root.Theme.textPrimary; font { family: Root.Theme.fontFamily; pixelSize: 16 } }
+                Text { anchors.centerIn: parent; text: Root.Icons.prev; color: prevMouse.containsMouse ? Root.Theme.domainMedia : Root.Theme.textPrimary; font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSize2XL } }
                 MouseArea { id: prevMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (root.playerService) root.playerService.previous(); } }
             }
 
@@ -257,7 +257,7 @@ Item {
                     NumberAnimation { target: popupPlayBtn; property: "scale"; to: 0.85; duration: 60; easing.type: Easing.InQuad }
                     NumberAnimation { target: popupPlayBtn; property: "scale"; to: 1.0; duration: 80; easing.type: Easing.OutBack; easing.overshoot: 1.5 }
                 }
-                Text { anchors.centerIn: parent; text: root.isPlaying ? Root.Icons.mediaPause : Root.Icons.mediaPlay; color: Root.Theme.barBackground; font { family: Root.Theme.fontFamily; pixelSize: 16 } }
+                Text { anchors.centerIn: parent; text: root.isPlaying ? Root.Icons.mediaPause : Root.Icons.mediaPlay; color: Root.Theme.barBackground; font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSize2XL } }
                 MouseArea { id: popupPlayMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { popupPlayBounce.start(); if (root.playerService) root.playerService.togglePlaying(); } }
             }
 
@@ -265,7 +265,7 @@ Item {
                 width: 28; height: 28; radius: Root.Theme.radiusSmall
                 color: nextMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1) : "transparent"
                 anchors.verticalCenter: parent.verticalCenter
-                Text { anchors.centerIn: parent; text: Root.Icons.next; color: nextMouse.containsMouse ? Root.Theme.domainMedia : Root.Theme.textPrimary; font { family: Root.Theme.fontFamily; pixelSize: 16 } }
+                Text { anchors.centerIn: parent; text: Root.Icons.next; color: nextMouse.containsMouse ? Root.Theme.domainMedia : Root.Theme.textPrimary; font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSize2XL } }
                 MouseArea { id: nextMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (root.playerService) root.playerService.next(); } }
             }
         }
@@ -290,7 +290,7 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: parent.width
                     y: 6
-                    spacing: 4
+                    spacing: Root.Theme.spacingXS
 
                     property string _prevLyric: ""
 
@@ -299,7 +299,7 @@ Item {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: root.playerService ? root.playerService.currentLyric : ""
                         color: Root.Theme.textPrimary
-                        font { family: Root.Theme.fontFamily; pixelSize: 12; bold: true }
+                        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeM; bold: true }
                         horizontalAlignment: Text.AlignHCenter
                         width: lyricsSlider.width
                         wrapMode: Text.WordWrap
@@ -311,7 +311,7 @@ Item {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: root.playerService ? root.playerService.nextLyric : ""
                         color: Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeXS }
                         horizontalAlignment: Text.AlignHCenter
                         width: lyricsSlider.width
                         wrapMode: Text.WordWrap
@@ -367,8 +367,8 @@ Item {
 
             Row {
                 anchors.centerIn: parent; spacing: 6
-                Text { text: Root.Icons.equalizer; color: Root.Theme.domainMedia; font { family: Root.Theme.fontFamily; pixelSize: 14 } }
-                Text { text: "Visualizer"; color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: 11 } }
+                Text { text: Root.Icons.equalizer; color: Root.Theme.domainMedia; font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeXL } }
+                Text { text: "Visualizer"; color: Root.Theme.textDimmed; font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeS } }
             }
             MouseArea {
                 id: cavaMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor

@@ -6,7 +6,7 @@ import "../../core" as Core
 // Preferences page — feature toggles, auto-hide behavior, timing knobs.
 Column {
     width: parent ? parent.width : 0
-    spacing: 16
+    spacing: Root.Theme.spacingL
 
     Components.SettingSection {
         title: "FEATURES"
@@ -113,10 +113,10 @@ Column {
 
                     Row {
                         anchors {
-                            left: parent.left; leftMargin: 4
+                            left: parent.left; leftMargin: Root.Theme.spacingXS
                             verticalCenter: parent.verticalCenter
                         }
-                        spacing: 8
+                        spacing: Root.Theme.spacingS
 
                         // Reorder arrows
                         Column {
@@ -155,7 +155,7 @@ Column {
                         Text {
                             text: ccCardItem._meta.icon
                             color: ccCardItem._enabled ? Root.Theme.textPrimary : Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 16 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize2XL }
                             anchors.verticalCenter: parent.verticalCenter
                         }
 
@@ -170,7 +170,7 @@ Column {
 
                     // Toggle pill
                     Rectangle {
-                        anchors { right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter }
+                        anchors { right: parent.right; rightMargin: Root.Theme.spacingXS; verticalCenter: parent.verticalCenter }
                         width: 36; height: 20; radius: 10
                         color: ccCardItem._enabled ? Root.Theme.accentPrimary : Root.Theme.textDimmed
                         opacity: ccCardItem._enabled ? 1.0 : 0.3

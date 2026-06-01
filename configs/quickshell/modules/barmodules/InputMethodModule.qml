@@ -17,7 +17,7 @@ Components.BarItem {
     Text {
         text: root.svc ? root.svc.label : "EN"
         color: root.isJapanese ? Root.Theme.accentSecondary : Root.Theme.textPrimary
-        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: true }
+        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSize; bold: true }
         anchors.verticalCenter: parent.verticalCenter
 
         Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
@@ -31,7 +31,7 @@ Components.BarItem {
         Text {
             text: "Input Method"
             color: Root.Theme.textDimmed
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall }
+            font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall }
             width: parent ? parent.width : 0
         }
 
@@ -52,7 +52,7 @@ Components.BarItem {
                     anchors.centerIn: parent
                     text: "EN"
                     color: !root.isJapanese ? Root.Theme.accentPrimary : Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: !root.isJapanese }
+                    font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSize; bold: !root.isJapanese }
                 }
 
                 MouseArea {
@@ -74,7 +74,7 @@ Components.BarItem {
                     anchors.centerIn: parent
                     text: "\u3042"
                     color: root.isJapanese ? Root.Theme.accentSecondary : Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize; bold: root.isJapanese }
+                    font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSize; bold: root.isJapanese }
                 }
 
                 MouseArea {

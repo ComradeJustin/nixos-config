@@ -161,14 +161,14 @@ Scope {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "Session"
                 color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontFamily; pixelSize: 22; bold: true }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize4XL; bold: true }
             }
 
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "Arrow keys to navigate, Enter to select\nEsc or click anywhere to cancel"
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM }
                 horizontalAlignment: Text.AlignHCenter
                 lineHeight: 1.3
             }
@@ -176,7 +176,7 @@ Scope {
             // Icon grid
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 12
+                spacing: Root.Theme.spacingM
 
                 Repeater {
                     model: pm.actions
@@ -205,7 +205,7 @@ Scope {
                             anchors.centerIn: parent
                             text: modelData.icon
                             color: pm.selectedIndex === index ? Root.Theme.barBackground : modelData.color
-                            font { family: Root.Theme.fontFamily; pixelSize: 28 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize5XL }
                         }
 
                         MouseArea {
@@ -229,7 +229,7 @@ Scope {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: pm.actions[pm.selectedIndex].label
                 color: pm.actions[pm.selectedIndex].color
-                font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXL; bold: true }
                 visible: pm.pendingAction === ""
             }
 
@@ -243,7 +243,7 @@ Scope {
             // is about to happen.
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 12
+                spacing: Root.Theme.spacingM
                 visible: pm.pendingAction !== ""
 
                 // ── Resolve the armed action's entry once per frame. ──
@@ -272,7 +272,7 @@ Scope {
                         anchors.centerIn: parent
                         text: "✕"
                         color: Root.Theme.textPrimary
-                        font { family: Root.Theme.fontFamily; pixelSize: 18; bold: true }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize3XL; bold: true }
                     }
                     MouseArea {
                         id: cancelMouse
@@ -317,7 +317,7 @@ Scope {
                             return verb + " in " + pm.countdown + "s · click to confirm";
                         }
                         color: Root.Theme.textPrimary
-                        font { family: Root.Theme.fontFamily; pixelSize: 12; bold: true }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM; bold: true }
                     }
                     MouseArea {
                         id: confirmMouse

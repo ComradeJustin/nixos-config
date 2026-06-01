@@ -133,7 +133,7 @@ PanelWindow {
                     return Root.Icons.volumeIcon(osd.curVolume, osd.curMuted);
                 }
                 color: osd.activeAccent
-                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.osdIconSize }
+                font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.osdIconSize }
                 anchors.verticalCenter: parent.verticalCenter
 
                 Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
@@ -210,7 +210,7 @@ PanelWindow {
                     return Root.Icons.speaker;
                 }
                 color: Root.Theme.osdAccent
-                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.osdIconSize }
+                font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.osdIconSize }
                 anchors.verticalCenter: parent.verticalCenter
             }
 

@@ -10,7 +10,7 @@ import "../../core" as Core
 Column {
     id: hooksCol
     width: parent ? parent.width : 0
-    spacing: 16
+    spacing: Root.Theme.spacingL
 
     // Service handle — picked up reactively from ServiceManager.
     property var hooksSvc: Core.ServiceManager.hooks
@@ -31,7 +31,7 @@ Column {
 
         Row {
             width: parent.width
-            spacing: 8
+            spacing: Root.Theme.spacingS
 
             // Edit button
             Rectangle {
@@ -48,7 +48,7 @@ Column {
                     anchors.centerIn: parent
                     text: Root.Icons.edit + "  Edit hooks.json"
                     color: Root.Theme.accentPrimary
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall }
+                    font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSizeSmall }
                 }
                 MouseArea {
                     id: editMouse
@@ -74,7 +74,7 @@ Column {
                     anchors.centerIn: parent
                     text: Root.Icons.reset + "  Reload"
                     color: Root.Theme.textPrimary
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall }
+                    font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSizeSmall }
                 }
                 MouseArea {
                     id: reloadMouse
@@ -110,14 +110,14 @@ Column {
                 Column {
                     id: eventCol
                     anchors {
-                        left: parent.left; leftMargin: 12
-                        right: boundBadge.left; rightMargin: 8
+                        left: parent.left; leftMargin: Root.Theme.spacingM
+                        right: boundBadge.left; rightMargin: Root.Theme.spacingS
                         verticalCenter: parent.verticalCenter
                     }
                     spacing: 2
 
                     Row {
-                        spacing: 8
+                        spacing: Root.Theme.spacingS
                         Text {
                             text: modelData.name
                             color: Root.Theme.textPrimary
@@ -141,7 +141,7 @@ Column {
                 // Bound / unbound pill
                 Rectangle {
                     id: boundBadge
-                    anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                    anchors { right: parent.right; rightMargin: Root.Theme.spacingM; verticalCenter: parent.verticalCenter }
                     width: boundBadgeText.implicitWidth + 14
                     height: 20
                     radius: 10
@@ -154,7 +154,7 @@ Column {
                         anchors.centerIn: parent
                         text: parent.parent.isBound ? "bound" : "—"
                         color: parent.parent.isBound ? Root.Theme.accentPrimary : Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: 10; bold: true }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS; bold: true }
                     }
                 }
             }
@@ -183,7 +183,7 @@ Column {
                 required property var modelData
                 width: parent.width
                 height: 22
-                spacing: 8
+                spacing: Root.Theme.spacingS
 
                 Text {
                     text: Qt.formatTime(new Date(modelData.ts), "hh:mm:ss")

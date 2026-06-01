@@ -19,7 +19,7 @@ Item {
             if (Core.ServiceManager.controlCenter && Core.ServiceManager.controlCenter.showing) return Root.Theme.domainSettings;
             return Root.Theme.textDimmed;
         }
-        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
+        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.iconSize }
         anchors.verticalCenter: parent.verticalCenter
 
         Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
@@ -42,7 +42,7 @@ Item {
             anchors.centerIn: parent
             text: root.unread > 99 ? "99+" : root.unread
             color: Root.Theme.base00
-            font { family: Root.Theme.fontFamily; pixelSize: 9; bold: true }
+            font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeXXS; bold: true }
         }
 
         // Bounce in on appearance

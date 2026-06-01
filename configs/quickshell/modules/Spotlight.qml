@@ -151,7 +151,7 @@ Scope {
                     Text {
                         text: Root.Icons.search
                         color: Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
+                        font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.iconSize }
                         Layout.leftMargin: Root.Theme.notifPadding
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -159,8 +159,8 @@ Scope {
                     TextInput {
                         id: searchInput
                         Layout.fillWidth: true
-                        Layout.leftMargin: 8
-                        Layout.rightMargin: 8
+                        Layout.leftMargin: Root.Theme.spacingS
+                        Layout.rightMargin: Root.Theme.spacingS
                         color: Root.Theme.textPrimary
                         font { family: Root.Theme.fontFamily; pixelSize: 15 }
                         clip: true; selectByMouse: true
@@ -263,7 +263,7 @@ Scope {
 
                         Row {
                             id: spotTabRow
-                            spacing: 8
+                            spacing: Root.Theme.spacingS
 
                             Repeater {
                                 model: spotTabBar.views
@@ -279,7 +279,7 @@ Scope {
                                         anchors.centerIn: parent
                                         text: modelData.icon
                                         color: spot.activeView === modelData.key ? Root.Theme.textAccent : Root.Theme.textDimmed
-                                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize - 2 }
+                                        font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.iconSize - 2 }
                                         Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                                     }
 

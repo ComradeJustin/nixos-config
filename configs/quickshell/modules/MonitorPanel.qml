@@ -48,7 +48,7 @@ Components.OverlayPanel {
         ColumnLayout {
             id: contentCol
             anchors { left: parent.left; right: parent.right; top: parent.top; margins: 20 }
-            spacing: 12
+            spacing: Root.Theme.spacingM
 
             // Header
             RowLayout {
@@ -56,7 +56,7 @@ Components.OverlayPanel {
                 Text {
                     text: Root.Icons.monitor + "  Monitors"
                     color: Root.Theme.textPrimary
-                    font { family: Root.Theme.fontFamily; pixelSize: 18; bold: true }
+                    font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize3XL; bold: true }
                 }
                 Item { Layout.fillWidth: true }
                 Rectangle {
@@ -64,7 +64,7 @@ Components.OverlayPanel {
                     color: refreshMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1) : "transparent"
                     Text {
                         anchors.centerIn: parent; text: "󰑓"; color: Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: 16 }
+                        font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize2XL }
                     }
                     MouseArea { id: refreshMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: panel.refresh() }
                 }
@@ -73,7 +73,7 @@ Components.OverlayPanel {
                     color: closeMouse.containsMouse ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.1) : "transparent"
                     Text {
                         anchors.centerIn: parent; text: Root.Icons.cancel; color: Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: 16 }
+                        font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize2XL }
                     }
                     MouseArea { id: closeMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: panel.close() }
                 }
@@ -84,7 +84,7 @@ Components.OverlayPanel {
                 visible: panel.loading
                 text: "Loading..."
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 13 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL }
             }
 
             // No monitors
@@ -92,7 +92,7 @@ Components.OverlayPanel {
                 visible: !panel.loading && panel.monitors.length === 0
                 text: "No monitors detected"
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 13 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL }
             }
 
             // Monitor list
@@ -120,8 +120,8 @@ Components.OverlayPanel {
 
                     RowLayout {
                         id: monitorRow
-                        anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; margins: 12 }
-                        spacing: 12
+                        anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; margins: Root.Theme.spacingM }
+                        spacing: Root.Theme.spacingM
 
                         // Monitor visual
                         Rectangle {
@@ -133,7 +133,7 @@ Components.OverlayPanel {
                                 anchors.centerIn: parent
                                 text: (index + 1).toString()
                                 color: Root.Theme.accentPrimary
-                                font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXL; bold: true }
                             }
                         }
 
@@ -144,7 +144,7 @@ Components.OverlayPanel {
                             Text {
                                 text: modelData.name
                                 color: Root.Theme.textPrimary
-                                font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXL; bold: true }
                             }
                             Text {
                                 text: {
@@ -154,7 +154,7 @@ Components.OverlayPanel {
                                     return desc;
                                 }
                                 color: Root.Theme.textDimmed
-                                font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                             }
                         }
 
@@ -164,11 +164,11 @@ Components.OverlayPanel {
                             Text {
                                 text: "Scale"
                                 color: Root.Theme.textDimmed
-                                font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                                 Layout.alignment: Qt.AlignHCenter
                             }
                             Row {
-                                spacing: 4
+                                spacing: Root.Theme.spacingXS
                                 Repeater {
                                     model: [1.0, 1.25, 1.5, 1.75, 2.0]
                                     Rectangle {
@@ -188,7 +188,7 @@ Components.OverlayPanel {
                                             anchors.centerIn: parent
                                             text: modelData + "x"
                                             color: parent.active ? Root.Theme.barBackground : Root.Theme.textPrimary
-                                            font { family: Root.Theme.fontFamily; pixelSize: 10; bold: parent.active }
+                                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS; bold: parent.active }
                                         }
 
                                         MouseArea {

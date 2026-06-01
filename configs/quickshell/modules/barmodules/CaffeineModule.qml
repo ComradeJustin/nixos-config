@@ -26,7 +26,7 @@ Item {
         anchors.centerIn: parent
         text: root.inhibited ? Root.Icons.caffeine : Root.Icons.caffeineOff
         color: root.inhibited ? Root.Theme.accentWarm : Root.Theme.textDimmed
-        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.iconSize }
+        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.iconSize }
 
         Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
     }

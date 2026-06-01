@@ -85,9 +85,9 @@ Rectangle {
         anchors {
             left: parent.left; right: parent.right
             top: parent.top
-            margins: 12
+            margins: Root.Theme.spacingM
         }
-        spacing: 8
+        spacing: Root.Theme.spacingS
 
         // Month/year header with nav arrows
         Row {
@@ -102,7 +102,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: "‹"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXL; bold: true }
                 }
             }
 
@@ -115,7 +115,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: card._monthNames[card.viewMonth] + " " + card.viewYear
                     color: card._isCurrentMonth ? Root.Theme.domainTime : Root.Theme.textPrimary
-                    font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL; bold: true }
 
                     MouseArea {
                         anchors.fill: parent
@@ -133,7 +133,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: "›"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXL; bold: true }
                 }
             }
         }
@@ -152,7 +152,7 @@ Rectangle {
                     horizontalAlignment: Text.AlignHCenter
                     text: modelData
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                 }
             }
         }
@@ -194,7 +194,7 @@ Rectangle {
                             : (modelData.current ? Root.Theme.textPrimary : Root.Theme.textDimmed)
                         font {
                             family: Root.Theme.fontFamily
-                            pixelSize: 11
+                            pixelSize: Root.Theme.fontSizeS
                             bold: parent.isToday
                         }
                         opacity: modelData.current ? 1 : 0.4

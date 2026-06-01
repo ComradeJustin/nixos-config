@@ -279,7 +279,7 @@ PanelWindow {
                         right: parent.right
                         topMargin: 20
                     }
-                    spacing: 4
+                    spacing: Root.Theme.spacingXS
 
                     Repeater {
                         model: win._pages
@@ -309,8 +309,8 @@ PanelWindow {
                                     left: parent.left
                                     right: parent.right
                                     verticalCenter: parent.verticalCenter
-                                    leftMargin: 8
-                                    rightMargin: 8
+                                    leftMargin: Root.Theme.spacingS
+                                    rightMargin: Root.Theme.spacingS
                                 }
                                 height: 52
                                 radius: 10
@@ -337,7 +337,7 @@ PanelWindow {
 
                                 Column {
                                     anchors.centerIn: parent
-                                    spacing: 4
+                                    spacing: Root.Theme.spacingXS
 
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
@@ -349,7 +349,7 @@ PanelWindow {
                                                 : Root.Theme.textDimmed)
                                         font {
                                             family: Root.Theme.fontFamily
-                                            pixelSize: 18
+                                            pixelSize: Root.Theme.fontSize3XL
                                         }
 
                                         Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
@@ -365,7 +365,7 @@ PanelWindow {
                                                 : Root.Theme.textDimmed)
                                         font {
                                             family: Root.Theme.fontFamily
-                                            pixelSize: 9
+                                            pixelSize: Root.Theme.fontSizeXXS
                                         }
 
                                         Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
@@ -416,7 +416,7 @@ PanelWindow {
                         right: parent.right
                         topMargin: 20
                         leftMargin: 20
-                        rightMargin: 16
+                        rightMargin: Root.Theme.spacingL
                     }
                     height: 36
 
@@ -429,7 +429,7 @@ PanelWindow {
                         color: Root.Theme.textPrimary
                         font {
                             family: Root.Theme.fontFamily
-                            pixelSize: 16
+                            pixelSize: Root.Theme.fontSize2XL
                             bold: true
                         }
                     }
@@ -440,7 +440,7 @@ PanelWindow {
                         anchors {
                             verticalCenter: parent.verticalCenter
                             right: closeBtn.left
-                            rightMargin: 8
+                            rightMargin: Root.Theme.spacingS
                         }
                         width: 200
                         height: 28
@@ -454,14 +454,14 @@ PanelWindow {
                         Behavior on border.color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
                         Row {
-                            anchors { fill: parent; leftMargin: 8; rightMargin: 6 }
+                            anchors { fill: parent; leftMargin: Root.Theme.spacingS; rightMargin: 6 }
                             spacing: 6
 
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: Root.Icons.search
                                 color: Root.Theme.textDimmed
-                                font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                                font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSizeM }
                             }
 
                             TextInput {
@@ -469,7 +469,7 @@ PanelWindow {
                                 width: parent.width - 24
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: Root.Theme.textPrimary
-                                font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM }
                                 selectByMouse: true
                                 clip: true
                                 onTextChanged: win._searchQuery = text
@@ -506,7 +506,7 @@ PanelWindow {
                         top: pageHeader.bottom
                         left: pageHeader.left
                         right: pageHeader.right
-                        topMargin: 8
+                        topMargin: Root.Theme.spacingS
                     }
                     height: 1
                     color: Root.Theme.borderColor
@@ -521,10 +521,10 @@ PanelWindow {
                         left: parent.left
                         right: parent.right
                         bottom: parent.bottom
-                        topMargin: 12
+                        topMargin: Root.Theme.spacingM
                         leftMargin: 20
-                        rightMargin: 16
-                        bottomMargin: 16
+                        rightMargin: Root.Theme.spacingL
+                        bottomMargin: Root.Theme.spacingL
                     }
                     contentHeight: pageLoader.height
                     clip: true
@@ -579,8 +579,8 @@ PanelWindow {
 
                     Column {
                         anchors {
-                            left: parent.left; leftMargin: 12
-                            right: pageBadge.left; rightMargin: 8
+                            left: parent.left; leftMargin: Root.Theme.spacingM
+                            right: pageBadge.left; rightMargin: Root.Theme.spacingS
                             verticalCenter: parent.verticalCenter
                         }
                         spacing: 2
@@ -604,7 +604,7 @@ PanelWindow {
                     // Page indicator pill
                     Rectangle {
                         id: pageBadge
-                        anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                        anchors { right: parent.right; rightMargin: Root.Theme.spacingM; verticalCenter: parent.verticalCenter }
                         width: pageBadgeText.implicitWidth + 14
                         height: 20
                         radius: 10
@@ -618,7 +618,7 @@ PanelWindow {
                                 return idx >= 0 ? win._pages[idx].label : "";
                             }
                             color: Root.Theme.accentPrimary
-                            font { family: Root.Theme.fontFamily; pixelSize: 10; bold: true }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS; bold: true }
                         }
                     }
 

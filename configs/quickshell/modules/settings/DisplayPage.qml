@@ -8,7 +8,7 @@ import "../../core" as Core
 // later without a rename.
 Column {
     width: parent ? parent.width : 0
-    spacing: 16
+    spacing: Root.Theme.spacingL
 
     Components.SettingSection {
         title: "APPEARANCE"

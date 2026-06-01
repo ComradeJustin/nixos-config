@@ -21,11 +21,11 @@ Components.WidgetFrame {
     property int ramPercent: ramTotalGb > 0 ? Math.round(ramUsedGb / ramTotalGb * 100) : -1
 
     Column {
-        spacing: 8
+        spacing: Root.Theme.spacingS
 
         Row {
             visible: root.showCpu
-            spacing: 8
+            spacing: Root.Theme.spacingS
             Text {
                 text: Root.Icons.cpu
                 color: root.cpuPercent >= 90 ? Root.Theme.textCritical : Root.Theme.widgetText
@@ -42,7 +42,7 @@ Components.WidgetFrame {
 
         Row {
             visible: root.showRam
-            spacing: 8
+            spacing: Root.Theme.spacingS
             Text {
                 text: Root.Icons.ram
                 color: root.ramPercent >= 90 ? Root.Theme.textCritical : Root.Theme.widgetText

@@ -40,9 +40,9 @@ Rectangle {
             left: parent.left
             right: parent.right
             verticalCenter: parent.verticalCenter
-            margins: 12
+            margins: Root.Theme.spacingM
         }
-        spacing: 12
+        spacing: Root.Theme.spacingM
 
         // Icon tile
         Rectangle {
@@ -64,7 +64,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: card.svc ? card.svc.icon : Root.Icons.weatherDefault
                 color: card.ready ? Root.Theme.domainWeather : Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 28 }
+                font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize5XL }
                 Behavior on color { ColorAnimation { duration: Root.Theme.anim.exitDuration } }
             }
         }
@@ -73,13 +73,13 @@ Rectangle {
         Column {
             width: parent.width - iconTile.width - refreshPill.width - 24
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 4
+            spacing: Root.Theme.spacingXS
 
             Text {
                 width: parent.width
                 text: card.svc ? card.svc.temperature : "--"
                 color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontFamily; pixelSize: 22; bold: true }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize4XL; bold: true }
             }
 
             Text {
@@ -88,7 +88,7 @@ Rectangle {
                     ? card.svc.condition
                     : (card.ready ? "No data" : "Loading...")
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                 elide: Text.ElideRight
             }
         }
@@ -119,7 +119,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: Root.Icons.reset
                 color: Root.Theme.domainWeather
-                font { family: Root.Theme.fontFamily; pixelSize: 14 }
+                font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSizeXL }
                 rotation: card.svc && card.svc.fetching ? 360 : 0
                 Behavior on rotation { NumberAnimation { duration: 600; easing.type: Easing.InOutCubic } }
             }

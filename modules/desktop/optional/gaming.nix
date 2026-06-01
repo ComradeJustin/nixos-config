@@ -13,7 +13,7 @@
     environment.systemPackages = with pkgs; [
       prismlauncher
       gamescope
-      wineWowPackages.waylandFull
+      wineWow64Packages.stableFull
       rimsort
     ];
   };

@@ -31,14 +31,14 @@ Components.WidgetFrame {
     }
 
     Column {
-        spacing: 4
+        spacing: Root.Theme.spacingXS
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.currentTime
             color: Root.Theme.widgetText
             font {
-                family: Root.Theme.fontMono
+                family: Root.Theme.fontDisplay
                 pixelSize: root.clockFontSize
                 bold: true
             }

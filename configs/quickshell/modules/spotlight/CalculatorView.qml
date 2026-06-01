@@ -141,15 +141,15 @@ SpotlightProvider {
 
             Column {
                 id: resultCol
-                anchors { left: parent.left; right: parent.right; margins: 16; verticalCenter: parent.verticalCenter }
-                spacing: 8
+                anchors { left: parent.left; right: parent.right; margins: Root.Theme.spacingL; verticalCenter: parent.verticalCenter }
+                spacing: Root.Theme.spacingS
                 visible: calc.hasResult
 
                 Text {
                     width: parent.width
                     text: calc.expression
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 13 }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL }
                     elide: Text.ElideRight
                 }
 
@@ -157,14 +157,14 @@ SpotlightProvider {
                     width: parent.width
                     text: "= " + calc.result
                     color: Root.Theme.accentPrimary
-                    font { family: Root.Theme.fontFamily; pixelSize: 28; bold: true }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize5XL; bold: true }
                     elide: Text.ElideRight
                 }
 
                 Text {
                     text: "↵ Enter to copy"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                     opacity: 0.6
                 }
             }
@@ -172,28 +172,28 @@ SpotlightProvider {
             // Empty state
             Column {
                 anchors.centerIn: parent
-                spacing: 8
+                spacing: Root.Theme.spacingS
                 visible: !calc.hasResult && calc.expression === ""
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "󰃬"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 32 }
+                    font { family: Root.Theme.fontIcons; pixelSize: 32 }
                     opacity: 0.4
                 }
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "Type a math expression"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM }
                     opacity: 0.5
                 }
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "Supports: + - * / ^ sqrt() sin() cos() π"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                     opacity: 0.3
                 }
             }
@@ -204,7 +204,7 @@ SpotlightProvider {
                 visible: !calc.hasResult && calc.expression !== ""
                 text: "..."
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 16 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize2XL }
                 opacity: 0.4
             }
         }
@@ -225,10 +225,10 @@ SpotlightProvider {
             Item {
                 width: parent.width; height: 28
                 Text {
-                    anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter }
+                    anchors { left: parent.left; leftMargin: Root.Theme.spacingL; verticalCenter: parent.verticalCenter }
                     text: "HISTORY"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 10; bold: true; letterSpacing: 1.5 }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS; bold: true; letterSpacing: 1.5 }
                     opacity: 0.5
                 }
             }
@@ -247,26 +247,26 @@ SpotlightProvider {
                             : "transparent"
 
                     Row {
-                        anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter }
-                        spacing: 8
+                        anchors { left: parent.left; leftMargin: Root.Theme.spacingL; verticalCenter: parent.verticalCenter }
+                        spacing: Root.Theme.spacingS
 
                         Text {
                             text: modelData.expr
                             color: Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM }
                             anchors.verticalCenter: parent.verticalCenter
                         }
                         Text {
                             text: "="
                             color: Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM }
                             opacity: 0.5
                             anchors.verticalCenter: parent.verticalCenter
                         }
                         Text {
                             text: modelData.res
                             color: Root.Theme.accentPrimary
-                            font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL; bold: true }
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }

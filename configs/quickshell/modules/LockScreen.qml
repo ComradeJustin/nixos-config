@@ -387,8 +387,8 @@ Item {
                 visible: lock.powerService && lock.powerService.hasBattery
                 anchors.top: parent.top
                 anchors.right: parent.right
-                anchors.topMargin: 24
-                anchors.rightMargin: 32
+                anchors.topMargin: Root.Theme.spacingXL
+                anchors.rightMargin: Root.Theme.spacing2XL
                 width: batteryRow.width + 20
                 height: 32
                 radius: 16
@@ -415,13 +415,13 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: Root.Icons.batteryIcon(batteryChip.pct, batteryChip.charging)
                         color: batteryChip.tint
-                        font { family: Root.Theme.fontFamily; pixelSize: 18 }
+                        font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize3XL }
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: batteryChip.pct + "%"
                         color: batteryChip.tint
-                        font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL; bold: true }
                     }
                 }
             }
@@ -440,13 +440,13 @@ Item {
             Column {
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: parent.height * 0.22
-                spacing: 4
+                spacing: Root.Theme.spacingXS
 
             Text {
                 id: clockText
                 anchors.horizontalCenter: parent.horizontalCenter
                 color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontFamily; pixelSize: 72; bold: true }
+                font { family: Root.Theme.fontDisplay; pixelSize: 72; bold: true }
                 property int tick: 0
                 text: {
                     void(tick);
@@ -461,7 +461,7 @@ Item {
                 id: dateText
                 anchors.horizontalCenter: parent.horizontalCenter
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 18 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize3XL }
                 property int tick: 0
                 text: {
                     void(tick);
@@ -493,7 +493,7 @@ Item {
             Column {
                 id: centerColumn
                 anchors.centerIn: parent
-                spacing: 16
+                spacing: Root.Theme.spacingL
                 width: 320
 
                 // Fingerprint icon container (#K: breathing glow).
@@ -561,7 +561,7 @@ Item {
                         anchors.centerIn: parent
                         text: "󰈷"
                         color: lock.showError ? Root.Theme.textCritical : Root.Theme.textAccent
-                        font { family: Root.Theme.fontFamily; pixelSize: 64 }
+                        font { family: Root.Theme.fontIcons; pixelSize: 64 }
 
                         transform: Translate { id: fingerShakeTranslate; x: 0 }
 
@@ -589,7 +589,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "󰌾"
                 color: lock.showError ? Root.Theme.textCritical : Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 36 }
+                font { family: Root.Theme.fontIcons; pixelSize: 36 }
                 visible: lock.passwordMode
             }
 
@@ -605,7 +605,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: lock.passwordMode ? "Enter password" : "Swipe fingerprint to unlock"
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 14 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXL }
                 opacity: lock.bubbleText.length > 0 ? 0.35 : 1.0
                 Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.microDuration } }
             }
@@ -615,7 +615,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "Use password"
                 color: Root.Theme.textAccent
-                font { family: Root.Theme.fontFamily; pixelSize: 12; underline: switchMouse.containsMouse }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM; underline: switchMouse.containsMouse }
                 visible: !lock.passwordMode
                 opacity: 0.8
 
@@ -681,15 +681,15 @@ Item {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 16
-                    anchors.rightMargin: 16
-                    spacing: 8
+                    anchors.leftMargin: Root.Theme.spacingL
+                    anchors.rightMargin: Root.Theme.spacingL
+                    spacing: Root.Theme.spacingS
 
                     TextInput {
                         id: passInput
                         Layout.fillWidth: true
                         color: lock.isAuthenticating ? Root.Theme.textDimmed : Root.Theme.textPrimary
-                        font { family: Root.Theme.fontFamily; pixelSize: 14 }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXL }
                         // Bound to the visibility toggle (#2). Default
                         // stays Password; flipping passwordVisible true
                         // switches to Normal so the user can verify a
@@ -737,7 +737,7 @@ Item {
                             anchors.centerIn: parent
                             text: "CAPS"
                             color: Root.Theme.accentWarning
-                            font { family: Root.Theme.fontFamily; pixelSize: 9; bold: true }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXXS; bold: true }
                         }
                     }
 
@@ -752,7 +752,7 @@ Item {
                     Text {
                         text: lock.passwordVisible ? "󰈉" : "󰈈"
                         color: eyeMouse.containsMouse ? Root.Theme.textAccent : Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: 18 }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize3XL }
                         Layout.alignment: Qt.AlignVCenter
                         Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
@@ -769,7 +769,7 @@ Item {
                     Text {
                         text: "→"
                         color: passInput.text.length > 0 ? Root.Theme.textAccent : Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: 18; bold: true }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize3XL; bold: true }
                         visible: passInput.text.length > 0
                         Layout.alignment: Qt.AlignVCenter
 
@@ -807,7 +807,7 @@ Item {
             id: bubble
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: promptBackdrop.top
-            anchors.bottomMargin: 12
+            anchors.bottomMargin: Root.Theme.spacingM
             visible: lock.bubbleText.length > 0
             // Hug the content with 12/20 padding + 12/20 margin,
             // clamped so a long PAM error still fits on-screen.
@@ -851,7 +851,7 @@ Item {
             // works even when glanced at peripherally.
             Row {
                 anchors.centerIn: parent
-                spacing: 8
+                spacing: Root.Theme.spacingS
 
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
@@ -867,7 +867,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     text: lock.bubbleText
                     color: Root.Theme.textPrimary
-                    font { family: Root.Theme.fontFamily; pixelSize: 12; bold: true }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM; bold: true }
                     elide: Text.ElideRight
                     width: Math.min(implicitWidth, promptBackdrop.width - 96)
                 }
@@ -892,7 +892,7 @@ Item {
             // otherwise sit directly on top of the prompt. Without
             // this the media card would overlap the bubble.
             anchors.bottom: bubble.visible ? bubble.top : promptBackdrop.top
-            anchors.bottomMargin: 16
+            anchors.bottomMargin: Root.Theme.spacingL
             width: mediaRow.width + 32
             height: mediaRow.height + 20
             radius: 16
@@ -904,7 +904,7 @@ Item {
             Row {
                 id: mediaRow
                 anchors.centerIn: parent
-                spacing: 12
+                spacing: Root.Theme.spacingM
 
                 // Album art
                 Rectangle {
@@ -926,7 +926,7 @@ Item {
                         anchors.centerIn: parent
                         text: Root.Icons.music
                         color: Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: 20 }
+                        font { family: Root.Theme.fontIcons; pixelSize: 20 }
                         visible: lockAlbumArt.status !== Image.Ready
                     }
                 }
@@ -939,7 +939,7 @@ Item {
                     Text {
                         text: lock.playerService ? lock.playerService.trackTitle : ""
                         color: Root.Theme.textPrimary
-                        font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXL; bold: true }
                         elide: Text.ElideRight
                         width: Math.min(implicitWidth, 250)
                     }
@@ -947,7 +947,7 @@ Item {
                     Text {
                         text: lock.playerService ? lock.playerService.trackArtist : ""
                         color: Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM }
                         elide: Text.ElideRight
                         width: Math.min(implicitWidth, 250)
                         visible: text.length > 0
@@ -976,7 +976,7 @@ Item {
                             anchors.centerIn: parent
                             text: Root.Icons.skipBack
                             color: prevBtn.hovered ? Root.Theme.textPrimary : Root.Theme.domainMedia
-                            font { family: Root.Theme.fontFamily; pixelSize: 18 }
+                            font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize3XL }
                             scale: prevBtn.hovered ? 1.15 : 1.0
                             Behavior on scale { NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic } }
                             Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
@@ -998,7 +998,7 @@ Item {
                             anchors.centerIn: parent
                             text: (lock.playerService && lock.playerService.isPlaying) ? Root.Icons.mediaPause : Root.Icons.mediaPlay
                             color: playPauseBtn.hovered ? Root.Theme.textPrimary : Root.Theme.domainMedia
-                            font { family: Root.Theme.fontFamily; pixelSize: 22 }
+                            font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize4XL }
                             scale: playPauseBtn.hovered ? 1.15 : 1.0
                             Behavior on scale { NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic } }
                             Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
@@ -1020,7 +1020,7 @@ Item {
                             anchors.centerIn: parent
                             text: Root.Icons.skipFwd
                             color: nextBtn.hovered ? Root.Theme.textPrimary : Root.Theme.domainMedia
-                            font { family: Root.Theme.fontFamily; pixelSize: 18 }
+                            font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize3XL }
                             scale: nextBtn.hovered ? 1.15 : 1.0
                             Behavior on scale { NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic } }
                             Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
@@ -1056,7 +1056,7 @@ Item {
             id: sessionControls
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 24
+            anchors.bottomMargin: Root.Theme.spacingXL
             width: 320
             height: 44
 
@@ -1065,7 +1065,7 @@ Item {
             // replaces this row until the user confirms or cancels.
             Row {
                 anchors.centerIn: parent
-                spacing: 16
+                spacing: Root.Theme.spacingL
                 visible: lock.pendingPowerAction === ""
 
                 // Small inline factory — a styled circular button with
@@ -1086,7 +1086,7 @@ Item {
                         anchors.centerIn: parent
                         text: Root.Icons.suspend
                         color: Root.Theme.powerSuspend
-                        font { family: Root.Theme.fontFamily; pixelSize: 18 }
+                        font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize3XL }
                     }
                     MouseArea {
                         id: suspendMouse
@@ -1110,7 +1110,7 @@ Item {
                         anchors.centerIn: parent
                         text: Root.Icons.reboot
                         color: Root.Theme.accentWarm
-                        font { family: Root.Theme.fontFamily; pixelSize: 18 }
+                        font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize3XL }
                     }
                     MouseArea {
                         id: rebootMouse
@@ -1134,7 +1134,7 @@ Item {
                         anchors.centerIn: parent
                         text: Root.Icons.shutdown
                         color: Root.Theme.accentDanger
-                        font { family: Root.Theme.fontFamily; pixelSize: 18 }
+                        font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize3XL }
                     }
                     MouseArea {
                         id: shutdownMouse
@@ -1154,7 +1154,7 @@ Item {
             // Shortcut above.
             Row {
                 anchors.centerIn: parent
-                spacing: 12
+                spacing: Root.Theme.spacingM
                 visible: lock.pendingPowerAction !== ""
 
                 // Cancel button
@@ -1171,7 +1171,7 @@ Item {
                         anchors.centerIn: parent
                         text: "✕"
                         color: Root.Theme.textPrimary
-                        font { family: Root.Theme.fontFamily; pixelSize: 18; bold: true }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize3XL; bold: true }
                     }
                     MouseArea {
                         id: cancelMouse
@@ -1220,7 +1220,7 @@ Item {
                             return verb + " in " + lock.powerCountdown + "s · click to confirm";
                         }
                         color: Root.Theme.textPrimary
-                        font { family: Root.Theme.fontFamily; pixelSize: 12; bold: true }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM; bold: true }
                     }
                     MouseArea {
                         id: confirmMouse

@@ -35,7 +35,7 @@ Rectangle {
         anchors.centerIn: parent
         text: ghost.label
         color: Root.Theme.widgetText
-        font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true }
+        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL; bold: true }
     }
 
     // Position captured at drag start — all swaps reference this, not the live position

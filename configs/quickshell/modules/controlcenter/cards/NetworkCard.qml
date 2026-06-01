@@ -62,9 +62,9 @@ Rectangle {
             left: parent.left
             right: parent.right
             verticalCenter: parent.verticalCenter
-            margins: 12
+            margins: Root.Theme.spacingM
         }
-        spacing: 12
+        spacing: Root.Theme.spacingM
 
         // Icon tile on the left — mirrors PlayerCard's artFg
         Rectangle {
@@ -90,7 +90,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: Root.Icons.wifiIcon(card.svc)
                 color: card.connected ? Root.Theme.domainNetwork : Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 30 }
+                font { family: Root.Theme.fontIcons; pixelSize: 30 }
 
                 Behavior on color { ColorAnimation { duration: Root.Theme.anim.exitDuration } }
             }
@@ -100,7 +100,7 @@ Rectangle {
         Column {
             width: parent.width - iconTile.width - togglePill.width - 24
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 4
+            spacing: Root.Theme.spacingXS
 
             Text {
                 width: parent.width
@@ -112,7 +112,7 @@ Rectangle {
                     return "Not connected";
                 }
                 color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXL; bold: true }
                 elide: Text.ElideRight
             }
 
@@ -128,7 +128,7 @@ Rectangle {
                     return "Right-click to pick a network";
                 }
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                 elide: Text.ElideRight
             }
         }
@@ -161,7 +161,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: card.enabled ? Root.Icons.wifiHi : Root.Icons.wifiOff
                 color: Root.Theme.domainNetwork
-                font { family: Root.Theme.fontFamily; pixelSize: 16 }
+                font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize2XL }
             }
 
             MouseArea {

@@ -63,7 +63,7 @@ Scope {
                     Column {
                         id: contentCol
                         width: parent.width
-                        spacing: 16
+                        spacing: Root.Theme.spacingL
 
                         // ── Header ──
                         Item {
@@ -72,7 +72,7 @@ Scope {
                             Text {
                                 text: "Settings"
                                 color: Root.Theme.textPrimary
-                                font { family: Root.Theme.fontFamily; pixelSize: 12; bold: true; letterSpacing: 2 }
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM; bold: true; letterSpacing: 2 }
                                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                             }
 
@@ -111,7 +111,7 @@ Scope {
                                     anchors.centerIn: parent
                                     text: Root.Icons.drag + "  Reorder Bar"
                                     color: reorderMouse.containsMouse ? Root.Theme.accentPrimary : Root.Theme.textDimmed
-                                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
+                                    font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize }
                                 }
                                 MouseArea {
                                     id: reorderMouse
@@ -180,7 +180,7 @@ Scope {
                                 anchors.centerIn: parent
                                 text: Root.Icons.gear + "  All Settings"
                                 color: fullSettingsMouse.containsMouse ? Root.Theme.accentPrimary : Root.Theme.textDimmed
-                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
+                                font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize }
                             }
                             MouseArea {
                                 id: fullSettingsMouse

@@ -56,9 +56,9 @@ Rectangle {
             left: parent.left
             right: parent.right
             verticalCenter: parent.verticalCenter
-            margins: 12
+            margins: Root.Theme.spacingM
         }
-        spacing: 12
+        spacing: Root.Theme.spacingM
 
         // Icon tile
         Rectangle {
@@ -80,7 +80,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: card.active ? Root.Icons.nightOn : Root.Icons.nightOff
                 color: card.active ? card.accent : Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 30 }
+                font { family: Root.Theme.fontIcons; pixelSize: 30 }
 
                 Behavior on color { ColorAnimation { duration: Root.Theme.anim.exitDuration } }
             }
@@ -90,13 +90,13 @@ Rectangle {
         Column {
             width: parent.width - iconTile.width - togglePill.width - 24
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 4
+            spacing: Root.Theme.spacingXS
 
             Text {
                 width: parent.width
                 text: card.active ? "Night Light on" : (card.enabled ? "Waiting for location" : "Night Light off")
                 color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXL; bold: true }
                 elide: Text.ElideRight
             }
 
@@ -108,7 +108,7 @@ Rectangle {
                     return "wlsunset not running";
                 }
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                 elide: Text.ElideRight
             }
         }
@@ -135,7 +135,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: card.enabled ? Root.Icons.nightOn : Root.Icons.nightOff
                 color: card.accent
-                font { family: Root.Theme.fontFamily; pixelSize: 16 }
+                font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize2XL }
             }
 
             MouseArea {

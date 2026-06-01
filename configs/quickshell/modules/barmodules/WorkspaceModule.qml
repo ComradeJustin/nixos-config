@@ -11,7 +11,7 @@ Item {
     property int maxVisible: 6
     property int dotSize: 6
     property int pillWidth: 16
-    property int spacing: 8
+    property int spacing: Root.Theme.spacingS
 
     // Account for pill overflow beyond the dot grid
     property int _pillOverflow: Math.max(0, Math.ceil((pillWidth - dotSize) / 2))

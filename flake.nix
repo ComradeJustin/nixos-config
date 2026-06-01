@@ -46,9 +46,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    apple-fonts.url = "github:Lyndeno/apple-fonts.nix";
-    apple-fonts.inputs.nixpkgs.follows = "nixpkgs";
-
     nixos-hardware.url = "github:NixOS/nixos-hardware";
 
 
@@ -83,7 +80,6 @@
       spicetify-nix,
       quickshell,
       qml-niri,
-      apple-fonts,
       nixos-hardware,
       niri,
       spotatui,

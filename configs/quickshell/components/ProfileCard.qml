@@ -83,7 +83,7 @@ Item {
         border.color: Root.Theme.borderColor
 
         Row {
-            anchors { fill: parent; margins: 8 }
+            anchors { fill: parent; margins: Root.Theme.spacingS }
             spacing: 10
 
             // Avatar tile (rounded square). The Image is parented to a
@@ -121,7 +121,7 @@ Item {
                     visible: compactAvatarImg.status !== Image.Ready
                     text: Root.Icons.user
                     color: Root.Theme.domainSettings
-                    font { family: Root.Theme.fontFamily; pixelSize: 24 }
+                    font { family: Root.Theme.fontIcons; pixelSize: 24 }
                 }
             }
 
@@ -138,7 +138,7 @@ Item {
                     width: parent.width
                     text: card.greeting + (card.username.length > 0 ? ", " + card.username : "")
                     color: Root.Theme.textPrimary
-                    font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL; bold: true }
                     elide: Text.ElideRight
                 }
 
@@ -146,7 +146,7 @@ Item {
                     width: parent.width
                     text: card.uptime.length > 0 ? ("up " + card.uptime) : "this machine"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                     elide: Text.ElideRight
                 }
             }
@@ -159,7 +159,7 @@ Item {
                 visible: card.showActions
                 width: visible ? implicitWidth : 0
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 4
+                spacing: Root.Theme.spacingXS
 
                 IconButton {
                     icon: Root.Icons.gear
@@ -209,7 +209,7 @@ Item {
 
         Column {
             anchors.centerIn: parent
-            spacing: 12
+            spacing: Root.Theme.spacingM
 
             // Circular avatar — 96px. Uses a full-circle radius so the
             // clip crops the image into a disk. Same fallback-to-glyph
@@ -245,7 +245,7 @@ Item {
                     visible: heroAvatarImg.status !== Image.Ready
                     text: Root.Icons.user
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: 48 }
+                    font { family: Root.Theme.fontIcons; pixelSize: 48 }
                 }
             }
 
@@ -266,7 +266,7 @@ Item {
                     return parts.join("  ·  ");
                 }
                 color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: 13 }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL }
             }
         }
     }

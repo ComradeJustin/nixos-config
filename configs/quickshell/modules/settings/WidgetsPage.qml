@@ -7,7 +7,7 @@ import "../../core" as Core
 // appearance knobs (clock, weather, system, now-playing).
 Column {
     width: parent ? parent.width : 0
-    spacing: 16
+    spacing: Root.Theme.spacingL
 
     Components.SettingSection {
         title: "DESKTOP WIDGETS"
@@ -43,7 +43,7 @@ Column {
                 Text {
                     text: Root.Icons.widgets
                     color: widgetEditMouse.containsMouse ? Root.Theme.domainSettings : Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
+                    font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize }
                     anchors.verticalCenter: parent.verticalCenter
 
                     Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }

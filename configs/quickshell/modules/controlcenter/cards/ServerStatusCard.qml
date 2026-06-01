@@ -150,14 +150,14 @@ Rectangle {
         id: contentCol
         anchors {
             left: parent.left; right: parent.right
-            top: parent.top; margins: 12
+            top: parent.top; margins: Root.Theme.spacingM
         }
-        spacing: 8
+        spacing: Root.Theme.spacingS
 
         // ── Host tabs (only shown if multiple hosts) ──
         Row {
             width: parent.width
-            spacing: 4
+            spacing: Root.Theme.spacingXS
             visible: card.hosts.length > 1
 
             Repeater {
@@ -179,7 +179,7 @@ Rectangle {
                         anchors.centerIn: parent
                         text: modelData.name
                         color: index === card.activeHost ? Root.Theme.textPrimary : Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                     }
 
                     MouseArea {
@@ -194,7 +194,7 @@ Rectangle {
         // ── Header ──
         Row {
             width: parent.width
-            spacing: 8
+            spacing: Root.Theme.spacingS
 
             Rectangle {
                 width: 36; height: 36
@@ -211,7 +211,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: "󰒋"
                     color: Root.Theme.domainNetwork
-                    font { family: Root.Theme.fontFamily; pixelSize: 20 }
+                    font { family: Root.Theme.fontIcons; pixelSize: 20 }
                 }
             }
 
@@ -222,7 +222,7 @@ Rectangle {
                 Text {
                     text: card.hosts[card.activeHost] ? card.hosts[card.activeHost].name : "unknown"
                     color: Root.Theme.textPrimary
-                    font { family: Root.Theme.fontFamily; pixelSize: 13; bold: true }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL; bold: true }
                 }
                 Text {
                     text: {
@@ -237,7 +237,7 @@ Rectangle {
                         if (!d) return Root.Theme.accentDanger;
                         return card.onlineCount() === card.totalCount() ? Root.Theme.accentSuccess : Root.Theme.textDimmed;
                     }
-                    font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                 }
             }
         }
@@ -280,7 +280,7 @@ Rectangle {
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: modelData.value
                             color: Root.Theme.textPrimary
-                            font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                         }
                     }
                 }
@@ -312,7 +312,7 @@ Rectangle {
                     Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
                     Row {
-                        anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: 8 }
+                        anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: Root.Theme.spacingS }
                         spacing: 6
 
                         Rectangle {
@@ -324,14 +324,14 @@ Rectangle {
                         Text {
                             text: modelData.icon
                             color: modelData.online ? Root.Theme.textPrimary : Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM }
                             anchors.verticalCenter: parent.verticalCenter
                         }
 
                         Text {
                             text: modelData.label
                             color: modelData.online ? Root.Theme.textPrimary : Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }

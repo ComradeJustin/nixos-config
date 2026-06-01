@@ -12,7 +12,7 @@ Components.WidgetFrame {
     property int fontSize: Root.Config.weatherConfig.fontSize
 
     Row {
-        spacing: 12
+        spacing: Root.Theme.spacingM
 
         Text {
             anchors.verticalCenter: parent.verticalCenter

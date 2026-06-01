@@ -48,7 +48,7 @@ window-rule {
     match app-id=r#"ghostty"#
     match app-id=r#"spotify"#
     match app-id=r#"code"#
-    opacity 0.75
+    opacity 0.80
     draw-border-with-background false
 }
 

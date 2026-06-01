@@ -87,8 +87,8 @@ Item {
     // Content
     Column {
         id: contentCol
-        anchors { top: header.bottom; topMargin: 8; left: parent.left; right: parent.right }
-        spacing: 4
+        anchors { top: header.bottom; topMargin: Root.Theme.spacingS; left: parent.left; right: parent.right }
+        spacing: Root.Theme.spacingXS
         visible: !root.collapsed
     }
 }

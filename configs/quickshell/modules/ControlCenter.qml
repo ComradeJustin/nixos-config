@@ -154,9 +154,64 @@ Scope {
                         }
 
                         MouseArea {
+                            id: toastMouse
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: { if (cc.notifService) cc.notifService.dismissPopupApp(model.appName); }
+                            onEntered: {
+                                countdownBar.paused = true;
+                                countdownAnim.pause();
+                                if (cc.notifService) cc.notifService.pausePopups(model.appName);
+                            }
+                            onExited: {
+                                countdownBar.paused = false;
+                                countdownAnim.resume();
+                                if (cc.notifService) cc.notifService.resumePopups(model.appName);
+                            }
+                        }
+
+                        // Auto-dismiss countdown — depletes left→right over the
+                        // toast's lifetime, then freezes while hovered (toastMouse).
+                        Rectangle {
+                            id: countdownBar
+                            anchors { left: parent.left; bottom: parent.bottom; leftMargin: 10; bottomMargin: 5 }
+                            width: Math.max(0, (toastCard.width - 20) * fraction)
+                            height: 3
+                            radius: 1.5
+                            visible: model.expiry !== undefined && model.expiry > 0 && !toastItem.isDismissing
+                            color: toastCard._urg === 2 ? Root.Theme.notifUrgentBorder
+                                 : toastCard._urg === 0 ? Root.Theme.notifLowBorder
+                                 : Root.Theme.accentPrimary
+                            opacity: 0.8
+
+                            property real fraction: 1
+                            property bool paused: false
+                            property int _total: 5000
+
+                            // Refill + restart when a new notification joins the
+                            // group (a higher count extends the underlying expiry).
+                            property int trackCount: model.count
+                            onTrackCountChanged: if (!paused) countdownBar.restart()
+
+                            Component.onCompleted: countdownBar.restart()
+                            function restart() {
+                                var rem = Math.max(1, (model.expiry || (Date.now() + 5000)) - Date.now());
+                                countdownAnim.stop();
+                                countdownBar._total = rem;
+                                countdownBar.fraction = 1;
+                                countdownAnim.start();
+                                if (countdownBar.paused) countdownAnim.pause();
+                            }
+
+                            NumberAnimation {
+                                id: countdownAnim
+                                target: countdownBar
+                                property: "fraction"
+                                from: 1; to: 0
+                                duration: countdownBar._total
+                                easing.type: Easing.Linear
+                            }
                         }
                     }
                 }
@@ -325,7 +380,7 @@ Scope {
                     // would just be redundant chrome.
                     Components.CCSection {
                         Layout.fillWidth: true
-                        padding: 4
+                        padding: Root.Theme.spacingXS
                         // Explicit height: QuickToggle is 40x40, plus
                         // 4px padding top+bottom → 48px total. CCSection's
                         // auto-sizing can't feed off anchor-centered
@@ -334,7 +389,7 @@ Scope {
 
                         Row {
                             anchors.centerIn: parent
-                            spacing: 8
+                            spacing: Root.Theme.spacingS
 
                             Repeater {
                                 model: Core.Registry.quickToggles
@@ -459,13 +514,21 @@ Scope {
                         Repeater {
                             model: ccCardsCol.enabledKeys
 
-                            Loader {
-                                id: cardLoader
+                            Components.StaggerReveal {
+                                id: cardReveal
+                                required property int index
                                 required property var modelData
                                 width: ccCardsCol.width
-                                height: item ? item.implicitHeight : 0
-                                active: true
-                                sourceComponent: ccCardsCol.cardComponentMap[modelData] || null
+                                staggerIndex: index
+                                baseDelay: 130          // let the panel slide in first
+                                shown: cc.showing
+
+                                Loader {
+                                    width: parent.width
+                                    height: item ? item.implicitHeight : 0
+                                    active: true
+                                    sourceComponent: ccCardsCol.cardComponentMap[cardReveal.modelData] || null
+                                }
                             }
                         }
 
@@ -488,7 +551,7 @@ Scope {
                     Components.CCSection {
                         id: tabBar
                         Layout.fillWidth: true
-                        padding: 4
+                        padding: Root.Theme.spacingXS
 
                         // Count hint callable — evaluated at render time
                         // per tab so the labels pick up "Notifications (3)"
@@ -576,7 +639,7 @@ Scope {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: modelData.icon
                                             color: cc.activeTab === modelData.tab ? modelData.accent : (tabMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
-                                            font { family: Root.Theme.fontFamily; pixelSize: 14 }
+                                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXL }
                                             Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                                         }
                                         Text {
@@ -585,7 +648,7 @@ Scope {
                                             // get an empty suffix so they don't carry dead weight.
                                             text: modelData.label + tabBar.countFor(modelData.tab)
                                             color: cc.activeTab === modelData.tab ? Root.Theme.textPrimary : (tabMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed)
-                                            font { family: Root.Theme.fontFamily; pixelSize: 11; bold: cc.activeTab === modelData.tab }
+                                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS; bold: cc.activeTab === modelData.tab }
                                             Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                                         }
                                         // 2E: chevron on active tab only. Rotates 180° when
@@ -598,7 +661,7 @@ Scope {
                                             visible: cc.activeTab === modelData.tab
                                             text: "▾"
                                             color: modelData.accent
-                                            font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                                             rotation: cc.tabExpanded ? 180 : 0
                                             Behavior on rotation { NumberAnimation { duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic } }
                                         }
@@ -701,7 +764,7 @@ Scope {
                             return c + " notification" + (c !== 1 ? "s" : "");
                         }
                         color: Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
                     }
 
                     Rectangle {
@@ -715,7 +778,7 @@ Scope {
                             anchors.centerIn: parent
                             text: Root.Icons.trash + " Clear"
                             color: clearMouse.containsMouse ? Root.Theme.textPrimary : Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                            font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSizeS }
                         }
                         MouseArea { id: clearMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (cc.notifService) cc.notifService.clearAll(); } }
                     }

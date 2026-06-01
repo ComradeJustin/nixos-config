@@ -131,7 +131,7 @@ Item {
                     Text {
                         text: root.timestamp
                         color: Root.Theme.textSubtle
-                        font { family: Root.Theme.fontFamily; pixelSize: 10 }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
                         visible: compact && root.timestamp !== ""
                     }
 
@@ -155,7 +155,7 @@ Item {
                         visible: compact && root.isHeader && root.count > 1
                         text: root.expanded ? "▾" : "▸"
                         color: Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: 12 }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM }
                     }
                 }
 

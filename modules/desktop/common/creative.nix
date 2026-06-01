@@ -9,7 +9,8 @@
     environment.systemPackages = with pkgs; [
       krita
       gimp
-      
+      obs-studio
+      audacity
     ];
   };
 }

@@ -473,7 +473,7 @@ Scope {
                             return barScope._dragKey.charAt(0).toUpperCase() + barScope._dragKey.slice(1);
                         }
                         color: Root.Theme.textPrimary
-                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall; bold: true }
+                        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall; bold: true }
                     }
                 }
             }
@@ -513,7 +513,7 @@ Scope {
             Row {
                 id: editContent
                 anchors.centerIn: parent
-                spacing: 12
+                spacing: Root.Theme.spacingM
 
                 // Ghost pool — disabled modules
                 Row {
@@ -543,7 +543,7 @@ Scope {
                                 id: ghostLabel; anchors.centerIn: parent
                                 text: modelData.label
                                 color: Root.Theme.textDimmed
-                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall; italic: true }
+                                font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall; italic: true }
                             }
 
                             MouseArea {
@@ -565,7 +565,7 @@ Scope {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Drag to reorder"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall }
+                    font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall }
                 }
 
                 Rectangle {
@@ -578,7 +578,7 @@ Scope {
                         id: doneText; anchors.centerIn: parent
                         text: "Done"
                         color: Root.Theme.textPrimary
-                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeSmall; bold: true }
+                        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall; bold: true }
                     }
                     MouseArea {
                         id: doneMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -652,7 +652,7 @@ Scope {
                 anchors.centerIn: parent
                 text: barTooltipWindow._tipText
                 color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontFamily; pixelSize: 11 }
+                font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeS }
             }
         }
 
