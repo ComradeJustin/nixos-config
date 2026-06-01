@@ -597,10 +597,12 @@ Scope {
             var list = grouped.groups[gKey];
             var found = false;
 
-            // Compute max urgency for the popup group
+            // Compute max urgency + latest expiry for the popup group
             var maxUrg = 1;
+            var maxExpiry = 0;
             for (var ui = 0; ui < list.length; ui++) {
                 if ((list[ui].urgency || 1) > maxUrg) maxUrg = list[ui].urgency;
+                if ((list[ui].expiry || 0) > maxExpiry) maxExpiry = list[ui].expiry;
             }
 
             for (var k = 0; k < popupStacks.count; k++) {
