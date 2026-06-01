@@ -165,17 +165,11 @@ SpotlightProvider {
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
-        Text {
+        Components.EmptyState {
             visible: filteredIndices.length === 0
-            text: {
-                if (clipModel.count === 0) return "No clipboard history";
-                if (searchText.length > 0) return "No matches";
-                return "No clipboard history";
-            }
-            color: Root.Theme.textDimmed
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.notifBodySize }
-            width: parent.width; height: 60
-            horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+            icon: Root.Icons.clipboard
+            message: searchText.length > 0 ? "No matches" : "No clipboard history"
+            preferredHeight: 90
         }
 
         Components.SmoothFlickable {

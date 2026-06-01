@@ -37,12 +37,20 @@ Components.WidgetFrame {
                 visible: status === Image.Ready
             }
 
+            // Shimmer while art loads; the music glyph shows only when there's no art.
+            Components.Skeleton {
+                anchors.fill: parent
+                radius: parent.radius
+                tint: Root.Theme.widgetText
+                visible: root.trackArtUrl && root.trackArtUrl.length > 0 && artImage.status !== Image.Ready
+            }
+
             Text {
                 anchors.centerIn: parent
                 text: Root.Icons.music
                 color: Root.Theme.widgetTextDimmed
                 font { family: Root.Theme.fontIcons; pixelSize: root.artSize * 0.4 }
-                visible: !root.trackArtUrl || artImage.status !== Image.Ready
+                visible: !root.trackArtUrl || root.trackArtUrl.length === 0
             }
         }
 

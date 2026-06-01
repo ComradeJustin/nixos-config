@@ -134,6 +134,7 @@ Rectangle {
             clip: true
 
             Image {
+                id: artFgImg
                 anchors.fill: parent
                 source: card.artUrl
                 fillMode: Image.PreserveAspectCrop
@@ -142,6 +143,13 @@ Rectangle {
                 visible: source.toString().length > 0 && status === Image.Ready
                 asynchronous: true
                 cache: true
+            }
+
+            // Shimmer while remote art loads (otherwise this would be blank).
+            Components.Skeleton {
+                anchors.fill: parent
+                radius: parent.radius
+                visible: card.artUrl && card.artUrl.length > 0 && artFgImg.status !== Image.Ready
             }
 
             Text {

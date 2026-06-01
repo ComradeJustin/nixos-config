@@ -496,13 +496,11 @@ SpotlightProvider {
                     horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
                 }
 
-                Text {
+                Components.EmptyState {
                     visible: !root.onlineSearching && root.onlineResults.length === 0 && root.onlineQuery.length > 0
-                    text: "No results"
-                    color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.notifBodySize }
-                    width: parent.width; height: 60
-                    horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+                    icon: Root.Icons.search
+                    message: "No results"
+                    preferredHeight: 90
                 }
 
                 Text {
@@ -643,14 +641,11 @@ SpotlightProvider {
         }
 
         // Local view
-        Text {
+        Components.EmptyState {
             visible: root.mode === "local" && filteredIndices.length === 0
-            text: !root.scanned ? "Scanning…" : "No matches"
-            color: Root.Theme.textDimmed
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.notifBodySize }
-            width: parent.width; height: 60
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
+            icon: Root.Icons.wallpaper
+            message: !root.scanned ? "Scanning…" : "No matches"
+            preferredHeight: 90
         }
 
         Components.SmoothFlickable {

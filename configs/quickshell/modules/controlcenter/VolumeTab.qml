@@ -127,8 +127,9 @@ Components.SmoothFlickable {
 
         Components.EmptyState {
             visible: root.audioService ? root.audioService.appStreams.count === 0 : true
+            icon: Root.Icons.music
             message: "No streams"
-            preferredHeight: 40
+            preferredHeight: 70
         }
 
         // ── Output Devices ──

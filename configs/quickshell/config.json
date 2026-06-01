@@ -42,7 +42,7 @@
     "weather": false,
     "system": false,
     "quote": false,
-    "nowPlaying": false,
+    "nowPlaying": true,
     "calendar": true,
     "stock": false,
     "clockPosition": "bottom-right",

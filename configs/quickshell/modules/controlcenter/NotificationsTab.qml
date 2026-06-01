@@ -75,8 +75,9 @@ Components.SmoothFlickable {
 
         Components.EmptyState {
             visible: root.notifService ? root.notifService.stacks.count === 0 : true
+            icon: Root.Icons.bell
             message: "No notifications"
-            preferredHeight: 60
+            preferredHeight: 80
         }
 
         Repeater {

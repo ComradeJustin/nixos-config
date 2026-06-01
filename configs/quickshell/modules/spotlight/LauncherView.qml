@@ -303,14 +303,11 @@ SpotlightProvider {
         width: parent.width
         spacing: 0
 
-        Text {
+        Components.EmptyState {
             visible: filteredIndices.length === 0
-            text: searchText.length > 0 ? "No matches" : "Loading…"
-            color: Root.Theme.textDimmed
-            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.notifBodySize }
-            width: parent.width; height: 60
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
+            icon: Root.Icons.search
+            message: searchText.length > 0 ? "No matches" : "Loading…"
+            preferredHeight: 90
         }
 
         Components.SmoothFlickable {

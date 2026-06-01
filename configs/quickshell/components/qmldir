@@ -32,3 +32,4 @@ HoverPopup 1.0 HoverPopup.qml
 PopupRow 1.0 PopupRow.qml
 OverlayPanel 1.0 OverlayPanel.qml
 StaggerReveal 1.0 StaggerReveal.qml
+Skeleton 1.0 Skeleton.qml
