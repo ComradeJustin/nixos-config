@@ -614,6 +614,18 @@ Scope {
                 if ((list[ui].expiry || 0) > maxExpiry) maxExpiry = list[ui].expiry;
             }
 
+            // Recent items (newest first, capped at 3) so the toast can render a
+            // deck of the most-recent notifications, not just the latest one.
+            var recent = [];
+            for (var ri = 0; ri < list.length && ri < 3; ri++) {
+                recent.push({
+                    summary: list[ri].summary, body: list[ri].body,
+                    imagePath: list[ri].imagePath, urgency: list[ri].urgency || 1,
+                    nId: list[ri].nId
+                });
+            }
+            var recentJson = JSON.stringify(recent);
+
             for (var k = 0; k < popupStacks.count; k++) {
                 if (popupStacks.get(k).appName === gKey) {
                     popupStacks.setProperty(k, "summary", list[0].summary);
@@ -622,6 +634,7 @@ Scope {
                     popupStacks.setProperty(k, "count", list.length);
                     popupStacks.setProperty(k, "urgency", maxUrg);
                     popupStacks.setProperty(k, "expiry", maxExpiry);
+                    popupStacks.setProperty(k, "recentJson", recentJson);
                     popupStacks.setProperty(k, "dismissing", false);
                     found = true;
                     break;
@@ -633,7 +646,8 @@ Scope {
                     "appName": gKey, "summary": list[0].summary,
                     "body": list[0].body, "imagePath": list[0].imagePath,
                     "count": list.length, "dismissing": false,
-                    "urgency": maxUrg, "expiry": maxExpiry
+                    "urgency": maxUrg, "expiry": maxExpiry,
+                    "recentJson": recentJson
                 });
             }
             shown = shown + 1;

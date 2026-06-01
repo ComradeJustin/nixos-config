@@ -142,15 +142,14 @@ Scope {
                             shadowVerticalOffset: 0
                         }
 
-                        Components.NotificationCard {
+                        Components.NotificationDeck {
                             id: toastContent
                             width: parent.width
                             appName: model.appName
-                            summary: model.summary
-                            body: model.body
-                            imagePath: model.imagePath
                             count: model.count
-                            compact: false
+                            recentJson: model.recentJson || "[]"
+                            style: Root.Config.behavior.notifStackStyle
+                            hovered: toastMouse.containsMouse
                         }
 
                         MouseArea {
@@ -178,6 +177,9 @@ Scope {
                         // toast's lifetime, then freezes while hovered (toastMouse).
                         Rectangle {
                             id: countdownBar
+                            // Anchored to the toast bottom: collapsed that's the
+                            // front card's footer; expanded it follows down to sit
+                            // beneath all the sub-cards.
                             anchors { left: parent.left; bottom: parent.bottom; leftMargin: 10; bottomMargin: 5 }
                             width: Math.max(0, (toastCard.width - 20) * fraction)
                             height: 3

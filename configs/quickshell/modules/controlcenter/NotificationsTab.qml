@@ -14,32 +14,52 @@ Components.SmoothFlickable {
     property var notifService: null
 
     // ── Keyboard selection ──
-    property int selectedIndex: -1
+    // Tracked by the notification's stable nId, NOT its list position: the
+    // service rebuilds `stacks` (clear + re-append) on every arrival/dismiss/
+    // expand, so a positional index would silently jump to a different
+    // notification mid-navigation.
+    property int selectedNId: -1
     property int stackCount: notifService ? notifService.stacks.count : 0
+
+    // Current row index of the selected nId, or -1 if it's no longer present.
+    function _selectedRow() {
+        if (!notifService || selectedNId < 0) return -1;
+        for (let i = 0; i < notifService.stacks.count; i++)
+            if (notifService.stacks.get(i).nId === selectedNId) return i;
+        return -1;
+    }
+    function _selectRow(i) {
+        let row = (notifService && i >= 0 && i < notifService.stacks.count)
+                ? notifService.stacks.get(i) : null;
+        selectedNId = row ? row.nId : -1;
+    }
 
     function moveDown() {
         if (stackCount === 0) return;
-        selectedIndex = Math.min(selectedIndex + 1, stackCount - 1);
+        _selectRow(Math.min(_selectedRow() + 1, stackCount - 1));
     }
     function moveUp() {
         if (stackCount === 0) return;
-        selectedIndex = Math.max(selectedIndex - 1, 0);
+        let r = _selectedRow();
+        _selectRow(r <= 0 ? 0 : r - 1);
     }
     function dismissSelected() {
-        if (selectedIndex < 0 || selectedIndex >= stackCount) return;
-        let item = notifService.stacks.get(selectedIndex);
+        let r = _selectedRow();
+        if (r < 0) return;
+        let item = notifService.stacks.get(r);
         if (!item) return;
         if (item.isHeader && item.count > 1)
             notifService.removeApp(item.appName);
         else
             notifService.removeOne(item.nId);
-        // Clamp selection after removal
-        if (selectedIndex >= notifService.stacks.count)
-            selectedIndex = Math.max(0, notifService.stacks.count - 1);
+        // Re-anchor selection to whatever now occupies the old slot.
+        let c = notifService.stacks.count;
+        _selectRow(c === 0 ? -1 : Math.min(r, c - 1));
     }
     function activateSelected() {
-        if (selectedIndex < 0 || selectedIndex >= stackCount) return;
-        let item = notifService.stacks.get(selectedIndex);
+        let r = _selectedRow();
+        if (r < 0) return;
+        let item = notifService.stacks.get(r);
         if (!item) return;
         if (item.isHeader && item.count > 1)
             notifService.toggleExpand(item.appName);
@@ -62,14 +82,21 @@ Components.SmoothFlickable {
         Repeater {
             model: root.notifService ? root.notifService.stacks : null
 
-            Rectangle {
-                id: notifItem
+            Components.StaggerReveal {
                 width: notifCol.width
+                staggerIndex: index
+                shown: root.visible
+                playOnCompleted: false   // instant on rebuild; cascade only when the tab opens
+                stagger: 45
+
+                Rectangle {
+                id: notifItem
+                width: parent.width
                 height: nCol.implicitHeight + (model.isHeader ? 14 : 10)
                 radius: Root.Theme.radiusSmall
                 color: {
                     // Keyboard selection highlight
-                    if (model.index === root.selectedIndex)
+                    if (model.nId === root.selectedNId)
                         return Qt.rgba(Root.Theme.domainNotifications.r, Root.Theme.domainNotifications.g, Root.Theme.domainNotifications.b, 0.12);
                     if (nHover.containsMouse)
                         return Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.08);
@@ -78,6 +105,13 @@ Components.SmoothFlickable {
                 clip: true
                 x: 0
                 Behavior on x { NumberAnimation { duration: Root.Theme.animFast } }
+
+                // A recreated/reused delegate must not inherit a half-swipe offset
+                // when the model rebuilds (clear+append on every change).
+                Connections {
+                    target: root.notifService ? root.notifService.stacks : null
+                    function onCountChanged() { notifItem.x = 0; }
+                }
 
                 // Swipe direction hint — subtle background tint
                 Rectangle {
@@ -97,6 +131,7 @@ Components.SmoothFlickable {
 
                 ColumnLayout {
                     id: nCol
+                    z: 1   // sit above the full-cover swipe MouseArea so action buttons receive clicks
                     anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: 10; rightMargin: 10 }
                     spacing: 0
 
@@ -120,7 +155,7 @@ Components.SmoothFlickable {
                                 visible: status === Image.Ready
                                 smooth: true
                                 fillMode: Image.PreserveAspectCrop
-                                cache: false
+                                cache: true
                             }
 
                             Rectangle {
@@ -273,7 +308,7 @@ Components.SmoothFlickable {
 
                     onPressed: function(mouse) {
                         startX = mouse.x;
-                        root.selectedIndex = model.index;
+                        root.selectedNId = model.nId;
                     }
                     onPositionChanged: function(mouse) { if (pressed) notifItem.x = mouse.x - startX; }
                     onReleased: function(mouse) {
@@ -297,6 +332,7 @@ Components.SmoothFlickable {
                         }
                     }
                 }
+            }
             }
         }
     }

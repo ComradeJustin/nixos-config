@@ -67,7 +67,8 @@
     "weatherUpdateInterval": 900000,
     "systemStatsInterval": 3000,
     "notificationTimeout": 5000,
-    "maxClipboardItems": 30
+    "maxClipboardItems": 30,
+    "notifStackStyle": "hover"
   },
   "clock": {
     "timeFormat": "HH:mm",

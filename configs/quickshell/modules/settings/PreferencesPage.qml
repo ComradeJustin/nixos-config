@@ -198,6 +198,28 @@ Column {
     }
 
     Components.SettingSection {
+        title: "NOTIFICATIONS"
+        width: parent.width
+        resetCallback: () => Root.Config.resetSection("behavior")
+
+        Components.SettingSelect {
+            width: parent.width
+            label: "Stacking style"
+            description: "How an app's multiple toasts appear in the OSD"
+            value: Root.Config.behavior.notifStackStyle
+            options: [
+                { value: "hover",  text: "Hover" },
+                { value: "stack",  text: "Stacked" },
+                { value: "single", text: "Single" }
+            ]
+            onSelected: v => {
+                Root.Config.behavior.notifStackStyle = v;
+                Root.Config.save();
+            }
+        }
+    }
+
+    Components.SettingSection {
         title: "TIMING"
         width: parent.width
         resetCallback: () => Root.Config.resetSection("behavior")

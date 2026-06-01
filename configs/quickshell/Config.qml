@@ -92,6 +92,11 @@ QtObject {
         property int systemStatsInterval: 3000
         property int notificationTimeout: 5000
         property int maxClipboardItems: 30
+        // How an app's multiple OSD toasts are presented:
+        //   "hover"  — just the latest at rest, fans out the deck on hover (default)
+        //   "stack"  — always show the recent cards stacked
+        //   "single" — only ever the latest card + a count badge
+        property string notifStackStyle: "hover"
     }
 
     // ── Per-widget config ──

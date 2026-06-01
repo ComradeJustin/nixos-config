@@ -13,8 +13,10 @@ ScrollingText 1.0 ScrollingText.qml
 ProcessPoller 1.0 ProcessPoller.qml
 IconButton 1.0 IconButton.qml
 NotificationCard 1.0 NotificationCard.qml
+NotificationDeck 1.0 NotificationDeck.qml
 SettingToggle 1.0 SettingToggle.qml
 SettingSlider 1.0 SettingSlider.qml
+SettingSelect 1.0 SettingSelect.qml
 CCSliderRow 1.0 CCSliderRow.qml
 ProfileCard 1.0 ProfileCard.qml
 CCSection 1.0 CCSection.qml

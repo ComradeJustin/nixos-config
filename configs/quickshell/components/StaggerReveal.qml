@@ -27,6 +27,11 @@ Item {
     // Master on/off, bound to the global config flag. When false the content is
     // shown instantly with no fade/slide (per-instance override still possible).
     property bool animationsEnabled: Root.Config.appearance.revealAnimations
+    // For dynamic lists whose model clears+rebuilds on every change: set false so
+    // an item created while already `shown` (a rebuild) appears INSTANTLY, and the
+    // cascade only ever plays on a `shown` transition (e.g. the tab opening) — not
+    // on every model rebuild.
+    property bool playOnCompleted: true
     property real slideFrom: 28     // px below the resting position to start at
     // Fade and slide are deliberately decoupled. The opacity uses a gentle
     // ease-in-out so the card doesn't pop in — a decelerating "Out" curve front-
@@ -54,7 +59,11 @@ Item {
         _delay.restart();
     }
     onShownChanged: if (shown) _play();
-    Component.onCompleted: if (shown) _play();
+    Component.onCompleted: {
+        if (!shown) return;
+        if (playOnCompleted) _play();
+        else { _armed = false; _revealed = true; }   // instant — no cascade on rebuild
+    }
 
     Timer {
         id: _delay
