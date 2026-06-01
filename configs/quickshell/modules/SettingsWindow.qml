@@ -526,16 +526,25 @@ PanelWindow {
                         rightMargin: Root.Theme.spacingL
                         bottomMargin: Root.Theme.spacingL
                     }
-                    contentHeight: pageLoader.height
+                    contentHeight: pageReveal.implicitHeight
                     clip: true
 
-                    Loader {
-                        id: pageLoader
+                    // Whole-page reveal: the loaded page fades + slides up when
+                    // the window opens (shown) and on every page switch (onLoaded).
+                    Components.StaggerReveal {
+                        id: pageReveal
                         width: pageScroll.width
-                        sourceComponent: {
-                            if (win._searchQuery.length > 0) return searchResultsPage;
-                            let page = win._pages[win._activePage];
-                            return page ? (win._pageComponents[page.id] || null) : null;
+                        shown: win.visible
+
+                        Loader {
+                            id: pageLoader
+                            width: parent.width
+                            onLoaded: pageReveal._play()
+                            sourceComponent: {
+                                if (win._searchQuery.length > 0) return searchResultsPage;
+                                let page = win._pages[win._activePage];
+                                return page ? (win._pageComponents[page.id] || null) : null;
+                            }
                         }
                     }
                 }

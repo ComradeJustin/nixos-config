@@ -27,6 +27,16 @@ Column {
                 Root.Config.save();
             }
         }
+
+        Components.SettingToggle {
+            label: "Reveal animations"
+            description: "Staggered fade + slide-in for cards, panels and lists"
+            isOn: Root.Config.appearance.revealAnimations
+            onToggled: {
+                Root.Config.appearance.revealAnimations = !Root.Config.appearance.revealAnimations;
+                Root.Config.save();
+            }
+        }
     }
 
     Components.SettingSection {

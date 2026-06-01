@@ -166,8 +166,11 @@ Scope {
                             }
                             onExited: {
                                 countdownBar.paused = false;
-                                countdownAnim.resume();
                                 if (cc.notifService) cc.notifService.resumePopups(model.appName);
+                                // resumePopups() refreshed model.expiry; if the group
+                                // changed while paused, restart from it, else resume.
+                                if (countdownBar._dirty) { countdownBar._dirty = false; countdownBar.restart(); }
+                                else countdownAnim.resume();
                             }
                         }
 
@@ -187,12 +190,15 @@ Scope {
 
                             property real fraction: 1
                             property bool paused: false
+                            property bool _dirty: false
                             property int _total: 5000
 
                             // Refill + restart when a new notification joins the
                             // group (a higher count extends the underlying expiry).
+                            // While paused, defer the restart until hover ends so
+                            // the bar re-syncs to the (possibly extended) expiry.
                             property int trackCount: model.count
-                            onTrackCountChanged: if (!paused) countdownBar.restart()
+                            onTrackCountChanged: { if (paused) countdownBar._dirty = true; else countdownBar.restart(); }
 
                             Component.onCompleted: countdownBar.restart()
                             function restart() {
@@ -520,7 +526,7 @@ Scope {
                                 required property var modelData
                                 width: ccCardsCol.width
                                 staggerIndex: index
-                                baseDelay: 130          // let the panel slide in first
+                                baseDelay: 160          // let the panel slide in first
                                 shown: cc.showing
 
                                 Loader {

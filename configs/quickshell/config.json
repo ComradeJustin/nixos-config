@@ -118,7 +118,8 @@
     "prediction": false
   },
   "appearance": {
-    "uiScale": 1
+    "uiScale": 1,
+    "revealAnimations": true
   },
   "cc": {
     "cardLayout": [

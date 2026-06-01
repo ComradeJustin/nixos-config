@@ -149,6 +149,10 @@ QtObject {
     // radius tokens through it. 1.0 = native size.
     readonly property QtObject appearance: QtObject {
         property real uiScale: 1.0
+        // Master switch for the staggered reveal animations (Control Center
+        // cards, settings nav/pages, Spotlight results). Off = content appears
+        // instantly with no fade/slide.
+        property bool revealAnimations: true
     }
 
     // ── Night Light ──

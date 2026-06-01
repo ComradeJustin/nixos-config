@@ -194,13 +194,22 @@ Scope {
         var popupUpdated = false;
         for (var j = 0; j < pArr.length; j++) {
             if (pArr[j].nId === nId) {
-                var newExpiry = (dur > 0) ? (Date.now() + dur) : pArr[j].expiry;
+                // If this popup is currently hover-paused, keep its far-future
+                // expiry sentinel intact and bank the new duration into
+                // _remaining instead — so resume() grants the extended time
+                // rather than clobbering the pause (which would let it auto-expire
+                // while still flagged paused).
+                var wasPaused = pArr[j]._paused === true;
+                var newExpiry = wasPaused ? pArr[j].expiry
+                              : (dur > 0) ? (Date.now() + dur) : pArr[j].expiry;
+                var newRemaining = (wasPaused && dur > 0) ? dur : pArr[j]._remaining;
                 pArr[j] = Object.assign({}, pArr[j], {
                     appName: appName,
                     summary: summary,
                     body: body,
                     imagePath: displayImg !== "" ? displayImg : pArr[j].imagePath,
                     expiry: newExpiry,
+                    _remaining: newRemaining,
                     syncTag: syncTag || pArr[j].syncTag || ""
                 });
                 popupUpdated = true;

@@ -21,18 +21,34 @@ Item {
     id: root
 
     property int staggerIndex: 0    // this item's position in the cascade
-    property int stagger: 60        // ms between successive items
+    property int stagger: 80        // ms between successive items
     property int baseDelay: 0       // ms before the whole cascade starts
     property bool shown: true       // bind to the panel's open state
-    property real slideFrom: 14     // px below the resting position to start at
+    // Master on/off, bound to the global config flag. When false the content is
+    // shown instantly with no fade/slide (per-instance override still possible).
+    property bool animationsEnabled: Root.Config.appearance.revealAnimations
+    property real slideFrom: 28     // px below the resting position to start at
+    // Fade and slide are deliberately decoupled. The opacity uses a gentle
+    // ease-in-out so the card doesn't pop in — a decelerating "Out" curve front-
+    // loads the fade (most of it happens in the first ~80ms) which reads as
+    // sudden. The slide is a longer, softly decelerating drift so the motion is
+    // clearly perceptible but never abrupt.
+    property int fadeDuration: 400
+    property int slideDuration: 470
 
     default property alias content: _c.data
-    implicitHeight: _c.implicitHeight   // width is set by the caller
+    implicitHeight: _c.implicitHeight   // width is set by the caller in a Column;
+    implicitWidth: _c.implicitWidth     // implicitWidth lets it sit in a Row/Grid
 
     property bool _armed: false     // gates the Behaviors (off = snap instantly)
     property bool _revealed: false
 
     function _play() {
+        if (!animationsEnabled) {   // toggle off → reveal instantly, no animation
+            _armed = false;
+            _revealed = true;
+            return;
+        }
         _armed = false;             // snap to hidden with no animation
         _revealed = false;
         _delay.restart();
@@ -50,15 +66,16 @@ Item {
         id: _c
         width: root.width
         implicitHeight: childrenRect.height
+        implicitWidth: childrenRect.width
         opacity: root._revealed ? 1 : 0
         y: root._revealed ? 0 : root.slideFrom
         Behavior on opacity {
             enabled: root._armed
-            NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: root.fadeDuration; easing.type: Easing.InOutQuad }
         }
         Behavior on y {
             enabled: root._armed
-            NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: root.slideDuration; easing.type: Easing.OutCubic }
         }
     }
 }
