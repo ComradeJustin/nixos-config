@@ -22,26 +22,31 @@ Item {
     signal dragStarted()
     signal dragEnded()
 
+    // Real throttle: fires every `interval` *while dragging* (not a debounce that
+    // waits for a pause), so the volume/brightness update follows the drag in
+    // real time instead of only on release.
     Timer {
         id: liveThrottle
-        interval: 50
-        onTriggered: {
-            if (slider.dragging) {
-                slider.value = slider.dragValue;
-                slider.valueUpdated(slider.dragValue);
-            }
-        }
+        interval: 40
+        repeat: true
+        running: slider.dragging && slider.liveUpdate
+        onTriggered: slider.valueUpdated(slider.dragValue)
     }
 
     // Internal state
     property bool dragging: false
     property real dragValue: value
+    // Brief post-release window: keep showing dragValue while the consumer's
+    // value binding reconciles with the (often async) service, so the thumb
+    // doesn't snap back to a stale value and wobble on release.
+    property bool _settling: false
+    Timer { id: settleTimer; interval: 180; onTriggered: slider._settling = false }
 
     // Computed ratio
     readonly property real ratio: {
         let range = maxValue - minValue;
         if (range <= 0) return 0;
-        let v = dragging ? dragValue : value;
+        let v = (dragging || _settling) ? dragValue : value;
         return Math.max(0, Math.min(1, (v - minValue) / range));
     }
 
@@ -144,21 +149,22 @@ Item {
             slider.dragging = true;
             slider.dragStarted();
             updateDragValue(mouse.x);
+            // Apply immediately so a tap / drag-start has no startup latency;
+            // the throttle then keeps it updating through the drag.
+            if (slider.liveUpdate) slider.valueUpdated(slider.dragValue);
         }
 
         onPositionChanged: function(mouse) {
-            if (pressed) {
-                updateDragValue(mouse.x);
-                if (slider.liveUpdate) liveThrottle.restart();
-            }
+            if (pressed) updateDragValue(mouse.x);
         }
 
         onReleased: {
             if (slider.dragging) {
-                liveThrottle.stop();
+                slider.dragging = false;       // stops the live throttle (running binding)
                 slider.value = slider.dragValue;
                 slider.valueUpdated(slider.dragValue);
-                slider.dragging = false;
+                slider._settling = true;
+                settleTimer.restart();
                 slider.dragEnded();
             }
         }

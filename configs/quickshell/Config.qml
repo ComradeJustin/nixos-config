@@ -98,6 +98,11 @@ QtObject {
         //   "stack"  — always show the recent cards stacked
         //   "single" — only ever the latest card + a count badge
         property string notifStackStyle: "hover"
+        // Restrict now-playing track-change notifications to specific players.
+        // Each entry is a case-insensitive substring matched against the MPRIS
+        // player's identity / dbusName / desktopEntry (e.g. ["spotify", "mpd"]).
+        // Empty = notify for ALL players. Use this to skip YouTube/video/browsers.
+        property var nowPlayingPlayers: []
     }
 
     // ── Per-widget config ──

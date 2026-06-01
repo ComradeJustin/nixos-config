@@ -685,6 +685,9 @@ SpotlightProvider {
                         width: Root.Theme.wpThumbWidth
                         height: Root.Theme.wpThumbHeight + 24
                         radius: 8
+                        transformOrigin: Item.Center
+                        scale: wpMouse.pressed ? 0.97 : 1.0
+                        Behavior on scale { NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic } }
 
                         property int sourceIndex: root.filteredIndices[index] ?? -1
                         property var entry: sourceIndex >= 0 ? wpModel.get(sourceIndex) : null

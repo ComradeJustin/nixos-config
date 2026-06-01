@@ -210,6 +210,9 @@ SpotlightProvider {
                         id: clipItem
                         width: clipCol.width
                         height: Math.max(clipRow.implicitHeight + 12, 36)
+                        transformOrigin: Item.Center
+                        scale: clipMouse.pressed ? 0.97 : 1.0
+                        Behavior on scale { NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic } }
 
                         property int sourceIndex: root.filteredIndices[index] ?? -1
                         property var entry: sourceIndex >= 0 ? clipModel.get(sourceIndex) : null

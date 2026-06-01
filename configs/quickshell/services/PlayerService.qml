@@ -153,8 +153,25 @@ Scope {
             root._notifInitialized = true;                    // ...even while disabled
             if (firstTime) return;                            // startup baseline — no notify
             if (!Root.Config.features.nowPlayingNotifications) return;
+            if (!root._playerAllowed()) return;               // allowlist (skip e.g. browsers/video)
             root._fireTrackNotify(root.trackTitle, root.trackArtist, root.trackArtUrl);
         }
+    }
+
+    // Allowlist filter: with Config.behavior.nowPlayingPlayers non-empty, only
+    // notify for players whose identity / dbusName / desktopEntry contains one of
+    // the configured substrings (case-insensitive). Empty list = all players.
+    function _playerAllowed() {
+        let allow = Root.Config.behavior.nowPlayingPlayers;
+        if (!allow || allow.length === 0) return true;
+        let p = root.player;
+        if (!p) return false;
+        let hay = ((p.identity || "") + " " + (p.dbusName || "") + " " + (p.desktopEntry || "")).toLowerCase();
+        for (let i = 0; i < allow.length; i++) {
+            let needle = ("" + allow[i]).trim().toLowerCase();
+            if (needle.length > 0 && hay.indexOf(needle) !== -1) return true;
+        }
+        return false;
     }
 
     // createObject per fire so a hot-reload never leaves a Process with stale

@@ -143,11 +143,16 @@ Item {
                         fillMode: Image.PreserveAspectCrop; smooth: true; asynchronous: true
                         visible: status === Image.Ready
                     }
+                    Components.Skeleton {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        visible: (root.playerService && root.playerService.trackArtUrl.length > 0) && artImg.status !== Image.Ready
+                    }
                     Text {
                         anchors.centerIn: parent; text: Root.Icons.mediaPlay
                         color: Root.Theme.textDimmed
                         font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSize3XL }
-                        visible: artImg.status !== Image.Ready
+                        visible: !root.playerService || root.playerService.trackArtUrl.length === 0
                     }
                 }
             }
@@ -181,6 +186,14 @@ Item {
             property real ratio: len > 0 ? pos / len : 0
             property bool dragging: false
             property real dragRatio: 0
+            property bool settling: false
+            property real seekTarget: -1
+            // What the fill/handle actually show: the dragged position while
+            // scrubbing AND until the real (1s-polled) position catches up — so
+            // it never glides backwards to the stale position then forwards.
+            readonly property real displayRatio: (dragging || settling) ? dragRatio : ratio
+            onPosChanged: if (settling && (seekTarget < 0 || Math.abs(pos - seekTarget) < 1.5)) { settling = false; seekSettleTimer.stop(); }
+            Timer { id: seekSettleTimer; interval: 1500; onTriggered: seekBar.settling = false }
 
             Rectangle {
                 anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
@@ -189,7 +202,11 @@ Item {
             Rectangle {
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                 height: 3; radius: height / 2
-                width: parent.width * (seekBar.dragging ? seekBar.dragRatio : seekBar.ratio)
+                width: parent.width * seekBar.displayRatio
+                // Position only polls once a second; interpolate so the fill
+                // advances smoothly instead of jumping in 1s steps (off while
+                // scrubbing so the thumb tracks the finger instantly).
+                Behavior on width { enabled: !seekBar.dragging; NumberAnimation { duration: 1000; easing.type: Easing.Linear } }
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
                     GradientStop { position: 0.0; color: Root.Theme.domainMedia }
@@ -199,7 +216,8 @@ Item {
             Rectangle {
                 width: 10; height: 10; radius: 5; color: Root.Theme.domainMedia
                 y: (parent.height - 10) / 2
-                x: (parent.width - 10) * (seekBar.dragging ? seekBar.dragRatio : seekBar.ratio)
+                x: (parent.width - 10) * seekBar.displayRatio
+                Behavior on x { enabled: !seekBar.dragging; NumberAnimation { duration: 1000; easing.type: Easing.Linear } }
             }
 
             MouseArea {
@@ -212,9 +230,13 @@ Item {
                     if (pressed) seekBar.dragRatio = Math.max(0, Math.min(1, mouse.x / seekBar.width));
                 }
                 onReleased: {
-                    if (root.playerService && seekBar.len > 0)
-                        root.playerService.seek(seekBar.dragRatio * seekBar.len);
                     seekBar.dragging = false;
+                    if (root.playerService && seekBar.len > 0) {
+                        seekBar.seekTarget = seekBar.dragRatio * seekBar.len;
+                        root.playerService.seek(seekBar.seekTarget);
+                        seekBar.settling = true;
+                        seekSettleTimer.restart();
+                    }
                 }
             }
         }
@@ -224,7 +246,7 @@ Item {
             width: parent.width; height: 12
             Text {
                 anchors.left: parent.left
-                text: root.playerService ? root.playerService.formatTime(seekBar.dragging ? seekBar.dragRatio * seekBar.len : seekBar.pos) : "0:00"
+                text: root.playerService ? root.playerService.formatTime(seekBar.displayRatio * seekBar.len) : "0:00"
                 color: Root.Theme.textDimmed; font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeXS }
             }
             Text {

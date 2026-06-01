@@ -41,6 +41,16 @@ Item {
     implicitWidth: row.implicitWidth + 8
     implicitHeight: row.implicitHeight
 
+    // Press-scale feedback. A passive TapHandler tracks the press *without*
+    // consuming it, so the popup TapHandler below and any child MouseAreas still
+    // fire normally — it only drives the scale.
+    transformOrigin: Item.Center
+    scale: _pressFx.active ? 0.88 : 1.0
+    Behavior on scale { NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic } }
+    // PointHandler tracks the press passively (no tap/click grab), so it can't
+    // swallow the popup TapHandler or child MouseAreas — it only drives the scale.
+    PointHandler { id: _pressFx }
+
     // Hover glow background
     Rectangle {
         anchors.fill: parent

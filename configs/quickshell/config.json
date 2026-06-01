@@ -62,14 +62,18 @@
     "mediaPopup": true,
     "clipboardHistory": true,
     "wallpaperSelector": true,
-    "nowPlayingNotifications": true
+    "nowPlayingNotifications": false
   },
   "behavior": {
     "weatherUpdateInterval": 900000,
     "systemStatsInterval": 3000,
     "notificationTimeout": 5000,
     "maxClipboardItems": 30,
-    "notifStackStyle": "hover"
+    "notifStackStyle": "hover",
+    "nowPlayingPlayers": [
+      "spotify",
+      "mpd"
+    ]
   },
   "clock": {
     "timeFormat": "HH:mm",

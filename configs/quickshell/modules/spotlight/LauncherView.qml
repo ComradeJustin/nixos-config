@@ -347,6 +347,9 @@ SpotlightProvider {
                         id: appItem
                         width: appCol.width
                         height: Root.Theme.launchItemHeight
+                        transformOrigin: Item.Center
+                        scale: appMouse.pressed ? 0.97 : 1.0
+                        Behavior on scale { NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic } }
 
                         property int sourceIndex: root.filteredIndices[index] ?? -1
                         property var entry: sourceIndex >= 0 ? appModel.get(sourceIndex) : null
