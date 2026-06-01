@@ -20,7 +20,7 @@ SpotlightProvider {
     preferredMaxHeight: Root.Theme.launchMaxHeight
 
     // ── Provider interface ──
-    function activate() { refresh(); }
+    function activate() { refresh(); cascadeArmTimer.restart(); }
     function deactivate() {}
     function handleSearchText(text) {
         searchText = text;
@@ -36,6 +36,11 @@ SpotlightProvider {
     property string searchText: ""
     property int selectedIndex: 0
     property var filteredIndices: []
+    property int _cascadeGen: 0      // bump replays the result cascade (on open)
+
+    // Re-arm a tick after activate() so the Repeater has rebuilt before replaying.
+    // Keystrokes don't bump it, so typing filters instantly with no cascade.
+    Timer { id: cascadeArmTimer; interval: 16; onTriggered: root._cascadeGen++ }
 
     function updateFilter() {
         let indices = [];
@@ -196,7 +201,18 @@ SpotlightProvider {
                 Repeater {
                     model: root.filteredIndices.length
 
-                    Rectangle {
+                    Components.StaggerReveal {
+                        width: clipCol.width
+                        shown: true
+                        playOnCompleted: false
+                        replayToken: root._cascadeGen
+                        staggerIndex: Math.min(index, 8)
+                        stagger: 28
+                        fadeDuration: 200
+                        slideDuration: 240
+                        slideFrom: 12
+
+                        Rectangle {
                         id: clipItem
                         width: clipCol.width
                         height: Math.max(clipRow.implicitHeight + 12, 36)
@@ -292,6 +308,7 @@ SpotlightProvider {
                             anchors.horizontalCenter: parent.horizontalCenter
                             color: Root.Theme.textDimmed; opacity: 0.1
                         }
+                    }
                     }
                 }
             }

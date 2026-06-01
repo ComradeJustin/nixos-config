@@ -32,6 +32,11 @@ Item {
     // cascade only ever plays on a `shown` transition (e.g. the tab opening) — not
     // on every model rebuild.
     property bool playOnCompleted: true
+    // Bump from the host to replay the cascade on a delegate that PERSISTS across
+    // re-open (e.g. Spotlight views are hidden, not destroyed) — covers the case
+    // where the list doesn't rebuild, so Component.onCompleted won't re-fire.
+    property int replayToken: 0
+    onReplayTokenChanged: _play()
     property real slideFrom: 28     // px below the resting position to start at
     // Fade and slide are deliberately decoupled. The opacity uses a gentle
     // ease-in-out so the card doesn't pop in — a decelerating "Out" curve front-

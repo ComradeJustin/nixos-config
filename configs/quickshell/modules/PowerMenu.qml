@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Effects
 import ".." as Root
 import "../core" as Core
+import "../components" as Components
 
 // Centered power menu overlay.
 // Toggle via IPC: qs ipc call quickshell-bar power
@@ -181,7 +182,12 @@ Scope {
                 Repeater {
                     model: pm.actions
 
-                    Rectangle {
+                    Components.StaggerReveal {
+                        staggerIndex: index
+                        shown: pm.showing
+                        baseDelay: 120          // let the menu scale-in settle first
+
+                        Rectangle {
                         id: pmItem
                         width: 90; height: 90
                         radius: pm.selectedIndex === index ? 45 : 16
@@ -219,6 +225,7 @@ Scope {
                             // (fast-path handled inside requestAction).
                             onClicked: pm.requestAction(modelData.action)
                         }
+                    }
                     }
                 }
             }

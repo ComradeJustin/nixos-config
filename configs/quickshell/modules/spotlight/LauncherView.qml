@@ -23,7 +23,7 @@ SpotlightProvider {
     preferredMaxHeight: Root.Theme.launchMaxHeight
 
     // ── Provider interface ──
-    function activate() { resetSearch(); }
+    function activate() { resetSearch(); cascadeArmTimer.restart(); }
     function deactivate() {}
     function handleSearchText(text) {
         searchText = text;
@@ -37,8 +37,14 @@ SpotlightProvider {
     property string searchText: ""
     property int selectedIndex: 0
     property var filteredIndices: []
+    property int _cascadeGen: 0      // bumping this replays the result cascade (on open)
 
     signal launched()
+
+    // Re-arm the cascade a tick after activate() so the Repeater has finished
+    // rebuilding the (frecency-sorted) results before we replay. Keystroke
+    // updates do NOT bump this, so typing filters instantly with no cascade.
+    Timer { id: cascadeArmTimer; interval: 16; onTriggered: root._cascadeGen++ }
 
     // ── Frecency tracking ──
     // Stores { "appName": { count: N, lastUsed: timestamp } }
@@ -329,7 +335,18 @@ SpotlightProvider {
                 Repeater {
                     model: root.filteredIndices.length
 
-                    Rectangle {
+                    Components.StaggerReveal {
+                        width: appCol.width
+                        shown: true
+                        playOnCompleted: false          // keystroke rebuilds appear instantly
+                        replayToken: root._cascadeGen   // ...the cascade replays on open
+                        staggerIndex: Math.min(index, 8) // cap so a long app list doesn't drag
+                        stagger: 28
+                        fadeDuration: 200
+                        slideDuration: 240
+                        slideFrom: 12
+
+                        Rectangle {
                         id: appItem
                         width: appCol.width
                         height: Root.Theme.launchItemHeight
@@ -409,6 +426,7 @@ SpotlightProvider {
                             onClicked: { root.selectedIndex = index; root.launchSelected(); }
                             onPositionChanged: root.selectedIndex = index
                         }
+                    }
                     }
                 }
             }

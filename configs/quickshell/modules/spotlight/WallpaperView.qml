@@ -22,7 +22,7 @@ SpotlightProvider {
     preferredMaxHeight: Root.Theme.wpMaxHeight
 
     // ── Provider interface ──
-    function activate() { resetSearch(); refresh(); scrollToCurrent(); }
+    function activate() { resetSearch(); refresh(); scrollToCurrent(); cascadeArmTimer.restart(); }
     function deactivate() {}
     function handleSearchText(text) {
         searchText = text;
@@ -41,6 +41,10 @@ SpotlightProvider {
 
     signal wallpaperSet()
     signal searchRequested(string text)
+
+    property int _cascadeGen: 0      // bump replays the result cascade (on open)
+    // Re-arm a tick after activate() so the grid has rebuilt before replaying.
+    Timer { id: cascadeArmTimer; interval: 16; onTriggered: root._cascadeGen++ }
 
     // When a tag pill is clicked, switch search to tag ID syntax
     function tagClicked(tagId, tagName) {
@@ -670,7 +674,18 @@ SpotlightProvider {
                 Repeater {
                     model: root.filteredIndices.length
 
-                    Rectangle {
+                    Components.StaggerReveal {
+                        width: Root.Theme.wpThumbWidth
+                        shown: true
+                        playOnCompleted: false
+                        replayToken: root._cascadeGen
+                        staggerIndex: Math.min(index, 11)
+                        stagger: 26
+                        fadeDuration: 200
+                        slideDuration: 240
+                        slideFrom: 12
+
+                        Rectangle {
                         id: wpCard
                         width: Root.Theme.wpThumbWidth
                         height: Root.Theme.wpThumbHeight + 24
@@ -773,6 +788,7 @@ SpotlightProvider {
                             onClicked: { root.selectedIndex = index; root.applySelected(); }
                             onPositionChanged: root.selectedIndex = index
                         }
+                    }
                     }
                 }
             }
