@@ -1,44 +1,26 @@
-import Quickshell
-import Quickshell.Wayland
 import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
 import ".." as Root
+import "../components" as Components
 
-PanelWindow {
+// Monitor configuration dialog — centered modal over the shared OverlayPanel base.
+Components.OverlayPanel {
     id: panel
 
-    visible: false
-    anchors { top: true; left: true; right: true; bottom: true }
-    implicitWidth: Screen.width
-    implicitHeight: Screen.height
-
-    WlrLayershell.namespace: "quickshell-monitors"
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
-    exclusionMode: ExclusionMode.Ignore
-
-    color: "transparent"
+    namespace: "quickshell-monitors"
+    scrimOpacity: 0.35
 
     property var monitors: []
     property bool loading: false
 
-    function toggle() {
-        if (visible) { visible = false; return; }
-        refresh();
-        visible = true;
-    }
+    // Reload the monitor list each time the dialog opens.
+    onAboutToOpen: panel.refresh()
 
     function refresh() {
         loading = true;
         loadProc.running = true;
-    }
-
-    // Dismiss on background click
-    MouseArea {
-        anchors.fill: parent
-        onClicked: panel.visible = false
     }
 
     // Center card
@@ -93,7 +75,7 @@ PanelWindow {
                         anchors.centerIn: parent; text: Root.Icons.cancel; color: Root.Theme.textDimmed
                         font { family: Root.Theme.fontFamily; pixelSize: 16 }
                     }
-                    MouseArea { id: closeMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: panel.visible = false }
+                    MouseArea { id: closeMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: panel.close() }
                 }
             }
 
@@ -118,6 +100,17 @@ PanelWindow {
                 model: panel.monitors
 
                 Rectangle {
+                    id: monitorEntry
+                    // Capture this monitor row's data so the inner scale Repeater
+                    // (whose own index/modelData are the scale VALUE, not the
+                    // monitor) can address the correct, per-row monitor.
+                    readonly property var monitor: modelData
+                    readonly property int monitorIndex: index
+                    // Optimistic highlight: reflect a just-clicked scale instantly,
+                    // then defer to niri's authoritative value once it reloads.
+                    property real pendingScale: 0
+                    onMonitorChanged: pendingScale = 0
+
                     Layout.fillWidth: true
                     height: monitorRow.implicitHeight + 20
                     radius: Root.Theme.radiusSmall
@@ -180,7 +173,12 @@ PanelWindow {
                                     model: [1.0, 1.25, 1.5, 1.75, 2.0]
                                     Rectangle {
                                         width: 36; height: 24; radius: Root.Theme.radiusSmall
-                                        property bool active: Math.abs(modelData - (panel.monitors[index] ? panel.monitors[index].scale : 1.0)) < 0.01
+                                        property bool active: {
+                                            const current = monitorEntry.pendingScale > 0
+                                                ? monitorEntry.pendingScale
+                                                : (monitorEntry.monitor ? monitorEntry.monitor.scale : 1.0);
+                                            return Math.abs(modelData - current) < 0.01;
+                                        }
 
                                         color: active ? Root.Theme.accentPrimary
                                             : scaleMouse.containsMouse ? Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.2)
@@ -193,14 +191,14 @@ PanelWindow {
                                             font { family: Root.Theme.fontFamily; pixelSize: 10; bold: parent.active }
                                         }
 
-                                        // Need the outer repeater's index
-                                        property int monitorIdx: index
-
                                         MouseArea {
                                             id: scaleMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                             onClicked: {
-                                                let mon = panel.monitors[parent.monitorIdx];
-                                                if (mon) applyScale(mon.name, modelData);
+                                                let mon = monitorEntry.monitor;
+                                                if (mon) {
+                                                    monitorEntry.pendingScale = modelData;
+                                                    applyScale(mon.name, modelData);
+                                                }
                                             }
                                         }
                                     }

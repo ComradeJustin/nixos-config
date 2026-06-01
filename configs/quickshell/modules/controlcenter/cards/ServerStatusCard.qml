@@ -309,7 +309,7 @@ Rectangle {
                     color: svcMouse.containsMouse
                         ? Qt.rgba(Root.Theme.domainNetwork.r, Root.Theme.domainNetwork.g, Root.Theme.domainNetwork.b, 0.12)
                         : Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.06)
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
                     Row {
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: 8 }

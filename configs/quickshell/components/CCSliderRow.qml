@@ -58,7 +58,7 @@ Rectangle {
                           Root.Theme.textPrimary.b, 0.1)
                 : "transparent"
 
-            Behavior on color { ColorAnimation { duration: 120 } }
+            Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
             Text {
                 anchors.centerIn: parent

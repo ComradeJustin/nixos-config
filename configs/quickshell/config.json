@@ -1,4 +1,5 @@
 {
+  "_version": 1,
   "bar": {
     "workspace": true,
     "time": true,
@@ -18,8 +19,8 @@
     "layoutLeft": [
       "workspace",
       "time",
-      "window",
       "weather",
+      "window",
       "caffeine"
     ],
     "layoutCenter": [
@@ -28,11 +29,12 @@
     "layoutRight": [
       "inputMethod",
       "tray",
-      "vpn",
-      "network",
       "resource",
+      "network",
+      "vpn",
       "audio",
-      "battery"
+      "battery",
+      "gear"
     ]
   },
   "widgets": {
@@ -114,6 +116,10 @@
   "inputMethod": {
     "liveConversion": false,
     "prediction": false
+  },
+  "appearance": {
+    "uiScale": 1,
+    "panelOpacity": 0.7
   },
   "cc": {
     "cardLayout": [

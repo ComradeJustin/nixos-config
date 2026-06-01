@@ -23,9 +23,9 @@ SmoothFlickable 1.0 SmoothFlickable.qml
 BarSectionDelegate 1.0 BarSectionDelegate.qml
 Tooltip 1.0 Tooltip.qml
 Revealer 1.0 Revealer.qml
-RippleButton 1.0 RippleButton.qml
 BarGroup 1.0 BarGroup.qml
 FadeLoader 1.0 FadeLoader.qml
 Graph 1.0 Graph.qml
 HoverPopup 1.0 HoverPopup.qml
 PopupRow 1.0 PopupRow.qml
+OverlayPanel 1.0 OverlayPanel.qml

@@ -37,7 +37,7 @@ Flickable {
         visible: flick.contentHeight > flick.height
         z: 999
 
-        Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutCubic } }
         Behavior on y { NumberAnimation { duration: 16 } }
 
         Timer {

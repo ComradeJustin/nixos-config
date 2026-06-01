@@ -45,28 +45,28 @@ Item {
     visible: implicitWidth > 0 || widthAnim.running
 
     Behavior on implicitWidth {
-        NumberAnimation { id: widthAnim; duration: 150; easing.type: Easing.InOutCubic }
+        NumberAnimation { id: widthAnim; duration: Root.Theme.animFast; easing.type: Easing.InOutCubic }
     }
 
     // Crossfade: fade out, let bindings update, fade back in
     SequentialAnimation {
         id: crossfadeAnim
         NumberAnimation { target: contentRow; property: "opacity"; to: 0; duration: 80; easing.type: Easing.InCubic }
-        NumberAnimation { target: contentRow; property: "opacity"; to: 1; duration: 150; easing.type: Easing.OutCubic }
+        NumberAnimation { target: contentRow; property: "opacity"; to: 1; duration: Root.Theme.animFast; easing.type: Easing.OutCubic }
     }
 
     // Fade out when window unfocused
     NumberAnimation {
         id: fadeOutAnim
         target: contentRow; property: "opacity"
-        to: 0; duration: 120; easing.type: Easing.InCubic
+        to: 0; duration: Root.Theme.anim.microDuration; easing.type: Easing.InCubic
     }
 
     // Fade in when window first appears
     NumberAnimation {
         id: fadeInAnim
         target: contentRow; property: "opacity"
-        to: 1; duration: 150; easing.type: Easing.OutCubic
+        to: 1; duration: Root.Theme.animFast; easing.type: Easing.OutCubic
     }
 
     Row {

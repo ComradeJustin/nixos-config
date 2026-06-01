@@ -41,8 +41,8 @@ Item {
 
     ParallelAnimation {
         id: entranceAnim
-        NumberAnimation { target: root; property: "opacity"; from: 0; to: 1; duration: 250; easing.type: Easing.OutCubic }
-        NumberAnimation { target: slideTransform; property: "x"; from: 60; to: 0; duration: 300; easing.type: Easing.OutBack; easing.overshoot: 0.8 }
+        NumberAnimation { target: root; property: "opacity"; from: 0; to: 1; duration: Root.Theme.animNormal; easing.type: Easing.OutCubic }
+        NumberAnimation { target: slideTransform; property: "x"; from: 60; to: 0; duration: Root.Theme.anim.enterDuration; easing.type: Easing.OutBack; easing.overshoot: 0.8 }
     }
 
     // ── Swipe-to-dismiss mechanics ──

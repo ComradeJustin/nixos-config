@@ -1,5 +1,6 @@
 import QtQuick
 import "../../.." as Root
+import "../../../components" as Components
 
 // CalendarCard — compact month grid with today highlighted.
 Rectangle {
@@ -94,19 +95,14 @@ Rectangle {
             spacing: 0
 
             // Previous month
-            Rectangle {
-                width: 24; height: 24; radius: 12
-                color: prevMouse.containsMouse ? Root.Theme.layer1Hover : "transparent"
+            Components.ClickableItem {
+                width: 24; height: 24; radius: width / 2
+                onClicked: card._prevMonth()
                 Text {
                     anchors.centerIn: parent
                     text: "‹"
                     color: Root.Theme.textDimmed
                     font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
-                }
-                MouseArea {
-                    id: prevMouse; anchors.fill: parent
-                    hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                    onClicked: card._prevMonth()
                 }
             }
 
@@ -130,19 +126,14 @@ Rectangle {
             }
 
             // Next month
-            Rectangle {
-                width: 24; height: 24; radius: 12
-                color: nextMouse.containsMouse ? Root.Theme.layer1Hover : "transparent"
+            Components.ClickableItem {
+                width: 24; height: 24; radius: width / 2
+                onClicked: card._nextMonth()
                 Text {
                     anchors.centerIn: parent
                     text: "›"
                     color: Root.Theme.textDimmed
                     font { family: Root.Theme.fontFamily; pixelSize: 14; bold: true }
-                }
-                MouseArea {
-                    id: nextMouse; anchors.fill: parent
-                    hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                    onClicked: card._nextMonth()
                 }
             }
         }

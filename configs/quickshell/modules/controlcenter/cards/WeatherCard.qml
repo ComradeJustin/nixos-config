@@ -57,15 +57,15 @@ Rectangle {
                                   Root.Theme.domainWeather.g,
                                   Root.Theme.domainWeather.b, card.ready ? 0.5 : 0.2)
 
-            Behavior on color { ColorAnimation { duration: 200 } }
-            Behavior on border.color { ColorAnimation { duration: 200 } }
+            Behavior on color { ColorAnimation { duration: Root.Theme.anim.exitDuration } }
+            Behavior on border.color { ColorAnimation { duration: Root.Theme.anim.exitDuration } }
 
             Text {
                 anchors.centerIn: parent
                 text: card.svc ? card.svc.icon : Root.Icons.weatherDefault
                 color: card.ready ? Root.Theme.domainWeather : Root.Theme.textDimmed
                 font { family: Root.Theme.fontFamily; pixelSize: 28 }
-                Behavior on color { ColorAnimation { duration: 200 } }
+                Behavior on color { ColorAnimation { duration: Root.Theme.anim.exitDuration } }
             }
         }
 
@@ -112,7 +112,7 @@ Rectangle {
                                   Root.Theme.domainWeather.b, 0.45)
             scale: refreshMouse.pressed ? 0.92 : 1.0
 
-            Behavior on color { ColorAnimation { duration: 120 } }
+            Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
             Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
 
             Text {

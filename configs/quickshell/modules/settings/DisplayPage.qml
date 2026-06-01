@@ -11,6 +11,25 @@ Column {
     spacing: 16
 
     Components.SettingSection {
+        title: "APPEARANCE"
+        width: parent.width
+        resetCallback: () => Root.Config.resetSection("appearance")
+
+        Components.SettingSlider {
+            label: "UI scale"
+            // Slider runs in percent; stored as a 0.75–1.50 ratio. Rounded to
+            // 5% steps to limit how often the whole shell re-flows while dragging.
+            value: Math.round(Root.Config.appearance.uiScale * 100)
+            minValue: 75; maxValue: 150; suffix: "%"
+            onSliderUpdated: newValue => {
+                let pct = Math.round(newValue / 5) * 5;
+                Root.Config.appearance.uiScale = pct / 100;
+                Root.Config.save();
+            }
+        }
+    }
+
+    Components.SettingSection {
         title: "NIGHT LIGHT"
         width: parent.width
         resetCallback: () => Root.Config.resetSection("nightLight")

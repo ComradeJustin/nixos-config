@@ -96,14 +96,14 @@ Column {
                     color: root.activeSection === modelData.key
                         ? Qt.rgba(Root.Theme.domainNetwork.r, Root.Theme.domainNetwork.g, Root.Theme.domainNetwork.b, 0.2)
                         : (subTabMouse.containsMouse ? Root.Theme.layer1Hover : "transparent")
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
                     Text {
                         anchors.centerIn: parent
                         text: modelData.icon + "  " + modelData.label
                         color: root.activeSection === modelData.key ? Root.Theme.domainNetwork : Root.Theme.textDimmed
                         font { family: Root.Theme.fontFamily; pixelSize: 13 }
-                        Behavior on color { ColorAnimation { duration: 120 } }
+                        Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                     }
                     MouseArea {
                         id: subTabMouse
@@ -200,7 +200,7 @@ Column {
                         color: forgetMouse.containsMouse
                             ? Qt.rgba(Root.Theme.accentDanger.r, Root.Theme.accentDanger.g, Root.Theme.accentDanger.b, 0.18)
                             : Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.10)
-                        Behavior on color { ColorAnimation { duration: 120 } }
+                        Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
                         Text {
                             anchors.centerIn: parent
@@ -318,7 +318,7 @@ Column {
                                 color: connectMouse.containsMouse
                                     ? Root.Theme.domainNetwork
                                     : Qt.rgba(Root.Theme.domainNetwork.r, Root.Theme.domainNetwork.g, Root.Theme.domainNetwork.b, 0.6)
-                                Behavior on color { ColorAnimation { duration: 120 } }
+                                Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
                                 Text {
                                     anchors.centerIn: parent
@@ -457,7 +457,7 @@ Column {
                                 color: hiddenConnectMouse.containsMouse
                                     ? Root.Theme.domainNetwork
                                     : Qt.rgba(Root.Theme.domainNetwork.r, Root.Theme.domainNetwork.g, Root.Theme.domainNetwork.b, 0.6)
-                                Behavior on color { ColorAnimation { duration: 120 } }
+                                Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
                                 Text {
                                     anchors.centerIn: parent
@@ -582,7 +582,7 @@ Column {
                         color: forgetMouse.containsMouse
                             ? Qt.rgba(Root.Theme.accentDanger.r, Root.Theme.accentDanger.g, Root.Theme.accentDanger.b, 0.18)
                             : Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.10)
-                        Behavior on color { ColorAnimation { duration: 120 } }
+                        Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
                         Text {
                             anchors.centerIn: parent
@@ -634,7 +634,7 @@ Column {
                         : Qt.rgba(Root.Theme.domainNetwork.r, Root.Theme.domainNetwork.g, Root.Theme.domainNetwork.b, 0.10)
                     border.width: Root.Theme.borderWidth
                     border.color: Qt.rgba(Root.Theme.domainNetwork.r, Root.Theme.domainNetwork.g, Root.Theme.domainNetwork.b, 0.3)
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
                     Text {
                         anchors.centerIn: parent

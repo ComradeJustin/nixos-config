@@ -61,7 +61,7 @@ Item {
             id: playBounce
             running: false
             NumberAnimation { target: playIcon; property: "scale"; to: 0.85; duration: 60; easing.type: Easing.InQuad }
-            NumberAnimation { target: playIcon; property: "scale"; to: 1.0; duration: 120; easing.type: Easing.OutBack; easing.overshoot: 1.5 }
+            NumberAnimation { target: playIcon; property: "scale"; to: 1.0; duration: Root.Theme.anim.microDuration; easing.type: Easing.OutBack; easing.overshoot: 1.5 }
         }
 
         MouseArea {
@@ -348,7 +348,7 @@ Item {
                             }
                             NumberAnimation {
                                 target: lyricsSlider; property: "y"
-                                from: 14; to: 6; duration: 200; easing.type: Easing.OutCubic
+                                from: 14; to: 6; duration: Root.Theme.anim.exitDuration; easing.type: Easing.OutCubic
                             }
                         }
                     }

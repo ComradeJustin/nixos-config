@@ -324,7 +324,7 @@ Scope {
                     width: parent.width
                     maxContentHeight: spot.viewBudget
                     opacity: visible ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                    Behavior on opacity { NumberAnimation { duration: Root.Theme.animFast; easing.type: Easing.OutCubic } }
                     onLaunched: spot.close()
                 }
 
@@ -334,7 +334,7 @@ Scope {
                     width: parent.width
                     maxContentHeight: spot.viewBudget
                     opacity: visible ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                    Behavior on opacity { NumberAnimation { duration: Root.Theme.animFast; easing.type: Easing.OutCubic } }
                     onItemSelected: spot.close()
                 }
 
@@ -344,7 +344,7 @@ Scope {
                     width: parent.width
                     maxContentHeight: spot.viewBudget
                     opacity: visible ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                    Behavior on opacity { NumberAnimation { duration: Root.Theme.animFast; easing.type: Easing.OutCubic } }
                     onWallpaperSet: spot.close()
                     onSearchRequested: text => { searchInput.text = text; }
                 }
@@ -355,7 +355,7 @@ Scope {
                     width: parent.width
                     maxContentHeight: spot.viewBudget
                     opacity: visible ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                    Behavior on opacity { NumberAnimation { duration: Root.Theme.animFast; easing.type: Easing.OutCubic } }
                 }
 
                 Views.EmojiView {
@@ -364,7 +364,7 @@ Scope {
                     width: parent.width
                     maxContentHeight: spot.viewBudget
                     opacity: visible ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                    Behavior on opacity { NumberAnimation { duration: Root.Theme.animFast; easing.type: Easing.OutCubic } }
                 }
             }
         }

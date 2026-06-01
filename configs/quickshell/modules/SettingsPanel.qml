@@ -43,7 +43,7 @@ Scope {
                 radius: Root.Theme.radiusMedium
                 color: Root.Theme.barBackground
                 x: sp.showing ? 0 : -320
-                Behavior on x { NumberAnimation { duration: 250; easing.type: Easing.InOutCubic } }
+                Behavior on x { NumberAnimation { duration: Root.Theme.animNormal; easing.type: Easing.InOutCubic } }
                 onXChanged: { if (!sp.showing && x <= -319) spPanel.visible = false; }
 
                 layer.enabled: sp.showing

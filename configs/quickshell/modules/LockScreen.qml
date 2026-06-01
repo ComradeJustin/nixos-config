@@ -194,8 +194,8 @@ Item {
             }
         }
 
-        Behavior on parallaxX { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
-        Behavior on parallaxY { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
+        Behavior on parallaxX { NumberAnimation { duration: Root.Theme.animSlow; easing.type: Easing.OutCubic } }
+        Behavior on parallaxY { NumberAnimation { duration: Root.Theme.animSlow; easing.type: Easing.OutCubic } }
 
         // ══════════════════════════════════════════════
         // ── Background wallpaper, blurred (#13) ──
@@ -355,7 +355,7 @@ Item {
                     target: lockContent
                     property: "opacity"
                     from: 1; to: 0
-                    duration: 350
+                    duration: Root.Theme.anim.bounceDuration
                     easing.type: Easing.OutCubic
                 }
 
@@ -363,7 +363,7 @@ Item {
                     target: lockContent
                     property: "scale"
                     from: 1; to: 1.03
-                    duration: 350
+                    duration: Root.Theme.anim.bounceDuration
                     easing.type: Easing.OutCubic
                 }
 
@@ -529,7 +529,7 @@ Item {
                             (lock.showError ? Root.Theme.textCritical.b : Root.Theme.textAccent.b),
                             0.22)
                         opacity: 0.45
-                        Behavior on color { ColorAnimation { duration: 200 } }
+                        Behavior on color { ColorAnimation { duration: Root.Theme.anim.exitDuration } }
 
                         // Synced to the icon's 900ms breath. The icon
                         // starts bright (1.0) and animates TO 0.3 on
@@ -978,8 +978,8 @@ Item {
                             color: prevBtn.hovered ? Root.Theme.textPrimary : Root.Theme.domainMedia
                             font { family: Root.Theme.fontFamily; pixelSize: 18 }
                             scale: prevBtn.hovered ? 1.15 : 1.0
-                            Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-                            Behavior on color { ColorAnimation { duration: 120 } }
+                            Behavior on scale { NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                         }
                         MouseArea {
                             id: prevMa
@@ -1000,8 +1000,8 @@ Item {
                             color: playPauseBtn.hovered ? Root.Theme.textPrimary : Root.Theme.domainMedia
                             font { family: Root.Theme.fontFamily; pixelSize: 22 }
                             scale: playPauseBtn.hovered ? 1.15 : 1.0
-                            Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-                            Behavior on color { ColorAnimation { duration: 120 } }
+                            Behavior on scale { NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                         }
                         MouseArea {
                             id: ppMa
@@ -1022,8 +1022,8 @@ Item {
                             color: nextBtn.hovered ? Root.Theme.textPrimary : Root.Theme.domainMedia
                             font { family: Root.Theme.fontFamily; pixelSize: 18 }
                             scale: nextBtn.hovered ? 1.15 : 1.0
-                            Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-                            Behavior on color { ColorAnimation { duration: 120 } }
+                            Behavior on scale { NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                         }
                         MouseArea {
                             id: nextMa

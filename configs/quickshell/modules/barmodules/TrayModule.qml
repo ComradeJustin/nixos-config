@@ -32,7 +32,7 @@ Item {
                     : "transparent"
                 anchors.verticalCenter: parent ? parent.verticalCenter : undefined
 
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
                 Image {
                     id: trayIcon

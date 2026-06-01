@@ -191,7 +191,7 @@ PanelWindow {
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, win._showing ? 0.35 : 0)
 
-        Behavior on color { ColorAnimation { duration: 250; easing.type: Easing.OutCubic } }
+        Behavior on color { ColorAnimation { duration: Root.Theme.animNormal; easing.type: Easing.OutCubic } }
 
         MouseArea {
             anchors.fill: parent
@@ -333,7 +333,7 @@ PanelWindow {
                                     return "transparent"
                                 }
 
-                                Behavior on color { ColorAnimation { duration: 120 } }
+                                Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
                                 Column {
                                     anchors.centerIn: parent
@@ -352,7 +352,7 @@ PanelWindow {
                                             pixelSize: 18
                                         }
 
-                                        Behavior on color { ColorAnimation { duration: 120 } }
+                                        Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                                     }
 
                                     Text {
@@ -368,7 +368,7 @@ PanelWindow {
                                             pixelSize: 9
                                         }
 
-                                        Behavior on color { ColorAnimation { duration: 120 } }
+                                        Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                                     }
                                 }
                             }
@@ -451,7 +451,7 @@ PanelWindow {
                             ? Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.5)
                             : Root.Theme.borderColor
 
-                        Behavior on border.color { ColorAnimation { duration: 120 } }
+                        Behavior on border.color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
                         Row {
                             anchors { fill: parent; leftMargin: 8; rightMargin: 6 }
@@ -575,7 +575,7 @@ PanelWindow {
                     color: resultMouse.containsMouse
                         ? Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.10)
                         : Qt.rgba(Root.Theme.base01.r, Root.Theme.base01.g, Root.Theme.base01.b, 0.5)
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
                     Column {
                         anchors {

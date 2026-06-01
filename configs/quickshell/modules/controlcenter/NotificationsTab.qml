@@ -77,7 +77,7 @@ Components.SmoothFlickable {
                 }
                 clip: true
                 x: 0
-                Behavior on x { NumberAnimation { duration: 150 } }
+                Behavior on x { NumberAnimation { duration: Root.Theme.animFast } }
 
                 // Swipe direction hint — subtle background tint
                 Rectangle {

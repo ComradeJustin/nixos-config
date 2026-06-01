@@ -114,7 +114,7 @@ Scope {
                             NumberAnimation { target: toastCard; property: "x"; to: toastItem._offX; duration: Root.Theme.anim.slideDuration; easing.type: Easing.InOutCubic }
                             NumberAnimation { target: toastItem; property: "opacity"; to: 0; duration: Root.Theme.anim.slideDuration; easing.type: Easing.InCubic }
                         }
-                        NumberAnimation { target: toastItem; property: "height"; to: 0; duration: 150; easing.type: Easing.InCubic }
+                        NumberAnimation { target: toastItem; property: "height"; to: 0; duration: Root.Theme.animFast; easing.type: Easing.InCubic }
                         ScriptAction { script: { if (cc.notifService) cc.notifService.removePopupApp(toastItem.appKey); } }
                     }
 

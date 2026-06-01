@@ -644,8 +644,8 @@ Scope {
             scale: barTooltipWindow._showing ? 1 : 0.95
             transformOrigin: Item.Top
 
-            Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-            Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic } }
+            Behavior on scale { NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic } }
 
             Text {
                 id: _tipLabel

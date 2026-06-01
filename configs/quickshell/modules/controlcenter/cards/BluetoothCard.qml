@@ -45,7 +45,7 @@ Rectangle {
             }
             GradientStop { position: 0.9; color: "transparent" }
         }
-        Behavior on opacity { NumberAnimation { duration: 250 } }
+        Behavior on opacity { NumberAnimation { duration: Root.Theme.animNormal } }
         opacity: card.connected ? 1 : 0
     }
 
@@ -77,8 +77,8 @@ Rectangle {
                           Root.Theme.domainNetwork.b, 0.5)
                 : Root.Theme.borderColor
 
-            Behavior on color  { ColorAnimation { duration: 200 } }
-            Behavior on border.color { ColorAnimation { duration: 200 } }
+            Behavior on color  { ColorAnimation { duration: Root.Theme.anim.exitDuration } }
+            Behavior on border.color { ColorAnimation { duration: Root.Theme.anim.exitDuration } }
 
             Text {
                 anchors.centerIn: parent
@@ -87,7 +87,7 @@ Rectangle {
                 color: card.connected ? Root.Theme.domainNetwork : Root.Theme.textDimmed
                 font { family: Root.Theme.fontFamily; pixelSize: 30 }
 
-                Behavior on color { ColorAnimation { duration: 200 } }
+                Behavior on color { ColorAnimation { duration: Root.Theme.anim.exitDuration } }
             }
         }
 
@@ -144,8 +144,8 @@ Rectangle {
                                   card.enabled ? 0.55 : 0.25)
             scale: toggleMouse.pressed ? 0.92 : 1.0
 
-            Behavior on color  { ColorAnimation { duration: 120 } }
-            Behavior on border.color { ColorAnimation { duration: 120 } }
+            Behavior on color  { ColorAnimation { duration: Root.Theme.anim.microDuration } }
+            Behavior on border.color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
             Behavior on scale  { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
 
             Text {

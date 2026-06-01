@@ -12,3 +12,4 @@ IdleInhibitService 1.0 IdleInhibitService.qml
 WeatherService 1.0 WeatherService.qml
 SystemStatsService 1.0 SystemStatsService.qml
 HooksService 1.0 HooksService.qml
+WallpaperService 1.0 WallpaperService.qml

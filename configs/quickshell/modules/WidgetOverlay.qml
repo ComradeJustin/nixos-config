@@ -194,15 +194,15 @@ Scope {
 
         visible: configVisible
         opacity: (root.widgetsShownForScreen(screenName) && !root.editMode && extraVisible) ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.InOutQuad } }
+        Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.exitDuration; easing.type: Easing.InOutQuad } }
 
         property string posStr: root.getEffectivePosition(positionKey, defaultPosition)
         property point pos: root.getPosition(posStr, implicitWidth, implicitHeight,
             (parent ? parent.width : 1920), (parent ? parent.height : 1080),
             Root.Config.widgets.marginX, Root.Config.widgets.marginY)
         x: pos.x; y: pos.y
-        Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-        Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on x { NumberAnimation { duration: Root.Theme.anim.exitDuration; easing.type: Easing.OutCubic } }
+        Behavior on y { NumberAnimation { duration: Root.Theme.anim.exitDuration; easing.type: Easing.OutCubic } }
     }
 
     // Auto-generated from Registry.widgets file paths — each widget
@@ -312,10 +312,10 @@ Scope {
 
                     x: pos.x; y: pos.y
                     width: targetWidth; height: targetHeight
-                    Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                    Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                    Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                    Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                    Behavior on width { NumberAnimation { duration: Root.Theme.anim.exitDuration; easing.type: Easing.OutCubic } }
+                    Behavior on height { NumberAnimation { duration: Root.Theme.anim.exitDuration; easing.type: Easing.OutCubic } }
+                    Behavior on x { NumberAnimation { duration: Root.Theme.anim.exitDuration; easing.type: Easing.OutCubic } }
+                    Behavior on y { NumberAnimation { duration: Root.Theme.anim.exitDuration; easing.type: Easing.OutCubic } }
 
                     Rectangle {
                         anchors.fill: parent
@@ -325,11 +325,11 @@ Scope {
                         border.color: snapIndicator.isActive ? Root.Theme.textAccent : Root.Theme.textDimmed
                         opacity: snapIndicator.showBorder ? (snapIndicator.isActive ? 1 : 0.5) : 0
                         scale: snapIndicator.isActive ? 1.02 : 1
-                        Behavior on color { ColorAnimation { duration: 150 } }
-                        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-                        Behavior on border.width { NumberAnimation { duration: 150 } }
-                        Behavior on border.color { ColorAnimation { duration: 150 } }
+                        Behavior on color { ColorAnimation { duration: Root.Theme.animFast } }
+                        Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.exitDuration; easing.type: Easing.OutCubic } }
+                        Behavior on scale { NumberAnimation { duration: Root.Theme.animFast; easing.type: Easing.OutCubic } }
+                        Behavior on border.width { NumberAnimation { duration: Root.Theme.animFast } }
+                        Behavior on border.color { ColorAnimation { duration: Root.Theme.animFast } }
                     }
 
                     Text {
@@ -339,8 +339,8 @@ Scope {
                         color: snapIndicator.isActive ? Root.Theme.textAccent : Root.Theme.textDimmed
                         opacity: snapIndicator.showBorder ? (snapIndicator.isActive ? 1 : 0.7) : 0.4
                         font { family: Root.Theme.fontFamily; pixelSize: 9 }
-                        Behavior on color { ColorAnimation { duration: 150 } }
-                        Behavior on opacity { NumberAnimation { duration: 150 } }
+                        Behavior on color { ColorAnimation { duration: Root.Theme.animFast } }
+                        Behavior on opacity { NumberAnimation { duration: Root.Theme.animFast } }
                     }
                 }
             }

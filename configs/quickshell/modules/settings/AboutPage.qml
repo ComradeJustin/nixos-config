@@ -102,7 +102,7 @@ Column {
         border.width: Root.Theme.borderWidth
         border.color: Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.3)
 
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
         Text {
             anchors.centerIn: parent

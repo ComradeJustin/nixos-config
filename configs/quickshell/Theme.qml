@@ -1,6 +1,7 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import "." as Root
 
 QtObject {
     // ── Paths ──
@@ -66,17 +67,32 @@ QtObject {
     readonly property color wsDimmed:  base03
     readonly property color wsPillBg:  base01
 
+    // ══════════════════════════════════════════════════════════════════
+    // ── UI scale ──
+    // Global UI-size multiplier (a user preference, independent of the
+    // compositor's per-output scale). Every size / spacing / radius / font
+    // token below is `scaled(base)` = round(base × uiScaleRatio), so changing
+    // Config.appearance.uiScale live re-flows the whole shell. 1.0 = native.
+    // ══════════════════════════════════════════════════════════════════
+    readonly property real uiScaleRatio: {
+        const s = Root.Config.appearance.uiScale;
+        return (typeof s === "number" && s > 0) ? s : 1.0;
+    }
+    function scaled(px) {
+        return Math.round(px * uiScaleRatio);
+    }
+
     // ── Grid System ──
-    readonly property int unit: 8
+    readonly property int unit: scaled(8)
 
     // ── Typography ──
     readonly property string fontFamily: "Maple Mono NF"
     readonly property string fontMono:   "Maple Mono NF"
     readonly property string fontIcons:  "Maple Mono NF"
-    readonly property int    fontSize:       11
-    readonly property int    fontSizeSmall:  9
-    readonly property int    fontSizeLarge:  13
-    readonly property int    iconSize:       16
+    readonly property int    fontSize:       scaled(11)
+    readonly property int    fontSizeSmall:  scaled(9)
+    readonly property int    fontSizeLarge:  scaled(13)
+    readonly property int    iconSize:       scaled(16)
     readonly property bool   fontBold:       false
 
     // ── Font aliases (replace verbose font blocks everywhere) ──
@@ -96,7 +112,7 @@ QtObject {
         family: fontIcons, pixelSize: iconSize
     })
 
-    // ── Borders ──
+    // ── Borders ── (kept at native px for crisp 1px lines regardless of scale)
     readonly property int   borderWidth:      1
     readonly property int   borderWidthThick: 2
     readonly property color borderColor:      base03
@@ -104,25 +120,25 @@ QtObject {
     readonly property color borderFocus:      accentSecondary
 
     // ── Radius ──
-    readonly property int radiusSmall:  4
-    readonly property int radiusMedium: 8
-    readonly property int radiusLarge:  12
+    readonly property int radiusSmall:  scaled(4)
+    readonly property int radiusMedium: scaled(8)
+    readonly property int radiusLarge:  scaled(12)
 
     // ── Spacing ──
-    readonly property int ccItemPadding: 12
-    readonly property int ccItemSpacing: 6
+    readonly property int ccItemPadding: scaled(12)
+    readonly property int ccItemSpacing: scaled(6)
 
     // ── Bar geometry ──
-    readonly property int barHeight:  32
-    readonly property int barPadding: 14
-    readonly property int barSpacing: 8
+    readonly property int barHeight:  scaled(32)
+    readonly property int barPadding: scaled(14)
+    readonly property int barSpacing: scaled(8)
 
     // ── OSD geometry ──
-    readonly property int    osdWidth:    256
-    readonly property int    osdHeight:   48
-    readonly property int    osdIconSize: 20
-    readonly property int    osdFontSize: 11
-    readonly property int    osdRadius:   16
+    readonly property int    osdWidth:    scaled(256)
+    readonly property int    osdHeight:   scaled(48)
+    readonly property int    osdIconSize: scaled(20)
+    readonly property int    osdFontSize: scaled(11)
+    readonly property int    osdRadius:   scaled(16)
     readonly property int    osdTimeout:  1500
     readonly property int    osdFadeMs:   200
     readonly property color  osdBackground: base01
@@ -130,17 +146,17 @@ QtObject {
     readonly property color  osdBarBg:      base02
 
     // ── Notifications ──
-    readonly property int    notifWidth:       360
+    readonly property int    notifWidth:       scaled(360)
     readonly property int    notifMaxVisible:  5
     readonly property int    notifTimeout:     5000
-    readonly property int    notifRadius:      6
-    readonly property int    notifSpacing:     8
-    readonly property int    notifPadding:     14
-    readonly property int    notifMarginTop:   8
-    readonly property int    notifMarginRight: 8
-    readonly property int    notifTitleSize:   12
-    readonly property int    notifBodySize:    11
-    readonly property int    notifIconSize:    32
+    readonly property int    notifRadius:      scaled(6)
+    readonly property int    notifSpacing:     scaled(8)
+    readonly property int    notifPadding:     scaled(14)
+    readonly property int    notifMarginTop:   scaled(8)
+    readonly property int    notifMarginRight: scaled(8)
+    readonly property int    notifTitleSize:   scaled(12)
+    readonly property int    notifBodySize:    scaled(11)
+    readonly property int    notifIconSize:    scaled(32)
     readonly property color  notifBackground:  base01
     readonly property color  notifTitle:       base06
     readonly property color  notifBody:        base04
@@ -150,62 +166,62 @@ QtObject {
     readonly property color  notifUrgentBorder: accentDanger
     readonly property color  notifLowBorder:   base03
     readonly property color  selectionBg:      base02
-    readonly property int    notifHistWidth:    384
-    readonly property int    notifHistMaxHeight: 512
+    readonly property int    notifHistWidth:    scaled(384)
+    readonly property int    notifHistMaxHeight: scaled(512)
     readonly property color  notifItemBg:     Qt.rgba(base01.r, base01.g, base01.b, 0.4)
     readonly property color  notifSubItemBg:  Qt.rgba(base01.r, base01.g, base01.b, 0.2)
 
     // ── Control Center ──
-    readonly property int    ccWidth:         384
-    readonly property int    ccPadding:       12
-    readonly property int    ccSectionRadius: 8
+    readonly property int    ccWidth:         scaled(384)
+    readonly property int    ccPadding:       scaled(12)
+    readonly property int    ccSectionRadius: scaled(8)
     readonly property color  ccSectionBg:     base01
     readonly property color  ccCardBg:        Qt.rgba(base01.r, base01.g, base01.b, 0.6)
     readonly property color  ccIconBg:        Qt.rgba(base02.r, base02.g, base02.b, 0.5)
-    readonly property int    ccArtSize:       80
+    readonly property int    ccArtSize:       scaled(80)
 
     // ── Clipboard ──
-    readonly property int    clipWidth:      416
-    readonly property int    clipMaxHeight:  464
+    readonly property int    clipWidth:      scaled(416)
+    readonly property int    clipMaxHeight:  scaled(464)
     readonly property int    clipMaxItems:   30
-    readonly property int    clipThumbSize:  48
+    readonly property int    clipThumbSize:  scaled(48)
 
     // ── App launcher ──
-    readonly property int    launchWidth:      504
-    readonly property int    launchMaxHeight:  464
-    readonly property int    launchIconSize:   32
-    readonly property int    launchItemHeight: 40
+    readonly property int    launchWidth:      scaled(504)
+    readonly property int    launchMaxHeight:  scaled(464)
+    readonly property int    launchIconSize:   scaled(32)
+    readonly property int    launchItemHeight: scaled(40)
     readonly property color  scrimColor:       Qt.rgba(0, 0, 0, 0.35)
 
     // ── Wifi popup ──
-    readonly property int    wifiWidth:        296
-    readonly property int    wifiMaxHeight:    384
-    readonly property int    wifiItemHeight:   40
+    readonly property int    wifiWidth:        scaled(296)
+    readonly property int    wifiMaxHeight:    scaled(384)
+    readonly property int    wifiItemHeight:   scaled(40)
 
     // ── Wallpaper selector ──
-    readonly property int    wpWidth:          560
-    readonly property int    wpMaxHeight:      480
-    readonly property int    wpThumbWidth:     160
-    readonly property int    wpThumbHeight:    96
-    readonly property int    wpSpacing:        8
+    readonly property int    wpWidth:          scaled(560)
+    readonly property int    wpMaxHeight:      scaled(480)
+    readonly property int    wpThumbWidth:     scaled(160)
+    readonly property int    wpThumbHeight:    scaled(96)
+    readonly property int    wpSpacing:        scaled(8)
     readonly property string wpDirectory:      configBase + "/assets/wallpapers"
 
     // ── Cava / Media popup ──
-    readonly property int    cavaWidth:     320
-    readonly property int    cavaHeight:    180
+    readonly property int    cavaWidth:     scaled(320)
+    readonly property int    cavaHeight:    scaled(180)
     readonly property int    cavaBars:      24
     readonly property int    cavaRadius:    0
     readonly property color  cavaBackground: barBackground
     readonly property color  cavaBarColor:  domainMedia
-    readonly property int    cavaArtSize:   48
+    readonly property int    cavaArtSize:   scaled(48)
 
     // ── Background widgets ──
     readonly property color  widgetBackground:   Qt.rgba(base00.r, base00.g, base00.b, 0.75)
     readonly property color  widgetText:         base06
     readonly property color  widgetTextDimmed:   base04
     readonly property int    widgetRadius:       radiusMedium
-    readonly property int    widgetPadding:      16
-    readonly property int    widgetShadowRadius: 24
+    readonly property int    widgetPadding:      scaled(16)
+    readonly property int    widgetShadowRadius: scaled(24)
     readonly property color  widgetShadowColor:  Qt.rgba(0, 0, 0, 0.3)
 
     // Widget edit mode

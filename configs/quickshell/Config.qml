@@ -143,6 +143,14 @@ QtObject {
         property bool prediction: true
     }
 
+    // ── Appearance ──
+    // Global UI-size multiplier (independent of the compositor's per-output
+    // scale). Theme.uiScaleRatio reads this and routes all size/spacing/font/
+    // radius tokens through it. 1.0 = native size.
+    readonly property QtObject appearance: QtObject {
+        property real uiScale: 1.0
+    }
+
     // ── Night Light ──
     // Persisted state for NightLightService. Auto mode only — wlsunset
     // derives sunrise/sunset from latitude/longitude (pulled at runtime
@@ -155,54 +163,48 @@ QtObject {
     }
 
     // ══════════════════════════════════════════════════════════════════
-    // ── Defaults registry ──
-    // Single source of truth for every user-tweakable setting. Used by
-    // resetKey() / resetSection() / resetAll() and by the settings UI for
-    // showing reset affordances. When you add a new setting, add its
-    // default here as well.
+    // ── Schema version + defaults ──
+    // The live QtObjects above are the SINGLE source of truth for both the
+    // current values and their defaults: `_snapshotDefaults()` captures the
+    // pristine values at startup (before persisted overrides are applied),
+    // so defaults never have to be written out a second time. Used by
+    // resetKey() / resetSection() / resetAll() and by the settings UI.
     // ══════════════════════════════════════════════════════════════════
-    readonly property var _defaults: ({
-        bar: {
-            workspace: true, time: true, weather: true, window: true,
-            media: true, resource: true, audio: true, network: true,
-            bluetooth: true, battery: true, inputMethod: true,
-            style: "flat", showGroups: false, showCpuGraph: true,
-            showCaffeineWhenOff: false,
-            layoutLeft: ["power", "workspace", "time", "weather", "window"],
-            layoutCenter: ["media"],
-            layoutRight: ["resource", "audio", "network", "bluetooth", "vpn", "inputMethod", "battery", "caffeine", "tray", "gear"]
-        },
-        widgets: {
-            clock: true, weather: true, system: false, quote: false,
-            nowPlaying: true, calendar: true, stock: false,
-            clockPosition: "bottom-right", weatherPosition: "top-right",
-            systemPosition: "top-left", quotePosition: "bottom-center",
-            nowPlayingPosition: "bottom-left", calendarPosition: "center-left",
-            stockPosition: "center-right",
-            marginX: 40, marginY: 40
-        },
-        features: {
-            wallpaperWidgets: true, autoHideWidgets: true,
-            autoHideBarInFullscreen: true, mediaPopup: true,
-            clipboardHistory: true, wallpaperSelector: true
-        },
-        behavior: {
-            weatherUpdateInterval: 900000, systemStatsInterval: 3000,
-            notificationTimeout: 5000, maxClipboardItems: 30
-        },
-        clock: {
-            timeFormat: "HH:mm", dateFormat: "dddd, MMMM d",
-            showDate: true, showSeconds: false, fontSize: 48
-        },
-        weather: { useMetric: true, fontSize: 32 },
-        system: { showCpu: true, showRam: true, fontSize: 24 },
-        quote: { maxWidth: 400, fontSize: 16, refreshInterval: 3600000 },
-        nowPlaying: { showArt: true, artSize: 80, fontSize: 14 },
-        calendar: { showWeekNumbers: false, cellSize: 28 },
-        stock: { symbols: ["SPY", "QQQ", "AAPL"], fontSize: 14, refreshInterval: 300000 },
-        nightLight: { enabled: false, dayTemp: 6500, nightTemp: 4000 },
-        inputMethod: { liveConversion: false, prediction: true }
+
+    // Bump when a breaking schema change ships, and add a matching migration.
+    readonly property int _configVersion: 1
+
+    // Captured default snapshot (section → plain object), filled at startup.
+    property var _defaults: ({})
+
+    // version → function(parsedJson) that upgrades the config FROM the prior
+    // version TO that version (mutating it in place). Runs on load when the
+    // persisted version is older. Example:
+    //   2: function(d) { if (d.bar) { d.bar.newKey = d.bar.oldKey; delete d.bar.oldKey; } }
+    readonly property var _migrations: ({
     })
+
+    // Plain serialisable copy of a config QtObject's own value properties
+    // (skips QtObject internals, signals, functions, and nested objects).
+    function _plainCopy(src) {
+        let obj = {};
+        for (let prop in src) {
+            if (prop === "objectName" || prop.endsWith("Changed") || prop.startsWith("_")
+                || typeof src[prop] === "function"
+                || (typeof src[prop] === "object" && src[prop] !== null && !(src[prop] instanceof Array)))
+                continue;
+            obj[prop] = (src[prop] instanceof Array) ? src[prop].slice() : src[prop];
+        }
+        return obj;
+    }
+
+    // Snapshot pristine defaults from the live objects (call before load()).
+    function _snapshotDefaults() {
+        let snap = {};
+        for (let key in _sections)
+            snap[key] = _plainCopy(_sections[key]);
+        _defaults = snap;
+    }
 
     // Look up a default value by section/key (e.g. "bar", "showCpuGraph").
     // Returns undefined if no such default exists.
@@ -241,15 +243,12 @@ QtObject {
         for (let s in _defaults) resetSection(s);
     }
 
-    // ── Default layout order (mirrors Registry.barModules) ──
-    readonly property var _defaultLayoutLeft: ["power", "workspace", "time", "weather", "window"]
-    readonly property var _defaultLayoutCenter: ["media"]
-    readonly property var _defaultLayoutRight: ["resource", "audio", "network", "bluetooth", "vpn", "inputMethod", "battery", "caffeine", "tray", "gear"]
-
+    // ── Default bar layout order — derived from the snapshot (single source) ──
     function _getDefaultOrder(section) {
-        if (section === "left" || section === "layoutLeft") return _defaultLayoutLeft;
-        if (section === "center" || section === "layoutCenter") return _defaultLayoutCenter;
-        if (section === "right" || section === "layoutRight") return _defaultLayoutRight;
+        let b = _defaults.bar || {};
+        if (section === "left" || section === "layoutLeft") return b.layoutLeft || [];
+        if (section === "center" || section === "layoutCenter") return b.layoutCenter || [];
+        if (section === "right" || section === "layoutRight") return b.layoutRight || [];
         return [];
     }
 
@@ -349,7 +348,8 @@ QtObject {
         quote: quoteConfig, nowPlaying: nowPlayingConfig,
         calendar: calendarConfig, stock: stockConfig,
         nightLight: nightLight,
-        inputMethod: inputMethod
+        inputMethod: inputMethod,
+        appearance: appearance
     })
 
     function load() {
@@ -357,20 +357,9 @@ QtObject {
     }
 
     function save() {
-        let data = {};
-        for (let key in _sections) {
-            let src = _sections[key];
-            let obj = {};
-            for (let prop in src) {
-                // Skip QtObject internals, signals, and functions
-                if (prop === "objectName" || prop.endsWith("Changed") || prop.startsWith("_")
-                    || typeof src[prop] === "function"
-                    || (typeof src[prop] === "object" && src[prop] !== null && !(src[prop] instanceof Array)))
-                    continue;
-                obj[prop] = src[prop];
-            }
-            data[key] = obj;
-        }
+        let data = { _version: _configVersion };
+        for (let key in _sections)
+            data[key] = _plainCopy(_sections[key]);
         // CC has nested QtObjects, so serialize manually
         let ccData = { cardLayout: cc.cardLayout, cards: {} };
         for (let k in cc.cards) {
@@ -389,6 +378,8 @@ QtObject {
     function _applyJson(json) {
         try {
             let d = JSON.parse(json);
+            let persistedVersion = (typeof d._version === "number") ? d._version : 0;
+            if (persistedVersion < _configVersion) _runMigrations(d, persistedVersion);
             for (let key in _sections) {
                 if (!d[key]) continue;
                 let target = _sections[key];
@@ -405,8 +396,20 @@ QtObject {
                     }
                 }
             }
+            // Upgraded an older config → persist it stamped with the new version.
+            if (persistedVersion < _configVersion) save();
         } catch(e) {
             console.log("Config: failed to parse JSON:", e);
+        }
+    }
+
+    // Run registered migrations for every version newer than the persisted one.
+    function _runMigrations(d, fromVersion) {
+        for (let v = fromVersion + 1; v <= _configVersion; v++) {
+            let m = _migrations[v];
+            if (typeof m === "function") {
+                try { m(d); } catch(e) { console.log("Config: migration", v, "failed:", e); }
+            }
         }
     }
 
@@ -426,5 +429,8 @@ QtObject {
 
     property var _saveProc: Process {}
 
-    Component.onCompleted: load()
+    Component.onCompleted: {
+        _snapshotDefaults();
+        load();
+    }
 }

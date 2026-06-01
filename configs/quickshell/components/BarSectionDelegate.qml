@@ -48,7 +48,7 @@ Item {
         target: delegate
         property: "_entranceOpacity"
         from: 0; to: 1
-        duration: 200
+        duration: Root.Theme.anim.exitDuration
         easing.type: Easing.OutCubic
     }
 

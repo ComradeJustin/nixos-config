@@ -24,6 +24,7 @@ ShellRoot {
     Services.SystemStatsService { id: systemStatsSvc }
     Services.NightLightService { id: nightLightSvc }
     Services.InputMethodService { id: imSvc }
+    Services.WallpaperService { id: wallpaperSvc }
     Services.HooksService {
         id: hooksSvc
         services: ({
@@ -62,6 +63,7 @@ ShellRoot {
             Core.ServiceManager.register("nightLight", nightLightSvc);
             Core.ServiceManager.register("hooks", hooksSvc);
             Core.ServiceManager.register("inputMethod", imSvc);
+            Core.ServiceManager.register("wallpaper", wallpaperSvc);
             // Modules
             Core.ServiceManager.register("bar", barModule);
             Core.ServiceManager.register("controlCenter", ccModule);

@@ -1,9 +1,9 @@
 import QtQuick
 import ".." as Root
 
-// Standardized toggle button for ControlCenter quick toggles
-// Features: animated state transitions, scale feedback on press, glow on active
-Rectangle {
+// Standardised quick-toggle (ControlCenter). Built on ClickableItem.
+// Animated state, press-scale feedback, accent border + tint when on.
+ClickableItem {
     id: toggle
 
     property bool isOn: false
@@ -15,25 +15,30 @@ Rectangle {
     signal toggled()
     signal secondaryAction()
 
-    width: 40; height: 40
-    radius: Root.Theme.radiusSmall
-    color: mouse.containsMouse
-        ? Root.Theme.layer1Hover
-        : (isOn ? Qt.rgba(accent.r, accent.g, accent.b, 0.15) : "transparent")
+    width: 40
+    height: 40
+    pressScale: true
+    pressScaleAmount: 0.92
+
+    // "On" uses the selected surface tint; hover composites over it.
+    selected: isOn
+    selectedColor: Qt.rgba(accent.r, accent.g, accent.b, 0.15)
+
     border.width: Root.Theme.borderWidth
     border.color: isOn ? accent : Root.Theme.borderColor
-
-    scale: mouse.pressed ? 0.92 : 1.0
-
-    Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
     Behavior on border.color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
-    Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
+
+    onClicked: {
+        iconBounce.restart();
+        toggle.toggled();
+    }
+    onRightClicked: toggle.secondaryAction()
 
     Text {
         anchors.centerIn: parent
         text: toggle.isOn ? toggle.iconOn : toggle.iconOff
         color: toggle.isOn ? toggle.accent : Root.Theme.textDimmed
-        font { family: Root.Theme.fontFamily; pixelSize: 16 }
+        font: Root.Theme.fontIcon
 
         Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
@@ -42,24 +47,8 @@ Rectangle {
         SequentialAnimation on scale {
             id: iconBounce
             running: false
-            NumberAnimation { to: 1.2; duration: 100; easing.type: Easing.OutCubic }
-            NumberAnimation { to: 1.0; duration: 150; easing.type: Easing.OutBack }
-        }
-    }
-
-    MouseArea {
-        id: mouse
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onClicked: function(mouseEvent) {
-            if (mouseEvent.button === Qt.RightButton) {
-                toggle.secondaryAction();
-            } else {
-                iconBounce.restart();
-                toggle.toggled();
-            }
+            NumberAnimation { to: 1.2; duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic }
+            NumberAnimation { to: 1.0; duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutBack }
         }
     }
 }

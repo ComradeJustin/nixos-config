@@ -42,7 +42,7 @@ Column {
                     : Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.10)
                 border.width: Root.Theme.borderWidth
                 border.color: Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.3)
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
                 Text {
                     anchors.centerIn: parent
@@ -68,7 +68,7 @@ Column {
                     : Qt.rgba(Root.Theme.base01.r, Root.Theme.base01.g, Root.Theme.base01.b, 0.6)
                 border.width: Root.Theme.borderWidth
                 border.color: Root.Theme.borderColor
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
                 Text {
                     anchors.centerIn: parent

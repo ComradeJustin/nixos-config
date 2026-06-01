@@ -59,7 +59,7 @@ PanelWindow {
             y: popup.cavaWanted ? 6 : -(Root.Theme.cavaHeight + 6)
 
             Behavior on y {
-                NumberAnimation { duration: 200; easing.type: Easing.InOutCubic }
+                NumberAnimation { duration: Root.Theme.anim.exitDuration; easing.type: Easing.InOutCubic }
             }
 
             onYChanged: {

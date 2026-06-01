@@ -53,7 +53,7 @@ Item {
         color: root.isOn ? root.accent : Root.Theme.textDimmed
         opacity: root.isOn ? 1.0 : 0.3
 
-        Behavior on color { ColorAnimation { duration: 150 } }
+        Behavior on color { ColorAnimation { duration: Root.Theme.animFast } }
 
         Rectangle {
             width: 14
@@ -63,7 +63,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             x: root.isOn ? pill.width - width - 3 : 3
 
-            Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.InOutCubic } }
+            Behavior on x { NumberAnimation { duration: Root.Theme.animFast; easing.type: Easing.InOutCubic } }
         }
     }
 }

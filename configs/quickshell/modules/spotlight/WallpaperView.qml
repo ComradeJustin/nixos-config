@@ -1,9 +1,8 @@
 import QtQuick
 import QtQuick.Effects
-import Quickshell
-import Quickshell.Io
 import "../.." as Root
 import "../../components" as Components
+import "../../core" as Core
 
 // Wallpaper selector view for the Spotlight popup.
 // Scans directory once at startup, applies wallpapers via awww.
@@ -48,73 +47,69 @@ SpotlightProvider {
         let newSearch = "id:" + tagId;
         searchText = newSearch;
         selectedIndex = 0;
-        tagSuggestions = [];
         searchOnline(newSearch);
         searchRequested(newSearch);
     }
 
-    property string wallpaperDir: Root.Theme.wpDirectory
-    property string currentWallpaper: ""
+    // ── Wallpaper service (data/IO lives here; this view is pure UI) ──
+    readonly property var wpService: Core.ServiceManager.wallpaper
+
+    // Read-only proxies so the UI bindings below reach the service unchanged.
+    readonly property var wpModel: wpService ? wpService.wallpapers : null
+    readonly property string currentWallpaper: wpService ? wpService.currentWallpaper : ""
+    readonly property bool scanned: wpService ? wpService.scanned : false
+    readonly property var onlineResults: wpService ? wpService.onlineResults : []
+    readonly property bool onlineSearching: wpService ? wpService.onlineSearching : false
+    readonly property string onlineQuery: wpService ? wpService.onlineQuery : ""
+    readonly property int onlinePage: wpService ? wpService.onlinePage : 1
+    readonly property int onlineTotalPages: wpService ? wpService.onlineTotalPages : 1
+    readonly property bool onlineLoadingMore: wpService ? wpService.onlineLoadingMore : false
+    readonly property var tagSuggestions: wpService ? wpService.tagSuggestions : []
+
+    // ── View-local UI state ──
     property string searchText: ""
     property int selectedIndex: 0
-    property bool scanned: false
-    property string cacheDir: (Quickshell.env("HOME") || "/home/justin") + "/.cache/quickshell/wallpaper-thumbs"
-
     property var filteredIndices: []
-
-    // Online search mode
     property string mode: "local"  // "local" or "online"
-    property var onlineResults: []
-    property bool onlineSearching: false
-    property string onlineQuery: ""
 
-    // ── Wallhaven filter settings ──
-    // Categories bitmask: General=1, Anime=2, People=4 → "111" means all
-    property bool catGeneral: true
-    property bool catAnime: true
-    property bool catPeople: false
-    // Purity bitmask: SFW=1, Sketchy=2, NSFW=4
-    property bool purSfw: true
-    property bool purSketchy: false
-    // Minimum resolution
+    // ── Wallhaven search-form options (passed to the service per query) ──
+    property bool catGeneral: true     // categories bitmask: General=1
+    property bool catAnime: true       // Anime=2
+    property bool catPeople: false     // People=4
+    property bool purSfw: true         // purity bitmask: SFW=1
+    property bool purSketchy: false    // Sketchy=2
     property string minResolution: "1920x1080"
     property bool showSettings: false
-    // Sorting: relevance, date_added, random, views, favorites, toplist, hot
-    property string onlineSorting: "relevance"
-    // Pagination
-    property int onlinePage: 1
-    property int onlineTotalPages: 1
-    property bool onlineLoadingMore: false
-    // Tag suggestions
-    property var tagSuggestions: []
-    property bool tagSearching: false
+    property string onlineSorting: "relevance"  // relevance|date_added|random|views|favorites|toplist|hot
 
-    // Called when the view opens
-    function refresh() {
-        if (!scanned)
-            scanProc.running = true;
-        else
-            updateFilter();
-        currentProc.running = true;
+    // React to service-side scan completion / wallpaper application.
+    Connections {
+        target: root.wpService
+        function onRescanned() { root.updateFilter(); root.scrollToCurrent(); }
+        function onWallpaperApplied() { root.wallpaperSet(); }
     }
 
-    // Force a rescan (called by filesystem watcher)
-    function forceRescan() {
-        scanned = false;
-        scanProc.running = true;
+    // Called when the view opens.
+    function refresh() {
+        if (!wpService) return;
+        if (wpService.scanned) updateFilter();
+        else wpService.ensureScanned();   // emits rescanned() → updateFilter()
+        wpService.queryCurrent();
     }
 
     function updateFilter() {
         let indices = [];
         let query = searchText.toLowerCase();
-        for (let i = 0; i < wpModel.count; i++) {
-            let label = wpModel.get(i).wpLabel.toLowerCase();
+        let model = wpModel;
+        let count = model ? model.count : 0;
+        for (let i = 0; i < count; i++) {
+            let label = model.get(i).wpLabel.toLowerCase();
             if (query.length === 0 || label.indexOf(query) !== -1)
                 indices.push(i);
         }
         filteredIndices = indices;
         resultCount = indices.length;
-        totalCount = wpModel.count;
+        totalCount = count;
         if (selectedIndex >= indices.length)
             selectedIndex = Math.max(0, indices.length - 1);
     }
@@ -123,12 +118,7 @@ SpotlightProvider {
         searchText = "";
         selectedIndex = 0;
         updateFilter();
-        onlineResults = [];
-        onlineQuery = "";
-        onlinePage = 1;
-        onlineTotalPages = 1;
-        onlineLoadingMore = false;
-        tagSuggestions = [];
+        if (wpService) wpService.resetOnline();
     }
 
     // Scroll to and select the current wallpaper in the filtered list
@@ -151,8 +141,8 @@ SpotlightProvider {
             // Also trigger tag suggestions for short queries
             if (searchText.trim().length >= 2 && searchText.trim().length <= 20)
                 tagDebounce.restart();
-            else
-                tagSuggestions = [];
+            else if (wpService)
+                wpService.clearTags();
         }
     }
 
@@ -170,64 +160,18 @@ SpotlightProvider {
         id: tagDebounce
         interval: 300
         onTriggered: {
-            if (root.mode === "online" && root.searchText.trim().length >= 2) {
-                tagSearchProc._buf = "";
-                tagSearchProc.running = true;
-            }
-        }
-    }
-
-    Process {
-        id: tagSearchProc
-        property string _buf: ""
-        command: [
-            "bash", "-c",
-            'curl -sf "https://wallhaven.cc/api/v1/search?q=$1&sorting=relevance&categories=111&purity=100&atleast=1920x1080&page=1" 2>/dev/null',
-            "--", root.searchText.trim()
-        ]
-        stdout: SplitParser {
-            onRead: line => { tagSearchProc._buf += line + "\n"; }
-        }
-        onExited: (code) => {
-            if (code !== 0) { tagSearchProc._buf = ""; return; }
-            try {
-                let d = JSON.parse(tagSearchProc._buf);
-                // Extract unique tags from the returned wallpapers
-                let tagMap = {};
-                if (d.data) {
-                    for (let i = 0; i < d.data.length; i++) {
-                        let tags = d.data[i].tags;
-                        if (!tags) continue;
-                        for (let j = 0; j < tags.length; j++) {
-                            let t = tags[j];
-                            let name = t.name || "";
-                            if (name.length > 0 && !tagMap[name]) {
-                                tagMap[name] = { name: name, id: t.id || 0, count: 1 };
-                            } else if (tagMap[name]) {
-                                tagMap[name].count++;
-                            }
-                        }
-                    }
-                }
-                // Sort by frequency and take top 8
-                let sorted = Object.values(tagMap).sort((a, b) => b.count - a.count);
-                root.tagSuggestions = sorted.slice(0, 8);
-            } catch(e) {
-                root.tagSuggestions = [];
-            }
-            tagSearchProc._buf = "";
+            if (root.mode === "online" && root.searchText.trim().length >= 2 && root.wpService)
+                root.wpService.searchTags(root.searchText);
         }
     }
 
     property int columns: Math.max(1, Math.floor((root.width - Root.Theme.notifPadding * 2 + Root.Theme.wpSpacing) / (Root.Theme.wpThumbWidth + Root.Theme.wpSpacing)))
 
     function applySelected() {
-        if (filteredIndices.length === 0) return;
+        if (filteredIndices.length === 0 || !wpService) return;
         let idx = filteredIndices[selectedIndex];
         let item = wpModel.get(idx);
-        setProc.wallpaper = item.wpPath;
-        setProc.running = true;
-        wallpaperSet();
+        if (item) wpService.apply(item.wpPath);   // → wallpaperApplied → wallpaperSet
     }
 
     function ensureVisible() {
@@ -240,212 +184,37 @@ SpotlightProvider {
             wpFlick.contentY = y + itemH - wpFlick.height;
     }
 
-    ListModel { id: wpModel }
-
-    // Scan wallpaper directory and generate thumbnails
-    // SECURITY: Uses positional parameters to prevent command injection
-    Process {
-        id: scanProc
-        property string expandedWpDir: root.wallpaperDir.replace(/^~/, Quickshell.env("HOME") || "/home/justin")
-        command: [
-            "bash", "-c",
-            'cache="$1"; wpdir="$2"; ' +
-            'mkdir -p "$cache"; ' +
-            'find "$wpdir" -maxdepth 2 -type f \\( ' +
-            "-iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' " +
-            "-o -iname '*.webp' -o -iname '*.gif' -o -iname '*.bmp' " +
-            '\\) 2>/dev/null | sort | while IFS= read -r f; do ' +
-            'hash=$(echo -n "$f" | sha256sum | cut -c1-16); ' +
-            'thumb="$cache/${hash}.jpg"; ' +
-            'if [ ! -f "$thumb" ] || [ "$f" -nt "$thumb" ]; then ' +
-            'magick "${f}[0]" -thumbnail 320x192^ -gravity center -extent 320x192 -quality 85 "$thumb" 2>/dev/null || ' +
-            'convert "${f}[0]" -thumbnail 320x192^ -gravity center -extent 320x192 -quality 85 "$thumb" 2>/dev/null || ' +
-            'thumb="$f"; ' +
-            'fi; ' +
-            'printf "%s|%s\\n" "$f" "$thumb"; ' +
-            'done',
-            "--", root.cacheDir, expandedWpDir
-        ]
-
-        stdout: SplitParser {
-            onRead: data => {
-                let line = data.trim();
-                if (line.length === 0) return;
-                let sep = line.indexOf("|");
-                let path = sep > 0 ? line.substring(0, sep) : line;
-                let thumb = sep > 0 ? line.substring(sep + 1) : path;
-                let name = path.substring(path.lastIndexOf("/") + 1);
-                let dot = name.lastIndexOf(".");
-                let label = dot > 0 ? name.substring(0, dot) : name;
-                wpModel.append({ "wpPath": path, "wpThumb": thumb, "wpName": name, "wpLabel": label });
-            }
-        }
-        onStarted: wpModel.clear()
-        onExited: {
-            root.scanned = true;
-            root.updateFilter();
-            root.scrollToCurrent();
-        }
-    }
-
-    // Get current wallpaper
-    Process {
-        id: currentProc
-        command: ["bash", "-c", "awww query 2>/dev/null | head -1 | sed 's/.*image: //'"]
-        stdout: SplitParser {
-            onRead: data => { root.currentWallpaper = data.trim(); }
-        }
-    }
-
-    // Set wallpaper
-    // SECURITY: Uses positional parameter to safely pass file path
-    Process {
-        id: setProc
-        property string wallpaper: ""
-        command: [
-            "sh", "-c",
-            'exec awww img "$1" --transition-type wipe --transition-duration 1',
-            "--", wallpaper
-        ]
-        onExited: { root.currentWallpaper = wallpaper; }
-    }
-
-    // Watch wallpaper directory for changes (live detection)
-    // Requires inotify-tools package; fails gracefully if unavailable
-    // SECURITY: Uses positional parameter to safely pass directory path
-    Process {
-        id: watchProc
-        property string expandedDir: root.wallpaperDir.replace(/^~/, Quickshell.env("HOME") || "/home/justin")
-        command: [
-            "bash", "-c",
-            'command -v inotifywait >/dev/null 2>&1 || exit 0; ' +
-            'exec inotifywait -m -q -e create -e delete -e moved_to -e moved_from --format "%e" "$1"',
-            "--", expandedDir
-        ]
-        running: true
-
-        stdout: SplitParser {
-            onRead: data => {
-                if (!rescanTimer.running) {
-                    rescanTimer.start();
-                }
-            }
-        }
-    }
-
-    // Debounce timer to avoid excessive rescans
-    Timer {
-        id: rescanTimer
-        interval: 500
-        onTriggered: root.forceRescan()
-    }
-
-    // Online search via wallhaven API
+    // Online search — delegates to the wallpaper service.
     function searchOnline(query, page) {
-        if (!query || query.trim().length === 0) return;
         let p = page || 1;
-        onlineQuery = query.trim();
-        if (p === 1) {
-            onlineSearching = true;
-            onlineResults = [];
-            selectedIndex = 0;
-        } else {
-            onlineLoadingMore = true;
-        }
-        onlinePage = p;
-        onlineSearchProc._appendMode = (p > 1);
-        onlineSearchProc._buf = "";
-        onlineSearchProc.running = true;
+        if (p === 1) selectedIndex = 0;
+        if (wpService)
+            wpService.searchOnline(query, p, {
+                categories: whCategories(),
+                purity: whPurity(),
+                resolution: minResolution,
+                sorting: onlineSorting
+            });
     }
 
-    // Load next page of results
+    // Load next page of results — delegates to the service.
     function loadMoreOnline() {
-        if (onlineLoadingMore || onlineSearching) return;
-        if (onlinePage >= onlineTotalPages) return;
-        searchOnline(onlineQuery, onlinePage + 1);
+        if (wpService)
+            wpService.loadMore({
+                categories: whCategories(),
+                purity: whPurity(),
+                resolution: minResolution,
+                sorting: onlineSorting
+            });
     }
 
-    // Build Wallhaven API filter string from toggle state
+    // Build Wallhaven API filter strings from the search-form toggles.
     function whCategories() { return (catGeneral ? "1" : "0") + (catAnime ? "1" : "0") + (catPeople ? "1" : "0"); }
     function whPurity() { return (purSfw ? "1" : "0") + (purSketchy ? "1" : "0") + "0"; }
 
-    Process {
-        id: onlineSearchProc
-        property string _buf: ""
-        property bool _appendMode: false
-        command: [
-            "bash", "-c",
-            'q="$1"; cats="$2"; pur="$3"; res="$4"; sort="$5"; page="$6"; ' +
-            'curl -sf "https://wallhaven.cc/api/v1/search?q=${q}&sorting=${sort}&categories=${cats}&purity=${pur}&atleast=${res}&page=${page}" 2>/dev/null',
-            "--", root.onlineQuery, root.whCategories(), root.whPurity(), root.minResolution, root.onlineSorting, root.onlinePage.toString()
-        ]
-        stdout: SplitParser {
-            onRead: line => { onlineSearchProc._buf += line + "\n"; }
-        }
-        onExited: (code) => {
-            root.onlineSearching = false;
-            root.onlineLoadingMore = false;
-            if (code !== 0) { onlineSearchProc._buf = ""; return; }
-            try {
-                let d = JSON.parse(onlineSearchProc._buf);
-                let results = [];
-                if (d.data) {
-                    for (let i = 0; i < d.data.length; i++) {
-                        let w = d.data[i];
-                        results.push({
-                            id: w.id || "",
-                            url: w.path || "",
-                            thumbUrl: w.thumbs ? (w.thumbs.small || w.thumbs.original || "") : "",
-                            resolution: w.resolution || "",
-                            fileSize: w.file_size || 0
-                        });
-                    }
-                }
-                // Parse pagination metadata
-                if (d.meta) {
-                    root.onlineTotalPages = d.meta.last_page || 1;
-                }
-                if (onlineSearchProc._appendMode)
-                    root.onlineResults = root.onlineResults.concat(results);
-                else
-                    root.onlineResults = results;
-            } catch(e) {
-                console.log("WallpaperView: online search parse error:", e);
-            }
-            onlineSearchProc._buf = "";
-        }
-    }
-
-    // Download online wallpaper to local dir then apply
+    // Download online wallpaper then apply — delegates to the service.
     function downloadAndApply(url) {
-        if (!url) return;
-        downloadProc._url = url;
-        downloadProc.running = true;
-    }
-
-    Process {
-        id: downloadProc
-        property string _url: ""
-        property string expandedWpDir: root.wallpaperDir.replace(/^~/, Quickshell.env("HOME") || "/home/justin")
-        command: [
-            "bash", "-c",
-            'url="$1"; dir="$2"; mkdir -p "$dir"; ' +
-            'fname=$(basename "$url"); dest="$dir/$fname"; ' +
-            'curl -sfL -o "$dest" "$url" 2>/dev/null && echo "$dest"',
-            "--", _url, expandedWpDir
-        ]
-        stdout: SplitParser {
-            onRead: data => {
-                let path = data.trim();
-                if (path.length > 0) {
-                    setProc.wallpaper = path;
-                    setProc.running = true;
-                    root.wallpaperSet();
-                    // Rescan to include the new file
-                    root.forceRescan();
-                }
-            }
-        }
+        if (wpService) wpService.downloadAndApply(url);
     }
 
     Column {

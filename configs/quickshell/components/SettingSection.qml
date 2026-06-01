@@ -17,7 +17,7 @@ Item {
     height: header.height + (collapsed ? 0 : contentCol.height + 8)
     clip: true
 
-    Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.InOutCubic } }
+    Behavior on height { NumberAnimation { duration: Root.Theme.anim.exitDuration; easing.type: Easing.InOutCubic } }
 
     // Header
     Item {
@@ -57,7 +57,7 @@ Item {
                 pixelSize: Root.Theme.fontSizeSmall
                 letterSpacing: 1
             }
-            Behavior on color { ColorAnimation { duration: 120 } }
+            Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
             MouseArea {
                 id: resetMouse

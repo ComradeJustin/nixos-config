@@ -90,8 +90,8 @@ Components.BarItem {
         SequentialAnimation on opacity {
             loops: Animation.Infinite
             running: true
-            NumberAnimation { from: 1.0; to: 0.3; duration: 500; easing.type: Easing.InOutSine }
-            NumberAnimation { from: 0.3; to: 1.0; duration: 500; easing.type: Easing.InOutSine }
+            NumberAnimation { from: 1.0; to: 0.3; duration: Root.Theme.animExpressive; easing.type: Easing.InOutSine }
+            NumberAnimation { from: 0.3; to: 1.0; duration: Root.Theme.animExpressive; easing.type: Easing.InOutSine }
         }
     }
 

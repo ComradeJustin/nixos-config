@@ -36,7 +36,7 @@ Column {
                 ? Qt.rgba(Root.Theme.accentPrimary.r, Root.Theme.accentPrimary.g, Root.Theme.accentPrimary.b, 0.15)
                 : Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.08)
 
-            Behavior on color { ColorAnimation { duration: 120 } }
+            Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 
             Row {
                 anchors.centerIn: parent
@@ -48,7 +48,7 @@ Column {
                     font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
                     anchors.verticalCenter: parent.verticalCenter
 
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                 }
                 Text {
                     text: "Reorder Bar"
@@ -56,7 +56,7 @@ Column {
                     font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize }
                     anchors.verticalCenter: parent.verticalCenter
 
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                 }
             }
 

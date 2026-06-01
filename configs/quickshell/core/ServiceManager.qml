@@ -2,13 +2,16 @@ pragma Singleton
 import QtQuick
 
 // Holds references to all live service instances.
-// shell.qml registers services here; modules use ServiceManager.get("key") to access them.
+// shell.qml registers services here; modules use ServiceManager.get("key")
+// or the convenience accessors below to reach them.
+//
+// register() reassigns `_services` to a fresh object, which notifies the
+// accessor bindings — so they re-evaluate when a service is (re)registered
+// without needing an explicit revision counter.
 QtObject {
     id: mgr
 
     property var _services: ({})
-
-    property int _rev: 0
 
     function register(key, instance) {
         let old = _services;
@@ -16,37 +19,36 @@ QtObject {
         for (let k in old) s[k] = old[k];
         s[key] = instance;
         _services = s;
-        _rev++;
     }
 
     function get(key) {
         return _services[key] || null;
     }
 
-    // Convenience properties — _rev dependency forces re-evaluation on registration
-    // Services
-    readonly property var audio:       _rev >= 0 ? (_services["audio"]       || null) : null
-    readonly property var player:      _rev >= 0 ? (_services["player"]      || null) : null
-    readonly property var power:       _rev >= 0 ? (_services["power"]       || null) : null
-    readonly property var powerProfile:_rev >= 0 ? (_services["powerProfile"] || null) : null
-    readonly property var notif:       _rev >= 0 ? (_services["notif"]       || null) : null
-    readonly property var wifi:        _rev >= 0 ? (_services["wifi"]        || null) : null
-    readonly property var bluetooth:   _rev >= 0 ? (_services["bluetooth"]   || null) : null
-    readonly property var brightness:  _rev >= 0 ? (_services["brightness"]  || null) : null
-    readonly property var window:      _rev >= 0 ? (_services["window"]      || null) : null
-    readonly property var idleInhibit: _rev >= 0 ? (_services["idleInhibit"] || null) : null
-    readonly property var weather:     _rev >= 0 ? (_services["weather"]     || null) : null
-    readonly property var systemStats: _rev >= 0 ? (_services["systemStats"] || null) : null
-    readonly property var nightLight:  _rev >= 0 ? (_services["nightLight"]  || null) : null
-    readonly property var hooks:       _rev >= 0 ? (_services["hooks"]       || null) : null
-    readonly property var inputMethod: _rev >= 0 ? (_services["inputMethod"] || null) : null
+    // ── Service accessors ──
+    readonly property var audio:        _services["audio"]        || null
+    readonly property var player:       _services["player"]       || null
+    readonly property var power:        _services["power"]        || null
+    readonly property var powerProfile: _services["powerProfile"] || null
+    readonly property var notif:        _services["notif"]        || null
+    readonly property var wifi:         _services["wifi"]         || null
+    readonly property var bluetooth:    _services["bluetooth"]    || null
+    readonly property var brightness:   _services["brightness"]   || null
+    readonly property var window:       _services["window"]       || null
+    readonly property var idleInhibit:  _services["idleInhibit"]  || null
+    readonly property var weather:      _services["weather"]      || null
+    readonly property var systemStats:  _services["systemStats"]  || null
+    readonly property var nightLight:   _services["nightLight"]   || null
+    readonly property var hooks:        _services["hooks"]        || null
+    readonly property var inputMethod:  _services["inputMethod"]  || null
+    readonly property var wallpaper:    _services["wallpaper"]    || null
 
-    // Module references — registered by shell.qml
-    readonly property var bar:            _rev >= 0 ? (_services["bar"]            || null) : null
-    readonly property var controlCenter:  _rev >= 0 ? (_services["controlCenter"]  || null) : null
-    readonly property var powerMenu:      _rev >= 0 ? (_services["powerMenu"]      || null) : null
-    readonly property var widgetOverlay:  _rev >= 0 ? (_services["widgetOverlay"]  || null) : null
-    readonly property var settingsWindow: _rev >= 0 ? (_services["settingsWindow"] || null) : null
+    // ── Module references — registered by shell.qml ──
+    readonly property var bar:            _services["bar"]            || null
+    readonly property var controlCenter:  _services["controlCenter"]  || null
+    readonly property var powerMenu:      _services["powerMenu"]      || null
+    readonly property var widgetOverlay:  _services["widgetOverlay"]  || null
+    readonly property var settingsWindow: _services["settingsWindow"] || null
 
     // Shared bar popup window reference — registered by Bar.qml
     property var barPopup: null

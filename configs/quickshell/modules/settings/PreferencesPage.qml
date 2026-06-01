@@ -174,14 +174,14 @@ Column {
                         width: 36; height: 20; radius: 10
                         color: ccCardItem._enabled ? Root.Theme.accentPrimary : Root.Theme.textDimmed
                         opacity: ccCardItem._enabled ? 1.0 : 0.3
-                        Behavior on color { ColorAnimation { duration: 150 } }
+                        Behavior on color { ColorAnimation { duration: Root.Theme.animFast } }
 
                         Rectangle {
                             width: 14; height: 14; radius: 7
                             color: Root.Theme.textPrimary
                             anchors.verticalCenter: parent.verticalCenter
                             x: ccCardItem._enabled ? parent.width - width - 3 : 3
-                            Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.InOutCubic } }
+                            Behavior on x { NumberAnimation { duration: Root.Theme.animFast; easing.type: Easing.InOutCubic } }
                         }
                     }
 

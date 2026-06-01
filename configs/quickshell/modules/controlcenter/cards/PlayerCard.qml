@@ -71,7 +71,7 @@ Rectangle {
         anchors.fill: parent
         color: Root.Theme.base00
         opacity: artBg.visible ? 0.55 : 0.0
-        Behavior on opacity { NumberAnimation { duration: 200 } }
+        Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.exitDuration } }
     }
 
     // ── Layer 5: Cava spectrum bars along bottom ───────────────────────
@@ -83,7 +83,7 @@ Rectangle {
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: 4 }
         height: 36
         opacity: card.isPlaying ? 0.55 : 0.0
-        Behavior on opacity { NumberAnimation { duration: 250 } }
+        Behavior on opacity { NumberAnimation { duration: Root.Theme.animNormal } }
 
         readonly property var bars: (card.svc && card.svc.cavaBars) ? card.svc.cavaBars : []
         readonly property color barColor: Root.Theme.domainMedia
@@ -206,7 +206,7 @@ Rectangle {
                     border.color: Qt.rgba(Root.Theme.domainMedia.r, Root.Theme.domainMedia.g, Root.Theme.domainMedia.b, 0.5)
                     scale: ppMouse.pressed ? 0.92 : 1.0
 
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
                     Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
 
                     Text {
@@ -246,7 +246,7 @@ Rectangle {
             width: parent.width * Math.max(0, Math.min(1, card.progress))
             height: parent.height
             color: Root.Theme.domainMedia
-            Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
+            Behavior on width { NumberAnimation { duration: Root.Theme.animSlow; easing.type: Easing.OutCubic } }
         }
     }
 }

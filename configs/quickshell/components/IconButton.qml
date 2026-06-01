@@ -1,46 +1,27 @@
 import QtQuick
 import ".." as Root
 
-// Reusable hover-state icon button (Rectangle + Text + MouseArea).
+// Hover-state icon button. Built on ClickableItem.
+//
 // Usage:
-//   IconButton { icon: Theme.iconPower; onClicked: powerMenu.toggle() }
-//   IconButton { icon: Theme.iconPower; tooltipText: "Power menu"; onClicked: ... }
-Rectangle {
+//   IconButton { icon: Icons.power; onClicked: powerMenu.toggle() }
+//   IconButton { icon: Icons.power; tooltipText: "Power menu"; onClicked: ... }
+ClickableItem {
     id: root
 
     property string icon: ""
     property color iconColor: Root.Theme.textDimmed
-    property color hoverColor: Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.08)
     property int size: 28
     property string tooltipText: ""
-    readonly property alias hovered: mouse.containsMouse
-
-    signal clicked()
 
     width: size
     height: size
-    radius: Root.Theme.radiusSmall
-    color: mouse.containsMouse ? hoverColor : "transparent"
 
     Text {
         anchors.centerIn: parent
         text: root.icon
-        color: mouse.containsMouse ? root.iconColor : Root.Theme.textDimmed
-        font { family: Root.Theme.fontFamily; pixelSize: 16 }
-    }
-
-    MouseArea {
-        id: mouse
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        onClicked: root.clicked()
-        onContainsMouseChanged: {
-            if (root.tooltipText) {
-                if (containsMouse) tip.show();
-                else tip.hide();
-            }
-        }
+        color: root.hovered ? root.iconColor : Root.Theme.textDimmed
+        font: Root.Theme.fontIcon
     }
 
     Tooltip {
@@ -49,5 +30,14 @@ Rectangle {
         anchors.bottom: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottomMargin: 4
+    }
+
+    onHoveredChanged: {
+        if (root.tooltipText) {
+            if (root.hovered)
+                tip.show();
+            else
+                tip.hide();
+        }
     }
 }
