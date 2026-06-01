@@ -2,6 +2,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Mpris
 import QtQuick
+import ".." as Root
 
 Scope {
     id: root
@@ -39,8 +40,11 @@ Scope {
     property bool fetchingLyrics: false
     property string _lyricsTrackKey: ""  // "artist|title" to avoid re-fetching same track
 
-    onTrackTitleChanged: _fetchLyricsIfNeeded()
-    onTrackArtistChanged: _fetchLyricsIfNeeded()
+    onTrackTitleChanged: { _fetchLyricsIfNeeded(); _notifDebounce.restart(); }
+    onTrackArtistChanged: { _fetchLyricsIfNeeded(); _notifDebounce.restart(); }
+    // Capture the current track as the baseline when playback starts, so the
+    // first change *after* pressing play notifies (and a resume never does).
+    onIsPlayingChanged: _notifDebounce.restart()
 
     function _cleanTitle(title) {
         // Strip Spotify suffixes that break LRCLIB matching
@@ -125,6 +129,85 @@ Scope {
         let m = Math.floor(s / 60);
         s = s % 60;
         return m + ":" + (s < 10 ? "0" : "") + s;
+    }
+
+    // ── Now-playing track-change notifications ──
+    // One notification per REAL track change. The title→artist→art burst from a
+    // single change is coalesced by a debounce; the "artist|title" key stops the
+    // same track re-notifying; the first detection is treated as a baseline (so
+    // music already playing at startup doesn't fire); only fires while playing.
+    // No synchronous tag → each change is its own history entry grouped under
+    // "Now Playing" (rather than collapsing onto one). Gated by config.
+    property string _notifTrackKey: ""
+    property bool _notifInitialized: false
+
+    Timer {
+        id: _notifDebounce
+        interval: 600
+        onTriggered: {
+            if (!root.isPlaying || root.trackTitle.length === 0) return;
+            let key = root.trackArtist + "|" + root.trackTitle;
+            if (key === root._notifTrackKey) return;          // same track
+            let firstTime = !root._notifInitialized;
+            root._notifTrackKey = key;                        // track the current song...
+            root._notifInitialized = true;                    // ...even while disabled
+            if (firstTime) return;                            // startup baseline — no notify
+            if (!Root.Config.features.nowPlayingNotifications) return;
+            root._fireTrackNotify(root.trackTitle, root.trackArtist, root.trackArtUrl);
+        }
+    }
+
+    // createObject per fire so a hot-reload never leaves a Process with stale
+    // argv cached (same rationale as PowerService).
+    property Component _notifyRunner: Component {
+        Process {
+            property var argv: []
+            command: argv
+            running: true
+            onExited: Qt.callLater(() => destroy())
+        }
+    }
+
+    // Album art: notify-send -i needs a local PATH, but MPRIS art is usually an
+    // http URL (Spotify) which the notification server's cp-based copy can't
+    // fetch — so download it to a temp file first, then notify. Local art is
+    // passed straight through. Title/artist go via the argv array (never a shell
+    // string) so odd characters in metadata can't break or inject.
+    readonly property string _npArtPath: "/tmp/qs-nowplaying-art"
+    property string _npTitle: ""
+    property string _npArtist: ""
+
+    function _fireTrackNotify(title, artist, art) {
+        _npTitle = title;
+        _npArtist = artist;
+        if (art && (art.indexOf("http://") === 0 || art.indexOf("https://") === 0)) {
+            _artProc.command = ["curl", "-s", "--max-time", "4", "-o", _npArtPath, art];
+            _artProc.running = true;       // _doNotify fires on exit (below)
+        } else if (art && art.indexOf("file://") === 0) {
+            // Pass a RAW path (strip file://) so NotifService SNAPSHOTS it — it
+            // only copies "/"-prefixed paths. Without this a local player that
+            // reuses one art file makes older toasts lose their covers when it's
+            // overwritten on the next track.
+            _doNotify(art.substring(7));
+        } else if (art && art.indexOf("/") === 0) {
+            _doNotify(art);
+        } else {
+            _doNotify("");
+        }
+    }
+
+    function _doNotify(artPath) {
+        let argv = ["notify-send", "-a", "Now Playing", "-t", "5000"];
+        if (artPath && artPath.length > 0) argv.push("-i", artPath);
+        argv.push(_npTitle.length > 0 ? _npTitle : "Now Playing");
+        if (_npArtist.length > 0) argv.push(_npArtist);
+        let p = _notifyRunner.createObject(root, { argv: argv });
+        if (!p) console.log("PlayerService: failed to spawn track notify");
+    }
+
+    Process {
+        id: _artProc
+        onExited: (code, status) => root._doNotify(code === 0 ? root._npArtPath : "")
     }
 
     Process {

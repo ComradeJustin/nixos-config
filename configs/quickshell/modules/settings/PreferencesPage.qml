@@ -49,6 +49,15 @@ Column {
                 Root.Config.save()
             }
         }
+        Components.SettingToggle {
+            label: "Now-playing notifications"
+            description: "Post a notification on each media track change"
+            isOn: Root.Config.features.nowPlayingNotifications
+            onToggled: {
+                Root.Config.features.nowPlayingNotifications = !Root.Config.features.nowPlayingNotifications
+                Root.Config.save()
+            }
+        }
     }
 
     Components.SettingSection {

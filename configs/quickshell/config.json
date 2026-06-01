@@ -61,7 +61,8 @@
     "autoHideBarInFullscreen": true,
     "mediaPopup": true,
     "clipboardHistory": true,
-    "wallpaperSelector": true
+    "wallpaperSelector": true,
+    "nowPlayingNotifications": true
   },
   "behavior": {
     "weatherUpdateInterval": 900000,

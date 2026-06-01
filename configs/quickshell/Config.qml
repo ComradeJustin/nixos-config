@@ -84,6 +84,7 @@ QtObject {
         property bool mediaPopup: true
         property bool clipboardHistory: true
         property bool wallpaperSelector: true
+        property bool nowPlayingNotifications: true    // notify on media track changes
     }
 
     // ── Behavior settings ──
