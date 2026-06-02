@@ -37,10 +37,13 @@ Components.WidgetFrame {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.currentTime
             color: Root.Theme.widgetText
+            // Tabular figures → constant digit width, so the per-widget surface
+            // doesn't resize every second as the serif numerals change.
             font {
                 family: Root.Theme.fontDisplay
                 pixelSize: root.clockFontSize
                 bold: true
+                features: ({ "tnum": 1 })
             }
         }
 

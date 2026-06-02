@@ -53,7 +53,8 @@
     "calendarPosition": "center-left",
     "stockPosition": "center-right",
     "marginX": 40,
-    "marginY": 40
+    "marginY": 40,
+    "glass": true
   },
   "features": {
     "wallpaperWidgets": true,
@@ -62,7 +63,7 @@
     "mediaPopup": true,
     "clipboardHistory": true,
     "wallpaperSelector": true,
-    "nowPlayingNotifications": false
+    "nowPlayingNotifications": true
   },
   "behavior": {
     "weatherUpdateInterval": 900000,

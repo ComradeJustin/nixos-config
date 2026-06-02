@@ -60,7 +60,7 @@ Components.WidgetFrame {
             Text {
                 text: root.monthNames[root.displayMonth] + " " + root.displayYear
                 color: Root.Theme.widgetText
-                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXL; bold: true }
+                font { family: Root.Theme.fontDisplay; pixelSize: Root.Theme.fontSizeXL; weight: Font.Medium }
                 width: 120; horizontalAlignment: Text.AlignHCenter
                 MouseArea {
                     anchors.fill: parent; cursorShape: Qt.PointingHandCursor

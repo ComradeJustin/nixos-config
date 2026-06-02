@@ -239,8 +239,9 @@ QtObject {
     readonly property int    cavaArtSize:   scaled(48)
 
     // ── Background widgets ──
-    readonly property color  widgetBackground:   Qt.rgba(base00.r, base00.g, base00.b, 0.75)
-    readonly property color  widgetText:         base06
+    readonly property color  widgetBackground:   Qt.rgba(base00.r, base00.g, base00.b, 0.5)
+    readonly property color  widgetBackgroundSolid: Qt.rgba(base00.r, base00.g, base00.b, 0.92)
+    readonly property color  widgetText:         base07
     readonly property color  widgetTextDimmed:   base04
     readonly property int    widgetRadius:       radiusMedium
     readonly property int    widgetPadding:      scaled(16)

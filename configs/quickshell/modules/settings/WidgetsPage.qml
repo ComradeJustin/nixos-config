@@ -23,6 +23,15 @@ Column {
             }
         }
 
+        Components.SettingToggle {
+            label: "Glass background"
+            isOn: Root.Config.widgets.glass
+            onToggled: {
+                Root.Config.widgets.glass = !Root.Config.widgets.glass
+                Root.Config.save()
+            }
+        }
+
         Item { width: 1; height: 4 }
 
         // Edit widget layout button

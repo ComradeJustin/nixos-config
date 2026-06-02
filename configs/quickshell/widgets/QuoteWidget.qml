@@ -86,7 +86,7 @@ Components.WidgetFrame {
             color: Root.Theme.widgetText
             wrapMode: Text.WordWrap
             horizontalAlignment: Text.AlignHCenter
-            font { family: Root.Theme.fontFamily; pixelSize: root.fontSize; italic: true }
+            font { family: Root.Theme.fontDisplay; pixelSize: root.fontSize; italic: true }
         }
 
         Text {

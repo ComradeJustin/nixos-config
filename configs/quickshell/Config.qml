@@ -55,6 +55,11 @@ QtObject {
 
         property int marginX: 40
         property int marginY: 40
+
+        // Translucent "glass" widget backgrounds. Needs a compositor that blurs
+        // the quickshell-widgets layer for the frosted look (falls back to a
+        // plain translucent card otherwise). Off = solid card.
+        property bool glass: true
     }
 
     // ── Control Center settings ──

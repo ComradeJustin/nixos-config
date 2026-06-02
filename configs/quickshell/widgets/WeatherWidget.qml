@@ -28,7 +28,7 @@ Components.WidgetFrame {
             Text {
                 text: root.weatherService ? root.weatherService.temperature : "--"
                 color: Root.Theme.widgetText
-                font { family: Root.Theme.fontMono; pixelSize: root.fontSize; bold: true }
+                font { family: Root.Theme.fontDisplay; pixelSize: root.fontSize; weight: Font.Medium }
             }
 
             Text {

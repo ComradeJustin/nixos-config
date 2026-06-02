@@ -59,4 +59,21 @@ layer-rule {
  	place-within-backdrop true
 }
 
+// Glass for the desktop widgets. Each widget is its own sized layer surface
+// (namespace quickshell-widgets), so niri's blur scopes to each widget instead
+// of the whole backdrop. They sit on the bottom layer over only the wallpaper,
+// so xray (blur wallpaper, ignore windows) is exactly right here.
+layer-rule {
+	match namespace="^quickshell-widgets$"
+	background-effect {
+		blur true
+		xray true
+		noise 0.02
+		saturation 1.25
+	}
+	// Round the surface so the blur follows the widget's rounded corners
+	// instead of leaving blurred-wallpaper triangles in them.
+	geometry-corner-radius 8
+}
+
 
