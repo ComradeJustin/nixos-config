@@ -6,7 +6,6 @@ import "../../core" as Core
 Components.BarItem {
     id: root
     custom: true
-    popupContent: resPopup
 
     property var svc: Core.ServiceManager.systemStats
     property int cpuPercent: svc ? svc.cpuPercent : -1
@@ -71,70 +70,4 @@ Components.BarItem {
         anchors.verticalCenter: parent.verticalCenter
     }
 
-    // ── Popup content (hosted in shared BarPopup window) ──
-    property Components.HoverPopup resPopup: Components.HoverPopup {
-        visible: false
-        popupWidth: 200
-
-        Text {
-            text: "System Resources"
-            color: Root.Theme.domainSystem
-            font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall; bold: true }
-            width: parent ? parent.width : 0
-        }
-
-        Rectangle {
-            width: parent ? parent.width : 0; height: 1
-            color: Root.Theme.borderColor; opacity: 0.5
-        }
-
-        Components.PopupRow {
-            label: "CPU"
-            value: root.cpuPercent >= 0 ? root.cpuPercent + "%" : "--"
-            valueColor: root.cpuPercent >= 90 ? Root.Theme.accentDanger : Root.Theme.textPrimary
-        }
-
-        Components.PopupRow {
-            label: "RAM"
-            value: root.ramUsedGb >= 0
-                ? root.ramUsedGb.toFixed(1) + " / " + root.ramTotalGb.toFixed(1) + " GB"
-                : "--"
-            valueColor: root.ramPercent >= 90 ? Root.Theme.accentDanger : Root.Theme.textPrimary
-        }
-
-        Rectangle {
-            width: parent ? parent.width : 0; height: 4
-            radius: 2; color: Root.Theme.layer1
-            Rectangle {
-                width: root.ramPercent > 0 ? parent.width * root.ramPercent / 100 : 0
-                height: parent.height; radius: 2
-                color: root.ramPercent >= 90 ? Root.Theme.accentDanger : Root.Theme.domainSystem
-                Behavior on width { NumberAnimation { duration: Root.Theme.anim.moveDuration } }
-            }
-        }
-
-        Components.PopupRow {
-            label: "Disk (/)"
-            value: root.diskUsedGb >= 0
-                ? root.diskUsedGb.toFixed(0) + " / " + root.diskTotalGb.toFixed(0) + " GB"
-                : "--"
-            valueColor: root.diskPercent >= 90 ? Root.Theme.accentDanger : Root.Theme.textPrimary
-        }
-
-        Rectangle {
-            width: parent ? parent.width : 0; height: 4
-            radius: 2; color: Root.Theme.layer1
-            Rectangle {
-                width: root.diskPercent > 0 ? parent.width * root.diskPercent / 100 : 0
-                height: parent.height; radius: 2
-                color: root.diskPercent >= 90 ? Root.Theme.accentDanger : Root.Theme.accentPrimary
-                Behavior on width { NumberAnimation { duration: Root.Theme.anim.moveDuration } }
-            }
-        }
-
-        Components.PopupRow {
-            label: "Uptime"
-            value: root.uptime || "--"
-        }
-    }
 }

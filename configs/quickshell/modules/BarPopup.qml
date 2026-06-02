@@ -60,6 +60,13 @@ PanelWindow {
         _closeTimer.start();
     }
 
+    // Close only if the popup is currently showing for this source — used when a
+    // module's content disappears (e.g. media stops) so a stale popup doesn't
+    // linger with nothing to anchor to.
+    function dismissFor(sourceItem) {
+        if (_sourceItem === sourceItem && _showing) dismiss();
+    }
+
     function _updatePosition() {
         if (!_sourceItem) return;
         let mapped = _sourceItem.mapToGlobal(_sourceItem.width / 2, 0);

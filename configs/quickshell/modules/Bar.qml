@@ -13,7 +13,6 @@ Scope {
     id: barScope
 
     property bool isHidden: false
-    property bool showCava: false
     property bool barEditMode: false
 
     // ── Drag-and-drop state ──
@@ -123,7 +122,7 @@ Scope {
 
     // ── Component map for Repeater-driven bar ──
     // Custom overrides for modules needing special initialization
-    Component { id: compMedia; BarModules.MediaModule { cavaOpen: barScope.showCava; onCavaToggled: barScope.showCava = !barScope.showCava } }
+    Component { id: compMedia; BarModules.MediaModule {} }
     Component { id: compTray; BarModules.TrayModule { barPanel: panel } }
 
     property var _customOverrides: ({ "media": compMedia, "tray": compTray })
@@ -148,39 +147,21 @@ Scope {
     property int floatMargin: 6
     property int barTotalHeight: isFloating ? Root.Theme.barHeight + floatMargin * 2 : Root.Theme.barHeight
 
-    // ── Sub-group background computation ──
-    // Build a lookup from module key → group name
-    property var _groupMap: {
-        let map = {};
-        let mods = Core.Registry.barModules;
-        for (let i = 0; i < mods.length; i++) map[mods[i].key] = mods[i].group;
-        return map;
-    }
-
-    // Find contiguous runs of same-group modules within a layout array
-    function _computeSubGroups(layout, secName) {
-        let groups = [];
-        if (!layout || layout.length === 0) return groups;
-        let gmap = _groupMap;
-        let runStart = 0;
-        let currentGroup = gmap[layout[0]] || layout[0];
-        for (let i = 1; i <= layout.length; i++) {
-            let g = i < layout.length ? (gmap[layout[i]] || layout[i]) : null;
-            if (g !== currentGroup) {
-                groups.push({ startIdx: runStart, endIdx: i - 1, sec: secName });
-                runStart = i;
-                currentGroup = g;
-            }
-        }
-        return groups;
-    }
-
-    // Combined sub-groups across all three sections
+    // ── Section background computation ──
+    // One continuous pill per section (left / center / right) rather than
+    // per-group sub-islands, so the bar reads as a few big continuous islands
+    // instead of many fragmented ones. The pill delegate spans every visible
+    // module in the section (0 .. count-1); hidden modules just leave the pill
+    // continuous across the gap.
     property var _allSubGroups: {
-        let l = _computeSubGroups(Root.Config.bar.layoutLeft, "left");
-        let c = _computeSubGroups(Root.Config.bar.layoutCenter, "center");
-        let r = _computeSubGroups(Root.Config.bar.layoutRight, "right");
-        return l.concat(c).concat(r);
+        let secs = [];
+        let l = Root.Config.bar.layoutLeft;
+        let c = Root.Config.bar.layoutCenter;
+        let r = Root.Config.bar.layoutRight;
+        if (l && l.length > 0) secs.push({ startIdx: 0, endIdx: l.length - 1, sec: "left" });
+        if (c && c.length > 0) secs.push({ startIdx: 0, endIdx: c.length - 1, sec: "center" });
+        if (r && r.length > 0) secs.push({ startIdx: 0, endIdx: r.length - 1, sec: "right" });
+        return secs;
     }
 
     // Delayed show: when detection says "no longer fullscreen", wait
@@ -657,12 +638,6 @@ Scope {
         }
 
         Component.onCompleted: Core.ServiceManager.barTooltip = barTooltipWindow
-    }
-
-    // Media popup
-    BarModules.MediaPopup {
-        showCava: barScope.showCava
-        barHidden: barScope.isHidden
     }
 
     // ── Fullscreen detection (cosmetic animation) ──

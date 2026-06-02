@@ -20,6 +20,7 @@ SettingSelect 1.0 SettingSelect.qml
 CCSliderRow 1.0 CCSliderRow.qml
 ProfileCard 1.0 ProfileCard.qml
 CCSection 1.0 CCSection.qml
+CCCardHeader 1.0 CCCardHeader.qml
 SettingSection 1.0 SettingSection.qml
 SmoothFlickable 1.0 SmoothFlickable.qml
 BarSectionDelegate 1.0 BarSectionDelegate.qml

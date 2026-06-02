@@ -324,6 +324,15 @@ Scope {
                 // tabContentItem.y is relative to mainLayout, add ccPadding for the layout's top margin
                 readonly property int maxTabContentHeight: Math.max(120, parent.height - tabContentItem.y - Root.Theme.ccPadding * 2 - _footerHeight)
 
+                // Cap for the cards area so it scrolls internally instead of
+                // pushing the tab bar + content off-screen when many cards are
+                // enabled. Depends only on the fixed chrome above the cards
+                // (ccCardsCol.y), the screen height, and the accordion factor —
+                // nothing below the cards — so there is no binding loop.
+                readonly property int maxCardsHeight: Math.max(140,
+                    (parent.height - 6) - (Root.Theme.ccPadding + ccCardsCol.y)
+                    - 96 - Math.round(220 * contentFactor))
+
                 radius: Root.Theme.radiusMedium
                 color: Root.Theme.barBackground
                 x: cc.showing ? 0 : (Root.Theme.ccWidth + 6)
@@ -468,11 +477,12 @@ Scope {
                     // Data-driven: iterates Config.cc.cardLayout, filters by
                     // Config.cc.cards[key] enables, and dispatches each card
                     // key to a local Component via sourceComponent.
-                    Column {
+                    Item {
                         id: ccCardsCol
                         Layout.fillWidth: true
-                        spacing: 6
+                        Layout.preferredHeight: visible ? Math.min(cardsInner.implicitHeight, ccRect.maxCardsHeight) : 0
                         visible: enabledKeys.length > 0
+                        clip: true
 
                         // Data-driven enabledKeys with per-card runtime
                         // gating. A card only gets instantiated if:
@@ -519,23 +529,35 @@ Scope {
                             "calendar":      calendarCardComp
                         })
 
-                        Repeater {
-                            model: ccCardsCol.enabledKeys
+                        Components.SmoothFlickable {
+                            anchors.fill: parent
+                            contentHeight: cardsInner.implicitHeight
+                            clip: true
 
-                            Components.StaggerReveal {
-                                id: cardReveal
-                                required property int index
-                                required property var modelData
+                            Column {
+                                id: cardsInner
                                 width: ccCardsCol.width
-                                staggerIndex: index
-                                baseDelay: 160          // let the panel slide in first
-                                shown: cc.showing
+                                spacing: 6
 
-                                Loader {
-                                    width: parent.width
-                                    height: item ? item.implicitHeight : 0
-                                    active: true
-                                    sourceComponent: ccCardsCol.cardComponentMap[cardReveal.modelData] || null
+                                Repeater {
+                                    model: ccCardsCol.enabledKeys
+
+                                    Components.StaggerReveal {
+                                        id: cardReveal
+                                        required property int index
+                                        required property var modelData
+                                        width: cardsInner.width
+                                        staggerIndex: index
+                                        baseDelay: 160          // let the panel slide in first
+                                        shown: cc.showing
+
+                                        Loader {
+                                            width: parent.width
+                                            height: item ? item.implicitHeight : 0
+                                            active: true
+                                            sourceComponent: ccCardsCol.cardComponentMap[cardReveal.modelData] || null
+                                        }
+                                    }
                                 }
                             }
                         }

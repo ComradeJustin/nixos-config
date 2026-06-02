@@ -89,6 +89,14 @@ Rectangle {
         }
         spacing: Root.Theme.spacingS
 
+        // ── Section header ──
+        Components.CCCardHeader {
+            width: parent.width
+            icon: "󰃭"
+            title: "Calendar"
+            accent: Root.Theme.domainTime
+        }
+
         // Month/year header with nav arrows
         Row {
             width: parent.width

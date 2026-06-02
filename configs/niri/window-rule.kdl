@@ -39,7 +39,7 @@ window-rule {
         noise 0.02
         saturation 1.25
     }
-    geometry-corner-radius 0
+    geometry-corner-radius 10
     clip-to-geometry true
 }
 

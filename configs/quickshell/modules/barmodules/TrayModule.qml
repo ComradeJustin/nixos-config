@@ -3,6 +3,7 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Services.SystemTray
 import "../.." as Root
+import "../../core" as Core
 
 Item {
     id: root
@@ -85,6 +86,15 @@ Item {
                     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
                     cursorShape: Qt.PointingHandCursor
 
+                    // Tooltip via the shared overlay so it isn't clipped by the
+                    // bar window (a child Rectangle below the item gets cut off).
+                    onContainsMouseChanged: {
+                        let bt = Core.ServiceManager.barTooltip;
+                        let txt = trayItem.modelData.tooltipTitle || trayItem.modelData.title || "";
+                        if (containsMouse && txt.length > 0) { if (bt) bt.show(trayItem, txt); }
+                        else { if (bt) bt.hide(); }
+                    }
+
                     onClicked: function(mouse) {
                         // Map tray item position to panel-window coordinates
                         let mapped = trayItem.mapToItem(null, 0, 0);
@@ -106,37 +116,8 @@ Item {
                     }
                 }
 
-                // Hover tooltip
-                Rectangle {
-                    id: tooltipBg
-                    visible: itemMouse.containsMouse && tooltipLabel.text.length > 0
-                    x: (parent.width - width) / 2
-                    y: parent.height + 6
-                    width: tooltipLabel.implicitWidth + 12
-                    height: tooltipLabel.implicitHeight + 8
-                    radius: Root.Theme.radiusSmall
-                    color: Root.Theme.barBackground
-                    border.width: Root.Theme.borderWidth
-                    border.color: Root.Theme.borderColor
-                    z: 100
-
-                    layer.enabled: visible
-                    layer.effect: MultiEffect {
-                        shadowEnabled: true
-                        shadowColor: Qt.rgba(0, 0, 0, 0.35)
-                        shadowBlur: 0.8
-                        shadowHorizontalOffset: 0
-                        shadowVerticalOffset: 2
-                    }
-
-                    Text {
-                        id: tooltipLabel
-                        anchors.centerIn: parent
-                        text: trayItem.modelData.tooltipTitle || trayItem.modelData.title || ""
-                        color: Root.Theme.textPrimary
-                        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeS }
-                    }
-                }
+                // (Tooltip is shown via the shared barTooltip overlay above —
+                //  see itemMouse.onContainsMouseChanged.)
             }
         }
     }

@@ -9,31 +9,42 @@ Item {
 
     property int fixedTextWidth: 200
     property var playerService: Core.ServiceManager.player
-    property bool cavaOpen: false
-    signal cavaToggled()
 
     property bool isPlaying: playerService ? playerService.isPlaying : false
     property string mediaText: playerService ? playerService.displayText : ""
     property bool hasMedia: mediaText.length > 0
+
+    // When playback ends and the module collapses away, close the controls
+    // popup too — otherwise it lingers with no module to anchor to.
+    onHasMediaChanged: {
+        if (!hasMedia) {
+            let bp = Core.ServiceManager.barPopup;
+            if (bp) bp.dismissFor(root);
+        }
+    }
 
     // Left: icon glyph bearing provides ~3px visual padding
     // Right: add 3px to match so text doesn't sit flush against group edge
     implicitWidth: hasMedia ? playIcon.width + 6 + Math.min(scrollText.contentWidth, fixedTextWidth) + 3 : 0
     implicitHeight: Root.Theme.barHeight
     opacity: hasMedia ? 1 : 0
-    clip: true
+    // No clip: the hover highlight paints into the section pill's padding
+    // (±6px), which a clip would cut off. Content stays in-bounds in steady
+    // state; only the width-grow tween briefly extends past the edge.
+    clip: false
 
     Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic } }
     Behavior on implicitWidth { NumberAnimation { duration: Root.Theme.anim.resizeDuration; easing.type: Easing.InOutCubic } }
 
-    // Hover background
+    // Hover background — sized to the section pill (which adds 6px horizontal /
+    // 4px vertical padding around the module), so the highlight fills the
+    // visible island instead of sitting inset inside it.
     Rectangle {
         id: hoverBg
-        anchors {
-            fill: parent
-            topMargin: Root.Theme.spacingXS
-            bottomMargin: Root.Theme.spacingXS
-        }
+        x: -6
+        width: parent.width + 12
+        y: 4
+        height: parent.height - 8
         radius: Root.Theme.radiusSmall
         color: mediaHover.containsMouse
             ? Root.Theme.layer1Hover
@@ -48,20 +59,53 @@ Item {
         acceptedButtons: Qt.NoButton
     }
 
-    Text {
+    // Leading control: a play glyph when paused, a mini cava equalizer while
+    // playing (the visualizer lives in the icon slot, so it stays centered with
+    // the text). Click toggles playback either way.
+    Item {
         id: playIcon
         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-        text: root.isPlaying ? Root.Icons.mediaPlay : Root.Icons.mediaPause
-        color: Root.Theme.domainMedia
-        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.iconSize }
+        width: Root.Theme.iconSize
+        height: Root.Theme.iconSize
 
-        // Bounce animation on play/pause toggle
         scale: 1.0
         SequentialAnimation {
             id: playBounce
             running: false
             NumberAnimation { target: playIcon; property: "scale"; to: 0.85; duration: 60; easing.type: Easing.InQuad }
             NumberAnimation { target: playIcon; property: "scale"; to: 1.0; duration: Root.Theme.anim.microDuration; easing.type: Easing.OutBack; easing.overshoot: 1.5 }
+        }
+
+        Text {
+            anchors.centerIn: parent
+            visible: !root.isPlaying
+            text: Root.Icons.mediaPlay
+            color: Root.Theme.domainMedia
+            font { family: Root.Theme.fontMono; pixelSize: Root.Theme.iconSize }
+        }
+
+        Row {
+            anchors.fill: parent
+            spacing: 1
+            visible: root.isPlaying
+            Repeater {
+                model: 5
+                Rectangle {
+                    width: Math.max(1, (parent.width - 4) / 5)
+                    // Grow symmetrically from the vertical centre so the bars sit
+                    // on the same line as the glyph/text, not the icon's bottom.
+                    anchors.verticalCenter: parent.verticalCenter
+                    radius: 1
+                    color: Root.Theme.domainMedia
+                    height: {
+                        let vals = root.playerService ? root.playerService.cavaBars : [];
+                        if (!vals || vals.length === 0) return 2;
+                        let i = Math.floor(index * vals.length / 5);
+                        return Math.max(2, (vals[i] || 0) * parent.height);
+                    }
+                    Behavior on height { NumberAnimation { duration: 60; easing.type: Easing.OutQuad } }
+                }
+            }
         }
 
         MouseArea {
@@ -76,7 +120,7 @@ Item {
     Components.ScrollingText {
         id: scrollText
         anchors { left: playIcon.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
-        fixedWidth: root.fixedTextWidth
+        fixedWidth: Math.min(scrollText.contentWidth, root.fixedTextWidth)
         text: root.mediaText
         textColor: mediaHover.containsMouse ? Root.Theme.domainMedia : Root.Theme.textPrimary
         textFont: Qt.font({ family: Root.Theme.fontMono, pixelSize: Root.Theme.fontSize, bold: true })
@@ -85,7 +129,6 @@ Item {
         MouseArea {
             anchors.fill: parent; cursorShape: Qt.PointingHandCursor
             onClicked: {
-                if (root.cavaOpen) root.cavaToggled();
                 let bp = Core.ServiceManager.barPopup;
                 if (bp) bp.toggle(root, mediaPopup);
             }
@@ -359,10 +402,6 @@ Item {
                             target: lyricsSlider; property: "opacity"
                             from: 1; to: 0; duration: 80; easing.type: Easing.InQuad
                         }
-                        NumberAnimation {
-                            target: lyricsSlider; property: "y"
-                            from: 14; to: 6; duration: 0
-                        }
                         ParallelAnimation {
                             NumberAnimation {
                                 target: lyricsSlider; property: "opacity"
@@ -378,28 +417,5 @@ Item {
             }
         }
 
-        // Cava visualizer toggle
-        Rectangle {
-            width: parent.width; height: 28; radius: Root.Theme.radiusSmall
-            color: cavaMouse.containsMouse
-                ? Qt.rgba(Root.Theme.domainMedia.r, Root.Theme.domainMedia.g, Root.Theme.domainMedia.b, 0.12)
-                : Qt.rgba(Root.Theme.domainMedia.r, Root.Theme.domainMedia.g, Root.Theme.domainMedia.b, 0.05)
-            border.width: 1
-            border.color: Qt.rgba(Root.Theme.domainMedia.r, Root.Theme.domainMedia.g, Root.Theme.domainMedia.b, 0.2)
-
-            Row {
-                anchors.centerIn: parent; spacing: 6
-                Text { text: Root.Icons.equalizer; color: Root.Theme.domainMedia; font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeXL } }
-                Text { text: "Visualizer"; color: Root.Theme.textDimmed; font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeS } }
-            }
-            MouseArea {
-                id: cavaMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    root.cavaToggled();
-                    let bp = Core.ServiceManager.barPopup;
-                    if (bp) bp.dismiss();
-                }
-            }
-        }
     }
 }

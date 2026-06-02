@@ -3,12 +3,14 @@ import "../../.." as Root
 import "../../../components" as Components
 import "../../../core" as Core
 
-// SystemMonitorCard — CPU, RAM, and disk at a glance with sparklines.
+// SystemMonitorCard — CPU, memory, and disk at a glance.
+// Flat design: a section header (accent icon + title), then one row per metric
+// with an uppercase label, a right-aligned mono value, and a thin flat bar.
 Rectangle {
     id: card
 
     width: parent ? parent.width : 320
-    implicitHeight: 120
+    implicitHeight: body.implicitHeight + Root.Theme.spacingM * 2
 
     readonly property var svc: Core.ServiceManager.systemStats
 
@@ -18,140 +20,107 @@ Rectangle {
     border.color: Root.Theme.borderColor
     clip: true
 
-    // Soft domain glow
-    Rectangle {
-        anchors.fill: parent
-        radius: parent.radius
-        gradient: Gradient {
-            orientation: Gradient.Horizontal
-            GradientStop {
-                position: 0.0
-                color: Qt.rgba(Root.Theme.domainSystem.r,
-                               Root.Theme.domainSystem.g,
-                               Root.Theme.domainSystem.b, 0.12)
+    // One metric: uppercase label + right-aligned mono value, thin flat bar below.
+    component Metric: Column {
+        id: m
+        property string label: ""
+        property string value: ""
+        property real fraction: 0
+        property color barColor: Root.Theme.domainSystem
+        spacing: 4
+
+        Item {
+            width: parent.width
+            height: lbl.implicitHeight
+
+            Text {
+                id: lbl
+                anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                text: m.label
+                color: Root.Theme.textDimmed
+                font {
+                    family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS; bold: true
+                    capitalization: Font.AllUppercase; letterSpacing: 0.5
+                }
             }
-            GradientStop { position: 0.9; color: "transparent" }
+            Text {
+                anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                text: m.value
+                color: Root.Theme.textPrimary
+                font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeS }
+            }
+        }
+
+        Rectangle {
+            width: parent.width
+            height: 4
+            radius: 2
+            color: Root.Theme.layer2
+
+            Rectangle {
+                width: parent.width * Math.max(0, Math.min(1, m.fraction))
+                height: parent.height
+                radius: parent.radius
+                color: m.barColor
+                Behavior on width { NumberAnimation { duration: Root.Theme.anim.moveDuration; easing.type: Easing.OutCubic } }
+            }
         }
     }
 
-    Row {
+    // Flat accent strip
+    Rectangle {
+        anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+        width: 3
+        color: Root.Theme.domainSystem
+    }
+
+    Column {
+        id: body
         anchors {
-            left: parent.left
-            right: parent.right
-            verticalCenter: parent.verticalCenter
-            margins: Root.Theme.spacingM
+            left: parent.left; right: parent.right; top: parent.top
+            leftMargin: Root.Theme.spacingM + 3
+            rightMargin: Root.Theme.spacingM
+            topMargin: Root.Theme.spacingM
         }
         spacing: Root.Theme.spacingM
 
-        // Icon tile
-        Rectangle {
-            id: iconTile
-            width: 60; height: 60
-            radius: Root.Theme.radiusSmall
-            color: Qt.rgba(Root.Theme.domainSystem.r,
-                           Root.Theme.domainSystem.g,
-                           Root.Theme.domainSystem.b, 0.22)
-            border.width: 1
-            border.color: Qt.rgba(Root.Theme.domainSystem.r,
-                                  Root.Theme.domainSystem.g,
-                                  Root.Theme.domainSystem.b, 0.5)
-
-            Text {
-                anchors.centerIn: parent
-                text: Root.Icons.monitor
-                color: Root.Theme.domainSystem
-                font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize5XL }
-            }
+        // ── Section header ──
+        Components.CCCardHeader {
+            width: parent.width
+            icon: Root.Icons.monitor
+            title: "System"
+            accent: Root.Theme.domainSystem
         }
 
-        // Stats column
+        // ── Metrics ──
         Column {
-            width: parent.width - iconTile.width - 12
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 6
+            width: parent.width
+            spacing: Root.Theme.spacingS
 
-            // CPU row
-            Row {
+            Metric {
                 width: parent.width
-                spacing: Root.Theme.spacingS
-
-                Column {
-                    width: parent.width - cpuGraph.width - 8
-                    spacing: 1
-
-                    Text {
-                        text: "CPU"
-                        color: Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
-                    }
-                    Text {
-                        text: card.svc ? card.svc.cpuPercent + "%" : "--"
-                        color: Root.Theme.textPrimary
-                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL; bold: true }
-                    }
-                }
-
-                Components.Graph {
-                    id: cpuGraph
-                    width: 80; height: 28
-                    anchors.verticalCenter: parent.verticalCenter
-                    values: card.svc ? card.svc.cpuHistory : []
-                    lineColor: Root.Theme.domainSystem
-                }
+                label: "CPU"
+                value: card.svc && card.svc.cpuPercent >= 0 ? card.svc.cpuPercent + "%" : "--"
+                fraction: card.svc ? card.svc.cpuPercent / 100 : 0
+                barColor: Root.Theme.base0B
             }
-
-            // RAM row
-            Row {
+            Metric {
                 width: parent.width
-                spacing: Root.Theme.spacingS
-
-                Column {
-                    width: parent.width - ramGraph.width - 8
-                    spacing: 1
-
-                    Text {
-                        text: "RAM"
-                        color: Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
-                    }
-                    Text {
-                        text: card.svc ? card.svc.ramUsedGb.toFixed(1) + " / " + card.svc.ramTotalGb.toFixed(1) + " GB" : "--"
-                        color: Root.Theme.textPrimary
-                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL; bold: true }
-                    }
-                }
-
-                Components.Graph {
-                    id: ramGraph
-                    width: 80; height: 28
-                    anchors.verticalCenter: parent.verticalCenter
-                    values: card.svc ? card.svc.ramHistory : []
-                    lineColor: Root.Theme.base0D
-                }
+                label: "Memory"
+                value: card.svc && card.svc.ramUsedGb >= 0
+                    ? card.svc.ramUsedGb.toFixed(1) + " / " + card.svc.ramTotalGb.toFixed(1) + " GiB"
+                    : "--"
+                fraction: card.svc ? card.svc.ramPercent / 100 : 0
+                barColor: Root.Theme.base0D
             }
-
-            // Disk + uptime footer
-            Row {
+            Metric {
                 width: parent.width
-                spacing: Root.Theme.spacingM
-
-                Text {
-                    text: card.svc && card.svc.diskPercent >= 0
-                        ? "Disk " + card.svc.diskPercent + "%"
-                        : ""
-                    color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
-                    visible: text.length > 0
-                }
-
-                Text {
-                    text: card.svc && card.svc.uptime.length > 0
-                        ? "Up " + card.svc.uptime
-                        : ""
-                    color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
-                    visible: text.length > 0
-                }
+                label: "Disk /"
+                value: card.svc && card.svc.diskUsedGb >= 0
+                    ? card.svc.diskUsedGb.toFixed(0) + " / " + card.svc.diskTotalGb.toFixed(0) + " GiB"
+                    : "--"
+                fraction: card.svc ? card.svc.diskPercent / 100 : 0
+                barColor: Root.Theme.base0F
             }
         }
     }

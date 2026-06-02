@@ -7,7 +7,6 @@ Components.BarItem {
     id: root
     custom: true
     accent: Root.Theme.domainTime
-    popupContent: timePopup
 
     property string dateFormat: "+%a %b %d"
     property string timeFormat: "+%H:%M"
@@ -102,43 +101,6 @@ Components.BarItem {
         anchors.verticalCenter: parent.verticalCenter
     }
 
-    // ── Popup content (hosted in shared BarPopup window) ──
-    property Components.HoverPopup timePopup: Components.HoverPopup {
-        visible: false
-        popupWidth: 190
-
-        Text {
-            text: root.timeText || "--:--"
-            color: Root.Theme.textPrimary
-            font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSize5XL; bold: true }
-            width: parent ? parent.width : 0
-            horizontalAlignment: Text.AlignHCenter
-        }
-
-        Text {
-            text: root.longDateText || "--"
-            color: Root.Theme.textDimmed
-            font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeSmall }
-            width: parent ? parent.width : 0
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.WordWrap
-        }
-
-        Rectangle {
-            width: parent ? parent.width : 0; height: 1
-            color: Root.Theme.borderColor; opacity: 0.5
-        }
-
-        Components.PopupRow {
-            label: "Week"
-            value: root.weekNum || "--"
-        }
-
-        Components.PopupRow {
-            label: "Day of year"
-            value: root.dayOfYear || "--"
-        }
-    }
 
     // ── Processes ──
     Process {

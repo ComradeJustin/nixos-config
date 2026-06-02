@@ -4,7 +4,6 @@ WorkspaceModule 1.0 WorkspaceModule.qml
 WindowModule 1.0 WindowModule.qml
 BatteryModule 1.0 BatteryModule.qml
 MediaModule 1.0 MediaModule.qml
-MediaPopup 1.0 MediaPopup.qml
 TrayModule 1.0 TrayModule.qml
 PowerModule 1.0 PowerModule.qml
 WeatherModule 1.0 WeatherModule.qml

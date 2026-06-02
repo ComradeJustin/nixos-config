@@ -74,6 +74,14 @@ Rectangle {
         Behavior on opacity { NumberAnimation { duration: Root.Theme.anim.exitDuration } }
     }
 
+    // ── Flat accent strip (unifies with the other CC cards) ──
+    Rectangle {
+        anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+        width: 3
+        color: Root.Theme.domainMedia
+        z: 5
+    }
+
     // ── Layer 5: Cava spectrum bars along bottom ───────────────────────
     // Rendered as a Canvas so we can cheaply repaint on every cavaBars tick
     // without instantiating 24 Rectangles. Vertically centered above the
@@ -165,6 +173,15 @@ Rectangle {
         Column {
             width: parent.width - artFg.width - 12
             spacing: Root.Theme.spacingXS
+
+            // Eyebrow — a light "header" touch for the showpiece card.
+            Text {
+                width: parent.width
+                text: "NOW PLAYING"
+                color: Root.Theme.domainMedia
+                font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeXXS; bold: true; capitalization: Font.AllUppercase; letterSpacing: 1 }
+                elide: Text.ElideRight
+            }
 
             // Title — scrolling text handles overflow gracefully if available,
             // but a straight elide keeps this card dependency-free.

@@ -1,13 +1,14 @@
 import QtQuick
 import "../../.." as Root
+import "../../../components" as Components
 import "../../../core" as Core
 
-// WeatherCard — current conditions at a glance.
+// WeatherCard — current conditions + 5-day forecast (flat, header-led).
 Rectangle {
     id: card
 
     width: parent ? parent.width : 320
-    implicitHeight: 96
+    implicitHeight: body.implicitHeight + Root.Theme.spacingM * 2
 
     readonly property var svc: Core.ServiceManager.weather
     readonly property bool ready: svc ? svc.initialized : false
@@ -18,118 +19,135 @@ Rectangle {
     border.color: Root.Theme.borderColor
     clip: true
 
-    // Soft domain glow
+    // Flat accent strip
     Rectangle {
-        anchors.fill: parent
-        radius: parent.radius
-        visible: card.ready
-        gradient: Gradient {
-            orientation: Gradient.Horizontal
-            GradientStop {
-                position: 0.0
-                color: Qt.rgba(Root.Theme.domainWeather.r,
-                               Root.Theme.domainWeather.g,
-                               Root.Theme.domainWeather.b, 0.12)
-            }
-            GradientStop { position: 0.9; color: "transparent" }
-        }
+        anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+        width: 3
+        color: Root.Theme.domainWeather
     }
 
-    Row {
+    Column {
+        id: body
         anchors {
-            left: parent.left
-            right: parent.right
-            verticalCenter: parent.verticalCenter
-            margins: Root.Theme.spacingM
+            left: parent.left; right: parent.right; top: parent.top
+            leftMargin: Root.Theme.spacingM + 3
+            rightMargin: Root.Theme.spacingM
+            topMargin: Root.Theme.spacingM
         }
         spacing: Root.Theme.spacingM
 
-        // Icon tile
-        Rectangle {
-            id: iconTile
-            width: 60; height: 60
-            radius: Root.Theme.radiusSmall
-            color: Qt.rgba(Root.Theme.domainWeather.r,
-                           Root.Theme.domainWeather.g,
-                           Root.Theme.domainWeather.b, card.ready ? 0.22 : 0.08)
-            border.width: 1
-            border.color: Qt.rgba(Root.Theme.domainWeather.r,
-                                  Root.Theme.domainWeather.g,
-                                  Root.Theme.domainWeather.b, card.ready ? 0.5 : 0.2)
+        // ── Header: current-condition icon + title + refresh ──
+        Components.CCCardHeader {
+            width: parent.width
+            icon: card.svc ? card.svc.icon : Root.Icons.weatherDefault
+            title: "Weather"
+            accent: Root.Theme.domainWeather
 
-            Behavior on color { ColorAnimation { duration: Root.Theme.anim.exitDuration } }
-            Behavior on border.color { ColorAnimation { duration: Root.Theme.anim.exitDuration } }
+            Rectangle {
+                id: refreshPill
+                width: 28; height: 28
+                radius: width / 2
+                color: refreshMouse.containsMouse
+                    ? Qt.rgba(Root.Theme.domainWeather.r, Root.Theme.domainWeather.g, Root.Theme.domainWeather.b, 0.32)
+                    : Qt.rgba(Root.Theme.domainWeather.r, Root.Theme.domainWeather.g, Root.Theme.domainWeather.b, 0.15)
+                border.width: 1
+                border.color: Qt.rgba(Root.Theme.domainWeather.r, Root.Theme.domainWeather.g, Root.Theme.domainWeather.b, 0.45)
+                scale: refreshMouse.pressed ? 0.92 : 1.0
 
-            Text {
-                anchors.centerIn: parent
-                text: card.svc ? card.svc.icon : Root.Icons.weatherDefault
-                color: card.ready ? Root.Theme.domainWeather : Root.Theme.textDimmed
-                font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSize5XL }
-                Behavior on color { ColorAnimation { duration: Root.Theme.anim.exitDuration } }
+                Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
+                Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
+
+                Text {
+                    anchors.centerIn: parent
+                    text: Root.Icons.reset
+                    color: Root.Theme.domainWeather
+                    font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSizeL }
+                    rotation: card.svc && card.svc.fetching ? 360 : 0
+                    Behavior on rotation { NumberAnimation { duration: 600; easing.type: Easing.InOutCubic } }
+                }
+                MouseArea {
+                    id: refreshMouse
+                    anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                    onClicked: if (card.svc) card.svc.fetchWeather()
+                }
             }
         }
 
-        // Info column
-        Column {
-            width: parent.width - iconTile.width - refreshPill.width - 24
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: Root.Theme.spacingXS
+        // ── Current conditions ──
+        Row {
+            width: parent.width
+            spacing: Root.Theme.spacingM
 
             Text {
-                width: parent.width
+                anchors.verticalCenter: parent.verticalCenter
                 text: card.svc ? card.svc.temperature : "--"
                 color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize4XL; bold: true }
+                // Display serif for the focal temperature.
+                font { family: Root.Theme.fontDisplay; pixelSize: Root.Theme.fontSize4XL; weight: Font.Medium }
             }
 
-            Text {
-                width: parent.width
-                text: card.svc && card.svc.condition.length > 0
-                    ? card.svc.condition
-                    : (card.ready ? "No data" : "Loading...")
-                color: Root.Theme.textDimmed
-                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS }
-                elide: Text.ElideRight
+            Column {
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 1
+
+                Text {
+                    text: card.svc && card.svc.condition.length > 0
+                        ? card.svc.condition
+                        : (card.ready ? "No data" : "Loading…")
+                    color: Root.Theme.textPrimary
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS; bold: true }
+                }
+                Text {
+                    visible: card.svc && card.svc.feelsLike.length > 0
+                    text: card.svc ? "Feels " + card.svc.feelsLike : ""
+                    color: Root.Theme.textDimmed
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
+                }
             }
         }
 
-        // Refresh pill
-        Rectangle {
-            id: refreshPill
-            width: 30; height: 30
-            radius: width / 2
-            anchors.verticalCenter: parent.verticalCenter
-            color: refreshMouse.containsMouse
-                ? Qt.rgba(Root.Theme.domainWeather.r,
-                          Root.Theme.domainWeather.g,
-                          Root.Theme.domainWeather.b, 0.32)
-                : Qt.rgba(Root.Theme.domainWeather.r,
-                          Root.Theme.domainWeather.g,
-                          Root.Theme.domainWeather.b, 0.15)
-            border.width: 1
-            border.color: Qt.rgba(Root.Theme.domainWeather.r,
-                                  Root.Theme.domainWeather.g,
-                                  Root.Theme.domainWeather.b, 0.45)
-            scale: refreshMouse.pressed ? 0.92 : 1.0
+        // ── 5-day forecast ──
+        Row {
+            width: parent.width
+            visible: card.svc && card.svc.forecast.length > 0
 
-            Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
-            Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
+            Repeater {
+                model: card.svc ? card.svc.forecast : []
 
-            Text {
-                anchors.centerIn: parent
-                text: Root.Icons.reset
-                color: Root.Theme.domainWeather
-                font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSizeXL }
-                rotation: card.svc && card.svc.fetching ? 360 : 0
-                Behavior on rotation { NumberAnimation { duration: 600; easing.type: Easing.InOutCubic } }
-            }
+                Column {
+                    width: (card.svc && card.svc.forecast.length > 0)
+                        ? parent.width / card.svc.forecast.length : 0
+                    spacing: 3
 
-            MouseArea {
-                id: refreshMouse
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: if (card.svc) card.svc.fetchWeather()
+                    Text {
+                        width: parent.width
+                        horizontalAlignment: Text.AlignHCenter
+                        text: modelData.day
+                        color: Root.Theme.textDimmed
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS; bold: true; capitalization: Font.AllUppercase }
+                    }
+                    Text {
+                        width: parent.width
+                        horizontalAlignment: Text.AlignHCenter
+                        text: modelData.icon
+                        color: Root.Theme.domainWeather
+                        font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.fontSizeL }
+                    }
+                    Text {
+                        width: parent.width
+                        horizontalAlignment: Text.AlignHCenter
+                        text: modelData.hi + "°"
+                        color: Root.Theme.textPrimary
+                        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeS; bold: true }
+                    }
+                    Text {
+                        width: parent.width
+                        horizontalAlignment: Text.AlignHCenter
+                        text: modelData.lo + "°"
+                        color: Root.Theme.textDimmed
+                        font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeXS }
+                    }
+                }
             }
         }
     }

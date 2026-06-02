@@ -17,20 +17,11 @@ Rectangle {
     border.color: Root.Theme.borderColor
     clip: true
 
-    // Soft domain glow
+    // Flat accent strip
     Rectangle {
-        anchors.fill: parent
-        radius: parent.radius
-        gradient: Gradient {
-            orientation: Gradient.Horizontal
-            GradientStop {
-                position: 0.0
-                color: Qt.rgba(Root.Theme.domainNetwork.r,
-                               Root.Theme.domainNetwork.g,
-                               Root.Theme.domainNetwork.b, 0.12)
-            }
-            GradientStop { position: 0.9; color: "transparent" }
-        }
+        anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+        width: 3
+        color: Root.Theme.domainNetwork
     }
 
     // ── Configuration ──
@@ -192,53 +183,26 @@ Rectangle {
         }
 
         // ── Header ──
-        Row {
+        Components.CCCardHeader {
             width: parent.width
-            spacing: Root.Theme.spacingS
+            icon: "󰒋"
+            title: card.hosts[card.activeHost] ? card.hosts[card.activeHost].name : "unknown"
+            accent: Root.Theme.domainNetwork
 
-            Rectangle {
-                width: 36; height: 36
-                radius: Root.Theme.radiusSmall
-                color: Qt.rgba(Root.Theme.domainNetwork.r,
-                               Root.Theme.domainNetwork.g,
-                               Root.Theme.domainNetwork.b, 0.22)
-                border.width: 1
-                border.color: Qt.rgba(Root.Theme.domainNetwork.r,
-                                      Root.Theme.domainNetwork.g,
-                                      Root.Theme.domainNetwork.b, 0.5)
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "󰒋"
-                    color: Root.Theme.domainNetwork
-                    font { family: Root.Theme.fontIcons; pixelSize: 20 }
+            Text {
+                text: {
+                    void(card._rev);
+                    const d = card.currentData();
+                    if (!d) return "unreachable";
+                    return card.onlineCount() + "/" + card.totalCount() + " online";
                 }
-            }
-
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 1
-
-                Text {
-                    text: card.hosts[card.activeHost] ? card.hosts[card.activeHost].name : "unknown"
-                    color: Root.Theme.textPrimary
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeL; bold: true }
+                color: {
+                    void(card._rev);
+                    const d = card.currentData();
+                    if (!d) return Root.Theme.accentDanger;
+                    return card.onlineCount() === card.totalCount() ? Root.Theme.accentSuccess : Root.Theme.textDimmed;
                 }
-                Text {
-                    text: {
-                        void(card._rev);
-                        const d = card.currentData();
-                        if (!d) return "unreachable";
-                        return card.onlineCount() + "/" + card.totalCount() + " services online";
-                    }
-                    color: {
-                        void(card._rev);
-                        const d = card.currentData();
-                        if (!d) return Root.Theme.accentDanger;
-                        return card.onlineCount() === card.totalCount() ? Root.Theme.accentSuccess : Root.Theme.textDimmed;
-                    }
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS }
-                }
+                font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeXS }
             }
         }
 

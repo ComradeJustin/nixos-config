@@ -11,6 +11,9 @@ Scope {
     property int weatherCode: -1
     property string condition: ""
     property string icon: Root.Icons.weatherDefault
+    property string feelsLike: ""
+    // Daily forecast: array of { day, icon, hi, lo }.
+    property var forecast: []
     property bool useMetric: true
     property int updateInterval: 900000  // 15 min
 
@@ -87,20 +90,49 @@ Scope {
         command: ["curl", "-s", "--max-time", "5",
             "https://api.open-meteo.com/v1/forecast?latitude=" + svc.latitude +
             "&longitude=" + svc.longitude +
-            "&current=temperature_2m,weather_code&temperature_unit=" + unit]
+            "&current=temperature_2m,weather_code,apparent_temperature" +
+            "&daily=weather_code,temperature_2m_max,temperature_2m_min" +
+            "&timezone=auto&forecast_days=5&temperature_unit=" + unit]
         stdout: SplitParser {
             onRead: data => {
+                let unitSym = svc.useMetric ? "\u00b0C" : "\u00b0F";
                 try {
                     let tempMatch = data.match(/"temperature_2m":\s*([-\d.]+)/);
                     let codeMatch = data.match(/"weather_code":\s*(\d+)/);
+                    let feelsMatch = data.match(/"apparent_temperature":\s*([-\d.]+)/);
                     if (tempMatch) {
                         let temp = Math.round(parseFloat(tempMatch[1]));
-                        svc.temperature = temp + (svc.useMetric ? "\u00b0C" : "\u00b0F");
+                        svc.temperature = temp + unitSym;
                     }
                     if (codeMatch) {
                         svc.weatherCode = parseInt(codeMatch[1]);
                         svc.icon = svc.codeToIcon(svc.weatherCode);
                         svc.condition = svc.codeToCondition(svc.weatherCode);
+                    }
+                    if (feelsMatch) {
+                        svc.feelsLike = Math.round(parseFloat(feelsMatch[1])) + unitSym;
+                    }
+                } catch(e) {}
+                // Daily forecast \u2014 JSON-parse the arrays (regex can't do arrays).
+                try {
+                    let j = JSON.parse(data);
+                    if (j && j.daily && j.daily.time) {
+                        let names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+                        let t = j.daily.time;
+                        let codes = j.daily.weather_code || [];
+                        let hi = j.daily.temperature_2m_max || [];
+                        let lo = j.daily.temperature_2m_min || [];
+                        let out = [];
+                        for (let i = 0; i < Math.min(t.length, 5); i++) {
+                            let d = new Date(t[i] + "T00:00:00");
+                            out.push({
+                                day: i === 0 ? "Today" : names[d.getDay()],
+                                icon: svc.codeToIcon(codes[i]),
+                                hi: Math.round(hi[i]),
+                                lo: Math.round(lo[i])
+                            });
+                        }
+                        svc.forecast = out;
                     }
                 } catch(e) {}
             }
