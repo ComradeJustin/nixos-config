@@ -28,6 +28,9 @@ QtObject {
 
     // ── Semantic aliases ──
     readonly property color barBackground: base00
+    // Translucent surface for frosted-glass UI chrome (when the compositor
+    // blurs the layer behind it); reads as a dim panel without blur.
+    readonly property color glassBackground: Qt.rgba(base00.r, base00.g, base00.b, 0.6)
     readonly property color textPrimary:   base05
     readonly property color textDimmed:    base04
     readonly property color textSubtle:    base03

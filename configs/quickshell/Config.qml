@@ -169,6 +169,10 @@ QtObject {
         // cards, settings nav/pages, Spotlight results). Off = content appears
         // instantly with no fade/slide.
         property bool revealAnimations: true
+
+        // Frosted-glass UI chrome (bar, popups, panels). Needs a compositor
+        // that blurs the quickshell layers; off = solid surfaces.
+        property bool glass: true
     }
 
     // ── Night Light ──

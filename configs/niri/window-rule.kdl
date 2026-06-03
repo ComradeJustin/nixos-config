@@ -76,4 +76,24 @@ layer-rule {
 	geometry-corner-radius 8
 }
 
+// Frosted glass for the top bar. It overlays windows, so xray must be FALSE
+// (blur the actual content behind it, not the wallpaper). Flat/edge-to-edge
+// bar → no corner rounding.
+layer-rule {
+	match namespace="^quickshell-bar$"
+	background-effect {
+		// xray false: blur the ACTUAL content behind the bar so it stays in
+		// sync with what's underneath when scrolling (xray true showed static
+		// wallpaper, so scrolling windows/tabs "disappeared" under the bar) and
+		// so it never sees through to wallpaper over a fullscreen program.
+		blur true
+		xray false
+		noise 0.02
+		saturation 1.25
+	}
+	// Round the surface so a floating bar's blur follows its rounded corners
+	// (harmless ~8px rounding on a flat, edge-to-edge bar).
+	geometry-corner-radius 8
+}
+
 

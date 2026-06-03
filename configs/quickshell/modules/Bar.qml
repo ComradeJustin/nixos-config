@@ -181,7 +181,18 @@ Scope {
         id: panel
 
         anchors { top: true; left: true; right: true }
-        implicitHeight: barScope.barTotalHeight
+        implicitHeight: Root.Theme.barHeight
+        // The float gap is a STATIC layer margin so the *surface* is sized to
+        // the visible bar (niri's blur scopes to the bar, not the gap around it)
+        // and never reconfigures — no "sudden resize", and the exclusive zone
+        // stays reserved so windows don't reflow. Hide/show is the in-surface
+        // bg.y slide (below): smooth + consistent, like the old method. The
+        // surface stays mapped; niri covers the Top-layer bar in fullscreen.
+        margins {
+            top: barScope.isFloating ? barScope.floatMargin : 0
+            left: barScope.isFloating ? barScope.floatMargin : 0
+            right: barScope.isFloating ? barScope.floatMargin : 0
+        }
 
         WlrLayershell.namespace: "quickshell-bar"
         WlrLayershell.layer: WlrLayer.Top
@@ -197,15 +208,20 @@ Scope {
 
             Rectangle {
                 id: bg
-                width: barScope.isFloating ? parent.width - barScope.floatMargin * 2 : parent.width
-                height: Root.Theme.barHeight
-                x: barScope.isFloating ? barScope.floatMargin : 0
-                color: Root.Theme.barBackground
+                width: parent.width
+                height: parent.height
+                x: 0
+                // In-surface slide for the fullscreen hide/show — smooth + GPU,
+                // no surface reconfigure. Clipped by the parent Item.
+                y: barScope._barVisible ? 0 : -barScope.barTotalHeight
+                // Smooth slide both ways. With xray false the slide-out blurs
+                // the appearing fullscreen program (not wallpaper), so there's
+                // no see-through.
+                Behavior on y { NumberAnimation { duration: Root.Theme.anim.slideDuration; easing.type: Easing.InOutCubic } }
+                color: Root.Config.appearance.glass ? Root.Theme.glassBackground : Root.Theme.barBackground
                 radius: barScope.isFloating ? Root.Theme.radiusMedium : 0
                 border.width: barScope.isFloating ? Root.Theme.borderWidth : 0
                 border.color: Root.Theme.borderColor
-                y: barScope._barVisible ? (barScope.isFloating ? barScope.floatMargin : 0) : -barScope.barTotalHeight
-                Behavior on y { NumberAnimation { duration: Root.Theme.anim.slideDuration; easing.type: Easing.InOutCubic } }
 
                 // ── Sub-group backgrounds (when showGroups is on) ──
                 Repeater {
@@ -239,7 +255,11 @@ Scope {
                         y: _vPad
                         height: bg.height - _vPad * 2
                         radius: Root.Theme.radiusSmall
-                        color: Root.Theme.layer1
+                        // Subtle frosted highlight on the glass bar instead of a
+                        // solid block; solid layer1 when glass is off.
+                        color: Root.Config.appearance.glass
+                            ? Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.06)
+                            : Root.Theme.layer1
 
                         // No Behavior on x/width here — modules that change
                         // size (WindowModule, MediaModule) already animate
@@ -365,35 +385,8 @@ Scope {
                     }
                 }
 
-                // ── Section separators ──
-                // Subtle dots between left|center and center|right groups.
-                // Only visible when showGroups is off (groups already provide
-                // visual hierarchy) and the flanking sections have content.
-                Repeater {
-                    model: [
-                        { left: leftSection, right: centerSection },
-                        { left: centerSection, right: rightSection }
-                    ]
-
-                    Rectangle {
-                        required property var modelData
-                        property Item leftSec: modelData.left
-                        property Item rightSec: modelData.right
-
-                        visible: !Root.Config.bar.showGroups
-                                 && leftSec.implicitWidth > 0
-                                 && rightSec.implicitWidth > 0
-                        width: 3; height: 3; radius: 1.5
-                        color: Root.Theme.textDimmed
-                        opacity: 0.3
-                        anchors.verticalCenter: parent.verticalCenter
-                        x: {
-                            let lRight = leftSec.x + leftSec.implicitWidth;
-                            let rLeft = rightSec.x;
-                            return (lRight + rLeft) / 2 - 1;
-                        }
-                    }
-                }
+                // (Section separator dots removed — they read as noise,
+                //  especially on the glass bar.)
 
                 // ── Insertion indicator ──
                 Rectangle {

@@ -126,7 +126,8 @@
   },
   "appearance": {
     "uiScale": 1,
-    "revealAnimations": true
+    "revealAnimations": true,
+    "glass": true
   },
   "cc": {
     "cardLayout": [
