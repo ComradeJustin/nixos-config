@@ -33,7 +33,7 @@ Item {
                 family: Root.Theme.fontFamily
                 pixelSize: Root.Theme.fontSizeSmall
                 bold: true
-                letterSpacing: 1.5
+                letterSpacing: Root.Theme.trackingCaps
             }
         }
 
@@ -55,7 +55,7 @@ Item {
             font {
                 family: Root.Theme.fontFamily
                 pixelSize: Root.Theme.fontSizeSmall
-                letterSpacing: 1
+                letterSpacing: Root.Theme.trackingWide
             }
             Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
 

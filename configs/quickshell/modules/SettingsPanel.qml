@@ -72,7 +72,7 @@ Scope {
                             Text {
                                 text: "Settings"
                                 color: Root.Theme.textPrimary
-                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM; bold: true; letterSpacing: 2 }
+                                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeM; bold: true; letterSpacing: Root.Theme.trackingWide }
                                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                             }
 

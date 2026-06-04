@@ -35,6 +35,8 @@ Components.WidgetFrame {
                 text: root.weatherService ? root.weatherService.condition : ""
                 color: Root.Theme.widgetTextDimmed
                 font { family: Root.Theme.fontFamily; pixelSize: Math.round(root.fontSize * 0.4) }
+                width: Math.min(implicitWidth, Root.Theme.scaled(140))
+                elide: Text.ElideRight
             }
         }
     }

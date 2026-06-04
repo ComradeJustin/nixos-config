@@ -40,7 +40,7 @@ Rectangle {
                 color: Root.Theme.textDimmed
                 font {
                     family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS; bold: true
-                    capitalization: Font.AllUppercase; letterSpacing: 0.5
+                    capitalization: Font.AllUppercase; letterSpacing: Root.Theme.trackingCaps
                 }
             }
             Text {

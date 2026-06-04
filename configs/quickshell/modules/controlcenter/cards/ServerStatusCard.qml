@@ -238,7 +238,7 @@ Rectangle {
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: modelData.label
                             color: Root.Theme.textDimmed
-                            font { family: Root.Theme.fontFamily; pixelSize: 8 }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXXS; capitalization: Font.AllUppercase; letterSpacing: Root.Theme.trackingCaps }
                         }
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter

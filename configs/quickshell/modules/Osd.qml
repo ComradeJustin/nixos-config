@@ -105,7 +105,7 @@ PanelWindow {
         anchors.fill: parent
         transform: Translate { id: slideEffect; y: 0 }
         radius: Root.Theme.osdRadius
-        color: Root.Theme.osdBackground
+        color: Root.Config.appearance.glass ? Root.Theme.glassBackground : Root.Theme.osdBackground
         border.width: Root.Theme.borderWidth
         border.color: Root.Theme.borderColor
         opacity: 1
@@ -190,7 +190,7 @@ PanelWindow {
                 }
                 width: 36
                 color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.osdFontSize; bold: true }
+                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.osdFontSize; bold: true; features: ({ "tnum": 1 }) }
                 horizontalAlignment: Text.AlignRight
                 anchors.verticalCenter: parent.verticalCenter
             }

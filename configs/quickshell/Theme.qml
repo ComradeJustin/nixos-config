@@ -120,6 +120,27 @@ QtObject {
     readonly property int    fontSize:      fontSizeS    // 11
     readonly property int    fontSizeSmall: fontSizeXXS  // 9
     readonly property int    fontSizeLarge: fontSizeL    // 13
+    // Display sizes for hero text (lock clock, modal titles). Wrapped in
+    // scaled() so they honour uiScale — literal 72/48 px did not.
+    readonly property int    fontSizeDisplay: scaled(48)
+    readonly property int    fontSizeHero:    scaled(72)
+
+    // ── Weight scale ── Hanken Grotesk & Fraunces are variable fonts, so
+    // prefer these over `bold: true` for finer hierarchy on labels/headers.
+    readonly property int weightRegular:  Font.Normal
+    readonly property int weightMedium:   Font.Medium
+    readonly property int weightSemiBold: Font.DemiBold
+    readonly property int weightBold:     Font.Bold
+
+    // ── Tracking (letter-spacing, px) ── prefer over ad-hoc literals.
+    // All-caps eyebrow labels need positive tracking to breathe.
+    readonly property real trackingCaps: 1.5
+    readonly property real trackingWide: 1.0
+
+    // ── Line height (multiplier) ── for wrapping body / quote text;
+    // Qt's default (~1.2) reads cramped for multi-line copy.
+    readonly property real lineHeightBody:  1.4
+    readonly property real lineHeightQuote: 1.6
 
     // ── Font aliases (replace verbose font blocks everywhere) ──
     readonly property font fontBody: Qt.font({

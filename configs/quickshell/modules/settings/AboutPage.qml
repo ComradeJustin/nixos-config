@@ -17,7 +17,7 @@ Column {
             text: "QuickShell"
             color: Root.Theme.textPrimary
             font {
-                family: Root.Theme.fontFamily
+                family: Root.Theme.fontDisplay
                 pixelSize: Root.Theme.fontSize5XL
                 bold: true
             }

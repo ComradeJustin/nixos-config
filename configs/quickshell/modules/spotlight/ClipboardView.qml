@@ -277,7 +277,7 @@ SpotlightProvider {
                                 visible: clipItem.entry && clipItem.entry.isImage && clipItem.entry.imagePath === ""
                                 Layout.preferredWidth: Root.Theme.clipThumbSize; Layout.preferredHeight: Root.Theme.clipThumbSize
                                 color: Root.Theme.textDimmed; opacity: 0.2; radius: 4
-                                Text { anchors.centerIn: parent; text: "IMG"; color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS } }
+                                Text { anchors.centerIn: parent; text: "IMG"; color: Root.Theme.textDimmed; font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS; letterSpacing: Root.Theme.trackingCaps } }
                             }
                             Text {
                                 visible: clipItem.entry && !clipItem.entry.isImage

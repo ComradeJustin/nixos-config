@@ -76,10 +76,20 @@ layer-rule {
 	geometry-corner-radius 8
 }
 
+// ── Glass blur toggle ──────────────────────────────────────────
+// niri's background-effect blur has a visible reconfigure delay and
+// re-runs whenever a layer surface resizes. The bar, Control Center
+// and Spotlight are all affected, so their blur rules are DISABLED BY
+// DEFAULT with KDL slashdash (`/-`): the `/-` comments out the node
+// that follows it. Delete the leading `/-` on a rule to turn that
+// surface's blur back on. The desktop widgets and the OSD don't
+// resize, so they stay enabled.
+// ───────────────────────────────────────────────────────────────
+
 // Frosted glass for the top bar. It overlays windows, so xray must be FALSE
 // (blur the actual content behind it, not the wallpaper). Flat/edge-to-edge
-// bar → no corner rounding.
-layer-rule {
+// bar → no corner rounding.  DISABLED by default (see toggle note above).
+/-layer-rule {
 	match namespace="^quickshell-bar$"
 	background-effect {
 		// xray false: blur the ACTUAL content behind the bar so it stays in
@@ -94,6 +104,49 @@ layer-rule {
 	// Round the surface so a floating bar's blur follows its rounded corners
 	// (harmless ~8px rounding on a flat, edge-to-edge bar).
 	geometry-corner-radius 8
+}
+
+// Frosted glass for the OSD (volume / brightness / device popup). It overlays
+// content, so xray false. Rounded to match osdRadius.
+layer-rule {
+	match namespace="^quickshell-osd$"
+	background-effect {
+		blur true
+		xray false
+		noise 0.02
+		saturation 1.25
+	}
+	geometry-corner-radius 16
+}
+
+// Frosted glass for the Control Center card. Overlays content → xray false.
+// The surface is sized to the card, so round it to the card's radius.
+// DISABLED by default (see toggle note above).
+/-layer-rule {
+	match namespace="^quickshell-cc$"
+	background-effect {
+		blur true
+		xray false
+		noise 0.02
+		saturation 1.25
+	}
+	geometry-corner-radius 8
+}
+
+// Focus blur for the Spotlight launcher. Unlike the bar/CC, the surface is
+// INTENTIONALLY full-screen here, so the blur frosts the whole desktop behind
+// the launcher — exactly the focus effect we want. xray false so it blurs the
+// real windows/wallpaper underneath. No corner radius (it spans the screen);
+// the translucent centered box on top reads as frosted glass over the frost.
+// DISABLED by default (see toggle note above).
+/-layer-rule {
+	match namespace="^quickshell-spotlight$"
+	background-effect {
+		blur true
+		xray false
+		noise 0.02
+		saturation 1.25
+	}
 }
 
 

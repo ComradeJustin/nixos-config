@@ -446,7 +446,7 @@ Item {
                 id: clockText
                 anchors.horizontalCenter: parent.horizontalCenter
                 color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontDisplay; pixelSize: 72; bold: true }
+                font { family: Root.Theme.fontDisplay; pixelSize: Root.Theme.fontSizeHero; bold: true; features: ({ "tnum": 1 }) }
                 property int tick: 0
                 text: {
                     void(tick);
@@ -561,7 +561,7 @@ Item {
                         anchors.centerIn: parent
                         text: "󰈷"
                         color: lock.showError ? Root.Theme.textCritical : Root.Theme.textAccent
-                        font { family: Root.Theme.fontIcons; pixelSize: 64 }
+                        font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.scaled(64) }
 
                         transform: Translate { id: fingerShakeTranslate; x: 0 }
 
@@ -589,7 +589,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "󰌾"
                 color: lock.showError ? Root.Theme.textCritical : Root.Theme.textDimmed
-                font { family: Root.Theme.fontIcons; pixelSize: 36 }
+                font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.scaled(36) }
                 visible: lock.passwordMode
             }
 
@@ -737,7 +737,7 @@ Item {
                             anchors.centerIn: parent
                             text: "CAPS"
                             color: Root.Theme.accentWarning
-                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXXS; bold: true }
+                            font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXXS; bold: true; letterSpacing: Root.Theme.trackingCaps }
                         }
                     }
 
@@ -894,7 +894,7 @@ Item {
             anchors.bottom: bubble.visible ? bubble.top : promptBackdrop.top
             anchors.bottomMargin: Root.Theme.spacingL
             width: mediaRow.width + 32
-            height: mediaRow.height + 20
+            height: mediaRow.height + 32
             radius: 16
             color: Qt.rgba(Root.Theme.base00.r, Root.Theme.base00.g, Root.Theme.base00.b, 0.75)
             border.width: 1
@@ -926,7 +926,7 @@ Item {
                         anchors.centerIn: parent
                         text: Root.Icons.music
                         color: Root.Theme.textDimmed
-                        font { family: Root.Theme.fontIcons; pixelSize: 20 }
+                        font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.scaled(20) }
                         visible: lockAlbumArt.status !== Image.Ready
                     }
                 }
@@ -1080,7 +1080,9 @@ Item {
                         : Qt.rgba(Root.Theme.base00.r, Root.Theme.base00.g, Root.Theme.base00.b, 0.75)
                     border.width: 1
                     border.color: Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.2)
+                    scale: suspendMouse.pressed ? 0.92 : 1.0
                     Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
+                    Behavior on scale { NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic } }
 
                     Text {
                         anchors.centerIn: parent
@@ -1104,7 +1106,9 @@ Item {
                         : Qt.rgba(Root.Theme.base00.r, Root.Theme.base00.g, Root.Theme.base00.b, 0.75)
                     border.width: 1
                     border.color: Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.2)
+                    scale: rebootMouse.pressed ? 0.92 : 1.0
                     Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
+                    Behavior on scale { NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic } }
 
                     Text {
                         anchors.centerIn: parent
@@ -1128,7 +1132,9 @@ Item {
                         : Qt.rgba(Root.Theme.base00.r, Root.Theme.base00.g, Root.Theme.base00.b, 0.75)
                     border.width: 1
                     border.color: Qt.rgba(Root.Theme.textDimmed.r, Root.Theme.textDimmed.g, Root.Theme.textDimmed.b, 0.2)
+                    scale: shutdownMouse.pressed ? 0.92 : 1.0
                     Behavior on color { ColorAnimation { duration: Root.Theme.anim.microDuration } }
+                    Behavior on scale { NumberAnimation { duration: Root.Theme.anim.microDuration; easing.type: Easing.OutCubic } }
 
                     Text {
                         anchors.centerIn: parent

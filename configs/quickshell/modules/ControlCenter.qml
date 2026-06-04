@@ -251,11 +251,13 @@ Scope {
     PanelWindow {
         id: ccPanel
         visible: false
-        anchors { top: true; right: true; bottom: true }
+        // Sized to the card (not full-height) so niri's blur scopes to the
+        // card instead of leaving a frosted strip below it.
+        anchors { top: true; right: true }
         margins.top: cc._barTotal + 6
-        margins.bottom: 6
         margins.right: 0
         implicitWidth: Root.Theme.ccWidth + 6
+        implicitHeight: ccRect.height
         WlrLayershell.namespace: "quickshell-cc"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
@@ -303,7 +305,11 @@ Scope {
                 // screen edge — this keeps the footer visible and
                 // bottom corners rounded.
                 anchors.top: parent.top
-                height: Math.min(mainLayout.implicitHeight + Root.Theme.ccPadding * 2 + ccFooter._reservedHeight, parent.height - 6)
+                // Available height from the SCREEN (not the panel): the panel is
+                // now sized to this card, so capping against parent.height would
+                // be circular.
+                readonly property int _availHeight: (Screen.height > 0 ? Screen.height : 1080) - cc._barTotal - 12
+                height: Math.min(mainLayout.implicitHeight + Root.Theme.ccPadding * 2 + ccFooter._reservedHeight, _availHeight - 6)
 
                 // Animation driver for tab content expansion. contentFactor
                 // smoothly interpolates 0→1 when cc.tabExpanded flips, and
@@ -322,7 +328,7 @@ Scope {
                 // once it's rendered to know exactly how much vertical
                 // space sits above it, then subtract from the panel.
                 // tabContentItem.y is relative to mainLayout, add ccPadding for the layout's top margin
-                readonly property int maxTabContentHeight: Math.max(120, parent.height - tabContentItem.y - Root.Theme.ccPadding * 2 - _footerHeight)
+                readonly property int maxTabContentHeight: Math.max(120, _availHeight - tabContentItem.y - Root.Theme.ccPadding * 2 - _footerHeight)
 
                 // Cap for the cards area so it scrolls internally instead of
                 // pushing the tab bar + content off-screen when many cards are
@@ -330,11 +336,13 @@ Scope {
                 // (ccCardsCol.y), the screen height, and the accordion factor —
                 // nothing below the cards — so there is no binding loop.
                 readonly property int maxCardsHeight: Math.max(140,
-                    (parent.height - 6) - (Root.Theme.ccPadding + ccCardsCol.y)
+                    (_availHeight - 6) - (Root.Theme.ccPadding + ccCardsCol.y)
                     - 96 - Math.round(220 * contentFactor))
 
                 radius: Root.Theme.radiusMedium
-                color: Root.Theme.barBackground
+                color: Root.Config.appearance.glass ? Root.Theme.glassBackground : Root.Theme.barBackground
+                border.width: Root.Theme.borderWidth
+                border.color: Root.Theme.borderColor
                 x: cc.showing ? 0 : (Root.Theme.ccWidth + 6)
                 Behavior on x { NumberAnimation { duration: Root.Theme.anim.slideDuration; easing.type: Easing.OutCubic } }
                 onXChanged: { if (!cc.showing && x >= Root.Theme.ccWidth + 5) ccPanel.visible = false; }

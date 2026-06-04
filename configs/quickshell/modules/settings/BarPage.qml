@@ -90,6 +90,16 @@ Column {
         }
 
         Components.SettingToggle {
+            label: "Frosted glass"
+            description: "Translucent blurred backgrounds for the bar and panels"
+            isOn: Root.Config.appearance.glass
+            onToggled: {
+                Root.Config.appearance.glass = !Root.Config.appearance.glass
+                Root.Config.save()
+            }
+        }
+
+        Components.SettingToggle {
             label: "Module groups"
             description: "Show card backgrounds around bar module groups"
             isOn: Root.Config.bar.showGroups

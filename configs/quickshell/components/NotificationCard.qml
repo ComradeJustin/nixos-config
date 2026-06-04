@@ -180,6 +180,7 @@ Item {
                         family: Root.Theme.fontFamily
                         pixelSize: compact ? (root.isHeader ? 12 : 11) : 12
                     }
+                    lineHeight: Root.Theme.lineHeightBody
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
                     maximumLineCount: compact ? (root.isHeader ? 2 : 1) : 3

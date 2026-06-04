@@ -160,7 +160,7 @@ Column {
                     Text {
                         text: "Connected"
                         color: Root.Theme.accentSuccess
-                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS; letterSpacing: 1 }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS; letterSpacing: Root.Theme.trackingWide }
                     }
                 }
             }

@@ -179,7 +179,7 @@ Rectangle {
                 width: parent.width
                 text: "NOW PLAYING"
                 color: Root.Theme.domainMedia
-                font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeXXS; bold: true; capitalization: Font.AllUppercase; letterSpacing: 1 }
+                font { family: Root.Theme.fontMono; pixelSize: Root.Theme.fontSizeXXS; bold: true; capitalization: Font.AllUppercase; letterSpacing: Root.Theme.trackingCaps }
                 elide: Text.ElideRight
             }
 

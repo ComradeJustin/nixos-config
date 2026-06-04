@@ -113,7 +113,9 @@ Scope {
             anchors.centerIn: parent
             radius: Root.Theme.radiusMedium
             clip: true
-            color: Root.Theme.barBackground
+            // Glass: translucent box reveals the niri-blurred desktop behind
+            // the full-screen surface (focus blur). Opaque when glass is off.
+            color: Root.Config.appearance.glass ? Root.Theme.glassBackground : Root.Theme.barBackground
             border.width: Root.Theme.borderWidth
             border.color: Root.Theme.borderColor
 
@@ -163,7 +165,7 @@ Scope {
                         Layout.leftMargin: Root.Theme.spacingS
                         Layout.rightMargin: Root.Theme.spacingS
                         color: Root.Theme.textPrimary
-                        font { family: Root.Theme.fontFamily; pixelSize: 15 }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize2XL }
                         clip: true; selectByMouse: true
                         verticalAlignment: TextInput.AlignVCenter
 

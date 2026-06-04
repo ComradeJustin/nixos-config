@@ -231,6 +231,7 @@ Components.SmoothFlickable {
                                 text: model.body
                                 color: Root.Theme.notifBody
                                 font { family: Root.Theme.fontFamily; pixelSize: model.isHeader ? 12 : 11 }
+                                lineHeight: Root.Theme.lineHeightBody
                                 Layout.fillWidth: true
                                 wrapMode: Text.Wrap
                                 maximumLineCount: model.isHeader ? 2 : 1

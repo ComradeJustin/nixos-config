@@ -162,7 +162,7 @@ Scope {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "Session"
                 color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize4XL; bold: true }
+                font { family: Root.Theme.fontDisplay; pixelSize: Root.Theme.fontSize4XL; bold: true }
             }
 
             Text {

@@ -16,6 +16,7 @@ ClickableItem {
 
     width: size
     height: size
+    pressScale: true
 
     Text {
         anchors.centerIn: parent

@@ -96,6 +96,8 @@ Rectangle {
                         : (card.ready ? "No data" : "Loading…")
                     color: Root.Theme.textPrimary
                     font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeS; bold: true }
+                    width: Math.min(implicitWidth, Root.Theme.scaled(200))
+                    elide: Text.ElideRight
                 }
                 Text {
                     visible: card.svc && card.svc.feelsLike.length > 0
@@ -124,7 +126,7 @@ Rectangle {
                         horizontalAlignment: Text.AlignHCenter
                         text: modelData.day
                         color: Root.Theme.textDimmed
-                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS; bold: true; capitalization: Font.AllUppercase }
+                        font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS; bold: true; capitalization: Font.AllUppercase; letterSpacing: Root.Theme.trackingCaps }
                     }
                     Text {
                         width: parent.width

@@ -127,7 +127,7 @@
   "appearance": {
     "uiScale": 1,
     "revealAnimations": true,
-    "glass": true
+    "glass": false
   },
   "cc": {
     "cardLayout": [

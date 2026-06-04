@@ -157,7 +157,7 @@ SpotlightProvider {
                     width: parent.width
                     text: "= " + calc.result
                     color: Root.Theme.accentPrimary
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSize5XL; bold: true }
+                    font { family: Root.Theme.fontDisplay; pixelSize: Root.Theme.fontSize5XL; bold: true; features: ({ "tnum": 1 }) }
                     elide: Text.ElideRight
                 }
 
@@ -179,7 +179,7 @@ SpotlightProvider {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "󰃬"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontIcons; pixelSize: 32 }
+                    font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.scaled(32) }
                     opacity: 0.4
                 }
                 Text {
@@ -228,7 +228,7 @@ SpotlightProvider {
                     anchors { left: parent.left; leftMargin: Root.Theme.spacingL; verticalCenter: parent.verticalCenter }
                     text: "HISTORY"
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS; bold: true; letterSpacing: 1.5 }
+                    font { family: Root.Theme.fontFamily; pixelSize: Root.Theme.fontSizeXS; bold: true; letterSpacing: Root.Theme.trackingCaps }
                     opacity: 0.5
                 }
             }

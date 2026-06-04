@@ -121,7 +121,7 @@ Item {
                     visible: compactAvatarImg.status !== Image.Ready
                     text: Root.Icons.user
                     color: Root.Theme.domainSettings
-                    font { family: Root.Theme.fontIcons; pixelSize: 24 }
+                    font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.scaled(24) }
                 }
             }
 
@@ -245,7 +245,7 @@ Item {
                     visible: heroAvatarImg.status !== Image.Ready
                     text: Root.Icons.user
                     color: Root.Theme.textDimmed
-                    font { family: Root.Theme.fontIcons; pixelSize: 48 }
+                    font { family: Root.Theme.fontIcons; pixelSize: Root.Theme.scaled(48) }
                 }
             }
 
@@ -253,7 +253,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: card.greeting + (card.username.length > 0 ? ", " + card.username : "")
                 color: Root.Theme.textPrimary
-                font { family: Root.Theme.fontFamily; pixelSize: 20; bold: true }
+                font { family: Root.Theme.fontDisplay; pixelSize: Root.Theme.scaled(20); bold: true }
             }
 
             Text {
