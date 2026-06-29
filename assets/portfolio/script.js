@@ -292,42 +292,16 @@
     const dot = document.getElementById('status-dot');
     const body = document.getElementById('status-body');
 
-    // Friendly display names for systemd services
-    const svcNames = {
-        'nginx': 'nginx',
-        'tailscaled': 'tailscale',
-        'harmonia': 'harmonia',
-        'nix-daemon': 'builder',
-        'grafana': 'grafana',
-        'adguardhome': 'adguard',
-        'jellyfin': 'jellyfin',
-        'radarr': 'radarr',
-        'sonarr': 'sonarr',
-    };
-
     function render(data) {
         let html = '';
 
-        // System stats
+        // Generic vanity metrics only — the status endpoint is public via the
+        // Tailscale Funnel, so it deliberately exposes no internal inventory.
         html += row('host', data.hostname || '--', 'dim');
         html += row('uptime', data.uptime || '--', 'dim');
         html += row('load', data.load || '--', 'dim');
         html += row('memory', data.memory || '--', 'dim');
         html += row('disk', data.disk || '--', 'dim');
-        html += '<div class="status-sep"></div>';
-
-        // Services
-        const svcs = data.services || {};
-        for (const [svc, active] of Object.entries(svcs)) {
-            const name = svcNames[svc] || svc;
-            const cls = active ? 'up' : 'down';
-            const text = active ? 'up' : 'down';
-            html += row(name, text, cls);
-        }
-
-        html += '<div class="status-sep"></div>';
-        html += row('nodes', (data.nodes || 0) + ' online', 'dim');
-        html += row('gen', '#' + (data.generation || '--'), 'dim');
 
         // Updated time
         if (data.timestamp) {
@@ -339,9 +313,8 @@
 
         body.innerHTML = html;
 
-        // Overall dot
-        const allUp = Object.values(svcs).every(v => v);
-        dot.className = 'status-dot ' + (allUp ? 'online' : 'offline');
+        // Reachable → online.
+        dot.className = 'status-dot online';
     }
 
     function row(label, value, cls) {

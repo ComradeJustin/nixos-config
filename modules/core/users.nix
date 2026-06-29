@@ -5,7 +5,7 @@
   config = lib.mkIf config.modules.users.enable {
     users.users.justin = {
       isNormalUser = true;
-      initialHashedPassword = "$6$.4NRUvVflswGyxcb$pZJHgE2d/cY3N.WwZTm11NojG0YDotAfN4VeuLjeWaPsh3IgN/CyZhIjJJMrfITWT1Mk/Frl6RWSC8Ek/3o0C.";
+      # Password is provided by sops-nix as hashedPasswordFile (see modules/core/sops.nix).
       extraGroups = [ "wheel" "wireshark" "networkmanager" "lpadmin" "input" ];
       packages = with pkgs; [
         tree

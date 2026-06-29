@@ -129,6 +129,7 @@
         nixpc = mkHost {
           hostModules = [
             ./hosts/nixpc/hardware-configuration.nix
+            ./hosts/nixpc/filesystems.nix
             ./hosts/nixpc/gpu.nix
             ./hosts/nixpc/networking.nix
             {
@@ -189,23 +190,11 @@
               modules.nginx.enable = true;
               modules.docker.enable = true;
               modules.harmonia.enable = true;
-              modules.monitoring.enable = true;
               modules.mediastack.enable = true;
               modules.adguard.enable = true;
               modules.blog.enable = true;
 
               modules.status-reporter.enable = true;
-              modules.status-reporter.services = [
-                "nginx"
-                "tailscaled"
-                "harmonia"
-                "nix-daemon"
-                "grafana"
-                "adguardhome"
-                "jellyfin"
-                "radarr"
-                "sonarr"
-              ];
 
               modules.samba.enable = true;
               modules.samba.sambaUsers = [ "chris" ];

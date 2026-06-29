@@ -36,28 +36,12 @@ let
     # Disk
     disk=$(${pkgs.coreutils}/bin/df -h / | ${pkgs.gawk}/bin/awk 'NR==2 {print $3 "/" $2}')
 
-    # ── Services ──
-    services="{"
-    first=true
-    for svc in ${lib.concatStringsSep " " (map (s: ''"${s}"'') cfg.services)}; do
-      if [ "$first" = true ]; then first=false; else services="$services,"; fi
-      if ${pkgs.systemd}/bin/systemctl is-active --quiet "$svc" 2>/dev/null; then
-        services="$services \"$svc\": true"
-      else
-        services="$services \"$svc\": false"
-      fi
-    done
-    services="$services }"
-
-    # ── Tailscale nodes ──
-    nodes=$(${pkgs.tailscale}/bin/tailscale status 2>/dev/null | ${pkgs.gnugrep}/bin/grep -v '^#' | ${pkgs.gnugrep}/bin/grep -v '^$' | ${pkgs.coreutils}/bin/wc -l || true)
-    nodes="''${nodes:-0}"
-
-    # ── NixOS generation ──
-    generation=$(readlink /nix/var/nix/profiles/system | ${pkgs.gnused}/bin/sed 's/.*-\([0-9]*\)-link/\1/')
-
     ts=$(date +%s)
 
+    # NOTE: This file is proxied to the public internet via the Tailscale Funnel
+    # (portfolio status widget), so it intentionally exposes only generic vanity
+    # metrics. Do NOT add internal service inventory, tailnet topology, or the
+    # NixOS generation here — that is recon material for anyone on the funnel URL.
     cat > "$OUT" <<ENDJSON
     {
       "hostname": "$hostname",
@@ -66,18 +50,17 @@ let
       "memory": "$mem_display",
       "memory_pct": $mem_used,
       "disk": "$disk",
-      "nodes": $nodes,
-      "generation": $generation,
-      "timestamp": $ts,
-      "services": $services
+      "timestamp": $ts
     }
     ENDJSON
   '';
 
-  # Minimal HTTP server to serve the status file
+  # Minimal HTTP server to serve the status file.
+  # Bound to loopback only — nginx proxies it at 127.0.0.1:9200, so there is no
+  # reason to expose the raw server on the LAN/tailnet directly.
   serverScript = pkgs.writeShellScript "status-server" ''
     cd /var/lib/status
-    exec ${pkgs.python3}/bin/python3 -m http.server ${toString cfg.port} --bind 0.0.0.0
+    exec ${pkgs.python3}/bin/python3 -m http.server ${toString cfg.port} --bind 127.0.0.1
   '';
 in
 {
@@ -94,12 +77,6 @@ in
       type = lib.types.str;
       default = "30s";
       description = "How often to regenerate status";
-    };
-
-    services = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [ ];
-      description = "Systemd service names to monitor (without .service suffix)";
     };
   };
 

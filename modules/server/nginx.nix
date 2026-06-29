@@ -99,13 +99,6 @@ in
         {
           Infrastructure = [
             {
-              Grafana = {
-                icon = "grafana.svg";
-                href = "http://${hostname}:3000";
-                description = "Monitoring";
-              };
-            }
-            {
               Prowlarr = {
                 icon = "prowlarr.svg";
                 href = "http://${hostname}:9696";

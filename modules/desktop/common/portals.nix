@@ -29,7 +29,13 @@
 
     environment.systemPackages = [
       pkgs.seahorse
-      pkgs.polkit_gnome
+      # NOTE: polkit_gnome is intentionally NOT in systemPackages. The explicit
+      # user service above references its binary by store path, so it stays in
+      # the closure regardless. Adding it here also installs its
+      # /etc/xdg/autostart/*.desktop, which systemd-xdg-autostart-generator turns
+      # into a second agent (app-polkit-gnome...@autostart.service). That duplicate
+      # wins the registration race and makes our explicit service fail
+      # ("agent already exists"). One launcher only.
     ];
 
     xdg.portal = {

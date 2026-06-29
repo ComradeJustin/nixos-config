@@ -11,6 +11,9 @@
         root_hashed_password = {
           neededForUsers = true;
         };
+        justin_hashed_password = {
+          neededForUsers = true;
+        };
         smb_credentials = {
           mode = "0400";
         };
@@ -27,5 +30,6 @@
     ];
 
     users.users.root.hashedPasswordFile = config.sops.secrets.root_hashed_password.path;
+    users.users.justin.hashedPasswordFile = config.sops.secrets.justin_hashed_password.path;
   };
 }

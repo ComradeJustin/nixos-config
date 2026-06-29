@@ -6,15 +6,36 @@ import os
 import json
 import subprocess
 import re
+import html
 from datetime import datetime
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-from urllib.parse import parse_qs, unquote
+from urllib.parse import parse_qs, unquote, urlsplit
 
 POSTS_DIR = "/var/lib/blog/posts"
 PUBLIC_DIR = "/var/lib/blog/public"
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates")
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 PORT = 8090
+
+# Slugs map 1:1 to filenames on disk, so they must never contain path
+# separators or traversal sequences. slugify() only ever produces this charset.
+SLUG_RE = re.compile(r"^[a-z0-9_-]+$")
+
+
+def safe_slug(value):
+    """Return value if it is a valid slug, else None. Blocks path traversal."""
+    if value and SLUG_RE.match(value):
+        return value
+    return None
+
+
+def resolve_within(base, untrusted_relpath):
+    """Resolve untrusted_relpath under base, or None if it escapes base."""
+    base_real = os.path.realpath(base)
+    target = os.path.realpath(os.path.join(base_real, untrusted_relpath.lstrip("/")))
+    if target == base_real or target.startswith(base_real + os.sep):
+        return target
+    return None
 
 
 def ensure_dirs():
@@ -130,10 +151,13 @@ def build_index():
 
     items = ""
     for p in published:
+        slug_e = html.escape(p['slug'], quote=True)
+        date_e = html.escape(p.get('date', ''))
+        title_e = html.escape(p.get('title', p['slug']))
         items += f"""
-        <a href="posts/{p['slug']}.html" class="post-link">
-          <div class="post-date">{p.get('date', '')}</div>
-          <div class="post-title">{p.get('title', p['slug'])}</div>
+        <a href="posts/{slug_e}.html" class="post-link">
+          <div class="post-date">{date_e}</div>
+          <div class="post-title">{title_e}</div>
         </a>"""
 
     html = blog_index_template(items if items else '<p class="empty">No posts yet.</p>')
@@ -151,12 +175,16 @@ def build_all():
 
 
 def post_template(title, date, body):
+    # title/date are author-controlled metadata rendered as text — escape them.
+    # body is pandoc-rendered HTML and is intentionally not escaped here.
+    title_e = html.escape(title)
+    date_e = html.escape(date)
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{title}</title>
+  <title>{title_e}</title>
   <link rel="stylesheet" href="../blog.css">
 </head>
 <body>
@@ -171,8 +199,8 @@ def post_template(title, date, body):
   </nav>
   <article class="container">
     <header>
-      <h1>{title}</h1>
-      <time>{date}</time>
+      <h1>{title_e}</h1>
+      <time>{date_e}</time>
     </header>
     <div class="content">{body}</div>
     <a href="/blog/" class="back">Back to posts</a>
@@ -215,25 +243,32 @@ def read_file(path):
 
 class BlogHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
-        if self.path == "/" or self.path == "":
+        path = urlsplit(self.path).path
+        if path == "/" or path == "":
             self.send_page(self.admin_page())
-        elif self.path.startswith("/edit/"):
-            slug = unquote(self.path[6:].rstrip("/"))
+        elif path.startswith("/edit/"):
+            slug = safe_slug(unquote(path[6:].rstrip("/")))
+            if not slug:
+                self.send_error(404)
+                return
             self.send_page(self.editor_page(slug))
-        elif self.path == "/new":
+        elif path == "/new":
             self.send_page(self.editor_page(None))
-        elif self.path.startswith("/delete/"):
-            slug = unquote(self.path[8:].rstrip("/"))
+        elif path.startswith("/delete/"):
+            slug = safe_slug(unquote(path[8:].rstrip("/")))
+            if not slug:
+                self.send_error(404)
+                return
             delete_post(slug)
             build_index()
             self.redirect("/")
-        elif self.path.startswith("/static/"):
-            fpath = os.path.join(STATIC_DIR, self.path[8:])
-            if os.path.exists(fpath):
+        elif path.startswith("/static/"):
+            fpath = resolve_within(STATIC_DIR, unquote(path[8:]))
+            if fpath and os.path.isfile(fpath):
                 self.send_file(fpath)
             else:
                 self.send_error(404)
-        elif self.path == "/preview":
+        elif path == "/preview":
             self.send_page(self.preview_page())
         else:
             self.send_error(404)
@@ -246,11 +281,11 @@ class BlogHandler(SimpleHTTPRequestHandler):
             title = data.get("title", [""])[0]
             body = data.get("body", [""])[0]
             date = data.get("date", [datetime.now().strftime("%Y-%m-%d")])[0]
-            old_slug = data.get("old_slug", [""])[0]
+            old_slug = safe_slug(data.get("old_slug", [""])[0])
             draft = "draft" in data
             slug = slugify(title)
 
-            # If renaming, delete old file
+            # If renaming, delete old file (old_slug already validated)
             if old_slug and old_slug != slug:
                 delete_post(old_slug)
 
@@ -292,13 +327,16 @@ class BlogHandler(SimpleHTTPRequestHandler):
         rows = ""
         for p in posts:
             draft = ' <span class="draft-badge">draft</span>' if p.get("draft") == "true" else ""
+            slug_e = html.escape(p['slug'], quote=True)
+            title_e = html.escape(p.get('title', p['slug']))
+            date_e = html.escape(p.get('date', ''))
             rows += f"""
             <tr>
-              <td><a href="/edit/{p['slug']}">{p.get('title', p['slug'])}</a>{draft}</td>
-              <td>{p.get('date', '')}</td>
+              <td><a href="/edit/{slug_e}">{title_e}</a>{draft}</td>
+              <td>{date_e}</td>
               <td>
-                <a href="/edit/{p['slug']}" class="btn-sm">Edit</a>
-                <a href="/delete/{p['slug']}" class="btn-sm danger" onclick="return confirm('Delete this post?')">Delete</a>
+                <a href="/edit/{slug_e}" class="btn-sm">Edit</a>
+                <a href="/delete/{slug_e}" class="btn-sm danger" onclick="return confirm('Delete this post?')">Delete</a>
               </td>
             </tr>"""
 
@@ -347,7 +385,10 @@ class BlogHandler(SimpleHTTPRequestHandler):
                 is_draft = meta.get("draft") == "true"
 
         checked = "checked" if is_draft else ""
-        old_slug = slug or ""
+        old_slug = html.escape(slug or "", quote=True)
+        title = html.escape(title, quote=True)
+        date = html.escape(date, quote=True)
+        body = html.escape(body)
 
         return f"""<!DOCTYPE html>
 <html lang="en">
