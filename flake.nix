@@ -140,11 +140,35 @@
               modules.gaming.enable = true;
               modules.compscijava.enable = true;
               modules.ai.enable = true;
-              modules.nix-settings.harmonia = true;
               modules.distributed-builds.enable = true;
               modules.distributed-builds.role = "builder";
               modules.godot.enable = true;
               modules.smb-client.enable = true;
+
+              # --- Server role (migrated from home-core) ---
+              # nixpc is now the binary-cache server, so it does NOT pull from a
+              # harmonia substituter itself (modules.nix-settings.harmonia stays off).
+              modules.tailscale.enable = true;
+              modules.tailscale.exitNode = true;
+              modules.tailscale.trustedLanInterfaces = [ "enp4s0" ];
+              modules.adguard.enable = true;
+              modules.harmonia.enable = true;
+              modules.samba.enable = true;
+
+              # Always-on VNC into the running niri session (localhost only;
+              # reach via `ssh -L 5900:127.0.0.1:5900 nixpc`). Starts on DP-2;
+              # switch live with `wayvncctl output-set HDMI-A-1`.
+              modules.wayvnc.enable = true;
+              modules.wayvnc.output = "DP-2";
+
+              # Permanent server: never auto-suspend. The shared niri startup.kdl
+              # runs `swayidle ... timeout 1800 systemctl suspend`, which would take
+              # DNS/cache/exit-node offline after 30 min idle. Mask sleep so that
+              # `systemctl suspend` becomes a harmless no-op on this host only.
+              systemd.targets.sleep.enable = false;
+              systemd.targets.suspend.enable = false;
+              systemd.targets.hibernate.enable = false;
+              systemd.targets.hybrid-sleep.enable = false;
             }
           ];
         };
@@ -173,34 +197,9 @@
           ];
         };
 
-        home-core = mkHost {
-          hostModules = [
-            { hardware.facter.reportPath = ./hosts/servers/home-core/facter.json; }
-            ./hosts/servers/home-core/disk-config.nix
-            ./hosts/servers/home-core/filesystems.nix
-            ./hosts/servers/home-core/networking.nix
-            {
-              modules.profiles.server.enable = true;
-              modules.boot.loader = "grub-mbr";
-              modules.tailscale.enable = true;
-              modules.tailscale.exitNode = true;
-              modules.tailscale.funnel = true;
-              modules.tailscale.funnelPort = 8443;
-              modules.tailscale.trustedLanInterfaces = [ "enp9s0" ];
-              modules.nginx.enable = true;
-              modules.docker.enable = true;
-              modules.harmonia.enable = true;
-              modules.mediastack.enable = true;
-              modules.adguard.enable = true;
-              modules.blog.enable = true;
-
-              modules.status-reporter.enable = true;
-
-              modules.samba.enable = true;
-              modules.samba.sambaUsers = [ "chris" ];
-            }
-          ];
-        };
+        # home-core: decommissioned — its server role (Tailscale exit node,
+        # AdGuard DNS, harmonia cache, samba) migrated to nixpc above.
+        # Host files remain under ./hosts/servers/home-core/ for reference/recovery.
       };
     };
 }

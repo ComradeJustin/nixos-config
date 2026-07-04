@@ -20,7 +20,7 @@ if [[ -z "$HOST" || -z "$TARGET" ]]; then
     echo "  4. After first switch, Tailscale handles future deploys"
     echo ""
     echo "Examples:"
-    echo "  $0 home-core justin@192.168.1.158"
+    echo "  $0 nixpc justin@192.168.1.158"
     echo "  $0 new-server justin@10.0.0.50"
     exit 1
 fi
@@ -69,11 +69,11 @@ nixos-rebuild switch --flake "${FLAKE_DIR}#${HOST}" \
 echo ""
 echo "==> Step 3: Distributing harmonia cache key..."
 REMOTE_HOST="${TARGET#*@}"
-if ssh -o ConnectTimeout=3 root@home-core "cat /var/lib/harmonia/cache-key.pem" 2>/dev/null | \
+if ssh -o ConnectTimeout=3 root@nixpc "cat /var/lib/harmonia/cache-key.pem" 2>/dev/null | \
     ssh -t "${TARGET}" "sudo tee /var/lib/harmonia-cache-key.pem > /dev/null && sudo chmod 600 /var/lib/harmonia-cache-key.pem" 2>/dev/null; then
     echo "    Cache key installed."
 else
-    echo "    Warning: could not distribute cache key (home-core unreachable?)"
+    echo "    Warning: could not distribute cache key (nixpc unreachable?)"
 fi
 
 echo ""

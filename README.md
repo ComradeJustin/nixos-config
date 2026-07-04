@@ -6,9 +6,8 @@ Multi-machine NixOS configuration with shared binary cache and distributed build
 
 | Host | Role | Location |
 |------|------|----------|
-| **nixpc** | Desktop, remote builder | Local network |
+| **nixpc** | Desktop, server (binary cache, AdGuard DNS, exit node, samba), remote builder | Always-on |
 | **nixlaptop** | Desktop, build client | Local network |
-| **home-core** | Server, binary cache, exit node | Always-on |
 
 ## Scripts
 
@@ -27,16 +26,16 @@ Shell aliases after rebuild: `rebuild`, `update`, `wake`, `infra-status`.
 
 ## Binary Cache (Harmonia)
 
-home-core runs [Harmonia](https://github.com/nix-community/harmonia) on port 5000, serving signed store paths to all machines.
+nixpc runs [Harmonia](https://github.com/nix-community/harmonia) on port 5000, serving signed store paths to all machines.
 
 ### How it works
 
-1. **home-core** generates a signing keypair on first boot (`/var/lib/harmonia/cache-key.pem`)
+1. **nixpc** generates a signing keypair on first boot (`/var/lib/harmonia/cache-key.pem`)
 2. Machines with `modules.nix-settings.harmonia = true` automatically:
-   - Add `http://home-core:5000` as a substituter
-   - Fetch the signing key from home-core via Tailscale SSH on first boot
+   - Add `http://nixpc:5000` as a substituter
+   - Fetch the signing key from nixpc via Tailscale SSH on first boot
    - Sign all local builds with the key (so they can be pushed to the cache)
-3. After each rebuild, scripts auto-push the result to home-core's store
+3. After each rebuild, scripts auto-push the result to nixpc's store
 
 ### Adding a new machine to the cache
 
@@ -51,16 +50,16 @@ The signing key syncs automatically on first boot once the machine joins the Tai
 
 ```bash
 # Check cache is working
-curl http://home-core:5000/nix-cache-info
+curl http://nixpc:5000/nix-cache-info
 
 # Push current system to cache
-nix copy --to ssh-ng://root@home-core $(readlink -f /run/current-system)
+nix copy --to ssh-ng://root@nixpc $(readlink -f /run/current-system)
 
-# Sign all paths on home-core (after bulk upload)
-ssh root@home-core 'nix store sign --key-file /var/lib/harmonia/cache-key.pem --all'
+# Sign all paths on nixpc (after bulk upload)
+ssh root@nixpc 'nix store sign --key-file /var/lib/harmonia/cache-key.pem --all'
 
 # View the public key
-ssh root@home-core 'cat /var/lib/harmonia/cache-key.pub'
+ssh root@nixpc 'cat /var/lib/harmonia/cache-key.pub'
 ```
 
 ## Distributed Builds

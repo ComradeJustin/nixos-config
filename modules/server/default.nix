@@ -5,6 +5,7 @@
     ./nginx.nix
     ./postgres.nix
     ./tailscale.nix
+    ./wayvnc.nix
     ./monitoring.nix
     ./distributed-builds.nix
     ./mediastack.nix

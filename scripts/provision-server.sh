@@ -15,7 +15,7 @@ if [[ -z "$HOSTNAME" || -z "$TARGET" ]]; then
     echo "  2. Extracting filesystems from hardware-configuration.nix"
     echo "  3. Creating the host directory with networking.nix"
     echo ""
-    echo "Example: $0 home-core justin@192.168.1.100"
+    echo "Example: $0 nixpc justin@192.168.1.100"
     exit 1
 fi
 

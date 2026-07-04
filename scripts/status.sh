@@ -7,8 +7,7 @@ set -euo pipefail
 # Services: comma-separated list
 DEVICES=(
     "nixlaptop|client|"
-    "nixpc|builder|"
-    "home-core|cache|harmonia,exit-node,nginx,docker"
+    "nixpc|multi|harmonia,adguard,exit-node,samba"
 )
 
 # ── Colors ──

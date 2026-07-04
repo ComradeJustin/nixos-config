@@ -2,7 +2,6 @@ keys:
   # Host age keys (derived from SSH host ed25519 keys via ssh-to-age)
   - &nixpc age10jf3twhpfhty94pjgm2t6c69ng0gj2g8efnf0t6u2x6shy0tdurswtzgwe
   - &nixlaptop age1vmf4g9kgzsrfkkmwwqjjzv0zxvnqmllrf5aukafsyatdr3dj2vgqf2lall
-  - &home-core age1q4n4ftq6pqvqvzw0wt8vtt7477hsajrw8adhu7txhjg6025lkqqsrhp70p
 
 creation_rules:
   # Secrets accessible by all hosts
@@ -11,10 +10,9 @@ creation_rules:
       - age:
           - *nixpc
           - *nixlaptop
-          - *home-core
 
-  # Server-only secrets (syncthing keys, service credentials)
+  # Server-only secrets (syncthing keys, service credentials) — server is nixpc now
   - path_regex: secrets/server\.yaml$
     key_groups:
       - age:
-          - *home-core
+          - *nixpc

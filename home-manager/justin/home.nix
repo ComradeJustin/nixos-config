@@ -56,7 +56,7 @@ in
 
       # Sync harmonia cache key from server
       def fetch-cache-key [] {
-        ssh root@home-core 'cat /var/lib/harmonia/cache-key.pem' | sudo tee /var/lib/harmonia-cache-key.pem | ignore; sudo chmod 600 /var/lib/harmonia-cache-key.pem; echo 'Cache key synced.'
+        ssh root@nixpc 'cat /var/lib/harmonia/cache-key.pem' | sudo tee /var/lib/harmonia-cache-key.pem | ignore; sudo chmod 600 /var/lib/harmonia-cache-key.pem; echo 'Cache key synced.'
       }
     '';
   };

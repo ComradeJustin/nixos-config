@@ -14,8 +14,8 @@ if [[ -z "$HOST" ]]; then
     echo "The target must be booted into a NixOS live ISO with SSH enabled."
     echo ""
     echo "Examples:"
-    echo "  $0 home-core nixos@192.168.1.158    # live ISO default user"
-    echo "  $0 home-core root@192.168.1.158     # if root SSH is enabled"
+    echo "  $0 nixpc nixos@192.168.1.158    # live ISO default user"
+    echo "  $0 nixpc root@192.168.1.158     # if root SSH is enabled"
     echo ""
     echo "After install, the script will:"
     echo "  1. Run nixos-anywhere to partition disks and install"
@@ -92,11 +92,11 @@ echo "Rebuilding ${HOST} with hardware-specific facter data..."
 
 echo ""
 echo "=== Step 5: Distributing harmonia cache key ==="
-if ssh -o ConnectTimeout=3 root@home-core "cat /var/lib/harmonia/cache-key.pem" 2>/dev/null | \
+if ssh -o ConnectTimeout=3 root@nixpc "cat /var/lib/harmonia/cache-key.pem" 2>/dev/null | \
     ssh "root@${REMOTE_HOST}" "tee /var/lib/harmonia-cache-key.pem > /dev/null && chmod 600 /var/lib/harmonia-cache-key.pem" 2>/dev/null; then
     echo "Cache key installed on ${HOST}."
 else
-    echo "Warning: could not distribute cache key (home-core unreachable?)"
+    echo "Warning: could not distribute cache key (nixpc unreachable?)"
 fi
 
 echo ""

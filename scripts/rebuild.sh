@@ -42,7 +42,7 @@ if [[ -z "$HOST" ]]; then
     echo -e "  ${BOLD}Remote hosts:${RESET} ${REMOTE_HOSTS:-none}"
     echo ""
     echo -e "  ${DIM}For remote hosts, optionally pass the target address:${RESET}"
-    echo -e "    $0 home-core justin@192.168.1.158"
+    echo -e "    $0 nixpc justin@192.168.1.158"
     echo -e "    $0 nixpc root@nixpc"
     echo -e "  ${DIM}If omitted for server hosts, uses justin@<hostname> (Tailscale/DNS)${RESET}"
     echo -e "  ${DIM}For local hosts, pass a target to deploy remotely instead of locally${RESET}"
@@ -97,11 +97,11 @@ fi
 
 # Sign and push current system to harmonia cache if reachable
 CACHE_KEY="/var/lib/harmonia-cache-key.pem"
-if [[ -f "$CACHE_KEY" ]] && timeout 5 ssh -o ConnectTimeout=3 -o BatchMode=yes justin@home-core true 2>/dev/null; then
+if [[ -f "$CACHE_KEY" ]] && timeout 5 ssh -o ConnectTimeout=3 -o BatchMode=yes justin@nixpc true 2>/dev/null; then
     SYSTEM_PATH="$(readlink -f /run/current-system)"
     info "Signing and pushing build to harmonia cache..."
     nix store sign --key-file "$CACHE_KEY" --recursive "$SYSTEM_PATH" 2>/dev/null
-    nix copy --to ssh-ng://justin@home-core "$SYSTEM_PATH" 2>/dev/null \
+    nix copy --to ssh-ng://justin@nixpc "$SYSTEM_PATH" 2>/dev/null \
         && ok "Cache updated!" \
         || warn "Cache push failed (non-fatal)"
 fi

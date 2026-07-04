@@ -7,7 +7,7 @@ declare -A DEVICES=(
     ["nixpc"]="7c:10:c9:47:3e:57"
 )
 
-RELAY_HOST="home-core"
+RELAY_HOST="nixpc"
 
 HOST="${1:-}"
 
