@@ -56,9 +56,7 @@ in
         # MagicDNS; combined with connect-timeout + fallback above, clients keep
         # working normally when nixpc is unreachable.
         substituters = [ "http://nixpc:5000" ];
-        # TODO: after nixpc's first rebuild with modules.harmonia.enable = true,
-        # replace this with the contents of /var/lib/harmonia/cache-key.pub on nixpc.
-        trusted-public-keys = [ "nixpc:REPLACE_WITH_NIXPC_PUBLIC_KEY" ];
+        trusted-public-keys = [ "nixpc:x9xt+nopM/5hQW/6d9hAzilOIFurley0+Vq9p21CV8A=" ];
       };
     })
   ]);
