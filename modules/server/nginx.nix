@@ -163,11 +163,6 @@ in
           index = "index.html";
           tryFiles = "$uri $uri/ =404";
         };
-        locations."/blog/" = {
-          alias = "/var/lib/blog/public/";
-          index = "index.html";
-          tryFiles = "$uri $uri/ =404";
-        };
         locations."/api/status.json" = {
           proxyPass = "http://127.0.0.1:9200/status.json";
           extraConfig = ''
