@@ -1,0 +1,149 @@
+/* Styles for project write-up pages (stub.html is the template). Kept apart from style.css so the home page's poster rules don't leak in. */
+:root {
+  --paper: #f6f1e7;
+  --ink: #231e19;
+  --muted: #6f655b;
+  --link: #8d3b2e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0 1.25rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Jost", sans-serif;
+  font-size: 1.25rem;
+  line-height: 1.45;
+}
+
+a {
+  color: var(--link);
+}
+
+/* Display type, labels and decoration can't be highlighted; only the writing itself can. Safari still needs the prefixed property. */
+header,
+.ticks,
+.label,
+.closing,
+sup {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Small letter-spaced label, used for the kicker, the section names and the footer. */
+.label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
+/* Header: a centered kicker over a very large, tightly set title. */
+header {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding-top: 14vh;
+  text-align: center;
+}
+
+/* The title's tight line height lets its letter area reach up over the kicker; positioning the kicker draws it on top so its link stays clickable. */
+header .label {
+  position: relative;
+}
+
+h1 {
+  margin: 1rem 0 0;
+  font-size: clamp(3.5rem, 10vw, 8rem);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 0.85;
+}
+
+/* Tick marks under the title, as wide as the text column. */
+.ticks {
+  max-width: 50rem;
+  height: 10px;
+  margin: 4rem auto 0;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--ink) 0 1px,
+    transparent 1px 14px
+  );
+  opacity: 0.45;
+}
+
+article {
+  max-width: 50rem;
+  margin: 0 auto;
+}
+
+/* Each section hangs off its own thin rule, with its name at the top of the rule. */
+section {
+  margin-top: 4rem;
+  padding: 0 0 1.5rem 1rem;
+  border-left: 1px solid var(--ink);
+}
+
+section > .label {
+  margin-bottom: 2.5rem;
+}
+
+p {
+  margin: 1rem 0 0;
+}
+
+section > .label + p {
+  margin-top: 0;
+}
+
+/* The opening statement: larger and heavier than the body text. */
+.statement {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+sup {
+  font-size: 0.6em;
+  line-height: 0;
+}
+
+sup a {
+  text-decoration: none;
+}
+
+/* A closing line set at title scale, between the last section and the notes. */
+.closing {
+  max-width: 64rem;
+  margin: 8rem auto 0;
+  font-size: clamp(2.5rem, 7vw, 5.5rem);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 0.9;
+  text-align: center;
+}
+
+/* Notes: the footnotes collected at the end, in a section of their own. */
+.notes ol {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.notes li + li {
+  margin-top: 0.4rem;
+}
+
+footer {
+  max-width: 50rem;
+  margin: 4rem auto 0;
+  padding: 0 0 4rem;
+}
