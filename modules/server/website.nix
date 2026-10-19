@@ -33,7 +33,8 @@ in
         '';
         locations."/" = {
           index = "index.html";
-          tryFiles = "$uri $uri/ =404";
+          # $uri.html lets /nowa-tan serve nowa-tan.html, so page links can leave off ".html".
+          tryFiles = "$uri $uri.html $uri/ =404";
         };
       };
     };
