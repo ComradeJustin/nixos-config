@@ -7,6 +7,8 @@ environment {
 //spawn-at-startup "waybar"
 // Spawning quickshell
 spawn-at-startup "quickshell"
+// spawn-at-startup "quickshell" "-p" "/home/justin/nixos-config/configs/quick-shell-v2"
+// ags-shell now runs as a supervised systemd user service (ags.nix)
 // spawn-at-startup "swaync"
 spawn-at-startup "sway-audio-idle-inhibit"
 spawn-at-startup "swayidle" "-w" "timeout" "150" "brightnessctl -s set 10%" "resume" "brightnessctl -r" "timeout" "180" "loginctl lock-session" "resume" "qs ipc call quickshell-bar wakelock" "timeout" "1800" "systemctl suspend" "before-sleep" "loginctl lock-session" "after-resume" "sleep 1; qs ipc call quickshell-bar wakelock" "lock" "pidof quickshell && qs ipc call quickshell-bar lockscreen"

@@ -1,77 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>justin</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Umapyoi Labs</title>
+  <link rel="stylesheet" href="https://indestructibletype.com/fonts/Jost.css" type="text/css" charset="utf-8">
+  <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+  <main>
+    <header>
+      <p class="who">Umapyoi Labs</p>
+      <h1>About Umapyoi Labs</h1>
+      <p class="lead">We are a small team of developers. The only developer is minusplayer so its not really a team.
 
-    <!-- Boot sequence -->
-    <div class="boot-screen" id="boot">
-        <div class="boot-log" id="boot-log"></div>
-        <div class="boot-skip" id="boot-skip">press <kbd>any key</kbd> to skip</div>
-    </div>
+        <section aria-label="About Us">
+            <article>
+              <h2>Nowa-tan</h2>
+              <p>Yeah I made her. </p>  
+            </article>
+            <article>
+              <h2>Who is minusplayer?</h2>
+              <p>An umaployed (unemployed) guy who does stuff.</p>
+            </article>
+            <article>
+              <h2>What is Umapyoi Labs?</h2>
+              <p>I just wanted a funny name for an org. I think naming it after myself would be too egotistical.
+                
+              </p>
+            </article>
+          </section>
+      </p>
+    </header>
 
-    <!-- Background -->
-    <canvas id="topo-bg"></canvas>
-
-    <!-- Site -->
-    <div class="crt" id="site" style="display:none;">
-        <div class="site-content">
-            <main class="hero">
-                <aside class="status-panel" id="status-panel">
-                    <div class="status-header">
-                        <span class="status-title">SYSTEM STATUS</span>
-                        <span class="status-dot" id="status-dot"></span>
-                    </div>
-                    <div class="status-body" id="status-body">
-                        <div class="status-row"><span class="status-label">connecting...</span></div>
-                    </div>
-                </aside>
-
-                <div class="container">
-                    <pre class="ascii-name" aria-hidden="true">
-     _           _   _
-    (_)_   _ ___| |_(_)_ __
-    | | | | / __| __| | '_ \
-    | | |_| \__ \ |_| | | | |
-   _/ |\__,_|___/\__|_|_| |_|
-  |__/
-          </pre>
-
-                    <!-- <p class="typing">Software Developer / Systems Engineer</p> -->
-                    <p class="typing">About Me</p>
-                    <div class="hero-body">
-                        <p>I have been spending most of my time building tools and infrastructure for my network.</p>
-                        <p>Currently self-hosting everything on <span class="hl">NixOS</span>. Most of my network setup is reproduceable if anything went down.</p>
-                        <br>
-                        <p class="comment">// Im really bored as hell</p>
-                    </div>
-
-                    <div class="hero-nav">
-                        <a href="/projects.html">[projects]</a>
-                        <a href="/blog/">[blog]</a>
-                        <a href="/contact.html">[contact]</a>
-                        <a href="https://github.com/ComradeJustin">[github]</a>
-                    </div>
-
-                    <div class="prompt">
-                        <span class="user">guest@justin:~$</span>
-                        <span class="cursor">_</span>
-                    </div>
-                </div>
-            </main>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
+    <footer>
+      <a href="https://github.com/umapyoilabs">GitHub</a>
+      <a href="https://youtube.com/@minusplayer">Youtube</a>
+      <a href="https://twitch.tv/itsminusplayer">Twitch</a>
+    </footer>
+  </main>
 </body>
-
 </html>

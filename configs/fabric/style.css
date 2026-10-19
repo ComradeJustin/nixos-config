@@ -1,0 +1,260 @@
+/* Ring overlay. Colors come from main.py :vars (Stylix base16). */
+
+* {
+  all: unset;
+  color: var(--ink);
+  font-family: "Hanken Grotesk", sans-serif;
+  font-size: 14px;
+}
+
+.mono {
+  font-family: "Maple Mono NF", monospace;
+}
+
+/* Warm display face for headers, mirroring quickshell's fontDisplay. */
+.display {
+  font-family: "Fraunces", serif;
+}
+
+/* The scrim is the window-filling EventBox, so the dim is painted by a
+   widget that is guaranteed to draw (the layer window itself is not). */
+#scrim {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+/* ── Pills (mode, sub-item, hub) and the details panel ── */
+
+.pill {
+  background-color: var(--card);
+  border: 1px solid alpha(var(--ink), 0.5);
+}
+
+.pill.focused,
+.pill.selected {
+  border-color: var(--ink);
+}
+
+.slot {
+  border-radius: 26px;
+}
+
+.sub {
+  border-radius: 20px;
+}
+
+.panel {
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+/* Grows from HUB_SIZE to HUB_DIVE_SIZE on dive; radius covers the larger. */
+#hub {
+  background-color: var(--card);
+  border: 1px solid alpha(var(--ink), 0.5);
+  border-radius: 55px;
+}
+
+#hub-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Small circle marker: outline normally, accent-filled when on. */
+.dot {
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: 4px;
+  border: 1px solid alpha(var(--ink), 0.6);
+}
+
+.dot.on {
+  background-color: var(--hi);
+  border-color: var(--hi);
+}
+
+.slot-inner {
+  padding: 0 18px 0 16px;
+}
+
+.slot-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.slot-subtitle {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.slot-key,
+.sub-key {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.sub-inner {
+  padding: 0 16px 0 14px;
+}
+
+.sub-title {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── Details panel ── */
+
+.detail-h {
+  font-size: 16px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.detail-rule {
+  min-width: 36px;
+  min-height: 1px;
+  background-color: alpha(var(--ink), 0.4);
+}
+
+.detail-dot {
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: 4px;
+  background-color: var(--ink-soft);
+}
+
+.detail-dot.on {
+  background-color: var(--hi);
+}
+
+.detail-status {
+  font-size: 12px;
+}
+
+/* ── Action rows (ink fill on focus) ── */
+
+.action {
+  min-height: 32px;
+  padding: 2px 12px;
+  border-radius: 8px;
+  /* Transparent placeholder so the selected accent bar causes no text shift. */
+  border-left: 3px solid transparent;
+}
+
+.action:hover {
+  background-color: alpha(var(--ink), 0.08);
+}
+
+.action.selected {
+  background-color: alpha(var(--ink), 0.15);
+  border-left: 3px solid var(--hi);
+}
+
+.action-label {
+  font-size: 13px;
+}
+
+.action-sub {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.icon-fallback {
+  min-width: 24px;
+  min-height: 24px;
+  border-radius: 6px;
+  background-color: alpha(var(--ink), 0.15);
+}
+
+.empty {
+  color: var(--ink-soft);
+  padding: 16px 8px;
+  font-size: 12px;
+}
+
+.mute {
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+/* ── Wallpaper ── */
+
+.wp-cell {
+  padding: 4px;
+}
+
+.wp-frame {
+  border: 2px solid transparent;
+  border-radius: 8px;
+}
+
+.wp-cell:hover .wp-frame {
+  border-color: alpha(var(--hi), 0.5);
+}
+
+.wp-cell.selected .wp-frame {
+  border-color: var(--hi);
+}
+
+.wp-name {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.wp-cell.selected .wp-name {
+  color: var(--hi);
+}
+
+/* ── Command bar ── */
+
+#command-bar {
+  background-color: var(--card);
+  border: 1px solid var(--ink);
+  border-radius: 12px;
+  padding: 10px 16px;
+  min-width: 420px;
+}
+
+#prompt {
+  color: var(--hi);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+#prompt.filter {
+  color: var(--ink);
+}
+
+/* The real GtkEntry: transparent over the bar, block-ish caret in accent. */
+#cmd-entry {
+  background-color: transparent;
+  color: var(--ink);
+  caret-color: var(--hi);
+  min-height: 22px;
+}
+
+#cmd-entry selection {
+  background-color: alpha(var(--hi), 0.4);
+  color: var(--ink);
+}
+
+/* ── Log rail ── */
+
+#rail {
+  padding: 10px 14px;
+  background-color: alpha(var(--card), 0.92);
+  border: 1px solid alpha(var(--ink), 0.5);
+  border-radius: 12px;
+}
+
+.rail-line {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.rail-line.ok {
+  color: var(--success);
+}
+
+.rail-line.err {
+  color: var(--danger);
+}

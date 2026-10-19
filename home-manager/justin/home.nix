@@ -8,6 +8,21 @@
 let
   link = config.lib.file.mkOutOfStoreSymlink;
 
+  # atuin 18.19 names both its nushell keybindings "atuin", which nushell now
+  # warns about at every startup. Upstream renamed the up-arrow one to
+  # atuin_up_arrow (atuin PR #3975, in 18.21); this applies the same rename to
+  # the generated init until nixpkgs ships 18.21, replacing the home-manager
+  # atuin nushell integration (same generation, plus the rename).
+  atuinNushellConfig =
+    pkgs.runCommand "atuin-nushell-config.nu"
+      {
+        nativeBuildInputs = [ pkgs.writableTmpDirAsHomeHook ];
+      }
+      ''
+        ${lib.getExe config.programs.atuin.package} init nu \
+          | awk '/name: atuin$/ { count++; if (count == 2) sub(/name: atuin$/, "name: atuin_up_arrow") } { print }' \
+          > "$out"
+      '';
 in
 {
   services.gnome-keyring.enable = true;
@@ -25,7 +40,6 @@ in
       update = "~/nixos-config/scripts/update.sh";
       wake = "~/nixos-config/scripts/wake.sh";
       infra-status = "~/nixos-config/scripts/status.sh";
-      secrets = "~/nixos-config/scripts/secrets.sh";
     };
     extraConfig = ''
       $env.config = {
@@ -58,6 +72,8 @@ in
       def fetch-cache-key [] {
         ssh root@nixpc 'cat /var/lib/harmonia/cache-key.pem' | sudo tee /var/lib/harmonia-cache-key.pem | ignore; sudo chmod 600 /var/lib/harmonia-cache-key.pem; echo 'Cache key synced.'
       }
+
+      source ${atuinNushellConfig}
     '';
   };
 
@@ -69,7 +85,8 @@ in
 
   programs.atuin = {
     enable = true;
-    enableNushellIntegration = true;
+    # Replaced by atuinNushellConfig above (see the keybinding-name note).
+    enableNushellIntegration = false;
   };
 
   programs.carapace.enable = true;
@@ -85,7 +102,6 @@ in
       quit-after-last-window-closed = false;
     };
   };
-
 
   # Allows me to set up config files.
   xdg.configFile = {
@@ -131,7 +147,7 @@ in
   # Environment
   home.sessionVariables = {
     EDITOR = "nvim";
-    BROWSER = "firefox"; 
+    BROWSER = "firefox";
     TERMINAL = "ghostty";
     NIXOS_OZONE_WL = "1";
   };

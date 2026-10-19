@@ -13,5 +13,6 @@
     ./blog.nix
     ./status-reporter.nix
     ./samba.nix
+    ./website.nix
   ];
 }

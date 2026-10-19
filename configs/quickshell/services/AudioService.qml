@@ -1,7 +1,11 @@
 import Quickshell
-import Quickshell.Io
+import Quickshell.Services.Pipewire
 import QtQuick
 
+// Audio state via Quickshell's native Pipewire service — fully event-driven.
+// Replaces the old wpctl/pactl pollers (which spawned ~3 processes/second).
+// Public API (properties, signals, functions) is unchanged for consumers:
+// Bar wheel, AudioModule, ControlCenter/VolumeTab, Osd.
 Scope {
     id: root
 
@@ -19,238 +23,174 @@ Scope {
     signal muteToggled(bool oldMuted, bool newMuted)
     signal deviceSwitched(string oldDevice, string newDevice)
 
-    Component.onCompleted: { pollProc.running = true; sinkProc.running = true; sourceProc.running = true; devProc.running = true; }
+    readonly property var defaultSink: Pipewire.defaultAudioSink
+    readonly property var defaultSource: Pipewire.defaultAudioSource
 
-    // Guard: ignore poll results briefly after a manual set to prevent jitter
-    property bool suppressPoll: false
-    Timer { id: suppressTimer; interval: 300; onTriggered: root.suppressPoll = false }
+    // A node's .audio values are only live while the node is tracked.
+    PwObjectTracker { objects: Pipewire.nodes.values }
 
-    property int _pendingVol: -1
+    onDefaultSinkChanged: { syncFromSink(); rebuildDevices(); }
+    onDefaultSourceChanged: rebuildDevices()
+
+    // Volume/mute changed externally (keyboard keys, another mixer, ...)
+    Connections {
+        target: root.defaultSink ? root.defaultSink.audio : null
+        function onVolumeChanged() { root.syncFromSink(); }
+        function onMutedChanged() { root.syncFromSink(); }
+    }
+
+    // Nodes appearing/disappearing (device plugged, app started/stopped).
+    // Debounced: node bursts (e.g. an app opening several streams) rebuild once.
+    Connections {
+        target: Pipewire.nodes
+        function onValuesChanged() { rebuildTimer.restart(); }
+    }
+    Timer {
+        id: rebuildTimer
+        interval: 100
+        onTriggered: { root.rebuildDevices(); root.rebuildApps(); }
+    }
+
+    Component.onCompleted: { syncFromSink(); rebuildDevices(); rebuildApps(); }
+
+    // node.type is a flag set; true if it contains all bits of `flags`
+    function hasType(node, flags) { return (node.type & flags) === flags; }
+
+    function nodeById(id) {
+        let all = Pipewire.nodes.values;
+        for (let i = 0; i < all.length; i++)
+            if (all[i].id === id) return all[i];
+        return null;
+    }
+
+    function syncFromSink() {
+        let node = root.defaultSink;
+        if (!node || !node.audio) return;
+
+        let newVol = Math.round(node.audio.volume * 100);
+        if (newVol !== root.volume) {
+            let oldVol = root.volume;
+            root.volume = newVol;
+            root.volumeUpdated(oldVol, newVol);
+        }
+
+        let newMuted = node.audio.muted;
+        if (newMuted !== root.muted) {
+            let oldMuted = root.muted;
+            root.muted = newMuted;
+            root.muteToggled(oldMuted, newMuted);
+        }
+
+        let newLabel = node.description || node.nickname || node.name || "";
+        if (newLabel.length > 0 && newLabel !== root.activeDeviceLabel) {
+            let oldLabel = root.activeDeviceLabel;
+            root.activeDeviceLabel = newLabel;
+            if (oldLabel.length > 0) root.deviceSwitched(oldLabel, newLabel);
+        }
+    }
 
     function setVolume(v) {
         v = Math.max(0, Math.min(100, v));
-        let old = root.volume;
-        root.volume = v;
-        if (old !== v) root.volumeUpdated(old, v);
-        root.suppressPoll = true;
-        suppressTimer.restart();
-        setProc.vol = v;
-        if (!setProc.running) {
-            setProc.running = true;
-        } else {
-            _pendingVol = v;
+        if (root.defaultSink && root.defaultSink.audio)
+            root.defaultSink.audio.volume = v / 100;
+        // Update immediately so the UI doesn't wait for the event echo
+        if (v !== root.volume) {
+            let oldVol = root.volume;
+            root.volume = v;
+            root.volumeUpdated(oldVol, v);
         }
     }
 
     function toggleMute() {
-        let wasMuted = root.muted;
-        root.muted = !root.muted;
-        root.muteToggled(wasMuted, root.muted);
-        root.suppressPoll = true;
-        suppressTimer.restart();
-        muteProc.running = true;
+        if (root.defaultSink && root.defaultSink.audio)
+            root.defaultSink.audio.muted = !root.defaultSink.audio.muted;
     }
 
     function setAppVolume(idx, v) {
         v = Math.max(0, Math.min(100, v));
+        let node = nodeById(idx);
+        if (node && node.audio) node.audio.volume = v / 100;
         for (let i = 0; i < appStreams.count; i++) {
             if (appStreams.get(i).appIdx === idx) {
                 appStreams.setProperty(i, "appVol", v);
                 break;
             }
         }
-        appSetProc.idx = idx;
-        appSetProc.vol = v / 100;  // wpctl uses 0.0-1.0 scale
-        appSetProc.running = true;
     }
 
-    function refreshApps() { appScanProc.running = true; }
-    function refreshDevices() { sinkProc.running = true; sourceProc.running = true; }
+    function refreshApps() { rebuildApps(); }
+    function refreshDevices() { rebuildDevices(); }
 
     function setSink(name) {
-        root.activeSink = name;
-        sinkSetProc.sinkName = name;
-        sinkSetProc.running = true;
+        let all = Pipewire.nodes.values;
+        for (let i = 0; i < all.length; i++) {
+            if (all[i].name === name) {
+                Pipewire.preferredDefaultAudioSink = all[i];
+                root.activeSink = name;
+                break;
+            }
+        }
     }
 
     function setSource(name) {
-        root.activeSource = name;
-        sourceSetProc.sourceName = name;
-        sourceSetProc.running = true;
-    }
-
-    // ── Master volume ──
-    Process {
-        id: pollProc
-        command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]
-        stdout: SplitParser {
-            onRead: data => {
-                if (root.suppressPoll) return;
-
-                let wasMuted = root.muted;
-                let wasVol = root.volume;
-
-                let newMuted = data.indexOf("[MUTED]") !== -1;
-                let newVol = wasVol;
-
-                let p = data.split(" ");
-                if (p.length >= 2) {
-                    let f = parseFloat(p[1]);
-                    if (!isNaN(f)) newVol = Math.round(f * 100);
-                }
-
-                // Update and emit signals
-                if (newMuted !== wasMuted) {
-                    root.muted = newMuted;
-                    root.muteToggled(wasMuted, newMuted);
-                }
-                if (newVol !== wasVol) {
-                    root.volume = newVol;
-                    if (wasVol >= 0) root.volumeUpdated(wasVol, newVol);
-                }
-            }
-        }
-        onExited: pollTimer.start()
-    }
-    // Adaptive polling: faster when recently active
-    property bool recentlyActive: false
-    Timer { id: activityCooldown; interval: 2000; onTriggered: root.recentlyActive = false }
-    function markActive() { recentlyActive = true; activityCooldown.restart(); }
-
-    Timer { id: pollTimer; interval: root.recentlyActive ? 100 : 300; onTriggered: pollProc.running = true }
-    Process {
-        id: setProc; property int vol: 0
-        command: ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", vol + "%"]
-        onStarted: root.markActive()
-        onExited: {
-            if (root._pendingVol >= 0) {
-                vol = root._pendingVol;
-                root._pendingVol = -1;
-                root.suppressPoll = true;
-                root.suppressTimer.restart();
-                running = true;
+        let all = Pipewire.nodes.values;
+        for (let i = 0; i < all.length; i++) {
+            if (all[i].name === name) {
+                Pipewire.preferredDefaultAudioSource = all[i];
+                root.activeSource = name;
+                break;
             }
         }
     }
-    Process { id: muteProc; command: ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"] }
 
-    // ── Per-app volume (PipeWire native) ──
-    // Use a temporary list to avoid flicker from clear/repopulate
-    property var pendingApps: []
+    // App playback streams → appStreams model (roles: appIdx/appName/appIcon/appVol)
+    function rebuildApps() {
+        let all = Pipewire.nodes.values;
+        let apps = [];
+        for (let i = 0; i < all.length; i++) {
+            let n = all[i];
+            if (!hasType(n, PwNodeType.AudioOutStream) || !n.audio) continue;
+            apps.push({
+                "appIdx": n.id,
+                "appName": n.properties["application.name"] || n.description || n.name || "Unknown",
+                "appIcon": n.properties["application.icon-name"] || "",
+                "appVol": Math.round(n.audio.volume * 100)
+            });
+        }
 
-    Process {
-        id: appScanProc
-        command: ["bash", "-c",
-            "pw-dump 2>/dev/null | jq -r '.[] | select(.info.props.\"media.class\" == \"Stream/Output/Audio\") | " +
-            "[.id, (.info.props.\"application.name\" // \"Unknown\"), (.info.props.\"application.icon_name\" // \"\"), " +
-            "(((.info.params.Props[0]?.volume // 1) * 100) | floor)] | @tsv'"
-        ]
-        stdout: SplitParser {
-            onRead: data => {
-                let p = data.split("\t");
-                if (p.length < 4) return;
-                root.pendingApps.push({ "appIdx": p[0], "appName": p[1] || "Unknown", "appIcon": p[2] || "", "appVol": parseInt(p[3]) || 100 });
+        // Smart update: only modify what changed to prevent flicker
+        for (let i = 0; i < apps.length; i++) {
+            if (i < appStreams.count) {
+                let old = appStreams.get(i);
+                let neu = apps[i];
+                if (old.appIdx !== neu.appIdx || old.appName !== neu.appName || old.appVol !== neu.appVol)
+                    appStreams.set(i, neu);
+            } else {
+                appStreams.append(apps[i]);
             }
         }
-        onStarted: root.pendingApps = []
-        onExited: {
-            // Smart update: only modify what changed to prevent flicker
-            let newApps = root.pendingApps;
-            let oldCount = root.appStreams.count;
-            let newCount = newApps.length;
+        while (appStreams.count > apps.length)
+            appStreams.remove(appStreams.count - 1);
+    }
 
-            // Update existing items or add new ones
-            for (let i = 0; i < newCount; i++) {
-                if (i < oldCount) {
-                    // Update existing item if different
-                    let old = root.appStreams.get(i);
-                    let neu = newApps[i];
-                    if (old.appIdx !== neu.appIdx || old.appName !== neu.appName || old.appVol !== neu.appVol) {
-                        root.appStreams.set(i, neu);
-                    }
-                } else {
-                    // Add new item
-                    root.appStreams.append(newApps[i]);
-                }
-            }
-
-            // Remove extra items from the end
-            while (root.appStreams.count > newCount) {
-                root.appStreams.remove(root.appStreams.count - 1);
+    // Output/input devices → sinks/sources models (roles: devName/devDesc/devActive)
+    function rebuildDevices() {
+        sinks.clear();
+        sources.clear();
+        let all = Pipewire.nodes.values;
+        for (let i = 0; i < all.length; i++) {
+            let n = all[i];
+            if (n.isStream) continue;
+            let desc = n.description || n.nickname || n.name;
+            if (hasType(n, PwNodeType.AudioSink)) {
+                let active = n === Pipewire.defaultAudioSink;
+                sinks.append({ "devName": n.name, "devDesc": desc, "devActive": active });
+                if (active) root.activeSink = n.name;
+            } else if (hasType(n, PwNodeType.AudioSource)) {
+                let active = n === Pipewire.defaultAudioSource;
+                sources.append({ "devName": n.name, "devDesc": desc, "devActive": active });
+                if (active) root.activeSource = n.name;
             }
         }
     }
-    Process { id: appSetProc; property string idx: ""; property real vol: 0; command: ["wpctl", "set-volume", idx, vol.toString()] }
-
-    // ── Output devices (sinks) ──
-    Process {
-        id: sinkProc
-        command: ["bash", "-c",
-            "default=$(pactl get-default-sink 2>/dev/null); " +
-            "pactl list short sinks 2>/dev/null | while read -r idx name driver fmt state; do " +
-            "  desc=$(pactl list sinks 2>/dev/null | awk -v n=\"$name\" '/Name: / { found=($2==n) } found && /Description:/ { sub(/.*Description: /,\"\"); print; exit }'); " +
-            "  active='no'; [ \"$name\" = \"$default\" ] && active='yes'; " +
-            "  echo \"$name\t$desc\t$active\"; " +
-            "done"
-        ]
-        stdout: SplitParser {
-            onRead: data => {
-                let p = data.split("\t");
-                if (p.length < 3) return;
-                root.sinks.append({ "devName": p[0], "devDesc": p[1] || p[0], "devActive": p[2] === "yes" });
-                if (p[2] === "yes") root.activeSink = p[0];
-            }
-        }
-        onStarted: root.sinks.clear()
-    }
-    Process { id: sinkSetProc; property string sinkName: ""; command: ["pactl", "set-default-sink", sinkName] }
-
-    // ── Input devices (sources) ──
-    Process {
-        id: sourceProc
-        command: ["bash", "-c",
-            "default=$(pactl get-default-source 2>/dev/null); " +
-            "pactl list short sources 2>/dev/null | grep -v '\\.monitor' | while read -r idx name driver fmt state; do " +
-            "  desc=$(pactl list sources 2>/dev/null | awk -v n=\"$name\" '/Name: / { found=($2==n) } found && /Description:/ { sub(/.*Description: /,\"\"); print; exit }'); " +
-            "  active='no'; [ \"$name\" = \"$default\" ] && active='yes'; " +
-            "  echo \"$name\t$desc\t$active\"; " +
-            "done"
-        ]
-        stdout: SplitParser {
-            onRead: data => {
-                let p = data.split("\t");
-                if (p.length < 3) return;
-                root.sources.append({ "devName": p[0], "devDesc": p[1] || p[0], "devActive": p[2] === "yes" });
-                if (p[2] === "yes") root.activeSource = p[0];
-            }
-        }
-        onStarted: root.sources.clear()
-    }
-    Process { id: sourceSetProc; property string sourceName: ""; command: ["pactl", "set-default-source", sourceName] }
-
-    // ── Device label polling (for OSD) ──
-    Process {
-        id: devProc
-        command: [
-            "bash", "-c",
-            "wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null | " +
-            "grep -oP 'node\\.description\\s*=\\s*\"\\K[^\"]+' || echo ''"
-        ]
-        stdout: SplitParser {
-            onRead: data => {
-                let name = data.trim();
-                if (name.length === 0) return;
-
-                let wasDevice = root.activeDeviceLabel;
-                if (name !== wasDevice) {
-                    root.activeDeviceLabel = name;
-                    if (wasDevice.length > 0) {
-                        root.deviceSwitched(wasDevice, name);
-                    }
-                }
-            }
-        }
-        onExited: devPollTimer.start()
-    }
-    Timer { id: devPollTimer; interval: 800; onTriggered: devProc.running = true }
 }

@@ -10,7 +10,7 @@
       imagemagick
       ani-cli
       inputs.lobster.packages.${pkgs.system}.lobster
-      inputs.spotatui.packages.${pkgs.stdenv.hostPlatform.system}.default
+      spotatui
     ];
   };
 }

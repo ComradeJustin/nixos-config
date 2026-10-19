@@ -32,24 +32,28 @@ window-rule {
 
 
 
+// Rounded corners for every window. Blur is NOT global: behind an opaque
+// window it is invisible but still costs the iGPU a 3-pass blur per frame,
+// which made the whole desktop sluggish on battery.
 window-rule {
-    background-effect {
-        blur true
-        xray true
-        noise 0.02
-        saturation 1.25
-    }
     geometry-corner-radius 10
     clip-to-geometry true
 }
 
 
+// Glass only where it can be seen: the translucent apps.
 window-rule {
     match app-id=r#"ghostty"#
     match app-id=r#"spotify"#
     match app-id=r#"code"#
     opacity 0.85
     draw-border-with-background false
+    background-effect {
+        blur true
+        xray true
+        noise 0.02
+        saturation 1.25
+    }
 }
 
 
@@ -139,6 +143,30 @@ layer-rule {
 // real windows/wallpaper underneath. No corner radius (it spans the screen);
 // the translucent centered box on top reads as frosted glass over the frost.
 // DISABLED by default (see toggle note above).
+// Focus blur for the v2 vim launcher. Full-screen surface, same as old
+// Spotlight. Disabled by default (see toggle note above); delete `/-` to
+// frost the desktop behind the card.
+/-layer-rule {
+	match namespace="^quickshell-v2$"
+	background-effect {
+		blur true
+		xray false
+		noise 0.02
+		saturation 1.25
+	}
+}
+
+/-layer-rule {
+	match namespace="^fabric-shell$"
+	background-effect {
+		blur true
+		xray false
+		noise 0.02
+		saturation 1.25
+	}
+	geometry-corner-radius 12
+}
+
 /-layer-rule {
 	match namespace="^quickshell-spotlight$"
 	background-effect {

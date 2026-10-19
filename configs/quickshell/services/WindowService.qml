@@ -15,10 +15,8 @@ Scope {
         return (windowCounts[screenName] || 0) === 0;
     }
 
-    Component.onCompleted: {
-        checkProc.running = true;
-        overviewProc.running = true;
-    }
+    // Initial state comes from eventProc.onStarted (which also covers
+    // event-stream restarts, resyncing anything missed during the gap).
 
     // Get per-output window counts for all active workspaces
     Process {
@@ -50,7 +48,6 @@ Scope {
             }
         }
 
-        onExited: pollTimer.start()
     }
 
     // Check overview state
@@ -65,30 +62,32 @@ Scope {
         }
     }
 
-    // Poll regularly
+    // Coalesce event bursts (window drags, workspace switches) into one recount
     Timer {
-        id: pollTimer
-        interval: 500
+        id: checkDebounce
+        interval: 150
         onTriggered: checkProc.running = true
     }
 
-    // Listen to niri events for faster response
+    // Event-driven: niri pushes window/workspace/overview events; no polling.
     Process {
         id: eventProc
         command: ["niri", "msg", "event-stream"]
         running: true
 
+        onStarted: {
+            checkProc.running = true;
+            overviewProc.running = true;
+        }
+
         stdout: SplitParser {
             onRead: data => {
-                // Check for overview toggle events
+                // Parse "Overview toggled: true/false"
                 if (data.indexOf("Overview toggled") !== -1) {
-                    // Parse "Overview toggled: true/false"
                     root.overviewOpen = data.indexOf("true") !== -1;
                 }
-                // Check for window/workspace changes
                 if (data.indexOf("Window") !== -1 || data.indexOf("Workspace") !== -1) {
-                    // Immediate check on relevant events
-                    checkProc.running = true;
+                    checkDebounce.restart();
                 }
             }
         }

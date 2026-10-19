@@ -1,107 +1,51 @@
 #!/usr/bin/env bash
-set -e
+# Build and deploy a host of this flake.
+#   rebuild.sh <host>            build + switch this machine
+#   rebuild.sh <host> <user@ip>  build locally, deploy to a remote machine
+# First deploy to a fresh machine: use root@<ip> so the store copy is trusted.
+set -eo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-FLAKE_DIR="$(dirname "$SCRIPT_DIR")"
-
-# ── Colors ──
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-DIM='\033[2m'
-RESET='\033[0m'
-
-info()  { echo -e "${CYAN}::${RESET} $*"; }
-warn()  { echo -e "${YELLOW}::${RESET} $*"; }
-err()   { echo -e "${RED}::${RESET} $*"; }
-ok()    { echo -e "${GREEN}::${RESET} $*"; }
-
+FLAKE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HOST="${1:-}"
 TARGET="${2:-}"
 
-# Auto-pull latest config if working tree is clean
-if git -C "${FLAKE_DIR}" diff --quiet && git -C "${FLAKE_DIR}" diff --cached --quiet; then
-    info "Pulling latest config..."
-    git -C "${FLAKE_DIR}" pull --rebase --quiet 2>/dev/null || warn "git pull failed (offline or no remote?)"
-else
-    warn "Working tree is dirty — skipping git pull"
-fi
-
-# Auto-detect remote hosts from hosts/servers/ directory
-REMOTE_HOSTS=""
-if [[ -d "${FLAKE_DIR}/hosts/servers" ]]; then
-    REMOTE_HOSTS=$(find "${FLAKE_DIR}/hosts/servers" -mindepth 1 -maxdepth 1 -type d ! -name '_template' -printf '%f ')
-fi
-
 if [[ -z "$HOST" ]]; then
-    echo -e "${BOLD}Usage:${RESET} $0 <hostname> [user@ip]"
-    echo ""
-    echo -e "  ${BOLD}Local hosts:${RESET}  nixpc, nixlaptop"
-    echo -e "  ${BOLD}Remote hosts:${RESET} ${REMOTE_HOSTS:-none}"
-    echo ""
-    echo -e "  ${DIM}For remote hosts, optionally pass the target address:${RESET}"
-    echo -e "    $0 nixpc justin@192.168.1.158"
-    echo -e "    $0 nixpc root@nixpc"
-    echo -e "  ${DIM}If omitted for server hosts, uses justin@<hostname> (Tailscale/DNS)${RESET}"
-    echo -e "  ${DIM}For local hosts, pass a target to deploy remotely instead of locally${RESET}"
+    echo "Usage: $0 <host> [user@ip]"
+    echo "Hosts: nixpc, nixlaptop"
+    echo "With user@ip, builds locally and deploys to that machine."
     exit 1
 fi
 
-# Check if any remote builders are reachable
-BUILDERS_ONLINE=0
-if [[ -f /etc/nix/machines ]]; then
-    info "Checking remote builders..."
-    while IFS=' ' read -r uri _rest; do
-        [[ -z "$uri" ]] && continue
-        builder_host="${uri#*@}"
-        if timeout 5 ssh -o ConnectTimeout=3 -o BatchMode=yes "justin@${builder_host}" true 2>/dev/null; then
-            BUILDERS_ONLINE=$((BUILDERS_ONLINE + 1))
-            ok "  ${builder_host} ${GREEN}online${RESET}"
-        else
-            warn "  ${builder_host} ${RED}offline${RESET}"
-        fi
-    done < /etc/nix/machines
-fi
-
-MAX_JOBS_FLAG=""
-if [[ "$BUILDERS_ONLINE" -gt 0 ]]; then
-    ok "Found ${BOLD}${BUILDERS_ONLINE}${RESET}${GREEN} remote builder(s)${RESET} — limiting local jobs to 4"
-    MAX_JOBS_FLAG="--max-jobs 4"
+# Pull latest config if the working tree is clean
+if git -C "$FLAKE_DIR" diff --quiet && git -C "$FLAKE_DIR" diff --cached --quiet; then
+    git -C "$FLAKE_DIR" pull --rebase --quiet 2>/dev/null \
+        || echo "git pull failed (offline?) — building current checkout"
 else
-    warn "No remote builders reachable — using all local cores"
+    echo "Working tree is dirty — skipping git pull"
 fi
 
-set -o pipefail
-if [[ -n "$TARGET" ]] || echo "$REMOTE_HOSTS" | grep -qw "$HOST"; then
-    REMOTE_TARGET="${TARGET:-justin@${HOST}}"
-    info "Building locally and deploying ${BOLD}${HOST}${RESET} to ${CYAN}${REMOTE_TARGET}${RESET}..."
+# If the remote builder (nixpc) is reachable, cap local jobs so nix offloads to it.
+# /etc/nix/machines only exists on build clients, so this is a no-op on nixpc itself.
+EXTRA_ARGS=()
+if [[ -s /etc/nix/machines ]] && timeout 5 ssh -o ConnectTimeout=3 -o BatchMode=yes justin@nixpc true 2>/dev/null; then
+    echo "Remote builder nixpc is online — capping local jobs at 4"
+    EXTRA_ARGS=(-- --max-jobs 4)
+fi
 
-    REMOTE_HOST="${REMOTE_TARGET#*@}"
-    if ! nh os switch "${FLAKE_DIR}" -H "${HOST}" --ask \
-        --target-host "justin@${REMOTE_HOST}" \
-        -- ${MAX_JOBS_FLAG}; then
-        err "Build failed!"
-        exit 1
-    fi
-
-    ok "Deploy to ${BOLD}${HOST}${RESET} complete!"
+if [[ -n "$TARGET" ]]; then
+    echo "Building ${HOST} and deploying to ${TARGET}..."
+    nh os switch "$FLAKE_DIR" -H "$HOST" --ask --target-host "$TARGET" "${EXTRA_ARGS[@]}"
 else
-    info "Building ${BOLD}${HOST}${RESET} locally..."
-    if ! nh os switch "${FLAKE_DIR}" -H "${HOST}" --ask -- ${MAX_JOBS_FLAG}; then
-        err "Build failed!"
-        exit 1
-    fi
-fi
+    echo "Building ${HOST} locally..."
+    nh os switch "$FLAKE_DIR" -H "$HOST" --ask "${EXTRA_ARGS[@]}"
 
-# Sign and push current system to harmonia cache if reachable
-CACHE_KEY="/var/lib/harmonia-cache-key.pem"
-if [[ -f "$CACHE_KEY" ]] && timeout 5 ssh -o ConnectTimeout=3 -o BatchMode=yes justin@nixpc true 2>/dev/null; then
-    SYSTEM_PATH="$(readlink -f /run/current-system)"
-    info "Signing and pushing build to harmonia cache..."
-    nix store sign --key-file "$CACHE_KEY" --recursive "$SYSTEM_PATH" 2>/dev/null
-    nix copy --to ssh-ng://justin@nixpc "$SYSTEM_PATH" 2>/dev/null \
-        && ok "Cache updated!" \
-        || warn "Cache push failed (non-fatal)"
+    # Push the new system to the harmonia cache so other machines can substitute it
+    CACHE_KEY="/var/lib/harmonia-cache-key.pem"
+    if [[ -f "$CACHE_KEY" ]] && timeout 5 ssh -o ConnectTimeout=3 -o BatchMode=yes justin@nixpc true 2>/dev/null; then
+        SYSTEM_PATH="$(readlink -f /run/current-system)"
+        echo "Signing and pushing build to harmonia cache..."
+        nix store sign --key-file "$CACHE_KEY" --recursive "$SYSTEM_PATH"
+        nix copy --to ssh-ng://justin@nixpc "$SYSTEM_PATH" \
+            || echo "Cache push failed (non-fatal)"
+    fi
 fi

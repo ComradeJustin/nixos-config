@@ -38,11 +38,6 @@
       # Networking
       wol
 
-      # Secrets management
-      sops
-      ssh-to-age
-      age
-
       # Man pages
       man-pages
       man-pages-posix

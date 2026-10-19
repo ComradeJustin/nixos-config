@@ -1,0 +1,489 @@
+// Ring overlay styling on the system's stylix palette. All colors are CSS
+// variables emitted by colors.ts (:root), mirroring quickshell's Theme.qml
+// semantics: accent = base0D, selected fills are opaque accent-on-surface
+// blends, per-action colors in power. Alpha variants are precomputed
+// (--text-15 etc.) since GTK CSS cannot rgba() a variable.
+
+window#overlay {
+  background: transparent;
+  color: var(--text);
+  font-family: "Hanken Grotesk", sans-serif;
+  font-size: 14px;
+  // Hanken Grotesk declares a shorter descent than its glyphs use; at the
+  // default line height GTK sizes labels to the metrics and cuts p/g/j
+  // descenders flat. Extra leading gives them room.
+  line-height: 1.25;
+}
+
+.mono {
+  font-family: "Maple Mono NF", monospace;
+}
+
+// Warm display face for headers, mirroring quickshell's fontDisplay.
+.display {
+  font-family: "Fraunces", serif;
+}
+
+scrim {
+  // Flat dim while compositor blur is deferred: the desktop behind is
+  // often dense text and must not compete with the overlay.
+  background-color: rgba(0, 0, 0, 0.62);
+}
+
+// ── Pills (mode, sub-item, hub) and the details panel ──
+
+// Chromeless at rest (fill + soft shadow define the shape, like the
+// Mod+Esc tiles); the border and glow are reserved for focus/selection.
+.pill {
+  background-color: var(--surface);
+  border: 1px solid transparent;
+  box-shadow: 0 6px 20px 0 rgba(0, 0, 0, 0.35);
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 200ms ease;
+}
+
+.pill.focused,
+.pill.selected {
+  border-color: var(--pill, var(--accent));
+}
+
+.slot {
+  border-radius: 32px;
+}
+
+.slot.focused {
+  box-shadow:
+    0 6px 20px 0 rgba(0, 0, 0, 0.35),
+    0 0 14px 0 var(--accent-20);
+}
+
+.sub {
+  border-radius: 24px;
+}
+
+// Selected fan pill: the action's color takes over — fill wash, border,
+// and a colored glow, like the Mod+Esc powermenu tiles.
+.sub.selected {
+  background-color: var(--pill-fill, var(--accent-fill));
+  box-shadow:
+    0 6px 20px 0 rgba(0, 0, 0, 0.35),
+    0 0 12px 0 var(--pill-glow, var(--accent-20));
+}
+
+.panel {
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45);
+}
+
+// Grows from HUB_SIZE to HUB_DIVE_SIZE on dive; radius covers the larger.
+hub {
+  background-color: var(--surface);
+  border: 1px solid transparent;
+  border-radius: 70px;
+  box-shadow: 0 8px 28px 0 rgba(0, 0, 0, 0.4);
+}
+
+hub-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+hub-glyph {
+  -gtk-icon-size: 32px;
+  color: var(--accent);
+}
+
+// Resting hub: the time in the display face, the date beneath.
+hub-clock {
+  font-size: 26px;
+  font-weight: 600;
+}
+
+hub-date {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+// Mode icon on the ring pills; accent when the pill is focused.
+image.slot-glyph {
+  -gtk-icon-size: 24px;
+  color: var(--text-dim);
+  transition: color 150ms ease;
+}
+
+image.slot-glyph.on {
+  color: var(--accent);
+}
+
+// Icons on the fan pills; the action's own color when selected.
+image.sub-glyph {
+  -gtk-icon-size: 18px;
+  color: var(--text-dim);
+  transition: color 150ms ease;
+}
+
+image.sub-glyph.on {
+  color: var(--pill, var(--accent));
+}
+
+// Small circle marker: outline normally, accent-filled when on.
+.dot {
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: 4px;
+  border: 1px solid var(--text-30);
+}
+
+.dot.on {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+.slot-inner {
+  padding: 0 18px 0 20px;
+}
+
+.slot-title {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.slot-subtitle {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+// Key hints as keycaps.
+.slot-key,
+.sub-key {
+  font-size: 11px;
+  color: var(--text-dim);
+  background-color: var(--text-10);
+  border-radius: 6px;
+  padding: 2px 7px;
+  min-width: 10px;
+}
+
+.sub-inner {
+  padding: 0 14px 0 16px;
+}
+
+.sub-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.sub-subtitle {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+// Quick row of most-launched apps above the search list (keys 1–6).
+button.frecent {
+  padding: 6px;
+  border-radius: 12px;
+  background-color: var(--text-6);
+  border: 1px solid transparent;
+  transition: background-color 120ms ease;
+}
+
+button.frecent:hover {
+  background-color: var(--text-10);
+}
+
+image.frecent-icon {
+  -gtk-icon-size: 32px;
+}
+
+.frecent-key {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+// ── Details panel ──
+
+.detail-h {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.detail-rule {
+  min-width: 36px;
+  min-height: 1px;
+  background-color: var(--text-25);
+}
+
+.detail-dot {
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: 4px;
+  background-color: var(--text-dim);
+}
+
+.detail-dot.on {
+  background-color: var(--accent);
+}
+
+.detail-status {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+// ── Row cascade on dive ──
+// The overlay adds .cascade to the panel as it maps (rows start
+// transparent, with no transition so the jump is instant), then removes
+// it a frame later: each row fades in, later rows a beat after earlier
+// ones. Opacity only — a margin slide relayouts the panel every frame and
+// halved the dive's frame rate. Covers list rows, wallpaper grid rows,
+// and the power card's lines.
+$cascade-rows: 8;
+$cascade-step: 28ms;
+$cascade-ms: 220ms;
+
+// $row is the widget whose sibling index sets the delay; $leaf (optional)
+// is the animated descendant inside it (grid rows: the row box is
+// staggered, its cells animate).
+@mixin cascade-target($row, $leaf: "") {
+  @for $i from 1 through $cascade-rows {
+    .panel #{$row}:nth-child(#{$i}) #{$leaf} {
+      transition:
+        background-color 120ms ease,
+        border-color 120ms ease,
+        opacity $cascade-ms ease ($i - 1) * $cascade-step;
+    }
+  }
+  .panel.cascade #{$row} #{$leaf} {
+    transition: none;
+    opacity: 0;
+  }
+}
+
+@include cascade-target("button.action");
+@include cascade-target("box", "> button.wp-cell");
+@include cascade-target(".status-row");
+@include cascade-target(".detail-status");
+
+// Footer key hints: keycap + meaning, pinned to the panel's bottom edge.
+.hint-row {
+  padding-top: 8px;
+}
+
+.hint-key {
+  font-size: 10px;
+  color: var(--text-dim);
+  background-color: var(--text-10);
+  border-radius: 5px;
+  padding: 1px 6px;
+}
+
+.hint-text {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+// Per-app mixer under the volume slider.
+.mixer-h {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding-top: 6px;
+}
+
+.mixer-row scale {
+  min-width: 120px;
+}
+
+// Status rows on the power card.
+.status-row {
+  padding-top: 4px;
+}
+
+image.status-icon {
+  -gtk-icon-size: 16px;
+  color: var(--text-dim);
+}
+
+.status-text {
+  font-size: 13px;
+}
+
+// ── Action rows (spotlight grammar: accent wash + accent title) ──
+
+button.action {
+  min-height: 32px;
+  padding: 4px 12px;
+  border-radius: 10px;
+  background-color: var(--text-6);
+  border: 1px solid transparent;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+button.action:hover {
+  background-color: var(--text-8);
+}
+
+button.action.selected {
+  background-color: var(--accent-fill);
+  border-color: var(--accent-40);
+}
+
+button.action.selected .action-label {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.action-label {
+  font-size: 13px;
+  color: var(--text);
+  transition: color 120ms ease;
+}
+
+.action-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+// App icons in rows: size via CSS so GTK picks a sharp source.
+image.app-icon {
+  -gtk-icon-size: 28px;
+}
+
+.empty {
+  color: var(--text-dim);
+  padding: 16px 8px;
+  font-size: 12px;
+}
+
+.mute {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+// Volume slider
+scale {
+  trough {
+    background-color: var(--text-15);
+    border-radius: 4px;
+    min-height: 6px;
+  }
+
+  highlight {
+    background-color: var(--accent);
+    border-radius: 4px;
+  }
+
+  slider {
+    background-color: var(--text);
+    border-radius: 8px;
+    min-width: 14px;
+    min-height: 14px;
+  }
+}
+
+// Bottom-edge fade over scrolling lists (see FilterList).
+.list-fade {
+  min-height: 28px;
+  background-image: linear-gradient(to bottom, transparent, var(--surface));
+}
+
+.list-fade.top {
+  min-height: 16px;
+  background-image: linear-gradient(to top, transparent, var(--surface));
+}
+
+// Subtle but visible scrollbar so partial rows read as scrollable.
+scrollbar {
+  background: transparent;
+
+  slider {
+    background-color: var(--text-30);
+    border-radius: 4px;
+    min-width: 6px;
+    transition: background-color 120ms ease;
+  }
+
+  slider:hover {
+    background-color: var(--text-50);
+  }
+}
+
+// ── Wallpaper ──
+
+button.wp-cell {
+  // Structure comes from the cell card, not a frame hugging the image.
+  background-color: var(--text-6);
+  border: 1px solid transparent;
+  padding: 6px;
+  border-radius: 12px;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 200ms ease;
+}
+
+button.wp-cell:hover {
+  background-color: var(--text-10);
+}
+
+button.wp-cell.selected {
+  background-color: var(--accent-fill);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px 0 var(--accent-12);
+}
+
+.wp-frame {
+  border: 2px solid transparent;
+  border-radius: 8px;
+}
+
+// The active wallpaper: accent name and a soft accent outline.
+button.wp-cell.marked {
+  border-color: var(--accent-55);
+}
+
+button.wp-cell.marked .wp-name {
+  color: var(--accent);
+}
+
+.wp-name {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+button.wp-cell.selected .wp-name {
+  color: var(--accent);
+}
+
+// ── Filter / password bar ──
+
+// Inline filter/password field, docked to the top of the panel.
+command-bar {
+  background-color: var(--surface);
+  border: 1px solid var(--accent-40);
+  border-radius: 14px;
+  padding: 8px 16px;
+  box-shadow: 0 8px 28px 0 rgba(0, 0, 0, 0.35);
+}
+
+prompt {
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+cmd-entry {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  caret-color: var(--accent);
+  min-height: 22px;
+
+  selection {
+    background-color: var(--accent-40);
+    color: var(--text);
+  }
+}

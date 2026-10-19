@@ -12,15 +12,14 @@ Multi-machine NixOS configuration with shared binary cache and distributed build
 ## Scripts
 
 ```bash
-scripts/rebuild.sh <host> [user@ip]   # Build and deploy a host
-scripts/update.sh <host> [user@ip]    # Update flake inputs + rebuild
-scripts/wake.sh                       # Wake nixpc via Wake-on-LAN
-scripts/status.sh                     # Show network/infra status
-scripts/install-server.sh <host> [user@ip]  # Fresh NixOS install via nixos-anywhere
-scripts/bootstrap.sh <host> <user@ip>       # First deploy to an existing NixOS install
+scripts/rebuild.sh <host> [user@ip]        # Build and deploy a host (local, or remote with user@ip)
+scripts/update.sh <host> [user@ip]         # Update flake inputs, then rebuild
+scripts/wake.sh <host>                     # Wake a machine via Wake-on-LAN
+scripts/status.sh                          # Show network/infra status
+scripts/install-server.sh <host> <user@ip> # Wipe + install NixOS via nixos-anywhere (live ISO)
 ```
 
-For local hosts (`nixpc`, `nixlaptop`), just pass the hostname. For remote/server hosts, the target defaults to `justin@<hostname>` via Tailscale DNS.
+Pass just the hostname to rebuild the machine you're on. Pass `user@ip` to build locally and deploy to another machine — for the first deploy to a fresh install, use `root@<ip>` so the store copy is trusted.
 
 Shell aliases after rebuild: `rebuild`, `update`, `wake`, `infra-status`.
 
@@ -31,11 +30,10 @@ nixpc runs [Harmonia](https://github.com/nix-community/harmonia) on port 5000, s
 ### How it works
 
 1. **nixpc** generates a signing keypair on first boot (`/var/lib/harmonia/cache-key.pem`)
-2. Machines with `modules.nix-settings.harmonia = true` automatically:
-   - Add `http://nixpc:5000` as a substituter
-   - Fetch the signing key from nixpc via Tailscale SSH on first boot
-   - Sign all local builds with the key (so they can be pushed to the cache)
-3. After each rebuild, scripts auto-push the result to nixpc's store
+2. Machines with `modules.nix-settings.harmonia = true` add `http://nixpc:5000` as a substituter
+3. To push builds to the cache, a machine needs the signing key — run the `fetch-cache-key`
+   shell function once to copy it from nixpc to `/var/lib/harmonia-cache-key.pem`
+4. After each local rebuild, `rebuild.sh` signs the result and pushes it to nixpc's store
 
 ### Adding a new machine to the cache
 
@@ -44,7 +42,7 @@ In the host's flake config:
 modules.nix-settings.harmonia = true;
 ```
 
-The signing key syncs automatically on first boot once the machine joins the Tailnet.
+Then run `fetch-cache-key` on the machine once it has joined the Tailnet, so its builds can be signed and pushed.
 
 ### Manual operations
 

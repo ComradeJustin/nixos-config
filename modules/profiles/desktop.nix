@@ -22,6 +22,10 @@
     # WM-conditional
     modules.niri.enable = lib.mkDefault (config.modules.profiles.desktop.wm == "niri");
     modules.quickshell.enable = lib.mkDefault (config.modules.profiles.desktop.wm == "niri");
+    # The AGS overlay replaces the fabric one on Mod+Space; fabric stays in
+    # the repo but off by default during the transition.
+    modules.fabric.enable = lib.mkDefault false;
+    modules.ags.enable = lib.mkDefault (config.modules.profiles.desktop.wm == "niri");
     modules.lockscreen.enable = lib.mkDefault (config.modules.profiles.desktop.wm == "niri");
 
     # Common desktop apps

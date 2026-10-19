@@ -97,25 +97,18 @@ Scope {
             onRead: data => {
                 let unitSym = svc.useMetric ? "\u00b0C" : "\u00b0F";
                 try {
-                    let tempMatch = data.match(/"temperature_2m":\s*([-\d.]+)/);
-                    let codeMatch = data.match(/"weather_code":\s*(\d+)/);
-                    let feelsMatch = data.match(/"apparent_temperature":\s*([-\d.]+)/);
-                    if (tempMatch) {
-                        let temp = Math.round(parseFloat(tempMatch[1]));
-                        svc.temperature = temp + unitSym;
-                    }
-                    if (codeMatch) {
-                        svc.weatherCode = parseInt(codeMatch[1]);
-                        svc.icon = svc.codeToIcon(svc.weatherCode);
-                        svc.condition = svc.codeToCondition(svc.weatherCode);
-                    }
-                    if (feelsMatch) {
-                        svc.feelsLike = Math.round(parseFloat(feelsMatch[1])) + unitSym;
-                    }
-                } catch(e) {}
-                // Daily forecast \u2014 JSON-parse the arrays (regex can't do arrays).
-                try {
                     let j = JSON.parse(data);
+                    if (j && j.current) {
+                        if (j.current.temperature_2m !== undefined)
+                            svc.temperature = Math.round(j.current.temperature_2m) + unitSym;
+                        if (j.current.weather_code !== undefined) {
+                            svc.weatherCode = j.current.weather_code;
+                            svc.icon = svc.codeToIcon(svc.weatherCode);
+                            svc.condition = svc.codeToCondition(svc.weatherCode);
+                        }
+                        if (j.current.apparent_temperature !== undefined)
+                            svc.feelsLike = Math.round(j.current.apparent_temperature) + unitSym;
+                    }
                     if (j && j.daily && j.daily.time) {
                         let names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
                         let t = j.daily.time;

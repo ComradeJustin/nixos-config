@@ -17,7 +17,8 @@ binds {
     Mod+Return hotkey-overlay-title="Open a Terminal: ghostty" { spawn "ghostty" "+new-window"; }
     Mod+D { spawn "qs"  "ipc" "call" "quickshell-bar" "clipboard"; }
     Mod+M { spawn "qs"  "ipc" "call" "quickshell-bar" "settings"; }
-    Mod+Space { spawn "qs"  "ipc" "call" "quickshell-bar" "launcher"; }
+    Mod+Space { spawn "ags-toggle"; }
+    // Previous overlay: qs -p .../quick-shell-v2 ipc call quickshell-v2 toggle
     Mod+P { spawn "qs"  "ipc" "call" "quickshell-bar" "wallpaper"; }
     Mod+Escape { spawn "qs"  "ipc" "call" "quickshell-bar" "powermenu"; }
     Mod+N { spawn "qs"  "ipc" "call" "quickshell-bar" "controlcenter"; }

@@ -305,7 +305,11 @@ Scope {
         command: ["bash", "-c",
             "cava -p /dev/stdin <<'EOF'\n[general]\nbars = 24\nframerate = 30\n[output]\nmethod = raw\nraw_target = /dev/stdout\ndata_format = ascii\nascii_max_range = 100\nEOF"
         ]
-        running: true
+        // Only run while media is actually playing — the bar visualizer is
+        // hidden otherwise and the CC card's spectrum would be flat anyway.
+        // Saves a 30fps capture+FFT process during all idle time.
+        running: root.isPlaying
+        onRunningChanged: if (!running) root.cavaBars = []
         stdout: SplitParser {
             splitMarker: "\n"
             onRead: data => {

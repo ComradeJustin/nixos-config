@@ -11,7 +11,7 @@ include "keybind.kdl"
 include "startup.kdl"
 include "alt-tab.kdl"
 include "window-rule.kdl"
-include "unravel.kdl"
+include "glide.kdl"
 
 prefer-no-csd
 

@@ -83,16 +83,4 @@ QtObject {
         try { device.trusted = false; device.forget(); } catch (e) {}
     }
 
-    // ── Legacy MAC-based API (back-compat shim) ──────────────────────
-    function _findByMac(mac) {
-        let list = deviceList;
-        for (let i = 0; i < list.length; i++) {
-            if (list[i] && list[i].address === mac) return list[i];
-        }
-        return null;
-    }
-    function connect(mac)    { connectDevice(_findByMac(mac)); }
-    function disconnect(mac) { disconnectDevice(_findByMac(mac)); }
-    function pair(mac)       { pairDevice(_findByMac(mac)); }
-    function remove(mac)     { forgetDevice(_findByMac(mac)); }
 }

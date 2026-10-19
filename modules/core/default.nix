@@ -1,6 +1,7 @@
 {
   imports = [
     ./cli-packages.nix
+    ./nvf.nix
     ./boot.nix
     ./locale.nix
     ./nix-settings.nix
@@ -8,7 +9,6 @@
     ./networking.nix
     ./users.nix
     ./testing.nix
-    ./sops.nix
     ./smb-client.nix
   ];
 }

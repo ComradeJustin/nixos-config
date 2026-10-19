@@ -8,15 +8,13 @@
       inputs.nixpkgs-nixcord.follows = "nixpkgs";
     };
 
-    spicetify-nix = {
-      url = "github:Gerg-L/spicetify-nix";
+    nvf = {
+      url = "github:NotAShelf/nvf";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    awww = {
-      # Pinned: crop_gravity merge (0a62aca) broke CacheEntry::new call sites
-      url = "git+https://codeberg.org/LGFae/awww";
-      #url = "git+https://codeberg.org/LGFae/awww?rev=efc4c492a30d7e098541ad0ca95c22287cbc26ba";
+    spicetify-nix = {
+      url = "github:Gerg-L/spicetify-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -36,6 +34,21 @@
       inputs.quickshell.follows = "quickshell";
     };
 
+    # Desktop widgets (Python/GTK). Not nixpkgs `fabric`. Must follow our
+    # nixpkgs: an older GTK/fontconfig than the system misparses font rules.
+    fabric = {
+      url = "github:Fabric-Development/fabric";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # Desktop shell (TypeScript/GTK4 on Astal). Successor to both the fabric
+    # overlay and, eventually, the quickshell bar. nixpkgs ships ags 2.x;
+    # the flake is v3 (gnim JSX, GTK4), which is what the docs describe.
+    ags = {
+      url = "github:aylur/ags";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -48,24 +61,8 @@
 
     nixos-hardware.url = "github:NixOS/nixos-hardware";
 
-
-    spotatui = {
-      url = "github:LargeModGames/spotatui";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    niri = {
-      url = "github:niri-wm/niri";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     disko = {
       url = "github:nix-community/disko";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    sops-nix = {
-      url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -81,10 +78,7 @@
       quickshell,
       qml-niri,
       nixos-hardware,
-      niri,
-      spotatui,
       disko,
-      sops-nix,
       ...
     }@inputs:
     let
@@ -103,7 +97,6 @@
         stylix.nixosModules.stylix
         home-manager.nixosModules.home-manager
         disko.nixosModules.disko
-        sops-nix.nixosModules.sops
         inputs.spicetify-nix.nixosModules.default
         {
           home-manager = {
@@ -116,12 +109,16 @@
       ];
 
       # Helper function to create a host configuration
-      mkHost = { hostModules }:
+      mkHost =
+        { hostModules }:
         nixpkgs.lib.nixosSystem {
           specialArgs = { inherit inputs; };
-          modules = sharedModules ++ hostModules ++ [
-            { nixpkgs.overlays = overlays; }
-          ];
+          modules =
+            sharedModules
+            ++ hostModules
+            ++ [
+              { nixpkgs.overlays = overlays; }
+            ];
         };
     in
     {
@@ -136,8 +133,8 @@
               modules.boot.loader = "grub-efi";
               boot.loader.grub.useOSProber = true;
               boot.loader.grub.theme = ./assets/grub-themes/sayonara;
-              modules.profiles.desktop.enable = true;
-              modules.gaming.enable = true;
+              modules.profiles.desktop.enable = false;
+              modules.gaming.enable = false;
               modules.compscijava.enable = true;
               modules.ai.enable = true;
               modules.distributed-builds.enable = true;
@@ -154,11 +151,10 @@
               modules.adguard.enable = true;
               modules.harmonia.enable = true;
               modules.samba.enable = true;
+              modules.website.enable = true;
 
-              # Always-on VNC into the running niri session (localhost only;
-              # reach via `ssh -L 5900:127.0.0.1:5900 nixpc`). Starts on DP-2;
-              # switch live with `wayvncctl output-set HDMI-A-1`.
-              modules.wayvnc.enable = true;
+              # VNC attaches to the niri session, which is off with the desktop.
+              modules.wayvnc.enable = false;
               modules.wayvnc.output = "DP-2";
 
               # Permanent server: never auto-suspend. The shared niri startup.kdl
@@ -189,7 +185,11 @@
               modules.distributed-builds.enable = true;
               modules.distributed-builds.role = "client";
               modules.distributed-builds.builders = [
-                { hostName = "nixpc"; maxJobs = 8; speedFactor = 2; }
+                {
+                  hostName = "nixpc";
+                  maxJobs = 8;
+                  speedFactor = 2;
+                }
               ];
 
               modules.smb-client.enable = true;
@@ -197,9 +197,10 @@
           ];
         };
 
-        # home-core: decommissioned — its server role (Tailscale exit node,
-        # AdGuard DNS, harmonia cache, samba) migrated to nixpc above.
-        # Host files remain under ./hosts/servers/home-core/ for reference/recovery.
+        # home-core: still running, but managed outside this flake since its
+        # always-on role (exit node, DNS, cache, samba) moved to nixpc.
+        # To manage it from here again, add a mkHost entry using
+        # ./hosts/servers/home-core/ and the server modules it needs.
       };
     };
 }

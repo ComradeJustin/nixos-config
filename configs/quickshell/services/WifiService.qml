@@ -1,7 +1,12 @@
 import Quickshell
 import Quickshell.Io
+import Quickshell.Networking
 import QtQuick
 
+// Network state via Quickshell's native NetworkManager binding.
+// Replaces the old nmcli/bash pipelines; fully event-driven. nmcli survives
+// only where the native API has no equivalent: joining hidden SSIDs and
+// listing saved-but-out-of-range connections.
 Scope {
     id: root
 
@@ -10,7 +15,7 @@ Scope {
     property string ssid: ""
     property int signal: -1
     property bool connected: false
-    property bool enabled: true
+    property bool enabled: Networking.wifiEnabled
 
     // ── Network list (for CC wifi tab) ──
     property var networks: ListModel {}
@@ -18,197 +23,272 @@ Scope {
     property bool scanning: false
 
     // ── Connection feedback ──
-    // Updates to "" while idle, "connecting", "ok", or an error message
+    // "" while idle, "connecting", "ok", or "error"
     property string lastConnectStatus: ""
     property string lastConnectSsid: ""
     signal connectFinished(string ssid, bool ok, string message)
 
     // ── Connection edge events (for hooks + notifications) ──
-    // Fired on the *transition* — not on shell startup. _wifiInitialized
-    // suppresses the very first poll so we don't notify "Connected to X"
-    // every time the shell launches with wifi already up.
+    // Fired on the *transition* — not on shell startup.
     signal wifiConnected(string ssid)
     signal wifiDisconnected(string ssid)
     property string _prevSsid: ""
     property bool _wifiInitialized: false
 
-    // Freeze flag: when true, scans/refreshes are suppressed (e.g. while
-    // a password dialog is open) so the network list doesn't reshuffle
-    // under the user's input.
+    // When true, list refreshes are suppressed (e.g. while a password
+    // dialog is open) so the network list doesn't reshuffle under input.
     property bool freezeUpdates: false
 
+    // ── Native device discovery ──
+    readonly property var wifiDevice: {
+        let devices = Networking.devices.values;
+        for (let i = 0; i < devices.length; i++)
+            if (devices[i].type === DeviceType.Wifi) return devices[i];
+        return null;
+    }
+    readonly property var wiredDevice: {
+        let devices = Networking.devices.values;
+        for (let i = 0; i < devices.length; i++)
+            if (devices[i].type === DeviceType.Wired) return devices[i];
+        return null;
+    }
+
     Component.onCompleted: {
-        statusProc.running = true;
+        refreshStatus();
+        rebuildNetworks();
         savedProc.running = true;
     }
 
-    // ── Quick status poll (bar) ──
-    Process {
-        id: statusProc
-        command: [
-            "bash", "-c",
-            "wifi_radio=$(nmcli radio wifi 2>/dev/null); " +
-            "if [ \"$wifi_radio\" = \"disabled\" ]; then " +
-            "  echo radio-off; " +
-            "elif nmcli -t -f TYPE,STATE dev 2>/dev/null | grep -q '^ethernet:connected$'; then " +
-            "  echo ethernet; " +
-            "else " +
-            "  line=$(nmcli -t -f ACTIVE,SSID,SIGNAL dev wifi 2>/dev/null | grep '^yes' | head -1); " +
-            "  ssid=$(echo \"$line\" | cut -d: -f2); " +
-            "  sig=$(echo \"$line\" | cut -d: -f3); " +
-            "  if [ -n \"$ssid\" ]; then " +
-            "    echo \"wifi:$ssid:$sig\"; " +
-            "  else " +
-            "    echo disconnected; " +
-            "  fi; " +
-            "fi"
-        ]
-        running: true
+    function activeWifiNetwork() {
+        if (!wifiDevice) return null;
+        let list = wifiDevice.networks.values;
+        for (let i = 0; i < list.length; i++)
+            if (list[i].connected) return list[i];
+        return null;
+    }
 
-        stdout: SplitParser {
-            onRead: data => {
-                if (data === "radio-off") {
-                    root.enabled = false;
-                    root.iface = "";
-                    root.connected = false;
-                    root.ssid = "";
-                    root.signal = -1;
-                } else if (data === "ethernet") {
-                    root.enabled = true;
-                    root.iface = "ethernet";
-                    root.connected = true;
-                    root.ssid = "";
-                    root.signal = -1;
-                } else if (data.indexOf("wifi:") === 0) {
-                    var parts = data.split(":");
-                    var s = parts[1] || "";
-                    root.enabled = true;
-                    if (s.length === 0) {
-                        root.iface = "";
-                        root.connected = false;
-                        root.ssid = "";
-                        root.signal = -1;
-                    } else {
-                        root.iface = "wifi";
-                        root.connected = true;
-                        root.ssid = s;
-                        root.signal = parseInt(parts[2]) || 0;
-                    }
-                } else {
-                    // "disconnected" — radio on but not joined to any network
-                    root.enabled = true;
-                    root.iface = "";
-                    root.connected = false;
-                    root.ssid = "";
-                    root.signal = -1;
-                }
+    function findBySsid(networkSsid) {
+        if (!wifiDevice) return null;
+        let list = wifiDevice.networks.values;
+        for (let i = 0; i < list.length; i++)
+            if (list[i].name === networkSsid) return list[i];
+        return null;
+    }
 
-                // ── Edge detection ──
-                // Compare against previous connection identity. Use SSID for
-                // wifi, "ethernet" for wired, "" for disconnected.
-                let nowSsid = root.connected ? (root.ssid || root.iface) : "";
-                if (!root._wifiInitialized) {
-                    root._prevSsid = nowSsid;
-                    root._wifiInitialized = true;
-                } else if (nowSsid !== root._prevSsid) {
-                    if (root._prevSsid.length > 0 && nowSsid.length === 0) {
-                        root.wifiDisconnected(root._prevSsid);
-                    } else if (nowSsid.length > 0) {
-                        // Direct switch (A → B) fires both events.
-                        if (root._prevSsid.length > 0) root.wifiDisconnected(root._prevSsid);
-                        root.wifiConnected(nowSsid);
-                        root._fireWifiNotify(nowSsid);
-                    }
-                    root._prevSsid = nowSsid;
-                }
+    // signalStrength scale is not documented; normalize either 0..1 or 0..100
+    function signalPct(network) {
+        let s = network.signalStrength;
+        return Math.round(s <= 1.0 ? s * 100 : s);
+    }
+
+    function securityLabel(sec) {
+        if (sec === WifiSecurityType.Open) return "";
+        if (sec === WifiSecurityType.Sae || sec === WifiSecurityType.Wpa3SuiteB192) return "WPA3";
+        if (sec === WifiSecurityType.Wpa2Psk || sec === WifiSecurityType.Wpa2Eap) return "WPA2";
+        if (sec === WifiSecurityType.WpaPsk || sec === WifiSecurityType.WpaEap) return "WPA";
+        if (sec === WifiSecurityType.StaticWep || sec === WifiSecurityType.DynamicWep) return "WEP";
+        if (sec === WifiSecurityType.Owe) return "OWE";
+        return "secured";
+    }
+
+    // ── Status + edge detection ──
+    function refreshStatus() {
+        if (root.wiredDevice && root.wiredDevice.connected) {
+            root.iface = "ethernet";
+            root.connected = true;
+            root.ssid = "";
+            root.signal = -1;
+        } else if (!Networking.wifiEnabled) {
+            root.iface = "";
+            root.connected = false;
+            root.ssid = "";
+            root.signal = -1;
+        } else {
+            let active = activeWifiNetwork();
+            if (active) {
+                root.iface = "wifi";
+                root.connected = true;
+                root.ssid = active.name;
+                root.signal = signalPct(active);
+            } else {
+                root.iface = "";
+                root.connected = false;
+                root.ssid = "";
+                root.signal = -1;
             }
         }
 
-        onExited: statusPoll.start()
-    }
-
-    // Built-in notification — fires on every fresh connect transition.
-    // The `x-canonical-private-synchronous` hint causes mako/dunst to replace
-    // any prior wifi notification with this one rather than stacking, so
-    // toggling the network repeatedly produces at most one visible toast.
-    // Hooks can layer extra behavior via the `wifi.connected` event.
-    //
-    // Dynamic per-fire spawn (not a declarative Process) so the argv can't
-    // get cached at instantiation time — any future edit to the label or
-    // icon takes effect on the next fire instead of requiring a full shell
-    // restart.
-    property Component _wifiNotifyRunner: Component {
-        Process {
-            property var argv: []
-            command: argv
-            running: true
-            onExited: Qt.callLater(() => destroy())
+        // Edge detection: SSID for wifi, "ethernet" for wired, "" for none.
+        let nowSsid = root.connected ? (root.ssid || root.iface) : "";
+        if (!root._wifiInitialized) {
+            root._prevSsid = nowSsid;
+            root._wifiInitialized = true;
+        } else if (nowSsid !== root._prevSsid) {
+            if (root._prevSsid.length > 0 && nowSsid.length === 0) {
+                root.wifiDisconnected(root._prevSsid);
+            } else if (nowSsid.length > 0) {
+                if (root._prevSsid.length > 0) root.wifiDisconnected(root._prevSsid);
+                root.wifiConnected(nowSsid);
+                root._fireWifiNotify(nowSsid);
+            }
+            root._prevSsid = nowSsid;
         }
     }
 
-    function _fireWifiNotify(ssid) {
-        _wifiNotifyRunner.createObject(root, {
-            argv: [
-                "notify-send",
-                "-a", "System Information",
-                "-i", "network-wireless",
-                "-h", "string:x-canonical-private-synchronous:sysinfo-wifi",
-                "-t", "4000",
-                "Wi-Fi", "Connected to " + ssid
-            ]
+    // ── Network list for the CC/settings UI ──
+    function rebuildNetworks() {
+        if (root.freezeUpdates || !root.wifiDevice) return;
+        let list = root.wifiDevice.networks.values.slice();
+        list.sort((a, b) => {
+            if (a.connected !== b.connected) return a.connected ? -1 : 1;
+            return b.signalStrength - a.signalStrength;
         });
+        root.networks.clear();
+        for (let i = 0; i < list.length; i++) {
+            let n = list[i];
+            let sec = securityLabel(n.security);
+            root.networks.append({
+                "wifiActive": n.connected,
+                "wifiSsid": n.name,
+                "wifiSignal": signalPct(n),
+                "wifiSecurity": sec,
+                "wifiSecured": sec.length > 0
+            });
+        }
     }
 
-    Timer {
-        id: statusPoll
-        interval: 10000
-        onTriggered: { if (!root.freezeUpdates) statusProc.running = true; }
+    // ── Change wiring ──
+    // .values-based bindings only refresh on add/remove, so per-network
+    // property changes are watched through an Instantiator of Connections.
+    Instantiator {
+        model: root.wifiDevice ? root.wifiDevice.networks : null
+        delegate: Connections {
+            required property var modelData
+            target: modelData
+            function onConnectedChanged() { statusDebounce.restart(); listDebounce.restart(); }
+            function onSignalStrengthChanged() { if (modelData.connected) statusDebounce.restart(); }
+            function onStateChanged() {
+                if (modelData !== root._pendingNet) return;
+                if (modelData.state === ConnectionState.Connected) {
+                    root._finishConnect(true, "Connected");
+                }
+            }
+            function onConnectionFailed() {
+                if (modelData === root._pendingNet) root._finishConnect(false, "Failed to connect");
+            }
+            function onRequestConnectWithPsk() {
+                if (modelData === root._pendingNet) root._finishConnect(false, "Password required");
+            }
+        }
     }
+    Connections {
+        target: root.wiredDevice
+        function onConnectedChanged() { statusDebounce.restart(); }
+    }
+    Connections {
+        target: Networking
+        function onWifiEnabledChanged() { statusDebounce.restart(); listDebounce.restart(); }
+    }
+    onWifiDeviceChanged: { statusDebounce.restart(); listDebounce.restart(); }
 
-    // ── Full scan (CC wifi tab) ──
+    Timer { id: statusDebounce; interval: 150; onTriggered: root.refreshStatus() }
+    Timer { id: listDebounce; interval: 300; onTriggered: root.rebuildNetworks() }
+
+    // ── Scanning ──
     function scan() {
-        if (root.freezeUpdates) return;
-        scanProc.running = true;
+        if (root.freezeUpdates || !root.wifiDevice) return;
+        root.wifiDevice.scannerEnabled = true;
+        root.scanning = true;
+        scanOffTimer.restart();
+        listDebounce.restart();
+    }
+    Timer {
+        id: scanOffTimer
+        interval: 15000
+        onTriggered: {
+            if (root.wifiDevice) root.wifiDevice.scannerEnabled = false;
+            root.scanning = false;
+            root.rebuildNetworks();
+        }
+    }
+
+    // ── Actions ──
+    property var _pendingNet: null
+
+    function connectTo(networkSsid, password) {
+        let network = findBySsid(networkSsid);
+        if (!network) {
+            root.connectFinished(networkSsid, false, "Network not found");
+            return;
+        }
+        root.lastConnectStatus = "connecting";
+        root.lastConnectSsid = networkSsid;
+        root._pendingNet = network;
+        if (password && password.length > 0) network.connectWithPsk(password);
+        else network.connect();
+    }
+
+    function _finishConnect(ok, message) {
+        let pendingSsid = root.lastConnectSsid;
+        root._pendingNet = null;
+        root.lastConnectStatus = ok ? "ok" : "error";
+        root.connectFinished(pendingSsid, ok, message);
+        if (ok) {
+            root.freezeUpdates = false;
+            root.rebuildNetworks();
+        }
+    }
+
+    function disconnect() {
+        if (root.wifiDevice) root.wifiDevice.disconnect();
+    }
+
+    function toggle() {
+        Networking.wifiEnabled = !Networking.wifiEnabled;
+    }
+
+    function forget(networkSsid) {
+        let network = findBySsid(networkSsid);
+        if (network && network.known) {
+            network.forget();
+            root.loadSaved();
+        } else {
+            // Out of range — not visible to the native API; fall back to nmcli
+            forgetProc.ssid = networkSsid;
+            forgetProc.running = true;
+        }
+    }
+
+    // ── Hidden networks (nmcli — native API can't target hidden SSIDs) ──
+    function connectHidden(networkSsid, password) {
+        root.lastConnectStatus = "connecting";
+        root.lastConnectSsid = networkSsid;
+        hiddenProc.ssid = networkSsid;
+        hiddenProc.password = password || "";
+        hiddenProc.running = true;
     }
 
     Process {
-        id: scanProc
-        // Deduplicate by SSID in awk: keep first occurrence (active or strongest signal after sort)
-        command: [
-            "bash", "-c",
-            "nmcli -t -f ACTIVE,SSID,SIGNAL,SECURITY dev wifi list --rescan auto 2>/dev/null | " +
-            "awk -F: '$2!=\"\" {printf \"%s\\t%s\\t%s\\t%s\\n\",$1,$2,$3,$4}' | " +
-            "sort -t'	' -k1,1r -k3,3nr | " +
-            "awk -F'\\t' '!seen[$2]++ {print}'"
-        ]
-        stdout: SplitParser {
-            onRead: data => {
-                var p = data.split("\t");
-                if (p.length < 4) return;
-                var isActive = p[0] === "yes";
-                root.networks.append({
-                    "wifiActive": isActive,
-                    "wifiSsid": p[1],
-                    "wifiSignal": parseInt(p[2]) || 0,
-                    "wifiSecurity": p[3] || "",
-                    "wifiSecured": (p[3] || "").length > 0 && p[3] !== "--"
-                });
-                if (isActive) {
-                    root.ssid = p[1];
-                    root.connected = true;
-                }
-            }
+        id: hiddenProc
+        property string ssid: ""
+        property string password: ""
+        property string _err: ""
+        command: ["nmcli", "-w", "20", "dev", "wifi", "connect", ssid,
+                  "password", password, "hidden", "yes"]
+        stderr: SplitParser {
+            onRead: data => { hiddenProc._err = (hiddenProc._err + " " + data).trim(); }
         }
-        onStarted: {
-            root.networks.clear();
-            root.scanning = true;
-        }
-        onExited: {
-            root.scanning = false;
+        onExited: code => {
+            let ok = (code === 0);
+            let msg = ok ? "Connected" : (hiddenProc._err || "Failed to connect");
+            hiddenProc._err = "";
+            root.lastConnectStatus = ok ? "ok" : "error";
+            root.connectFinished(hiddenProc.ssid, ok, msg);
+            if (ok) root.freezeUpdates = false;
         }
     }
 
-    // ── Saved networks (nmcli connection list, type=wifi) ──
+    // ── Saved networks (nmcli — includes out-of-range saved connections) ──
     function loadSaved() {
         if (root.freezeUpdates) return;
         savedProc.running = true;
@@ -231,92 +311,6 @@ Scope {
         onStarted: { root.savedNetworks.clear(); }
     }
 
-    // ── Actions ──
-    // Connect to a visible network. password may be "" for open networks
-    // or already-saved networks.
-    function connectTo(networkSsid, password) {
-        root.lastConnectStatus = "connecting";
-        root.lastConnectSsid = networkSsid;
-        connProc.ssid = networkSsid;
-        connProc.password = password || "";
-        connProc.hidden = false;
-        connProc.running = true;
-    }
-
-    // Connect to a hidden network (must specify both SSID and password)
-    function connectHidden(networkSsid, password) {
-        root.lastConnectStatus = "connecting";
-        root.lastConnectSsid = networkSsid;
-        connProc.ssid = networkSsid;
-        connProc.password = password || "";
-        connProc.hidden = true;
-        connProc.running = true;
-    }
-
-    function disconnect() {
-        discProc.running = true;
-        refreshAfter.start();
-    }
-
-    function forget(networkSsid) {
-        forgetProc.ssid = networkSsid;
-        forgetProc.running = true;
-    }
-
-    function toggle() {
-        root.enabled = !root.enabled;
-        toggleProc.on = root.enabled;
-        toggleProc.running = true;
-        if (!root.enabled) root.connected = false;
-        refreshAfter.start();
-    }
-
-    Process {
-        id: connProc
-        property string ssid: ""
-        property string password: ""
-        property bool hidden: false
-        property string _err: ""
-
-        // Build the nmcli command dynamically. We use `nmcli -w 20 dev wifi connect`
-        // for visible networks (works for open + secured + already-saved) and
-        // `nmcli connection add` for hidden networks since `dev wifi connect`
-        // can't target a hidden SSID reliably.
-        command: {
-            if (hidden) {
-                return [
-                    "nmcli", "-w", "20", "dev", "wifi", "connect", ssid,
-                    "password", password, "hidden", "yes"
-                ];
-            }
-            if (password.length > 0) {
-                return ["nmcli", "-w", "20", "dev", "wifi", "connect", ssid, "password", password];
-            }
-            return ["nmcli", "-w", "20", "dev", "wifi", "connect", ssid];
-        }
-
-        stdout: SplitParser {
-            onRead: data => { /* ignore stdout, exit code is what matters */ }
-        }
-        stderr: SplitParser {
-            onRead: data => { connProc._err = (connProc._err + " " + data).trim(); }
-        }
-
-        onExited: code => {
-            var ok = (code === 0);
-            var msg = ok ? "Connected" : (connProc._err || "Failed to connect");
-            connProc._err = "";
-            root.lastConnectStatus = ok ? "ok" : "error";
-            root.connectFinished(connProc.ssid, ok, msg);
-            // On success, lift the freeze and refresh
-            if (ok) {
-                root.freezeUpdates = false;
-                refreshAfter.start();
-            }
-        }
-    }
-    Process { id: discProc; command: ["nmcli", "dev", "disconnect", "wlan0"] }
-    Process { id: toggleProc; property bool on: true; command: ["nmcli", "radio", "wifi", on ? "on" : "off"] }
     Process {
         id: forgetProc
         property string ssid: ""
@@ -324,14 +318,27 @@ Scope {
         onExited: { root.loadSaved(); }
     }
 
-    Timer {
-        id: refreshAfter
-        interval: 1500
-        onTriggered: {
-            if (root.freezeUpdates) return;
-            scanProc.running = true;
-            statusProc.running = true;
-            savedProc.running = true;
+    // Built-in notification — fires on every fresh connect transition.
+    // `x-canonical-private-synchronous` makes repeat toasts replace each other.
+    property Component _wifiNotifyRunner: Component {
+        Process {
+            property var argv: []
+            command: argv
+            running: true
+            onExited: Qt.callLater(() => destroy())
         }
+    }
+
+    function _fireWifiNotify(ssid) {
+        _wifiNotifyRunner.createObject(root, {
+            argv: [
+                "notify-send",
+                "-a", "System Information",
+                "-i", "network-wireless",
+                "-h", "string:x-canonical-private-synchronous:sysinfo-wifi",
+                "-t", "4000",
+                "Wi-Fi", "Connected to " + ssid
+            ]
+        });
     }
 }

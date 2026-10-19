@@ -1,10 +1,10 @@
-{ config, inputs, lib, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 {
   options.modules.niri.enable = lib.mkEnableOption "Niri window manager and Wayland utilities";
 
   config = lib.mkIf config.modules.niri.enable {
     environment.systemPackages = with pkgs; [
-      inputs.niri.packages.${pkgs.system}.niri
+      niri
 
       wl-clipboard
       cliphist
@@ -12,7 +12,7 @@
       xwayland-satellite
       wev
 
-      inputs.awww.packages.${pkgs.stdenv.hostPlatform.system}.awww
+      awww
 
       brightnessctl
       playerctl
