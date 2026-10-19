@@ -28,8 +28,10 @@ in
         listen = [{ addr = "0.0.0.0"; port = 8443; }];
         root = portfolio;
         # Missing pages get the site's own 404 page instead of nginx's default one.
+        # "no-cache" makes browsers check for a newer copy on every visit instead of showing a stale one.
         extraConfig = ''
           error_page 404 /404.html;
+          add_header Cache-Control "no-cache";
         '';
         locations."/" = {
           index = "index.html";

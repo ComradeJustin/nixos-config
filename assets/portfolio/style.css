@@ -79,10 +79,13 @@ p {
   hyphens: auto;
 }
 
+/* The links sit below the ruled block, indented to line up with the text inside it (its padding plus the 1px rule). */
 .links {
   margin-top: 3rem;
+  padding-left: calc(1.25rem + 1px);
   font-size: 0.95rem;
   letter-spacing: 0.03em;
+  text-align: left;
 }
 
 .links a {
