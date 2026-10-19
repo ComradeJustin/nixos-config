@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Not found · Umapyoi Labs</title>
+  <!-- The 404 page: the colors flipped, and the tick ruler broken where the page should be. Paths start with / because a 404 can be shown at any depth. -->
+  <link rel="icon" href="/face.png" type="image/png">
+  <link rel="stylesheet" href="/fonts/jost.css">
+  <style>
+    :root {
+      --paper: #f6f1e7;
+      --ink: #231e19;
+      --dim: #a99e90;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0 2rem;
+      box-sizing: border-box;
+      background: var(--ink);
+      color: var(--paper);
+      font-family: "Jost", sans-serif;
+      text-align: center;
+    }
+
+    a {
+      color: var(--paper);
+    }
+
+    .label {
+      margin: 0 0 3rem;
+      color: var(--dim);
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+    }
+
+    .label a {
+      color: var(--dim);
+    }
+
+    /* The ruler: ticks on both sides, with a gap in the middle where "404" sits. */
+    .ruler {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .ticks {
+      flex: 1;
+      height: 14px;
+      background-image: repeating-linear-gradient(to right, var(--paper) 0 1px, transparent 1px 14px);
+      opacity: 0.5;
+    }
+
+    .gap {
+      color: var(--dim);
+      font-size: 0.9rem;
+      letter-spacing: 0.3em;
+    }
+
+    h1 {
+      margin: 3rem 0 0;
+      font-size: clamp(2.25rem, 6vw, 4.5rem);
+      font-weight: 500;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .home {
+      margin: 1.5rem 0 0;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+  <p class="label"><a href="/">Umapyoi Labs</a> / 404</p>
+  <div class="ruler" aria-hidden="true">
+    <div class="ticks"></div>
+    <span class="gap">404</span>
+    <div class="ticks"></div>
+  </div>
+  <h1>This page isn't here.</h1>
+  <p class="home"><a href="/">Back to the home page</a></p>
+</body>
+</html>

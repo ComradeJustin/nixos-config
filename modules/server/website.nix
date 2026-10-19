@@ -27,6 +27,10 @@ in
       virtualHosts.portfolio = {
         listen = [{ addr = "0.0.0.0"; port = 8443; }];
         root = portfolio;
+        # Missing pages get the site's own 404 page instead of nginx's default one.
+        extraConfig = ''
+          error_page 404 /404.html;
+        '';
         locations."/" = {
           index = "index.html";
           tryFiles = "$uri $uri/ =404";
