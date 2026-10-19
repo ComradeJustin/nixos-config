@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Stub project</title>
+  <title>About Nowa-tan · Umapyoi Labs</title>
   <link rel="icon" href="face.png" type="image/png">
   <link rel="stylesheet" href="fonts/jost.css">
   <link rel="stylesheet" href="project.css">
@@ -11,41 +11,40 @@
 <body>
   <header>
     <p class="label"><a href="/">Umapyoi Labs</a> / Project</p>
-    <h1>About Nowa-Tan And How She Was Made</h1>
+    <h1>About Nowa-tan and How She Was Made</h1>
   </header>
   <div class="ticks" aria-hidden="true"></div>
 
   <article>
     <section>
       <h2 class="label">What is she?</h2>
-      <p class="statement">She is an AI VTuber which utilize my own custom setup in terms of her training and behaviour.</p>
+      <p class="statement">She is an AI VTuber that utilizes my own custom setup in terms of her training and behaviour.</p>
     </section>
 
     <section>
-      <h2 class="label">So why did she exist? And what was her origin</h2>
-      <p>Originally she was made to be a discord bot meant to clone a member of a discord server for fun. At the same time, I was utilizing and testing out experimental neural-network architectures for rhythm games, namely Osu! and Quaver. I found that Quaver was kind of hard to train, so I ended deciding to do Osu!</p>
-      <p>Which is what led every to immedietly and instantly scream "THIS IS LITERALLY NEURO-SAMA", even though I didn't even have a VTuber. <sup><a href="#note-1">1</a></sup> </p>
-      <p>So I just converted her from a discord based LLM to a VTuber as per literally the whole universe yelling at me to do so, so thats why she exists now.</p>
+      <h2 class="label">So why does she exist? And what was her origin?</h2>
+      <p>Originally she was made to be a Discord bot meant to clone a member of a Discord server for fun. At the same time, I was utilizing and testing out experimental neural-network architectures for rhythm games, namely osu! and Quaver. I found that Quaver was kind of hard to train, so I ended up deciding to do osu!</p>
+      <p>This is what led everyone to immediately and instantly scream "THIS IS LITERALLY NEURO-SAMA", even though I didn't even have a VTuber.<sup><a href="#note-1">1</a></sup></p>
+      <p>So I just converted her from a Discord-based LLM to a VTuber, as per literally the whole universe yelling at me to do so. That's why she exists now.</p>
     </section>
 
     <section>
       <h2 class="label">What is the custom architecture and setup?</h2>
-      <p>Well her speaking part is an LLM, I think most people in 2026 are plenty familiar with the parts. Though, what makes her interesting is that she does actually have reasoning, and I trained her thinking and speaking to be kind of similar. So she actually sometimes think out loud which is kind of funny.  <sup><a href="#note-2">2</a></sup></p>
-      <p>In terms of her architecture, shes just an transformer. But what I would instead like to highlight the focus on is the Osu module. Where it is decently cool and novel, rather then using transformers and just scaling up the model and data, I actually implement interesting concepts in her Osu module. Specifically, I use a closed-form continuous-time neural network, and train the vision using JEPA. Which in simple terms is she approximates more realistic neural dynamics, and she actually learns without memorizing pixel by pixel but rather abstractions/concepts of whats happening on the screen (JEPA). </p>
-  <p>Her LLM module also uses a custom training setup, I do a custom two step process. Where I first bake her understanding of how to actually talk to twitch chat and multiple users (LLMs are typically built to respond to one user at a time), how to actually control her intergrations etc. The cool part is that she can actually skip turns purposely, so she can actually choose to ignore you.  </p>
-      <p>Then the second stage trains her how to actually think like herself, and speak like her self, this is where she gains her personality and behaviour. And where her actual data lies, since stage 1 is just a bunch of administrative and code BS. <sup><a href="#note-3">1</a></sup</p>
+      <p>Well, her speaking part is an LLM, and I think most people in 2026 are plenty familiar with that part. What makes her interesting, though, is that she actually has reasoning, and I trained her thinking and speaking to be kind of similar. So she sometimes thinks out loud, which is kind of funny.<sup><a href="#note-2">2</a></sup></p>
+      <p>In terms of her architecture, she's just a transformer. What I would rather highlight is her osu! module.</p>
+      <p>That module is decently cool and novel: rather than using transformers and just scaling up the model and data, I actually implement interesting concepts in it. Specifically, I use a closed-form continuous-time neural network, and I train the vision using JEPA. In simple terms, she approximates more realistic neural dynamics, and she learns abstractions and concepts of what's happening on the screen instead of memorizing it pixel by pixel (that's the JEPA part).</p>
+      <p>Her LLM module also uses a custom training setup, a two-step process. First, I bake in her understanding of how to actually talk to Twitch chat and multiple users (LLMs are typically built to respond to one user at a time), how to control her integrations, etc. The cool part is that she can skip turns on purpose, so she can actually choose to ignore you.</p>
+      <p>The second stage then trains her to actually think and speak like herself. This is where she gains her personality and behaviour, and where her actual data lies, since stage 1 is just a bunch of administrative and code BS.<sup><a href="#note-3">3</a></sup></p>
     </section>
   </article>
-
-  <p class="closing"></p>
 
   <article>
     <section class="notes">
       <h2 class="label">Notes</h2>
       <ol>
-        <li id="note-1">I don't really intend to copy neuro 1 to 1. But I indeed a big fan of neuro and Vedal's work and they are a huge inspiration!</li>
-        <li id="note-2">Well really somewhat of a bug, since LLM's actually have their own specific thinking blocks to reason without the viewer seeing it, but for some reason she loves to think out loud regardless.</li>
-         <li id="note-3">All of these are a LARGE oversimplification, but I think it gets the gist across.</li>
+        <li id="note-1">I don't really intend to copy Neuro 1:1, but I am indeed a big fan of Neuro and Vedal's work, and they are a huge inspiration!</li>
+        <li id="note-2">Really, it's somewhat of a bug, since LLMs actually have their own thinking blocks to reason without the viewer seeing it, but for some reason she loves to think out loud regardless.</li>
+        <li id="note-3">All of this is a LARGE oversimplification, but I think it gets the gist across.</li>
       </ol>
     </section>
   </article>

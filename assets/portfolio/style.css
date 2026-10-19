@@ -74,6 +74,9 @@ h2:first-child {
 p {
   margin: 0.35rem 0 0;
   color: var(--muted);
+  /* Long words that hit the end of a line break with a hyphen. Needs lang="en" on the page; Safari still wants the prefix. */
+  -webkit-hyphens: auto;
+  hyphens: auto;
 }
 
 .links {

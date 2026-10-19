@@ -16,7 +16,7 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: "Jost", sans-serif;
-  font-size: 1.25rem;
+  font-size: 1.375rem;
   line-height: 1.45;
 }
 
@@ -65,9 +65,9 @@ h1 {
   line-height: 0.85;
 }
 
-/* Tick marks under the title, as wide as the text column. */
+/* Tick marks under the title, as wide as the text column. 42rem keeps 22px reading lines to roughly 65 characters. */
 .ticks {
-  max-width: 50rem;
+  max-width: 42rem;
   height: 10px;
   margin: 4rem auto 0;
   background-image: repeating-linear-gradient(
@@ -79,7 +79,7 @@ h1 {
 }
 
 article {
-  max-width: 50rem;
+  max-width: 42rem;
   margin: 0 auto;
 }
 
@@ -94,6 +94,13 @@ section > .label {
   margin-bottom: 2.5rem;
 }
 
+/* Long words that hit the end of a line break with a hyphen instead of leaving a ragged gap. Needs lang="en" on the page; Safari still wants the prefix. */
+p,
+li {
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
+
 p {
   margin: 1rem 0 0;
 }
@@ -104,7 +111,7 @@ section > .label + p {
 
 /* The opening statement: larger and heavier than the body text. */
 .statement {
-  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-size: clamp(1.65rem, 3.3vw, 2.2rem);
   font-weight: 500;
   letter-spacing: -0.01em;
   line-height: 1.2;
@@ -128,13 +135,16 @@ sup a {
   letter-spacing: -0.035em;
   line-height: 0.9;
   text-align: center;
+  /* Display type reads badly split, so the closing line wraps on whole words only. */
+  -webkit-hyphens: manual;
+  hyphens: manual;
 }
 
 /* Notes: the footnotes collected at the end, in a section of their own. */
 .notes ol {
   margin: 0;
   padding-left: 1.25rem;
-  font-size: 1rem;
+  font-size: 1.1rem;
   line-height: 1.4;
 }
 
@@ -143,7 +153,7 @@ sup a {
 }
 
 footer {
-  max-width: 50rem;
+  max-width: 42rem;
   margin: 4rem auto 0;
   padding: 0 0 4rem;
 }
