@@ -110,6 +110,10 @@ in
       source = link "${config.home.homeDirectory}/nixos-config/configs/niri";
       recursive = true;
     };
+    "driftwm" = {
+      source = link "${config.home.homeDirectory}/nixos-config/configs/driftwm";
+      recursive = true;
+    };
     "quickshell" = {
       source = link "${config.home.homeDirectory}/nixos-config/configs/quickshell";
       recursive = true;

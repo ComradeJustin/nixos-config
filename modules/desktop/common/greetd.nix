@@ -24,7 +24,9 @@
       enable = true;
       settings = {
         default_session = {
-          command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd niri-session";
+          # niri-session stays the command tuigreet runs. --sessions is where
+          # driftwm's desktop file lands, so it can be selected at login.
+          command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd niri-session --sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions";
           user = "greeter";
         };
       };
