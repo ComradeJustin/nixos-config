@@ -53,8 +53,9 @@ in
     # itself (EDITOR and the desktop ones); nothing else does.
     loadSessionVariables = true;
     shellAliases = {
-      ctf = "nix-shell ${repository}/shells/ctf.nix";
-      rust = "nix-shell ${repository}/shells/rust.nix";
+      ctf = "nix develop ${repository}#ctf";
+      rust = "nix develop ${repository}#rust";
+      cuda = "nix develop ${repository}#cuda";
       rebuild = "${repository}/scripts/rebuild.sh";
       update = "${repository}/scripts/update.sh";
       wake = "${repository}/scripts/wake.sh";

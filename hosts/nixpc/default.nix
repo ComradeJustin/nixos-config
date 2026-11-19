@@ -34,6 +34,14 @@ in
   };
   boot.loader.efi.canTouchEfiVariables = true;
 
+  # --- CUDA ---
+  # The system itself is not built with CUDA. GPU work happens in the cuda dev
+  # shell (shells/cuda.nix), and this cache has those packages prebuilt.
+  nix.settings.substituters = [ "https://cache.nixos-cuda.org" ];
+  nix.settings.trusted-public-keys = [
+    "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M="
+  ];
+
   # --- LAN ---
   networking.interfaces.${lanInterface}.wakeOnLan.enable = true;
 

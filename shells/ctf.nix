@@ -1,10 +1,13 @@
-{ pkgs ? import <nixpkgs> {} }:
+# Binary exploitation tools in a zsh session. Enter with: nix develop ~/nixos-config#ctf
+{ pkgs }:
 pkgs.mkShell {
   packages = with pkgs; [
-    (python3.withPackages (ps: with ps; [
-      pwntools
-      ropper
-    ]))
+    (python3.withPackages (
+      ps: with ps; [
+        pwntools
+        ropper
+      ]
+    ))
     gdb
     checksec
     file
