@@ -12,13 +12,18 @@ Multi-machine NixOS configuration with shared binary cache and distributed build
 ## Layout
 
 ```
-flake.nix          inputs and the two hosts
-hosts/<name>/      default.nix imports every module that machine uses
-modules/base.nix   what every machine gets (Nix settings, user, SSH, CLI tools)
-modules/desktop/   the graphical desktop (niri, shell widgets, audio, theme)
-modules/server/    services nixpc runs (AdGuard, Harmonia, Samba, website)
-home/base.nix      Home Manager for every machine (shell, git, prompt)
-home/desktop.nix   Home Manager for desktop machines (GUI apps and their config)
+flake.nix            inputs, the two hosts and the dev shells
+hosts/<name>/        default.nix imports every module that machine uses;
+                     the other files are that machine's own hardware
+modules/base.nix     what every machine gets (Nix settings, user, SSH, CLI tools)
+modules/editor.nix   Neovim (nvf)
+modules/tailscale.nix
+modules/desktop/     the graphical desktop, one file per part (niri, audio, theme...)
+modules/server/      services nixpc runs, one file each (AdGuard, Harmonia, Samba, website)
+home/base.nix        Home Manager for every machine (shell, git, prompt)
+home/desktop/        Home Manager for desktop machines: apps.nix lists GUI apps,
+                     and each configured program has its own file
+shells/              dev shells
 ```
 
 Importing a module turns it on; there are no enable flags. To see what a machine runs, read its `hosts/<name>/default.nix`.
@@ -26,7 +31,8 @@ Importing a module turns it on; there are no enable flags. To see what a machine
 Where to add a program:
 
 - every machine: `environment.systemPackages` in `modules/base.nix`
-- a GUI app: `home.packages` in `home/desktop.nix`
+- a GUI app: `home.packages` in `home/desktop/apps.nix`
+- a GUI app that needs settings: a new file in `home/desktop/`, added to the imports in `home/desktop/default.nix`
 - one machine only: that host's `default.nix`
 
 ## Scripts

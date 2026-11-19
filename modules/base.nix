@@ -2,7 +2,8 @@
 # networking, command-line tools, and the base Home Manager profile.
 #
 # Add a program here only if every machine should have it. GUI apps go in
-# home/desktop.nix; things for a single machine go in that host's default.nix.
+# home/desktop/apps.nix; things for a single machine go in that host's
+# default.nix.
 { inputs, pkgs, ... }:
 {
   imports = [ inputs.home-manager.nixosModules.home-manager ];

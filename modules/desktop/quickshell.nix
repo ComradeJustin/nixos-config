@@ -1,5 +1,5 @@
 # QuickShell status bar, widgets and lock screen. Its QML config lives in
-# configs/quickshell and is linked into place by home/desktop.nix.
+# configs/quickshell and is linked into place by home/desktop/default.nix.
 { inputs, pkgs, ... }:
 {
   # Also used by the shell: wl-clipboard, cliphist, brightnessctl and
@@ -18,6 +18,6 @@
   services.upower.enable = true;
 
   # PAM service for lock screen authentication.
-  # modules/fingerprint.nix adds fingerprint unlock to it.
+  # hosts/nixlaptop/fingerprint.nix adds fingerprint unlock to it.
   security.pam.services.quickshell-bar = { };
 }

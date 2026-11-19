@@ -3,17 +3,19 @@
 { inputs, pkgs, ... }:
 {
   imports = [
+    # This machine's hardware
     ./hardware-configuration.nix
-    ./ethernet.nix
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-t14-intel-gen1
+    ./ethernet.nix
+    ./power.nix
+    ./fingerprint.nix
+    ./bluetooth.nix
 
+    # Shared modules
     ../../modules/base.nix
     ../../modules/editor.nix
     ../../modules/tailscale.nix
     ../../modules/desktop
-    ../../modules/laptop.nix
-    ../../modules/fingerprint.nix
-    ../../modules/bluetooth.nix
   ];
 
   networking.hostName = "nixlaptop";
@@ -21,6 +23,12 @@
   boot.loader.limine.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelPackages = pkgs.linuxPackages_latest;
+
+  # Keep /tmp in memory.
+  boot.tmp = {
+    useTmpfs = true;
+    tmpfsSize = "60%";
+  };
 
   # The Intel GPU's OpenCL runtime needs a patch to build with GCC 16.
   nixpkgs.overlays = [ (import ../../overlays/intel-compute-runtime-legacy1-gcc16.nix) ];

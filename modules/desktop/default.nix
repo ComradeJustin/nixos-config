@@ -16,8 +16,8 @@
     ./programs.nix
   ];
 
-  # Desktop machines also get home/desktop.nix (GUI apps and their config).
-  home-manager.users.justin.imports = [ ../../home/desktop.nix ];
+  # Desktop machines also get home/desktop (GUI apps and their config).
+  home-manager.users.justin.imports = [ ../../home/desktop ];
 
   # btop's stock icon uses SVG features the Qt-based shell cannot render.
   nixpkgs.overlays = [ (import ../../overlays/btop-icon-fix.nix) ];

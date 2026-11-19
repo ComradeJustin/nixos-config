@@ -1,5 +1,5 @@
 # Home Manager profile for every machine: shell, prompt, git and the
-# command-line helpers. Nothing graphical — that is home/desktop.nix.
+# command-line helpers. Nothing graphical — that is home/desktop.
 {
   config,
   lib,
