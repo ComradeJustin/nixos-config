@@ -16,10 +16,12 @@ if [[ -z "$HOST" ]]; then
     exit 1
 fi
 
-# Pull latest config if the working tree is clean
+# Pull latest config if the working tree is clean. --ff-only never rewrites
+# local commits: if the branches have diverged it fails and leaves the
+# checkout as it was.
 if git -C "$FLAKE_DIR" diff --quiet && git -C "$FLAKE_DIR" diff --cached --quiet; then
-    git -C "$FLAKE_DIR" pull --rebase --quiet 2>/dev/null \
-        || echo "git pull failed (offline?) — building current checkout"
+    git -C "$FLAKE_DIR" pull --ff-only --quiet \
+        || echo "git pull failed (see the error above) — building current checkout"
 else
     echo "Working tree is dirty — skipping git pull"
 fi
@@ -39,13 +41,13 @@ else
     echo "Building ${HOST} locally..."
     nh os switch "$FLAKE_DIR" -H "$HOST" --ask "${EXTRA_ARGS[@]}"
 
-    # Push the new system to the harmonia cache so other machines can substitute it
-    CACHE_KEY="/var/lib/harmonia-cache-key.pem"
-    if [[ -f "$CACHE_KEY" ]] && timeout 5 ssh -o ConnectTimeout=3 -o BatchMode=yes justin@nixpc true 2>/dev/null; then
+    # Push the new system to nixpc's store so other machines can substitute it.
+    # Harmonia signs paths as it serves them, so nothing is signed here.
+    # /etc/nix/machines only exists on build clients, so nixpc skips this.
+    if [[ -s /etc/nix/machines ]] && timeout 5 ssh -o ConnectTimeout=3 -o BatchMode=yes justin@nixpc true 2>/dev/null; then
         SYSTEM_PATH="$(readlink -f /run/current-system)"
-        echo "Signing and pushing build to harmonia cache..."
-        nix store sign --key-file "$CACHE_KEY" --recursive "$SYSTEM_PATH"
-        nix copy --to ssh-ng://justin@nixpc "$SYSTEM_PATH" \
+        echo "Pushing build to the nixpc cache..."
+        nix copy --no-check-sigs --to ssh-ng://justin@nixpc "$SYSTEM_PATH" \
             || echo "Cache push failed (non-fatal)"
     fi
 fi

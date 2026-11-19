@@ -5,7 +5,9 @@
     nixcord = {
       url = "github:FlameFlag/nixcord";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.nixpkgs-nixcord.follows = "nixpkgs";
+      inputs.nixpkgs-packages.follows = "nixpkgs";
+      inputs.nixpkgs-ci.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
     };
 
     nvf = {
@@ -59,7 +61,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nixos-hardware.url = "github:NixOS/nixos-hardware";
+    nixos-hardware = {
+      url = "github:NixOS/nixos-hardware";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   # One directory per machine under hosts/. Each host's default.nix imports

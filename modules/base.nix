@@ -76,11 +76,6 @@
       PermitRootLogin = "no";
       PasswordAuthentication = false;
     };
-    extraConfig = ''
-      # Allow root key-only login from LAN for emergency recovery
-      Match User root Address 192.168.1.0/24
-          PermitRootLogin prohibit-password
-    '';
   };
 
   services.fail2ban.enable = true;
@@ -103,11 +98,6 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHn/YMVvbeDt0NLp8tLhFc0cykp/Dq2huuhfUagVrIev chinese2000ping@gmail.com"
     ];
   };
-
-  # Root has no password — use sudo, or the recovery key below over SSH.
-  users.users.root.openssh.authorizedKeys.keys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICiBr6+h5wioJw5BYXefcyX2w2Ytw3EfAayCeGsBaLQC root-recovery"
-  ];
 
   # --- Home Manager: every machine gets home/base.nix ---
   home-manager = {

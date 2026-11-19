@@ -49,6 +49,9 @@ in
 
   programs.nushell = {
     enable = true;
+    # nushell is the login shell, so it has to load home.sessionVariables
+    # itself (EDITOR and the desktop ones); nothing else does.
+    loadSessionVariables = true;
     shellAliases = {
       ctf = "nix-shell ${repository}/shells/ctf.nix";
       rust = "nix-shell ${repository}/shells/rust.nix";
@@ -72,11 +75,6 @@ in
             max_results: 100
           }
         }
-      }
-
-      # Sync harmonia cache key from server
-      def fetch-cache-key [] {
-        ssh root@nixpc 'cat /var/lib/harmonia/cache-key.pem' | sudo tee /var/lib/harmonia-cache-key.pem | ignore; sudo chmod 600 /var/lib/harmonia-cache-key.pem; echo 'Cache key synced.'
       }
 
       source ${atuinNushellConfig}

@@ -1,15 +1,16 @@
-# AdGuard Home: DNS ad blocking for the LAN and the tailnet.
+# AdGuard Home: DNS ad blocking for the LAN and the tailnet. The host opens
+# port 53 on its LAN interface (see hosts/nixpc/default.nix).
 { ... }:
 {
   services.adguardhome = {
     enable = true;
-    openFirewall = false; # reachable via trusted interfaces only
+    openFirewall = false;
     mutableSettings = false;
-    port = 3080;
-    host = "0.0.0.0";
     settings = {
+      # The admin page has no login, so it listens on this machine only.
+      # To open it: ssh -L 3080:127.0.0.1:3080 nixpc, then http://localhost:3080
       http = {
-        address = "0.0.0.0:3080";
+        address = "127.0.0.1:3080";
       };
       dns = {
         bind_hosts = [ "0.0.0.0" ];
@@ -46,7 +47,4 @@
       ];
     };
   };
-
-  # DNS must be globally open for LAN clients
-  networking.firewall.allowedUDPPorts = [ 53 ];
 }
