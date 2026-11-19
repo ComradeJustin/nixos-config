@@ -18,7 +18,7 @@ let
       pkgs.libadwaita
     ];
   };
-  # Same live-edit path as the fabric overlay and the QML shell. Rebuild only
+  # Same live-edit path as the QML shell. Rebuild only
   # when the AGS package itself changes.
   configDir = "/home/justin/nixos-config/configs/ags";
   ags-shell = pkgs.writeShellScriptBin "ags-shell" ''

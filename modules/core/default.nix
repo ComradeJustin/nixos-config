@@ -8,7 +8,6 @@
     ./security.nix
     ./networking.nix
     ./users.nix
-    ./testing.nix
     ./smb-client.nix
   ];
 }
