@@ -71,7 +71,28 @@
   # every module that machine uses, so it is the full list of what it runs.
   outputs =
     { nixpkgs, ... }@inputs:
+    let
+      system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
+      # The same nixpkgs with every package built against CUDA. Only the cuda
+      # dev shell uses it; the systems themselves stay on the normal builds.
+      cudaPkgs = import nixpkgs {
+        inherit system;
+        config = {
+          allowUnfree = true;
+          cudaSupport = true;
+        };
+      };
+    in
     {
+      # Development environments, pinned by this flake's lock file.
+      # Enter one with: nix develop ~/nixos-config#<name>
+      devShells.${system} = {
+        ctf = import ./shells/ctf.nix { inherit pkgs; };
+        rust = import ./shells/rust.nix { inherit pkgs; };
+        cuda = import ./shells/cuda.nix { pkgs = cudaPkgs; };
+      };
+
       nixosConfigurations = {
         nixpc = nixpkgs.lib.nixosSystem {
           specialArgs = { inherit inputs; };

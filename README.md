@@ -42,6 +42,12 @@ Pass just the hostname to rebuild the machine you're on. Pass `user@ip` to build
 
 Shell aliases after rebuild: `rebuild`, `update`, `wake`, `infra-status`.
 
+## Dev shells
+
+`ctf`, `rust` and `cuda` open development environments defined in `shells/` (the aliases run `nix develop ~/nixos-config#<name>`). They use this flake's lock file, so they get the same package versions as the systems.
+
+The `cuda` shell is for nixpc. Its packages are the CUDA builds from `cache.nixos-cuda.org`, so nothing is compiled locally. To add a CUDA program, add it to `shells/cuda.nix`.
+
 ## Binary Cache (Harmonia)
 
 nixpc runs [Harmonia](https://github.com/nix-community/harmonia) on port 5000, serving signed store paths to the tailnet.
