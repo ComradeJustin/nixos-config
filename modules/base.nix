@@ -125,7 +125,6 @@
     tmux
 
     # Core tools
-    neovim
     wget
     curl
     git

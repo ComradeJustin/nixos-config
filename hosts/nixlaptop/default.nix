@@ -8,7 +8,7 @@
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-t14-intel-gen1
 
     ../../modules/base.nix
-    ../../modules/nvf.nix
+    ../../modules/editor.nix
     ../../modules/tailscale.nix
     ../../modules/desktop
     ../../modules/laptop.nix
