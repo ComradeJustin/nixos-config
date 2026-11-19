@@ -1,5 +1,5 @@
 # Desktop programs that need system integration (drivers, groups, wrappers).
-# Plain GUI apps do not belong here: add those to home/desktop.nix.
+# Plain GUI apps do not belong here: add those to home/desktop/apps.nix.
 { pkgs, ... }:
 {
   programs.firefox.enable = true;

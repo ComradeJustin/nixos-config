@@ -1,31 +1,9 @@
 # Home Manager profile for every machine: shell, prompt, git and the
-# command-line helpers. Nothing graphical — that is home/desktop.nix.
-{
-  config,
-  lib,
-  pkgs,
-  osConfig,
-  ...
-}:
+# command-line helpers. Nothing graphical — that is home/desktop.
+{ osConfig, ... }:
 let
   # Where this repository is checked out (set once in modules/base.nix).
   repository = osConfig.programs.nh.flake;
-
-  # atuin 18.19 names both its nushell keybindings "atuin", which nushell now
-  # warns about at every startup. Upstream renamed the up-arrow one to
-  # atuin_up_arrow (atuin PR #3975, in 18.21); this applies the same rename to
-  # the generated init until nixpkgs ships 18.21, replacing the home-manager
-  # atuin nushell integration (same generation, plus the rename).
-  atuinNushellConfig =
-    pkgs.runCommand "atuin-nushell-config.nu"
-      {
-        nativeBuildInputs = [ pkgs.writableTmpDirAsHomeHook ];
-      }
-      ''
-        ${lib.getExe config.programs.atuin.package} init nu \
-          | awk '/name: atuin$/ { count++; if (count == 2) sub(/name: atuin$/, "name: atuin_up_arrow") } { print }' \
-          > "$out"
-      '';
 in
 {
   home.username = "justin";
@@ -77,8 +55,6 @@ in
           }
         }
       }
-
-      source ${atuinNushellConfig}
     '';
   };
 
@@ -88,11 +64,7 @@ in
     nix-direnv.enable = true;
   };
 
-  programs.atuin = {
-    enable = true;
-    # Replaced by atuinNushellConfig above (see the keybinding-name note).
-    enableNushellIntegration = false;
-  };
+  programs.atuin.enable = true;
 
   programs.carapace.enable = true;
   programs.carapace.enableNushellIntegration = true;

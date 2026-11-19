@@ -10,12 +10,14 @@ let
 in
 {
   imports = [
+    # This machine's hardware
     ./hardware-configuration.nix
     ./filesystems.nix
     ./gpu.nix
 
+    # Shared modules
     ../../modules/base.nix
-    ../../modules/nvf.nix
+    ../../modules/editor.nix
     ../../modules/tailscale.nix
     ../../modules/server/adguard.nix
     ../../modules/server/harmonia.nix

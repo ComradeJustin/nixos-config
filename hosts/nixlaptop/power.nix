@@ -1,11 +1,6 @@
-# Laptop power management (TLP) and an in-memory /tmp.
+# Power management with TLP, tuned for the T14.
 { lib, ... }:
 {
-  boot.tmp = {
-    useTmpfs = true;
-    tmpfsSize = "60%";
-  };
-
   powerManagement.enable = true;
   # thermald refuses to run on the T14: its DYTC firmware
   # (thinkpad_acpi dytc_lapmode) does thermal management itself, and newer

@@ -44,13 +44,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Trackpad-first infinite canvas compositor, installed beside niri so it
-    # can be picked at the greeter.
-    driftwm = {
-      url = "github:malbiruk/driftwm";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";

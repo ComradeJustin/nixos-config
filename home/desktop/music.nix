@@ -1,5 +1,5 @@
-# mpd music player with the ncmpcpp and rmpc clients. Desktop only: rmpc is
-# themed from the Stylix palette.
+# mpd music player with the ncmpcpp and rmpc clients. rmpc is themed from
+# the Stylix palette.
 { config, pkgs, ... }:
 let
   # Read base16 colours from Stylix for rmpc theming
