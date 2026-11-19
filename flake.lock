@@ -110,26 +110,6 @@
         "type": "github"
       }
     },
-    "driftwm": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1793017488,
-        "narHash": "sha256-EaPeb7q9bjld+jy7XiCY9n7op1oIQJsHDgbloFQU+xM=",
-        "owner": "malbiruk",
-        "repo": "driftwm",
-        "rev": "eefddaf4966be1aac37f5cfa35c37d54700e29da",
-        "type": "github"
-      },
-      "original": {
-        "owner": "malbiruk",
-        "repo": "driftwm",
-        "type": "github"
-      }
-    },
     "firefox-gnome-theme": {
       "flake": false,
       "locked": {
@@ -508,7 +488,6 @@
     "root": {
       "inputs": {
         "ags": "ags",
-        "driftwm": "driftwm",
         "home-manager": "home-manager",
         "lobster": "lobster",
         "nixcord": "nixcord",

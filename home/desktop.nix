@@ -63,10 +63,6 @@ in
       source = link "${repository}/configs/niri";
       recursive = true;
     };
-    "driftwm" = {
-      source = link "${repository}/configs/driftwm";
-      recursive = true;
-    };
     "quickshell" = {
       source = link "${repository}/configs/quickshell";
       recursive = true;

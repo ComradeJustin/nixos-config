@@ -1,5 +1,5 @@
-# Login screen: greetd with tuigreet, starting niri by default.
-{ config, pkgs, ... }:
+# Login screen: greetd with tuigreet, which starts niri.
+{ pkgs, ... }:
 {
   services.xserver = {
     enable = true;
@@ -11,9 +11,7 @@
     enable = true;
     settings = {
       default_session = {
-        # niri-session stays the command tuigreet runs. --sessions is where
-        # driftwm's desktop file lands, so it can be selected at login.
-        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd niri-session --sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions";
+        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd niri-session";
         user = "greeter";
       };
     };
