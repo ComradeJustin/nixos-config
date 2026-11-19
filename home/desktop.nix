@@ -83,13 +83,13 @@ in
   programs.rofi = {
     enable = true;
     package = pkgs.rofi;
-    modes = [
-      "drun"
-      "run"
-      "window"
-      "ssh"
-    ];
-    extraConfig = {
+    settings = {
+      modes = [
+        "drun"
+        "run"
+        "window"
+        "ssh"
+      ];
       show-icons = true;
     };
   };
@@ -126,16 +126,4 @@ in
   ];
 
   services.gnome-keyring.enable = true;
-
-  services.cliphist = {
-    enable = true;
-    systemdTargets = [ "config.wayland.systemd.target" ];
-    extraOptions = [
-      "-max-dedupe-search"
-      "10"
-      "-max-items"
-      "500"
-    ];
-    allowImages = true;
-  };
 }

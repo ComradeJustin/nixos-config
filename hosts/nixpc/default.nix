@@ -4,6 +4,9 @@
 { ... }:
 let
   lanInterface = "enp4s0";
+  lanSubnet = "192.168.1.0/24";
+  # Tailscale's address ranges (IPv4 and IPv6).
+  tailnetSubnets = "100.64.0.0/10 fd7a:115c:a1e0::/48";
 in
 {
   imports = [
@@ -34,9 +37,36 @@ in
   # --- LAN ---
   networking.interfaces.${lanInterface}.wakeOnLan.enable = true;
 
-  # The LAN gets full access to every port, like the tailnet does. Only
-  # globally opened ports are reachable from the WAN if port-forwarded.
-  networking.firewall.trustedInterfaces = [ lanInterface ];
+  # The LAN reaches only DNS and the file shares (SSH is open everywhere,
+  # see modules/base.nix). The binary cache and everything else are
+  # tailnet-only.
+  networking.firewall.interfaces.${lanInterface} = {
+    allowedTCPPorts = [
+      53 # DNS (AdGuard)
+      445 # Samba
+      5357 # Windows network discovery (wsdd)
+    ];
+    allowedUDPPorts = [
+      53 # DNS (AdGuard)
+      3702 # Windows network discovery (wsdd)
+    ];
+  };
+
+  # Samba answers only the LAN, the tailnet and this machine itself.
+  services.samba.settings.global = {
+    "hosts allow" = "${lanSubnet} ${tailnetSubnets} 127.0.0.1 ::1";
+    "hosts deny" = "ALL";
+  };
+
+  # Emergency recovery: root may log in over SSH from the LAN, with this key
+  # only. Root has no password.
+  services.openssh.extraConfig = ''
+    Match User root Address ${lanSubnet}
+        PermitRootLogin prohibit-password
+  '';
+  users.users.root.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICiBr6+h5wioJw5BYXefcyX2w2Ytw3EfAayCeGsBaLQC root-recovery"
+  ];
 
   # --- Tailscale exit node: forward traffic and advertise the role ---
   boot.kernel.sysctl = {

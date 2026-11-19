@@ -1,5 +1,6 @@
 # Samba file server: one shared folder plus a personal folder per user.
-# Not opened in the firewall; reachable via trusted interfaces only.
+# The host decides who can reach it: it opens the firewall port and sets
+# "hosts allow" (see hosts/nixpc/default.nix).
 { config, lib, ... }:
 let
   # Root directory for the shared share
@@ -100,10 +101,6 @@ in
         "min receivefile size" = 16384;
         "aio read size" = 16384;
         "aio write size" = 16384;
-
-        # Limit to LAN and Tailscale
-        "hosts allow" = "192.168.1.0/24 100.64.0.0/10 127.0.0.1";
-        "hosts deny" = "0.0.0.0/0";
       };
     }
     // sharedShare

@@ -117,10 +117,7 @@ in
   };
 
   # MPRIS bridge — exposes mpd to QuickShell media controls
-  services.mpdris2 = {
-    enable = true;
-    notifications = false;
-  };
+  services.mpdris2.enable = true;
 
   # rmpc — TUI mpd client with album art
   home.packages = [

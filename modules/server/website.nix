@@ -1,4 +1,5 @@
-# Public website on port 8443, also published by a Cloudflare Tunnel.
+# Public website, published by a Cloudflare Tunnel. nginx listens on
+# 127.0.0.1:8443 only; the tunnel is the one way in.
 # The tunnel token is not in this repo. After creating the tunnel, install it on
 # the host at /var/lib/cloudflared/token (mode 600). The dashboard hostname
 # should point at http://localhost:8443.
@@ -23,7 +24,7 @@ in
     virtualHosts.portfolio = {
       listen = [
         {
-          addr = "0.0.0.0";
+          addr = "127.0.0.1";
           port = 8443;
         }
       ];
