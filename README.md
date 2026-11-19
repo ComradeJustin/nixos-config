@@ -6,8 +6,28 @@ Multi-machine NixOS configuration with shared binary cache and distributed build
 
 | Host | Role | Location |
 |------|------|----------|
-| **nixpc** | Desktop, server (binary cache, AdGuard DNS, exit node, samba), remote builder | Always-on |
+| **nixpc** | Headless server (binary cache, AdGuard DNS, exit node, samba, website), remote builder | Always-on |
 | **nixlaptop** | Desktop, build client | Local network |
+
+## Layout
+
+```
+flake.nix          inputs and the two hosts
+hosts/<name>/      default.nix imports every module that machine uses
+modules/base.nix   what every machine gets (Nix settings, user, SSH, CLI tools)
+modules/desktop/   the graphical desktop (niri, shell widgets, audio, theme)
+modules/server/    services nixpc runs (AdGuard, Harmonia, Samba, website)
+home/base.nix      Home Manager for every machine (shell, git, prompt)
+home/desktop.nix   Home Manager for desktop machines (GUI apps and their config)
+```
+
+Importing a module turns it on; there are no enable flags. To see what a machine runs, read its `hosts/<name>/default.nix`.
+
+Where to add a program:
+
+- every machine: `environment.systemPackages` in `modules/base.nix`
+- a GUI app: `home.packages` in `home/desktop.nix`
+- one machine only: that host's `default.nix`
 
 ## Scripts
 
@@ -29,17 +49,14 @@ nixpc runs [Harmonia](https://github.com/nix-community/harmonia) on port 5000, s
 ### How it works
 
 1. **nixpc** generates a signing keypair on first boot (`/var/lib/harmonia/cache-key.pem`)
-2. Machines with `modules.nix-settings.harmonia = true` add `http://nixpc:5000` as a substituter
+2. Client machines add `http://nixpc:5000` as a substituter (see `hosts/nixlaptop/default.nix`)
 3. To push builds to the cache, a machine needs the signing key — run the `fetch-cache-key`
    shell function once to copy it from nixpc to `/var/lib/harmonia-cache-key.pem`
 4. After each local rebuild, `rebuild.sh` signs the result and pushes it to nixpc's store
 
 ### Adding a new machine to the cache
 
-In the host's flake config:
-```nix
-modules.nix-settings.harmonia = true;
-```
+Copy the `nix.settings.substituters` and `trusted-public-keys` lines from `hosts/nixlaptop/default.nix` into the new host's `default.nix`.
 
 Then run `fetch-cache-key` on the machine once it has joined the Tailnet, so its builds can be signed and pushed.
 
@@ -63,11 +80,4 @@ ssh root@nixpc 'cat /var/lib/harmonia/cache-key.pub'
 
 nixpc acts as a remote builder. When scripts detect it's online, they limit local jobs to 4 so nix offloads work to nixpc.
 
-Configure in flake:
-```nix
-modules.distributed-builds.enable = true;
-modules.distributed-builds.role = "client";  # or "builder"
-modules.distributed-builds.builders = [
-  { hostName = "nixpc"; maxJobs = 8; speedFactor = 2; }
-];
-```
+The client side is the `nix.buildMachines` block in `hosts/nixlaptop/default.nix`. Logins go through Tailscale SSH, so there are no builder keys to manage.

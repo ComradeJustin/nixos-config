@@ -2,9 +2,8 @@
 # The tunnel token is not in this repo. After creating the tunnel, install it on
 # the host at /var/lib/cloudflared/token (mode 600). The dashboard hostname
 # should point at http://localhost:8443.
-{ config, lib, pkgs, ... }:
+{ pkgs, ... }:
 let
-  cfg = config.modules.website;
   portfolio = ../../assets/portfolio;
   tokenFile = "/var/lib/cloudflared/token";
   tunnelScript = pkgs.writeShellScript "cloudflared-tunnel" ''
@@ -13,47 +12,51 @@ let
   '';
 in
 {
-  options.modules.website.enable = lib.mkEnableOption "public website via Cloudflare Tunnel";
+  environment.systemPackages = [ pkgs.cloudflared ];
 
-  config = lib.mkIf cfg.enable {
-    environment.systemPackages = [ pkgs.cloudflared ];
+  systemd.tmpfiles.rules = [
+    "d /var/lib/cloudflared 0700 root root -"
+  ];
 
-    systemd.tmpfiles.rules = [
-      "d /var/lib/cloudflared 0700 root root -"
-    ];
-
-    services.nginx = {
-      enable = true;
-      virtualHosts.portfolio = {
-        listen = [{ addr = "0.0.0.0"; port = 8443; }];
-        root = portfolio;
-        # Missing pages get the site's own 404 page instead of nginx's default one.
-        # "no-cache" makes browsers check for a newer copy on every visit instead of showing a stale one.
-        extraConfig = ''
-          error_page 404 /404.html;
-          add_header Cache-Control "no-cache";
-        '';
-        locations."/" = {
-          index = "index.html";
-          # $uri.html lets /nowa-tan serve nowa-tan.html, so page links can leave off ".html".
-          tryFiles = "$uri $uri.html $uri/ =404";
-        };
+  services.nginx = {
+    enable = true;
+    virtualHosts.portfolio = {
+      listen = [
+        {
+          addr = "0.0.0.0";
+          port = 8443;
+        }
+      ];
+      root = portfolio;
+      # Missing pages get the site's own 404 page instead of nginx's default one.
+      # "no-cache" makes browsers check for a newer copy on every visit instead of showing a stale one.
+      extraConfig = ''
+        error_page 404 /404.html;
+        add_header Cache-Control "no-cache";
+      '';
+      locations."/" = {
+        index = "index.html";
+        # $uri.html lets /nowa-tan serve nowa-tan.html, so page links can leave off ".html".
+        tryFiles = "$uri $uri.html $uri/ =404";
       };
     };
+  };
 
-    systemd.services.cloudflared-tunnel = {
-      description = "Cloudflare Tunnel for the public website";
-      after = [ "network-online.target" "nginx.service" ];
-      wants = [ "network-online.target" ];
-      wantedBy = [ "multi-user.target" ];
-      unitConfig.ConditionPathExists = tokenFile;
-      serviceConfig = {
-        ExecStart = tunnelScript;
-        Restart = "on-failure";
-        RestartSec = 5;
-        DynamicUser = true;
-        LoadCredential = "token:${tokenFile}";
-      };
+  systemd.services.cloudflared-tunnel = {
+    description = "Cloudflare Tunnel for the public website";
+    after = [
+      "network-online.target"
+      "nginx.service"
+    ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    unitConfig.ConditionPathExists = tokenFile;
+    serviceConfig = {
+      ExecStart = tunnelScript;
+      Restart = "on-failure";
+      RestartSec = 5;
+      DynamicUser = true;
+      LoadCredential = "token:${tokenFile}";
     };
   };
 }

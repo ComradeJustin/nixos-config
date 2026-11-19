@@ -42,8 +42,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Trackpad-first infinite canvas compositor. Enabled beside niri on the
-    # desktop profile so it can be picked at the greeter.
+    # Trackpad-first infinite canvas compositor, installed beside niri so it
+    # can be picked at the greeter.
     driftwm = {
       url = "github:malbiruk/driftwm";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -62,129 +62,20 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware";
   };
 
+  # One directory per machine under hosts/. Each host's default.nix imports
+  # every module that machine uses, so it is the full list of what it runs.
   outputs =
-    {
-      self,
-      nixpkgs,
-      home-manager,
-      stylix,
-      spicetify-nix,
-      quickshell,
-      qml-niri,
-      nixos-hardware,
-      ...
-    }@inputs:
-    let
-      # Overlays to fix package issues
-      overlays = [
-        (import ./overlays/btop-icon-fix.nix)
-        (import ./overlays/intel-compute-runtime-legacy1-gcc16.nix)
-      ];
-
-      # All module definitions — options are registered but nothing activates without enables
-      sharedModules = [
-        ./modules/core
-        ./modules/desktop
-        ./modules/server
-        ./modules/hardware
-        ./modules/profiles
-        stylix.nixosModules.stylix
-        home-manager.nixosModules.home-manager
-        inputs.spicetify-nix.nixosModules.default
-        inputs.driftwm.nixosModules.default
-        {
-          home-manager = {
-            useGlobalPkgs = true;
-            useUserPackages = true;
-            users.justin = import ./home-manager/justin/home.nix;
-            backupFileExtension = "backup";
-          };
-        }
-      ];
-
-      # Helper function to create a host configuration
-      mkHost =
-        { hostModules }:
-        nixpkgs.lib.nixosSystem {
-          specialArgs = { inherit inputs; };
-          modules =
-            sharedModules
-            ++ hostModules
-            ++ [
-              { nixpkgs.overlays = overlays; }
-            ];
-        };
-    in
+    { nixpkgs, ... }@inputs:
     {
       nixosConfigurations = {
-        nixpc = mkHost {
-          hostModules = [
-            ./hosts/nixpc/hardware-configuration.nix
-            ./hosts/nixpc/filesystems.nix
-            ./hosts/nixpc/gpu.nix
-            ./hosts/nixpc/networking.nix
-            {
-              modules.boot.loader = "grub-efi";
-              boot.loader.grub.useOSProber = true;
-              boot.loader.grub.theme = ./assets/grub-themes/sayonara;
-              modules.profiles.desktop.enable = false;
-              modules.gaming.enable = false;
-              modules.compscijava.enable = true;
-              modules.ai.enable = true;
-              modules.distributed-builds.enable = true;
-              modules.distributed-builds.role = "builder";
-              modules.godot.enable = true;
-              modules.smb-client.enable = true;
-
-              # --- Server role (migrated from home-core) ---
-              # nixpc is now the binary-cache server, so it does NOT pull from a
-              # harmonia substituter itself (modules.nix-settings.harmonia stays off).
-              modules.tailscale.enable = true;
-              modules.tailscale.exitNode = true;
-              modules.tailscale.trustedLanInterfaces = [ "enp4s0" ];
-              modules.adguard.enable = true;
-              modules.harmonia.enable = true;
-              modules.samba.enable = true;
-              modules.website.enable = true;
-
-              # Permanent server: never auto-suspend. The shared niri startup.kdl
-              # runs `swayidle ... timeout 1800 systemctl suspend`, which would take
-              # DNS/cache/exit-node offline after 30 min idle. Mask sleep so that
-              # `systemctl suspend` becomes a harmless no-op on this host only.
-              systemd.targets.sleep.enable = false;
-              systemd.targets.suspend.enable = false;
-              systemd.targets.hibernate.enable = false;
-              systemd.targets.hybrid-sleep.enable = false;
-            }
-          ];
+        nixpc = nixpkgs.lib.nixosSystem {
+          specialArgs = { inherit inputs; };
+          modules = [ ./hosts/nixpc ];
         };
 
-        nixlaptop = mkHost {
-          hostModules = [
-            ./hosts/nixlaptop/hardware-configuration.nix
-            ./hosts/nixlaptop/networking.nix
-            nixos-hardware.nixosModules.lenovo-thinkpad-t14-intel-gen1
-            {
-              modules.nix-settings.harmonia = true;
-              modules.profiles.desktop.enable = true;
-              modules.profiles.laptop.enable = true;
-              modules.fingerprint.enable = true;
-              modules.bluetooth.enable = true;
-              modules.compscijava.enable = true;
-              modules.ai.enable = true;
-              modules.distributed-builds.enable = true;
-              modules.distributed-builds.role = "client";
-              modules.distributed-builds.builders = [
-                {
-                  hostName = "nixpc";
-                  maxJobs = 8;
-                  speedFactor = 2;
-                }
-              ];
-
-              modules.smb-client.enable = true;
-            }
-          ];
+        nixlaptop = nixpkgs.lib.nixosSystem {
+          specialArgs = { inherit inputs; };
+          modules = [ ./hosts/nixlaptop ];
         };
       };
     };
