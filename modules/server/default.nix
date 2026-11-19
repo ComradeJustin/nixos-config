@@ -1,16 +1,9 @@
 {
   imports = [
-    ./docker.nix
     ./harmonia.nix
-    ./nginx.nix
-    ./postgres.nix
     ./tailscale.nix
-    ./wayvnc.nix
-    ./monitoring.nix
     ./distributed-builds.nix
-    ./mediastack.nix
     ./adguard.nix
-    ./status-reporter.nix
     ./samba.nix
     ./website.nix
   ];

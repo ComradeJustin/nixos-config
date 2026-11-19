@@ -34,16 +34,9 @@
       inputs.quickshell.follows = "quickshell";
     };
 
-    # Desktop widgets (Python/GTK). Not nixpkgs `fabric`. Must follow our
-    # nixpkgs: an older GTK/fontconfig than the system misparses font rules.
-    fabric = {
-      url = "github:Fabric-Development/fabric";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # Desktop shell (TypeScript/GTK4 on Astal). Successor to both the fabric
-    # overlay and, eventually, the quickshell bar. nixpkgs ships ags 2.x;
-    # the flake is v3 (gnim JSX, GTK4), which is what the docs describe.
+    # Desktop shell (TypeScript/GTK4 on Astal). Eventual successor to the
+    # quickshell bar. nixpkgs ships ags 2.x; the flake is v3 (gnim JSX, GTK4),
+    # which is what the docs describe.
     ags = {
       url = "github:aylur/ags";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -67,12 +60,6 @@
     };
 
     nixos-hardware.url = "github:NixOS/nixos-hardware";
-
-    disko = {
-      url = "github:nix-community/disko";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
   };
 
   outputs =
@@ -85,7 +72,6 @@
       quickshell,
       qml-niri,
       nixos-hardware,
-      disko,
       ...
     }@inputs:
     let
@@ -104,7 +90,6 @@
         ./modules/profiles
         stylix.nixosModules.stylix
         home-manager.nixosModules.home-manager
-        disko.nixosModules.disko
         inputs.spicetify-nix.nixosModules.default
         inputs.driftwm.nixosModules.default
         {
@@ -162,10 +147,6 @@
               modules.samba.enable = true;
               modules.website.enable = true;
 
-              # VNC attaches to the niri session, which is off with the desktop.
-              modules.wayvnc.enable = false;
-              modules.wayvnc.output = "DP-2";
-
               # Permanent server: never auto-suspend. The shared niri startup.kdl
               # runs `swayidle ... timeout 1800 systemctl suspend`, which would take
               # DNS/cache/exit-node offline after 30 min idle. Mask sleep so that
@@ -205,11 +186,6 @@
             }
           ];
         };
-
-        # home-core: still running, but managed outside this flake since its
-        # always-on role (exit node, DNS, cache, samba) moved to nixpc.
-        # To manage it from here again, add a mkHost entry using
-        # ./hosts/servers/home-core/ and the server modules it needs.
       };
     };
 }

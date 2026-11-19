@@ -16,7 +16,6 @@ scripts/rebuild.sh <host> [user@ip]        # Build and deploy a host (local, or 
 scripts/update.sh <host> [user@ip]         # Update flake inputs, then rebuild
 scripts/wake.sh <host>                     # Wake a machine via Wake-on-LAN
 scripts/status.sh                          # Show network/infra status
-scripts/install-server.sh <host> <user@ip> # Wipe + install NixOS via nixos-anywhere (live ISO)
 ```
 
 Pass just the hostname to rebuild the machine you're on. Pass `user@ip` to build locally and deploy to another machine — for the first deploy to a fresh install, use `root@<ip>` so the store copy is trusted.
