@@ -49,6 +49,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Trackpad-first infinite canvas compositor. Enabled beside niri on the
+    # desktop profile so it can be picked at the greeter.
+    driftwm = {
+      url = "github:malbiruk/driftwm";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -99,6 +106,7 @@
         home-manager.nixosModules.home-manager
         disko.nixosModules.disko
         inputs.spicetify-nix.nixosModules.default
+        inputs.driftwm.nixosModules.default
         {
           home-manager = {
             useGlobalPkgs = true;

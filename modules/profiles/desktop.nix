@@ -28,6 +28,10 @@
     modules.ags.enable = lib.mkDefault (config.modules.profiles.desktop.wm == "niri");
     modules.lockscreen.enable = lib.mkDefault (config.modules.profiles.desktop.wm == "niri");
 
+    # Installed next to niri. The greeter still starts niri until driftwm
+    # is picked as the session.
+    programs.driftwm.enable = lib.mkDefault true;
+
     # Common desktop apps
     modules.creative.enable = lib.mkDefault true;
     modules.spicetify.enable = lib.mkDefault true;
