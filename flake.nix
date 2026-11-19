@@ -85,6 +85,7 @@
       # Overlays to fix package issues
       overlays = [
         (import ./overlays/btop-icon-fix.nix)
+        (import ./overlays/intel-compute-runtime-legacy1-gcc16.nix)
       ];
 
       # All module definitions — options are registered but nothing activates without enables
