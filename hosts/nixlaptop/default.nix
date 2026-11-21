@@ -1,6 +1,11 @@
 # nixlaptop: ThinkPad T14 (Intel). The desktop machine. Uses nixpc as its
 # binary cache and remote builder when nixpc is reachable.
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 {
   imports = [
     # This machine's hardware
@@ -30,8 +35,17 @@
     tmpfsSize = "60%";
   };
 
-  # The Intel GPU's OpenCL runtime needs a patch to build with GCC 16.
-  nixpkgs.overlays = [ (import ../../overlays/intel-compute-runtime-legacy1-gcc16.nix) ];
+  # Video decode and encode drivers for the Intel GPU. This replaces the list
+  # nixos-hardware sets, which also carries the OpenCL runtime: nothing here
+  # uses OpenCL, and that package had to be compiled locally on every update.
+  hardware.graphics.extraPackages = lib.mkForce [
+    pkgs.intel-media-driver
+    pkgs.vpl-gpu-rt
+  ];
+
+  # SSH is reachable over the tailnet only (the firewall trusts that
+  # interface), not from whatever network the laptop happens to be on.
+  services.openssh.openFirewall = false;
 
   environment.sessionVariables.CUPS_USER = "remote user";
 
