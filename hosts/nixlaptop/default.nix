@@ -36,9 +36,10 @@
   environment.sessionVariables.CUPS_USER = "remote user";
 
   # --- nixpc as binary cache and remote builder, reached over Tailscale ---
-  # With connect-timeout and fallback (modules/base.nix), rebuilds still work
-  # when nixpc is unreachable.
-  nix.settings.substituters = [ "http://nixpc:5000" ];
+  # nixpc is allowed as a cache but not used by default: as a default, every
+  # Nix command waited about six seconds on it whenever nixpc was unreachable.
+  # scripts/rebuild.sh switches it on for a rebuild when nixpc answers.
+  nix.settings.trusted-substituters = [ "http://nixpc:5000" ];
   nix.settings.trusted-public-keys = [ "nixpc:x9xt+nopM/5hQW/6d9hAzilOIFurley0+Vq9p21CV8A=" ];
 
   nix.distributedBuilds = true;
