@@ -61,12 +61,12 @@ nixpc runs [Harmonia](https://github.com/nix-community/harmonia) on port 5000, s
 ### How it works
 
 1. **nixpc** generates a signing keypair on first boot (`/var/lib/harmonia/cache-key.pem`). The private key never leaves nixpc.
-2. Client machines add `http://nixpc:5000` as a substituter (see `hosts/nixlaptop/default.nix`)
+2. Client machines allow `http://nixpc:5000` as a cache (see `hosts/nixlaptop/default.nix`). It is not on by default, so commands never wait on it when nixpc is down; `rebuild.sh` turns it on when nixpc answers
 3. After each local rebuild, `rebuild.sh` copies the result to nixpc's store. Harmonia signs paths as it serves them.
 
 ### Adding a new machine to the cache
 
-Copy the `nix.settings.substituters` and `trusted-public-keys` lines from `hosts/nixlaptop/default.nix` into the new host's `default.nix`.
+Copy the `nix.settings.trusted-substituters` and `trusted-public-keys` lines from `hosts/nixlaptop/default.nix` into the new host's `default.nix`.
 
 ### Manual operations
 

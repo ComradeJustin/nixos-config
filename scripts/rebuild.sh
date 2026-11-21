@@ -26,12 +26,14 @@ else
     echo "Working tree is dirty — skipping git pull"
 fi
 
-# If the remote builder (nixpc) is reachable, cap local jobs so nix offloads to it.
+# If nixpc is reachable, use it for this rebuild: cap local jobs so nix offloads
+# builds to it, and add its binary cache (which is off by default so that other
+# nix commands never wait on it).
 # /etc/nix/machines only exists on build clients, so this is a no-op on nixpc itself.
 EXTRA_ARGS=()
 if [[ -s /etc/nix/machines ]] && timeout 5 ssh -o ConnectTimeout=3 -o BatchMode=yes justin@nixpc true 2>/dev/null; then
-    echo "Remote builder nixpc is online — capping local jobs at 4"
-    EXTRA_ARGS=(-- --max-jobs 4)
+    echo "nixpc is online — using its cache and capping local jobs at 4"
+    EXTRA_ARGS=(-- --max-jobs 4 --option extra-substituters http://nixpc:5000)
 fi
 
 if [[ -n "$TARGET" ]]; then
