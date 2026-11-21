@@ -76,6 +76,9 @@
     settings = {
       PermitRootLogin = "no";
       PasswordAuthentication = false;
+      # Without this, sshd still accepts passwords through PAM's
+      # "keyboard-interactive" method, so the line above alone is not enough.
+      KbdInteractiveAuthentication = false;
     };
   };
 
