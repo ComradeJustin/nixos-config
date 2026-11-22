@@ -2,8 +2,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// The calendar: a month as a grid, with today in reverse video. It drops
-// out of the bar under the clock and takes the keyboard while it is open:
+// The calendar: a month as a grid, with today in reverse video and today's
+// weather under it. It drops out of the bar under the clock and takes the
+// keyboard while it is open:
 // h and l or the arrows change the month, t goes back to today, esc closes
 // it. The wheel changes the month too. Changing month wipes the panel away
 // and wipes the new month in.
@@ -67,8 +68,8 @@ PanelWindow {
 
         // Seven days of three cells each, less the space after the last.
         columns: 24
-        // The weekdays and six weeks.
-        rows: 7
+        // The weekdays, six weeks, and a line for today's weather.
+        rows: 8
         title: Qt.formatDateTime(calendar.firstDay, "MMMM yyyy")
         // Only the keys that do something: "today" once it has moved away.
         footer: calendar.drawnOffset === 0 ? "←→ month  esc close" : "t today  esc close"
@@ -96,6 +97,16 @@ PanelWindow {
             text: "mo tu we th fr sa su"
             color: Theme.inkDim
             smallCaps: true
+        }
+
+        // Today's weather, once the shell has it (shell.qml asks for it
+        // when the calendar opens).
+        Label {
+            y: 7 * Theme.cellHeight
+            width: panel.contentColumns * Theme.cellWidth
+            text: calendar.shell.weather !== null ? calendar.shell.weather.temperature + " " + calendar.shell.weather.description : ""
+            color: Theme.inkDim
+            elide: Text.ElideRight
         }
 
         Repeater {

@@ -56,6 +56,7 @@ import Quickshell.Wayland
 //   displays       "niri msg outputs", asked when their pages open
 //   idle and sleep swayidle, which the shell runs with the chosen times
 //   rebuild        scripts/rebuild.sh, which tells the shell how it is going
+//   weather        wttr.in, asked when something that shows it comes up
 //   playing track  MPRIS
 //   input method   fcitx5, through its tray item
 //   notifications  what apps send, kept until dismissed
@@ -697,8 +698,10 @@ ShellRoot {
     // How many of the store paths it has to make exist so far.
     property int buildMade: 0
     property int buildTotal: 0
-    // The names of what is being built right now, separated by commas.
+    // The names of what is being built right now, separated by commas,
+    // and the last such names seen, for saying where a rebuild failed.
     property string buildNow: ""
+    property string buildLastSeen: ""
     property var buildStarted: null
     // How the last rebuild ended, in words, and whether it failed. "" until
     // one has ended since the shell started.
@@ -713,8 +716,12 @@ ShellRoot {
             root.finishBuild(phase === "failed");
             return;
         }
-        if (!root.building)
+        if (!root.building) {
             root.buildStarted = new Date();
+            root.buildLastSeen = "";
+        }
+        if (current !== "")
+            root.buildLastSeen = current;
         root.buildPhase = phase;
         root.buildMade = made;
         root.buildTotal = total;
@@ -730,6 +737,8 @@ ShellRoot {
         const seconds = Math.round((ended - root.buildStarted) / 1000);
         const took = seconds >= 60 ? Math.round(seconds / 60) + " min" : seconds + " s";
         root.buildLast = (failed ? "failed at " : "finished at ") + Qt.formatDateTime(ended, "hh:mm") + ", took " + took;
+        if (failed && root.buildLastSeen !== "")
+            root.buildLast += ", while building " + root.buildLastSeen;
         root.buildLastFailed = failed;
         root.buildPhase = "";
         root.buildNow = "";
@@ -757,11 +766,79 @@ ShellRoot {
             root.closePages();
         root.calendarOffset = 0;
         root.calendarShown = !root.calendarShown;
+        if (root.calendarShown)
+            root.wantWeather();
+    }
+
+    // --- Weather ---
+    // Today's weather where the machine is, from wttr.in, which places the
+    // machine by its network address. It is asked for only when something
+    // that shows it comes on screen (the desktop's Today tile, the
+    // calendar) and the last answer is more than half an hour old.
+    // { temperature, description, low, high, sunrise, sunset, place }, or
+    // null until the first answer.
+    property var weather: null
+    // When it was last asked for, in milliseconds.
+    property real weatherAsked: 0
+
+    function wantWeather(): void {
+        if (Date.now() - root.weatherAsked < 30 * 60 * 1000)
+            return;
+        root.weatherAsked = Date.now();
+        weatherReader.running = true;
+    }
+
+    // A time as wttr.in writes it, "04:23 PM", on the 24-hour clock: "16:23".
+    function clockTime(text: string): string {
+        const parts = text.match(/^(\d+):(\d+) (AM|PM)$/);
+        if (parts === null)
+            return text;
+        const hour = Number(parts[1]) % 12 + (parts[3] === "PM" ? 12 : 0);
+        return (hour < 10 ? "0" : "") + hour + ":" + parts[2];
+    }
+
+    // The answer is JSON: the weather now, the place it is for, and each
+    // day's range and sun times. Anything else, such as an error page, is
+    // left alone.
+    function readWeather(text: string): void {
+        let answer;
+        try {
+            answer = JSON.parse(text);
+        } catch (error) {
+            return;
+        }
+        if (!answer.current_condition || !answer.weather || !answer.nearest_area)
+            return;
+        const now = answer.current_condition[0];
+        const today = answer.weather[0];
+        root.weather = {
+            temperature: now.temp_C + "°",
+            description: now.weatherDesc[0].value.trim().toLowerCase(),
+            low: today.mintempC + "°",
+            high: today.maxtempC + "°",
+            sunrise: root.clockTime(today.astronomy[0].sunrise),
+            sunset: root.clockTime(today.astronomy[0].sunset),
+            place: answer.nearest_area[0].areaName[0].value
+        };
+    }
+
+    Process {
+        id: weatherReader
+
+        command: ["curl", "--silent", "--max-time", "15", "https://wttr.in/?format=j1"]
+        stdout: StdioCollector {
+            onStreamFinished: root.readWeather(text)
+        }
     }
 
     // --- The desktop widgets ---
     // Whether the focused workspace has no windows, from niri.
     readonly property bool workspaceEmpty: niriState.focusedWorkspaceEmpty
+
+    onWorkspaceEmptyChanged: {
+        if (root.workspaceEmpty)
+            root.wantWeather();
+    }
 
     // --- Sound ---
     // The speakers or headphones sound goes to. It has no volume to read

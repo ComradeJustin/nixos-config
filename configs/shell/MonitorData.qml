@@ -317,10 +317,13 @@ Scope {
             });
         }
         let now = "nothing is being built";
-        if (shell.buildNow !== "")
-            now = shell.buildNow;
-        else if (builders > 0)
+        if (shell.buildNow !== "") {
+            // What is not made and not being built is still waiting.
+            const waiting = shell.buildTotal - shell.buildMade - shell.buildNow.split(", ").length;
+            now = shell.buildNow + (waiting > 0 ? "  (" + waiting + " waiting)" : "");
+        } else if (builders > 0) {
             now = builders + " build processes";
+        }
         rows.push({
             label: "Now",
             kind: "text",

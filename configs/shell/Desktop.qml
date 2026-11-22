@@ -2,9 +2,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// Desktop widgets: a clock in the bottom left corner of the desktop, and
-// under it what is playing, when something is. Both are panels, so they
-// read over any wallpaper.
+// Desktop widgets: a clock in the bottom left corner of the desktop, under
+// it today's weather, and under that what is playing, when something is.
+// All are panels, so they read over any wallpaper.
 //
 // They show only while the focused workspace has no windows. When a window
 // appears they are wiped away, and when the last one goes they are wiped
@@ -43,12 +43,39 @@ PanelWindow {
             ]
         })
 
+    // Today's weather, in the shape Tile.qml takes, or null until the shell
+    // has it (shell.qml asks for it when these widgets come on screen).
+    readonly property var weather: shell.weather
+    readonly property var todayTile: weather === null ? null : ({
+            title: "Today in " + weather.place,
+            alert: false,
+            summary: [
+                {
+                    label: "Weather",
+                    kind: "text",
+                    value: weather.temperature + ", " + weather.description
+                },
+                {
+                    label: "Range",
+                    kind: "text",
+                    value: weather.low + " to " + weather.high
+                },
+                {
+                    label: "Sun",
+                    kind: "text",
+                    value: weather.sunrise + " to " + weather.sunset
+                }
+            ]
+        })
+
     readonly property int tileColumns: 40
     // The clock's panel: five rows inside its border, and with the border
     // and the gap under it, eight.
     readonly property int clockRows: 8
-    // A tile of three rows, its border and its shadow.
+    // A tile of three rows, its border and its shadow, and with the gap
+    // under it, six rows.
     readonly property int tileHeight: 5 * Theme.cellHeight + Theme.shadowOffset
+    readonly property int tileRows: 6
 
     // 0 = nothing showing, 1 = everything.
     property real shown: shell.workspaceEmpty ? 1 : 0
@@ -69,7 +96,7 @@ PanelWindow {
     margins.bottom: 4 * Theme.cellHeight
     exclusionMode: ExclusionMode.Ignore
     implicitWidth: tileColumns * Theme.cellWidth + Theme.shadowOffset
-    implicitHeight: clockRows * Theme.cellHeight + tileHeight
+    implicitHeight: (clockRows + tileRows) * Theme.cellHeight + tileHeight
     color: "transparent"
     WlrLayershell.namespace: "shell"
     WlrLayershell.layer: WlrLayer.Top
@@ -98,6 +125,14 @@ PanelWindow {
 
     Tile {
         y: desktop.clockRows * Theme.cellHeight
+        visible: desktop.todayTile !== null && shown > 0
+        columns: desktop.tileColumns
+        applet: desktop.todayTile
+        shown: desktop.shown
+    }
+
+    Tile {
+        y: (desktop.clockRows + desktop.tileRows) * Theme.cellHeight
         visible: desktop.playingTile !== null && shown > 0
         columns: desktop.tileColumns
         applet: desktop.playingTile
