@@ -6,8 +6,6 @@
     ibm-plex
     jetbrains-mono
     maple-mono.NF
-    fraunces # display serif, for configs/fabric
-    hanken-grotesk # UI and body sans, for configs/fabric
 
     noto-fonts-cjk-sans
     sarasa-gothic

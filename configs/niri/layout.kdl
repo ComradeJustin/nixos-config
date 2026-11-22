@@ -3,7 +3,8 @@ layout {
     background-color "transparent"
     // The look follows the desktop shell (configs/shell/Theme.qml): thin
     // square borders in its line colour, its accent for what is focused,
-    // and a hard shadow down and to the right, as its panels have.
+    // and a hard shadow down and to the right, as its panels have. The
+    // colours themselves are in the palette file that config.kdl includes.
 
     // Gaps around windows: one row of the shell's character grid.
     gaps 14
@@ -54,9 +55,6 @@ layout {
         // colour on a window that wants attention.
         on
         width 1
-        active-color "#f1ae97"
-        inactive-color "#594740"
-        urgent-color "#ffc37a"
 
 
         // Gradients can use a few different interpolation color spaces.
@@ -68,19 +66,14 @@ layout {
     // You can enable drop shadows for windows.
     shadow {
         // A hard-edged copy of the window, one character cell down and to
-        // the right. The shell's panels cast a halftone of this colour;
-        // niri cannot dither a shadow, so it is at half strength instead.
+        // the right. The shell's panels cast a halftone of their shadow
+        // colour; niri cannot dither a shadow, so the palette file gives
+        // it at half strength instead.
         on
         draw-behind-window false
         softness 0
         spread 0
         offset x=7 y=7
-        color "#120e0d80"
-    }
-
-    // Where a dragged window would land.
-    insert-hint {
-        color "#f1ae9780"
     }
 
     // The marks beside a column whose windows are tabs (Mod+Q).
@@ -88,9 +81,6 @@ layout {
         width 2
         gap 5
         corner-radius 0
-        active-color "#f1ae97"
-        inactive-color "#594740"
-        urgent-color "#ffc37a"
     }
 
     struts {

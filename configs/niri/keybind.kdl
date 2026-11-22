@@ -26,9 +26,6 @@ binds {
     Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "lock"; }
     //Alt+Tab {spawn "~/.config/niri/hotkeyscripts/alttab.sh";} 
     Mod+B hotkey-overlay-title="Run firefox" { spawn "firefox";}
-    //Mod+M hotkey-overlay-title="Search for anime" {spawn "ani-cli" "--rofi";}
-
-    //Mod+N hotkey-overlay-title="Show Notificaitons" {spawn "swaync-client" "-t" "-sw";}
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
     // For example, this is a standard bind to toggle the screen reader (orca).

@@ -14,13 +14,14 @@ include "window-rule.kdl"
 // How windows open, close and move. glide.kdl and unravel.kdl are other
 // sets, not in use.
 include "wipe.kdl"
+// The colours of borders and the like, and the cursor. Nix writes this file
+// from the Stylix theme (home/desktop/default.nix), so that niri follows
+// the same scheme as the shell and every app. It is outside this folder
+// because this folder is the repository itself. "optional" keeps the rest
+// of the configuration working on a system that has not written it yet.
+include optional=true "/home/justin/.config/niri-palette.kdl"
 
 prefer-no-csd
-
-cursor {
-    xcursor-theme "phinger-cursors-dark"
-    xcursor-size 24
-}
 
 // niri's own list of keys is not shown: the shell has one in its own
 // style (Mod+Shift+/, or System > Key bindings).

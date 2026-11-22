@@ -21,14 +21,6 @@ window-rule {
     open-floating true
 }
 
-//makes config programs float
-window-rule {
-	match app-id=r#"ghostty"# title="^ImpalaNetwork$"
-	match app-id=r#"ghostty"# title="^DeviceResources$"
-	match app-id=r#"ghostty"# title="^Audioconfig$"
-	open-floating true
-
-}
 
 
 
@@ -43,11 +35,9 @@ window-rule {
 }
 
 
-// Glass only where it can be seen: the translucent apps.
+// Glass only where it can be seen: the terminal, the one see-through app.
 window-rule {
     match app-id=r#"ghostty"#
-    match app-id=r#"spotify"#
-    match app-id=r#"code"#
     opacity 0.85
     draw-border-with-background false
     background-effect {
@@ -63,16 +53,5 @@ window-rule {
 layer-rule {
 	match namespace="^awww-daemon$"
  	place-within-backdrop true
-}
-
-/-layer-rule {
-	match namespace="^fabric-shell$"
-	background-effect {
-		blur true
-		xray false
-		noise 0.02
-		saturation 1.25
-	}
-	geometry-corner-radius 12
 }
 

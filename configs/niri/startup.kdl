@@ -1,10 +1,8 @@
 environment {
- GTK_THEME "Adwaita:dark"
  ELECTRON_OZONE_PLATFORM_HINT "auto"
  _JAVA_AWT_WM_NONREPARENTING "1"
  XDG_CURRENT_DESKTOP "GNOME"
 }
-//spawn-at-startup "waybar"
 // The desktop shell (configs/shell): the bar, notifications, the lock
 // screen, the ring. Started as a unit that comes back if it ever crashes,
 // because the lock screen lives in it.
@@ -14,7 +12,6 @@ environment {
 // harmlessly, because a unit of that name already exists.)
 spawn-at-startup "systemd-run" "--user" "--unit=shell" "--collect" "-p" "Restart=on-failure" "quickshell" "-p" "/home/justin/nixos-config/configs/shell"
 // sway-audio-idle-inhibit runs as a supervised systemd user service (niri.nix)
-// spawn-at-startup "swaync"
 // Idle and sleep. After 150 s the screen dims and the shell warns that it
 // is about to lock, after 180 s the session is
 // asked to lock, after 30 min the machine suspends, and it is asked to lock

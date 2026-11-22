@@ -6,9 +6,7 @@ recent-windows {
     open-delay-ms 150
 
     highlight {
-        // The shell's accent and alert colours.
-        active-color "#f1ae97"
-        urgent-color "#ffc37a"
+        // Its colours are in the palette file that config.kdl includes.
         padding 14
         corner-radius 0
     }

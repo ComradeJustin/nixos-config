@@ -12,12 +12,19 @@
 let
   quickshell = inputs.quickshell.packages.${pkgs.stdenv.hostPlatform.system}.default;
   shellDirectory = "${config.programs.nh.flake}/configs/shell";
+
+  # What key bindings and the idle watcher run to reach the shell
+  # (configs/niri): "shell-call ring", "shell-call page clipboard".
+  shellCall = pkgs.writeShellScriptBin "shell-call" ''
+    exec ${lib.getExe quickshell} -p ${shellDirectory} ipc call shell "$@"
+  '';
 in
 {
   # What the shell runs. It also uses niri, wl-clipboard, cliphist, awww,
   # brightnessctl and swayidle (niri.nix), and its font (fonts.nix).
   environment.systemPackages = [
     quickshell
+    shellCall
     pkgs.wlsunset # night light
     pkgs.libnotify # notify-send: battery and Tailscale warnings
     pkgs.inotify-tools # inotifywait: the camera flag
@@ -51,7 +58,10 @@ in
   # which only root may do unless the user is named as the operator.
   services.tailscale.extraSetFlags = [ "--operator=justin" ];
 
-  # The lock screen's fingerprint check goes through this PAM service.
-  # hosts/nixlaptop/fingerprint.nix adds the fingerprint reader to it.
+  # The lock screen's fingerprint check goes through the PAM service
+  # "shell-lock". hosts/nixlaptop/fingerprint.nix adds the fingerprint
+  # reader to it. "quickshell-bar" is its old name, kept until the shell on
+  # every machine has been restarted with the new one (Lock.qml).
+  security.pam.services.shell-lock = { };
   security.pam.services.quickshell-bar = { };
 }
