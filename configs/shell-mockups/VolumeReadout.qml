@@ -2,25 +2,26 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// What a volume key press looks like: a small panel is typed in at the right
-// end of the bar with a long bar and the number, then erased.
+// What a volume key press looks like: a small panel is wiped in at the right
+// end of the bar with a long bar and the number, then wiped away. The number
+// flashes each time it changes.
 PanelWindow {
     id: readout
 
     // The shell root (shell.qml).
     required property var shell
 
-    // 0 = nothing typed, 1 = the whole panel.
-    property real typed: shell.volumeShown ? 1 : 0
+    // 0 = nothing showing, 1 = the whole panel.
+    property real shown: shell.volumeShown ? 1 : 0
 
-    Behavior on typed {
+    Behavior on shown {
         NumberAnimation {
-            duration: Theme.typeMs
+            duration: Theme.wipeMs
         }
     }
 
-    // Stay mapped until the last character has been erased.
-    visible: shell.volumeShown || typed > 0
+    // Stay mapped until the panel has been wiped away.
+    visible: shell.volumeShown || shown > 0
     anchors {
         top: true
         right: true
@@ -42,17 +43,16 @@ PanelWindow {
         columns: 36
         rows: 1
         title: "volume"
-        typed: readout.typed
+        shown: readout.shown
 
         Level {
             level: readout.shell.volume / 100
             cells: panel.contentColumns - 4
         }
 
-        Label {
+        Value {
             anchors.right: parent.right
             text: readout.shell.volume
-            color: Theme.ink
         }
     }
 }

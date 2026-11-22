@@ -3,7 +3,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 
-// Design mockup for the shell redesign, round five. Entry point.
+// Design mockup for the shell redesign, round six. Entry point.
 //
 // The shell is drawn like a terminal UI, in the pixel font Departure Mono on
 // a fixed grid of character cells: borders are box-drawing characters, bars
@@ -15,6 +15,7 @@ import Quickshell.Wayland
 //   VolumeReadout  a panel that drops out of the bar on a volume change
 //   Toast          a panel that drops out of the bar for a notification
 //   Box, Level     the panel frame and the bar they are all built from
+//   DitherFade     the dithered wipe everything appears and disappears with
 //
 // The motion is real. The content is sample data; only the clock is live and
 // nothing is wired to the system.
@@ -23,8 +24,8 @@ import Quickshell.Wayland
 //   nix build nixpkgs#departure-mono -o ~/nixos-config/configs/shell-mockups/departure-mono-font
 // Start:  systemd-run --user --unit=shell-mockup --collect quickshell -p ~/nixos-config/configs/shell-mockups
 // Stop:   systemctl --user stop shell-mockup
-// Drive:  the three buttons at the bottom of the screen, or
-//   qs -p ~/nixos-config/configs/shell-mockups ipc call shell-mockup <ring|turn 1|open|back|volume|toast>
+// Drive:  the four buttons at the bottom of the screen, or
+//   qs -p ~/nixos-config/configs/shell-mockups ipc call shell-mockup <ring|turn 1|open|back|volume|toast|workspace>
 // In the ring: h l turn, enter opens a station, j k select, esc backs out.
 // Files reload on save.
 ShellRoot {
@@ -41,9 +42,11 @@ ShellRoot {
     property int volume: 35
     property bool volumeShown: false
     property bool toastShown: false
+    // Which workspace is focused, counting from 0.
+    property int workspace: 1
     // Whether the focused window is fullscreen, from QuickShell's own window
     // list. It updates the moment the window changes; nothing polls. niri
-    // covers the bar then, so the bar erases its text and drop-down panels
+    // covers the bar then, so the bar dithers away and drop-down panels
     // sit against the top of the screen.
     // While the ring has the keyboard no window counts as focused, so this
     // reads false; the bar is covered or dimmed then, so it does not show.
@@ -268,6 +271,11 @@ ShellRoot {
         toastHide.restart();
     }
 
+    // Pretend the next workspace was switched to.
+    function nextWorkspace(): void {
+        root.workspace = (root.workspace + 1) % 5;
+    }
+
     SystemClock {
         id: clock
 
@@ -330,9 +338,13 @@ ShellRoot {
         function toast(): void {
             root.showToast();
         }
+
+        function workspace(): void {
+            root.nextWorkspace();
+        }
     }
 
-    // Three buttons for driving the mockup. Not part of the design.
+    // Four buttons for driving the mockup. Not part of the design.
     PanelWindow {
         anchors.bottom: true
         margins.bottom: 10
@@ -351,7 +363,7 @@ ShellRoot {
             spacing: 2 * Theme.cellWidth
 
             Repeater {
-                model: [["summon ring", () => root.toggleRing()], ["volume key", () => root.bumpVolume()], ["notification", () => root.showToast()]]
+                model: [["summon ring", () => root.toggleRing()], ["volume key", () => root.bumpVolume()], ["notification", () => root.showToast()], ["next workspace", () => root.nextWorkspace()]]
 
                 Label {
                     id: button

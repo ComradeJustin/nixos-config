@@ -6,7 +6,8 @@ import Quickshell.Wayland
 // a dim "│", bars drawn with block characters.
 // Left: workspaces and the focused window. Centre: date and time.
 // Right: the playing track, network, volume, battery.
-// Sample values, except the clock and the volume the "volume key" changes.
+// Sample values, except the clock, and the volume and the focused workspace,
+// which the buttons at the bottom of the screen change.
 PanelWindow {
     id: bar
 
@@ -43,7 +44,7 @@ PanelWindow {
 
     Behavior on shown {
         NumberAnimation {
-            duration: Theme.typeMs
+            duration: Theme.wipeMs
         }
     }
 
@@ -67,21 +68,33 @@ PanelWindow {
             Repeater {
                 model: 5
 
-                // Focused: reverse video. Occupied: normal. Empty: dim.
+                // Focused: reverse video, flashing bright for a moment as
+                // it takes focus. Occupied: normal. Empty: dim.
                 Rectangle {
                     required property int index
 
-                    readonly property bool focused: index === 1
+                    readonly property bool focused: index === bar.shell.workspace
                     readonly property bool occupied: index < 3
 
                     width: 3 * Theme.cellWidth
                     height: Theme.cellHeight
-                    color: focused ? Theme.accent : "transparent"
+                    color: focusFlash.running ? Theme.ink : (focused ? Theme.accent : "transparent")
+
+                    onFocusedChanged: {
+                        if (focused)
+                            focusFlash.restart();
+                    }
 
                     Label {
                         x: Theme.cellWidth
                         text: parent.index + 1
                         color: parent.focused ? Theme.slab : (parent.occupied ? Theme.ink : Theme.line)
+                    }
+
+                    Timer {
+                        id: focusFlash
+
+                        interval: Theme.flashMs
                     }
                 }
             }
@@ -133,7 +146,7 @@ PanelWindow {
             }
 
             Key {
-                text: " via nixpc"
+                text: " → nixpc"
             }
 
             Divider {}
@@ -148,8 +161,11 @@ PanelWindow {
             }
 
             Label {
-                text: " " + bar.shell.volume + "%"
-                color: Theme.ink
+                text: " "
+            }
+
+            Value {
+                text: bar.shell.volume + "%"
             }
 
             Divider {}

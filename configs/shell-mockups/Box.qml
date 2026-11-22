@@ -2,11 +2,12 @@ import QtQuick
 
 // A terminal-style panel: a border of box-drawing characters with rounded
 // corners, a title set into the top edge and an optional line of hints set
-// into the bottom edge. Sizes are in character cells.
+// into the bottom edge. Sizes are in character cells. It casts a halftone
+// shadow to the right and below.
 //
-// It appears and disappears the same way all text in the shell does: typed
-// in from the left a character at a time behind a dithered edge, every line
-// at once, and erased in reverse.
+// It appears and disappears the same way everything in the shell does: a
+// dithered front wipes across it from the left, shadow included, and wipes
+// back to take it away.
 Item {
     id: box
 
@@ -15,21 +16,25 @@ Item {
     property int rows: 1
     property string title: ""
     property string footer: ""
-    // How much of the panel is typed in, from 0 to 1.
-    property real typed: 1
+    // How much of the panel is showing, from 0 to 1.
+    property real shown: 1
     default property alias content: inner.data
 
     // The inside width in cells: the border and one space of padding on each side are taken off.
     readonly property int contentColumns: columns - 4
-    // Whole characters only, so the panel never shows part of one. The edge
-    // travels on past the right side, so it leaves completely.
-    readonly property int typedColumns: Theme.typedLength(columns, typed)
+    readonly property int panelWidth: columns * Theme.cellWidth
+    readonly property int panelHeight: (rows + 2) * Theme.cellHeight
 
-    implicitWidth: columns * Theme.cellWidth
-    implicitHeight: (rows + 2) * Theme.cellHeight
-    width: typedColumns * Theme.cellWidth
-    height: implicitHeight
-    clip: true
+    // The panel sits at the top left; the extra is room for the shadow.
+    implicitWidth: panelWidth + Theme.shadowOffset
+    implicitHeight: panelHeight + Theme.shadowOffset
+
+    // Drawn through the dither only while it is changing.
+    layer.enabled: shown < 1
+    layer.effect: DitherFade {
+        amount: box.shown
+        spread: Theme.wipeFront
+    }
 
     // An edge with a gap left for a word set into it, e.g. "╭─        ─────╮".
     function edge(left: string, right: string, word: string): string {
@@ -38,9 +43,22 @@ Item {
         return left + "─" + " ".repeat(word.length + 2) + "─".repeat(box.columns - word.length - 5) + right;
     }
 
+    // The shadow: the panel's shape again, offset, with every other dot left out.
     Rectangle {
-        width: box.implicitWidth
-        height: box.implicitHeight
+        x: Theme.shadowOffset
+        y: Theme.shadowOffset
+        width: box.panelWidth
+        height: box.panelHeight
+        color: Theme.shadow
+        layer.enabled: true
+        layer.effect: DitherFade {
+            amount: 0.5
+        }
+    }
+
+    Rectangle {
+        width: box.panelWidth
+        height: box.panelHeight
         color: Theme.slab
     }
 
@@ -91,12 +109,5 @@ Item {
         y: Theme.cellHeight
         width: box.contentColumns * Theme.cellWidth
         height: box.rows * Theme.cellHeight
-    }
-
-    // The dithered leading edge, over the last columns that are showing.
-    TypeEdge {
-        reached: Theme.typedReach(box.columns, box.typed)
-        columns: box.columns
-        lines: box.rows + 2
     }
 }

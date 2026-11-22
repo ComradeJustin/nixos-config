@@ -40,51 +40,25 @@ Singleton {
     readonly property int barHeight: 2 * cellHeight
     readonly property int barTextY: cellHeight / 2
 
-    // Motion, the way a terminal redraws. There is one way for anything to
-    // appear or disappear: it is typed in from the left a character at a
-    // time behind a dithered leading edge, and erased in reverse. Names, the
-    // clock, hints and whole panels all do this, at the same speed. Nothing
-    // fades, slides or is cut.
-    readonly property int typeMs: 140
-    // The leading edge: each character arrives as a light shade, darkens,
-    // then becomes itself. The last one here is the very front.
-    readonly property string typeEdge: "▓▒░"
+    // Motion. There is one way for anything to appear or disappear: a
+    // dithered front wipes across it from the left, and wipes back to take
+    // it away. Names, the clock, hints and whole panels all do this, at the
+    // same speed. Nothing fades, slides or is cut.
+    readonly property int wipeMs: 140
+    // Width of the dithered front, as a share of the width of what it crosses.
+    readonly property real wipeFront: 0.35
     // The only movement is turning the ring: one place takes this long,
     // drawn as this many equal jumps on the character grid.
     readonly property int turnMs: 96
     readonly property int turnSteps: 6
+    // A value that has just changed, or a thing that has just taken focus,
+    // shows in bright reverse video for this long.
+    readonly property int flashMs: 80
     // Nothing runs while idle.
 
-    // How far the typing has got through something `length` characters long,
-    // in characters. It counts on past the end by the width of the edge, so
-    // the edge leaves completely.
-    function typedReach(length: int, fraction: real): int {
-        return Math.round(Math.max(0, Math.min(1, fraction)) * (length + typeEdge.length));
-    }
-
-    // `full` as it looks when `fraction` of it has been typed in: the typed
-    // characters, then the dithered edge, then spaces. Always as long as
-    // `full`, so nothing beside it moves while it is typed.
-    function typedText(full: string, fraction: real): string {
-        const edgeLength = typeEdge.length;
-        const reached = typedReach(full.length, fraction);
-        let result = "";
-        for (let index = 0; index < full.length; index++) {
-            const behindFront = reached - 1 - index;
-            if (behindFront < 0)
-                result += " ";
-            else if (behindFront < edgeLength)
-                result += typeEdge[edgeLength - 1 - behindFront];
-            else
-                result += full[index];
-        }
-        return result;
-    }
-
-    // How many characters of a text that long are occupied, edge included.
-    function typedLength(length: int, fraction: real): int {
-        return Math.min(length, typedReach(length, fraction));
-    }
+    // Panels cast a halftone shadow this far to the right and below.
+    readonly property int shadowOffset: cellWidth
+    readonly property color shadow: Qt.darker(base00, 2)
 
     // Snap a distance in pixels to whole cells, so text never sits between them.
     function snapX(pixels: real): real {

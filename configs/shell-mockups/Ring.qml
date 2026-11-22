@@ -6,16 +6,17 @@ import Quickshell.Wayland
 //
 // Six station names travel on a dotted orbit around a large clock. h and l
 // turn the ring, and the name on the right is the focused one, shown in
-// reverse video. Enter opens it: the ring's names are erased and a bordered
-// panel is typed in where the focused name was, listing that station's
+// reverse video. Enter opens it: the ring's names are wiped away and a
+// bordered panel is wiped in where the focused name was, listing that station's
 // settings. Esc backs out.
 //
-// There is one way for anything here to appear or disappear: it is typed in
-// from the left a character at a time behind a dithered edge, and erased in
-// reverse. The orbit is plotted dot by dot clockwise from the right, and
-// each name is typed as the plot reaches it, so the ring draws itself round
-// in a sweep. The dimming behind it dithers in and out. The only movement
-// is the ring turning, in whole jumps on the character grid.
+// There is one way for anything here to appear or disappear: a dithered
+// front wipes across it from the left, and wipes back to take it away. The
+// orbit is plotted dot by dot clockwise from the right, and each name is
+// wiped in as the plot reaches it, so the ring draws itself round in a
+// sweep. The dimming behind it dithers in and out. The only movement is the
+// ring turning, in whole jumps on the character grid; the name that takes
+// focus flashes bright for a moment.
 PanelWindow {
     id: ring
 
@@ -31,37 +32,38 @@ PanelWindow {
 
     // --- The four animated values ---
     // Each runs at a steady rate with no easing. They are chained so that
-    // things happen in order: opening a station erases the names and then
-    // types the panel; leaving it erases the panel and then retypes the
-    // names; closing erases whatever is showing and then shuts the ring.
+    // things happen in order: opening a station wipes the names away and
+    // then wipes the panel in; leaving it wipes the panel away and then
+    // brings the names back; closing wipes away whatever is showing and
+    // then shuts the ring.
 
-    // How much of the ring is typed in: 0 = closed, 1 = open. It stays open
-    // until an open panel has been erased.
+    // How much of the ring is showing: 0 = closed, 1 = open. It stays open
+    // until an open panel has been wiped away.
     property real openness: shell.ringOpen || panelOpen ? 1 : 0
     // Rotation of the ring, in degrees.
     property real angle: -stepDegrees * shell.turns
-    // 0 = the names, orbit and hints are printed. 1 = they are erased, to
-    // make room for a panel or because the ring is closing.
+    // 0 = the names, orbit and hints are showing. 1 = they are wiped away,
+    // to make room for a panel or because the ring is closing.
     property real aside: !shell.ringOpen || shell.dived || panelOpen ? 1 : 0
-    // How much of the focused station's panel is typed in. It starts only
-    // once the names have been erased.
+    // How much of the focused station's panel is showing. It starts only
+    // once the names have been wiped away.
     property real dive: shell.dived && aside === 1 ? 1 : 0
 
     // --- What is drawn from them ---
     // One turn is drawn as a few equal jumps round the orbit.
     readonly property real angleJump: stepDegrees / Theme.turnSteps
     readonly property real drawnAngle: Math.round(angle / angleJump) * angleJump
-    // How much of the ring's own text and orbit is printed, from 0 to 1.
-    readonly property real ringPrinted: Math.min(openness, 1 - aside)
-    // The orbit is fully plotted when the ring is this far printed; the rest
-    // of the time lets the last name finish typing.
+    // How much of the ring's own names, orbit and hints is showing, from 0 to 1.
+    readonly property real ringShown: Math.min(openness, 1 - aside)
+    // The orbit is fully plotted when the ring is this far shown; the rest
+    // of the time lets the last name finish wiping in.
     readonly property real sweepShare: 0.7
-    // True from the first typed character of a panel until the last one is erased.
+    // True from when a panel starts to wipe in until it has been wiped away.
     readonly property bool panelOpen: dive > 0
 
     Behavior on openness {
         NumberAnimation {
-            duration: Theme.typeMs
+            duration: Theme.wipeMs
         }
     }
     Behavior on angle {
@@ -71,12 +73,12 @@ PanelWindow {
     }
     Behavior on aside {
         NumberAnimation {
-            duration: Theme.typeMs
+            duration: Theme.wipeMs
         }
     }
     Behavior on dive {
         NumberAnimation {
-            duration: Theme.typeMs
+            duration: Theme.wipeMs
         }
     }
 
@@ -162,14 +164,14 @@ PanelWindow {
                 x: ring.centerX + Theme.snapX(ring.orbitRadius * Math.cos(theta))
                 y: ring.centerY + Theme.snapY(ring.orbitRadius * Math.sin(theta)) - Theme.cellHeight / 2
                 // Plotted clockwise from the right, and un-plotted in reverse.
-                visible: index < Math.round(ring.clamp01(ring.ringPrinted / ring.sweepShare) * ring.orbitDots)
+                visible: index < Math.round(ring.clamp01(ring.ringShown / ring.sweepShare) * ring.orbitDots)
                 text: "·"
                 color: Theme.line
             }
         }
 
         // --- The clock at the centre: the time at four times size, the date under it ---
-        // Both are typed in as the ring opens and erased as it closes.
+        // Wiped in as the ring opens and away as it closes.
         Item {
             id: clock
 
@@ -177,22 +179,32 @@ PanelWindow {
             readonly property string dateText: Qt.formatDateTime(ring.shell.now, "dddd d MMMM")
             // Steps back to the border colour while a station is open.
             readonly property bool steppedBack: ring.shell.dived || ring.panelOpen
+            // As wide as the wider of its two lines, in cells.
+            readonly property int columns: Math.max(timeText.length * 4, dateText.length)
 
-            x: ring.centerX
-            y: ring.centerY
+            x: ring.centerX - Theme.snapX(width / 2)
+            y: ring.centerY - 3 * Theme.cellHeight
+            width: columns * Theme.cellWidth
+            height: 5 * Theme.cellHeight
+            visible: ring.openness > 0
+            // Drawn through the dither only while it is changing.
+            layer.enabled: ring.openness < 1
+            layer.effect: DitherFade {
+                amount: ring.openness
+                spread: Theme.wipeFront
+            }
 
             Label {
-                x: -Theme.snapX(clock.timeText.length * Theme.cellWidth * scaleFactor / 2)
-                y: -3 * Theme.cellHeight
-                text: Theme.typedText(clock.timeText, ring.openness)
+                x: Theme.snapX((clock.width - width) / 2)
+                text: clock.timeText
                 scaleFactor: 4
                 color: clock.steppedBack ? Theme.line : Theme.ink
             }
 
             Label {
-                x: -Theme.snapX(clock.dateText.length * Theme.cellWidth / 2)
-                y: Theme.cellHeight
-                text: Theme.typedText(clock.dateText, ring.openness)
+                x: Theme.snapX((clock.width - width) / 2)
+                y: 4 * Theme.cellHeight
+                text: clock.dateText
                 color: clock.steppedBack ? Theme.line : Theme.inkDim
             }
         }
@@ -216,53 +228,69 @@ PanelWindow {
                 // Where this station sits on the orbit, as a share of the way
                 // round clockwise from the right: 0 on the right, 0.5 on the left.
                 readonly property real orbitShare: ((degrees % 360) + 360) % 360 / 360
-                // How much of the name is typed. It starts when the plotted
+                // How much of the name is showing. It starts when the plotted
                 // orbit reaches this station, so the names appear in a sweep.
-                readonly property real typed: ring.clamp01((ring.ringPrinted - ring.sweepShare * orbitShare) / (1 - ring.sweepShare))
+                readonly property real shown: ring.clamp01((ring.ringShown - ring.sweepShare * orbitShare) / (1 - ring.sweepShare))
                 readonly property int nameWidth: nameText.length * Theme.cellWidth * 2
 
                 z: focused ? 1 : 0
                 x: ring.centerX + Theme.snapX(ring.orbitRadius * Math.cos(theta))
                 y: ring.centerY + Theme.snapY(ring.orbitRadius * Math.sin(theta))
 
-                // The reverse-video block behind the focused name. It is as
-                // wide as the part of the name that is typed.
-                Rectangle {
-                    id: block
-
-                    readonly property int typedCharacters: Theme.typedLength(station.nameText.length, station.typed)
-
-                    x: name.x - 2 * Theme.cellWidth
-                    y: name.y
-                    width: typedCharacters * Theme.cellWidth * 2 + 4 * Theme.cellWidth
-                    height: name.height
-                    visible: station.focused && typedCharacters > 0
-                    color: Theme.accent
+                onFocusedChanged: {
+                    if (focused)
+                        focusFlash.restart();
                 }
 
-                // The name, at double size.
-                Label {
-                    id: name
+                Timer {
+                    id: focusFlash
 
-                    x: -Theme.snapX(station.nameWidth / 2)
+                    interval: Theme.flashMs
+                }
+
+                // The name at double size, with two cells of margin each
+                // side. The focused one is in reverse video.
+                Item {
+                    id: plate
+
+                    x: -Theme.snapX(station.nameWidth / 2) - 2 * Theme.cellWidth
                     y: -Theme.cellHeight
-                    text: Theme.typedText(station.nameText, station.typed)
-                    scaleFactor: 2
-                    color: station.focused ? Theme.slab : Theme.inkSoft
+                    width: station.nameWidth + 4 * Theme.cellWidth
+                    height: 2 * Theme.cellHeight
+                    visible: station.shown > 0
+                    // Drawn through the dither only while it is changing.
+                    layer.enabled: station.shown < 1
+                    layer.effect: DitherFade {
+                        amount: station.shown
+                        spread: Theme.wipeFront
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        visible: station.focused
+                        color: focusFlash.running ? Theme.ink : Theme.accent
+                    }
+
+                    Label {
+                        x: 2 * Theme.cellWidth
+                        text: station.nameText
+                        scaleFactor: 2
+                        color: station.focused ? Theme.slab : Theme.inkSoft
+                    }
                 }
 
-                // The panel, typed in where the name was.
+                // The panel, wiped in where the name was.
                 Box {
                     id: panel
 
-                    x: block.x
+                    x: plate.x
                     y: -Theme.cellHeight
                     visible: station.focused && ring.panelOpen
                     columns: ring.panelColumns
                     rows: station.modelData.controls.length
                     title: station.nameText
-                    footer: "j/k select  enter act  esc back"
-                    typed: station.focused ? ring.dive : 0
+                    footer: "↑↓ select  ↵ act  esc back"
+                    shown: station.focused ? ring.dive : 0
 
                     Repeater {
                         model: station.modelData.controls
@@ -289,7 +317,7 @@ PanelWindow {
                             }
 
                             Label {
-                                text: row.selected ? ">" : " "
+                                text: row.selected ? "►" : " "
                                 color: row.nameColor
                             }
 
@@ -315,12 +343,12 @@ PanelWindow {
                                 color: Theme.ink
                             }
 
-                            // A switch: a checkbox, then its state. Anything else: just its value.
+                            // A switch: a filled or empty square, then its state. Anything else: just its value.
                             Label {
                                 x: ring.valueColumn * Theme.cellWidth
                                 width: (panel.contentColumns - ring.valueColumn - 1) * Theme.cellWidth
                                 visible: row.modelData.kind !== "level"
-                                text: row.modelData.kind === "switch" ? (row.modelData.on ? "[x] " : "[ ] ") + row.modelData.value : row.modelData.value
+                                text: row.modelData.kind === "switch" ? (row.modelData.on ? "■ " : "□ ") + row.modelData.value : row.modelData.value
                                 color: Theme.inkSoft
                                 elide: Text.ElideRight
                             }
@@ -334,20 +362,27 @@ PanelWindow {
         Row {
             x: Theme.snapX((parent.width - width) / 2)
             y: Theme.snapY(parent.height - 80)
+            visible: ring.ringShown > 0
+            // Drawn through the dither only while it is changing.
+            layer.enabled: ring.ringShown < 1
+            layer.effect: DitherFade {
+                amount: ring.ringShown
+                spread: Theme.wipeFront
+            }
 
             Repeater {
-                model: [["h/l", " turn    "], ["enter", " open    "], ["esc", " close"]]
+                model: [["←→", " turn    "], ["↵", " open    "], ["esc", " close"]]
 
                 Row {
                     required property var modelData
 
                     Label {
-                        text: Theme.typedText(parent.modelData[0], ring.ringPrinted)
+                        text: parent.modelData[0]
                         color: Theme.ink
                     }
 
                     Label {
-                        text: Theme.typedText(parent.modelData[1], ring.ringPrinted)
+                        text: parent.modelData[1]
                         color: Theme.inkDim
                     }
                 }
