@@ -1,0 +1,3 @@
+# Link to the font package, made by:
+#   nix build nixpkgs#nerd-fonts.departure-mono -o departure-mono-font
+departure-mono-font
