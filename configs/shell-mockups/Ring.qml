@@ -100,7 +100,9 @@ PanelWindow {
     }
 
     // --- Geometry, all on the character grid ---
-    readonly property real orbitRadius: 280
+    // The orbit is forty cells across at most, and smaller when the screen
+    // is not tall enough for that.
+    readonly property real orbitRadius: Theme.snapY(Math.min(40 * Theme.cellWidth, height * 0.37))
     readonly property real centerX: Theme.snapX(width / 2)
     readonly property real centerY: Theme.snapY(height / 2)
 
@@ -113,7 +115,7 @@ PanelWindow {
     // How many points the circle is plotted with, and how many pixels
     // around each station's name are left clear of them.
     readonly property int orbitPoints: 250
-    readonly property real orbitGap: 6
+    readonly property real orbitGap: 3 * Theme.dotSize
     // A braille character's code is 0x2800 plus one bit per raised dot.
     // These are the bits of a cell's left and right column, top dot first.
     readonly property var leftDots: [0x01, 0x02, 0x04, 0x40]
@@ -234,10 +236,23 @@ PanelWindow {
                 return;
             }
 
-            // With a text field, every other key types into it.
+            // With a text field, the other keys edit its text.
             if (hasField) {
-                if (key === Qt.Key_Backspace)
+                const control = (event.modifiers & Qt.ControlModifier) !== 0;
+                if (key === Qt.Key_Left)
+                    shell.placeCursor(shell.cursor - 1);
+                else if (key === Qt.Key_Right)
+                    shell.placeCursor(shell.cursor + 1);
+                else if (key === Qt.Key_Home || (control && key === Qt.Key_A))
+                    shell.placeCursor(0);
+                else if (key === Qt.Key_End || (control && key === Qt.Key_E))
+                    shell.placeCursor(shell.query.length);
+                else if (control && key === Qt.Key_U)
+                    shell.clearText();
+                else if (key === Qt.Key_Backspace)
                     shell.eraseText();
+                else if (key === Qt.Key_Delete)
+                    shell.deleteText();
                 else if (event.text.length === 1 && event.text >= " ")
                     shell.typeText(event.text);
                 return;
@@ -376,20 +391,59 @@ PanelWindow {
 
         // --- The open page, wiped in where the focused name was ---
         Panel {
-            x: ring.centerX + ring.orbitRadius - Theme.snapX(ring.focusedName.length * Theme.cellWidth) - 2 * Theme.cellWidth
+            id: page
+
+            // Starts where the focused name's block started, moved left
+            // as far as it takes to stay on the screen.
+            x: Math.min(ring.centerX + ring.orbitRadius - Theme.snapX(ring.focusedName.length * Theme.cellWidth) - 2 * Theme.cellWidth, Theme.snapX(parent.width - implicitWidth - Theme.cellWidth))
             y: ring.centerY - Theme.cellHeight
             visible: ring.panelOpen
             page: ring.shell.page
             entries: ring.shell.pageRows
             selectedIndex: ring.shell.selectedIndex
             query: ring.shell.query
+            cursor: ring.shell.cursor
             shown: ring.dive
+        }
+
+        // --- A picture of the selected row, when it has one ---
+        // Shown above the page, for choosing a wallpaper. The picture is
+        // drawn in two colours, like everything else.
+        Box {
+            id: preview
+
+            // The selected row's picture, or "" when it has none.
+            readonly property string image: {
+                const rows = ring.shell.pageRows;
+                const row = rows.length > 0 ? rows[ring.shell.selectedIndex] : undefined;
+                return row && row.image ? row.image : "";
+            }
+
+            x: page.x
+            y: page.y - implicitHeight
+            visible: ring.panelOpen && image !== ""
+            columns: page.columns
+            rows: 13
+            title: "preview"
+            shown: ring.dive
+
+            Image {
+                anchors.fill: parent
+                // The picture's path is given from the shell's own folder.
+                source: preview.image === "" ? "" : "file://" + Quickshell.shellDir + "/" + preview.image
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                // No larger than it is drawn.
+                sourceSize.width: width
+                layer.enabled: true
+                layer.effect: DitherImage {}
+            }
         }
 
         // --- Key hints for the ring view; an open page carries its own ---
         Row {
             x: Theme.snapX((parent.width - width) / 2)
-            y: Theme.snapY(parent.height - 80)
+            y: Theme.snapY(parent.height - 2 * Theme.cellHeight)
             visible: ring.ringShown > 0
             // Drawn through the dither only while it is changing.
             layer.enabled: ring.ringShown < 1

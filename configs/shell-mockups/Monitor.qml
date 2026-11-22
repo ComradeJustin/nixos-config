@@ -8,8 +8,10 @@ import Quickshell.Wayland
 // l move between them, and enter expands the focused one into a full view
 // in the same place. Esc collapses it, then closes the monitor.
 //
-// An applet's tile and its expanded view are both a Panel, at two sizes,
-// so they use the same rows as the ring's pages (sample-data.js).
+// An applet's tile (Tile.qml) and its expanded view are both a Panel, at
+// two sizes, so they use the same rows as the ring's pages
+// (sample-data.js). An applet in trouble, such as a failed build, is drawn
+// in the alert colour.
 //
 // It moves the way the ring does. The tiles are wiped in one after another,
 // in reading order; expanding wipes them away and then wipes the full view
@@ -147,28 +149,23 @@ PanelWindow {
         Repeater {
             model: monitor.appletCount
 
-            Panel {
+            Tile {
                 id: tile
 
                 required property int index
 
-                readonly property var applet: monitor.applets[index]
                 readonly property bool focused: index === monitor.shell.monitorIndex
 
                 x: monitor.gridX + (index % monitor.gridColumns) * monitor.tilePitchX
                 y: monitor.gridY + Math.floor(index / monitor.gridColumns) * monitor.tilePitchY
                 columns: monitor.tileColumns
-                valueColumn: 10
-                levelCells: 16
-                page: applet
-                entries: applet.summary
-                // Nothing in a tile is selected.
-                selectedIndex: -1
+                applet: monitor.applets[index]
                 footer: focused ? "↵ expand" : ""
-                // The focused tile has its border and title in the accent
-                // colour, and flashes bright for a moment as it takes focus.
-                lineColor: focusFlash.running ? Theme.ink : (focused ? Theme.accent : Theme.line)
-                titleColor: focused ? Theme.accent : Theme.ink
+                // The focused tile has its border in the accent colour, and
+                // flashes bright for a moment as it takes focus. An applet
+                // in trouble keeps the alert colour unless it is focused.
+                lineColor: focusFlash.running ? Theme.ink : (focused ? Theme.accent : (inTrouble ? Theme.alert : Theme.line))
+                titleColor: inTrouble ? Theme.alert : (focused ? Theme.accent : Theme.ink)
                 // Tiles wipe in one after another, in reading order.
                 shown: monitor.clamp01((monitor.tilesShown - monitor.sweepShare * index / monitor.appletCount) / (1 - monitor.sweepShare))
                 visible: shown > 0
@@ -202,6 +199,8 @@ PanelWindow {
             entries: applet.rows
             selectedIndex: monitor.shell.monitorSelected
             footer: "↑↓ jk scroll  esc back"
+            titleColor: applet.alert === true ? Theme.alert : Theme.ink
+            lineColor: applet.alert === true ? Theme.alert : Theme.line
             shown: monitor.dive
             visible: monitor.viewOpen
         }
@@ -209,7 +208,7 @@ PanelWindow {
         // --- Key hints for the tiles; an expanded view carries its own ---
         Row {
             x: Theme.snapX((parent.width - width) / 2)
-            y: Theme.snapY(parent.height - 80)
+            y: Theme.snapY(parent.height - 2 * Theme.cellHeight)
             visible: monitor.tilesShown > 0
             // Drawn through the dither only while it is changing.
             layer.enabled: monitor.tilesShown < 1

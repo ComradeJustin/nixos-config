@@ -22,6 +22,10 @@ import "sample-data.js" as SampleData
 //   Toasts         notifications, stacked under the bar's left end
 //   Calendar       a month that drops out of the bar's clock
 //   Lock           the lock screen
+//   Dialog         things that interrupt: a password prompt, a warning
+//                  that the screen is about to lock, a nearly empty battery
+//   Desktop        tiles that sit on the desktop under the windows
+//   Tile           one applet's summary, used by the monitor and the desktop
 //   Box, Level     the panel frame and the bar they are all built from
 //   Graph, Spinner a braille history graph and a busy mark, used in pages
 //   SignalBars     Wi-Fi strength as four rising bars
@@ -37,10 +41,12 @@ import "sample-data.js" as SampleData
 // Drive:  the buttons at the bottom of the screen, or
 //   qs -p ~/nixos-config/configs/shell-mockups ipc call shell-mockup <name>
 //   where <name> is one of: ring, turn 1, open, select 1, back, type abc,
-//   page clipboard, monitor, applet 2, expand, scroll 1, volume, mute,
-//   brightness, toast, workspace, states, rebuild, calendar, lock
+//   cursor -1, page clipboard, monitor, applet 2, expand, scroll 1,
+//   volume, mute, brightness, toast, workspace, states, rebuild, calendar,
+//   month 1, lock, dialog authenticate, privacy, caps, desktop
 // In the ring: h l turn, enter opens, j k or the arrows select, esc backs
-// out. In a page with a text field, letters type and the arrows select.
+// out. In a page with a text field, letters type, up and down select, and
+// left, right, home, end, backspace, delete and ctrl+u edit the text.
 // In the monitor: h j k l move between applets, enter expands, esc backs out.
 // Files reload on save.
 ShellRoot {
@@ -58,8 +64,10 @@ ShellRoot {
     property var pageStack: []
     // The selected row of each of those pages.
     property var selectionStack: []
-    // What has been typed into the innermost page's text field.
+    // What has been typed into the innermost page's text field, and where
+    // the text cursor is in it, counted in characters from the start.
     property string query: ""
+    property int cursor: 0
     // A change of page waits here while the page on screen is wiped away.
     // Ring.qml calls commitStack() once it has gone.
     property bool stackPending: false
@@ -108,6 +116,33 @@ ShellRoot {
     property real rebuildProgress: 0
     property bool calendarShown: false
     property bool lockShown: false
+    // Whether something is using the microphone, the camera or the screen.
+    property bool microphoneInUse: false
+    property bool cameraInUse: false
+    property bool screenShared: false
+    property bool capsLock: false
+    // Which of the privacy samples is showing: 0 nothing, 1 the microphone,
+    // 2 the microphone, camera and screen.
+    property int privacyStep: 0
+    // Which month the calendar shows, counted in months from this one.
+    property int calendarOffset: 0
+    // Whether "Dismiss all" has emptied the inbox.
+    property bool inboxEmpty: false
+    property bool desktopShown: true
+
+    // --- Dialogs ---
+    // The name of the dialog that is up, or "" for none.
+    property string dialogName: ""
+    // How many characters have been typed into its password field. Only
+    // the count is kept, never the characters.
+    property int dialogTyped: 0
+    property bool dialogRefused: false
+    // The time left before a dialog acts by itself, from 1 to 0.
+    property real dialogCountdown: 1
+    readonly property var dialogs: SampleData.dialogs({
+        countdown: root.dialogCountdown,
+        refused: root.dialogRefused
+    })
 
     // Whether the focused window is fullscreen, from QuickShell's own window
     // list. It updates the moment the window changes; nothing polls. niri
@@ -126,7 +161,9 @@ ShellRoot {
         brightness: root.brightness,
         battery: root.battery,
         charging: root.charging,
-        online: root.online
+        online: root.online,
+        trouble: root.statePreset === 1,
+        inboxEmpty: root.inboxEmpty
     })
 
     // The monitor's applets, in grid order.
@@ -135,7 +172,8 @@ ShellRoot {
         rebuildProgress: root.rebuildProgress,
         battery: root.battery,
         charging: root.charging,
-        online: root.online
+        online: root.online,
+        trouble: root.statePreset === 1
     })
 
     // --- The ring: what the keys, the buttons and IPC all call ---
@@ -183,6 +221,7 @@ ShellRoot {
         root.pageStack = root.nextPageStack;
         root.selectionStack = root.nextSelectionStack;
         root.query = "";
+        root.cursor = 0;
         root.stackPending = false;
     }
 
@@ -204,6 +243,11 @@ ShellRoot {
         } else if (row.does === "lock") {
             root.toggleRing();
             root.lockShown = true;
+        } else if (row.does === "monitor") {
+            root.toggleMonitor();
+        } else if (row.does === "dismissAll") {
+            root.inboxEmpty = true;
+            root.unreadCount = 0;
         }
     }
 
@@ -228,19 +272,49 @@ ShellRoot {
         root.select(Math.max(0, Math.min(last, root.selectedIndex + step)));
     }
 
-    // Typing into the innermost page's text field. The first match is selected.
+    // --- The text field of the innermost page ---
+    // Whether there is one to type into right now.
+    readonly property bool fieldOpen: page !== null && page.field !== undefined && !stackPending
+
+    // Typing puts the text in at the cursor. The first match is selected.
     function typeText(text: string): void {
-        if (!root.page || !root.page.field || root.stackPending)
+        if (!root.fieldOpen)
             return;
-        root.query += text;
+        root.query = root.query.slice(0, root.cursor) + text + root.query.slice(root.cursor);
+        root.cursor += text.length;
         root.select(0);
     }
 
+    // Backspace: take out the character before the cursor.
     function eraseText(): void {
-        if (!root.page || !root.page.field || root.stackPending)
+        if (!root.fieldOpen || root.cursor === 0)
             return;
-        root.query = root.query.slice(0, -1);
+        root.query = root.query.slice(0, root.cursor - 1) + root.query.slice(root.cursor);
+        root.cursor -= 1;
         root.select(0);
+    }
+
+    // Delete: take out the character under the cursor.
+    function deleteText(): void {
+        if (!root.fieldOpen || root.cursor >= root.query.length)
+            return;
+        root.query = root.query.slice(0, root.cursor) + root.query.slice(root.cursor + 1);
+        root.select(0);
+    }
+
+    function clearText(): void {
+        if (!root.fieldOpen)
+            return;
+        root.query = "";
+        root.cursor = 0;
+        root.select(0);
+    }
+
+    // Move the cursor to this position, kept inside the text.
+    function placeCursor(position: int): void {
+        if (!root.fieldOpen)
+            return;
+        root.cursor = Math.max(0, Math.min(root.query.length, position));
     }
 
     // Open the ring straight at one page, as a key binding would.
@@ -318,15 +392,30 @@ ShellRoot {
         readoutHide.restart();
     }
 
-    // Pretend a notification arrived.
+    // Whether a notification on screen is in this place of the stack.
+    function toastPlaceTaken(place: int): bool {
+        for (let index = 0; index < toastModel.count; index++) {
+            if (toastModel.get(index).place === place)
+                return true;
+        }
+        return false;
+    }
+
+    // Pretend a notification arrived. It takes the highest free place in
+    // the stack and keeps it until it leaves, so nothing ever moves.
     function showToast(): void {
+        let place = 0;
+        while (root.toastPlaceTaken(place))
+            place += 1;
         root.toastSerial += 1;
         toastModel.append({
             sample: root.nextToast,
-            serial: root.toastSerial
+            serial: root.toastSerial,
+            place: place
         });
         root.nextToast = (root.nextToast + 1) % SampleData.toasts.length;
         root.unreadCount += 1;
+        root.inboxEmpty = false;
     }
 
     // Take a notification off the screen, by its serial number.
@@ -354,6 +443,33 @@ ShellRoot {
         root.muted = trouble;
     }
 
+    // Step through the privacy samples: nothing, the microphone, everything.
+    function cyclePrivacy(): void {
+        root.privacyStep = (root.privacyStep + 1) % 3;
+        root.microphoneInUse = root.privacyStep >= 1;
+        root.cameraInUse = root.privacyStep === 2;
+        root.screenShared = root.privacyStep === 2;
+    }
+
+    function toggleCalendar(): void {
+        root.calendarOffset = 0;
+        root.calendarShown = !root.calendarShown;
+    }
+
+    // Put a dialog up, by its name in sample-data.js.
+    function showDialog(name: string): void {
+        if (root.dialogs[name] === undefined)
+            return;
+        root.dialogTyped = 0;
+        root.dialogRefused = false;
+        root.dialogCountdown = 1;
+        root.dialogName = name;
+    }
+
+    function closeDialog(): void {
+        root.dialogName = "";
+    }
+
     // Pretend a system rebuild started.
     function startRebuild(): void {
         root.rebuildProgress = 0;
@@ -375,6 +491,22 @@ ShellRoot {
 
         interval: 1600
         onTriggered: root.readoutShown = false
+    }
+
+    // Runs a dialog's time down, while one that counts down is up. When
+    // the time is out the dialog goes, and "about to lock" locks.
+    Timer {
+        interval: 200
+        repeat: true
+        running: root.dialogName !== "" && root.dialogs[root.dialogName].countsDown
+        onTriggered: {
+            root.dialogCountdown = Math.max(0, root.dialogCountdown - 0.03);
+            if (root.dialogCountdown > 0)
+                return;
+            if (root.dialogName === "lockSoon")
+                root.lockShown = true;
+            root.closeDialog();
+        }
     }
 
     // Moves the pretend rebuild along. Only runs during one.
@@ -426,6 +558,14 @@ ShellRoot {
         shell: root
     }
 
+    Dialog {
+        shell: root
+    }
+
+    Desktop {
+        shell: root
+    }
+
     IpcHandler {
         target: "shell-mockup"
 
@@ -451,6 +591,10 @@ ShellRoot {
 
         function type(text: string): void {
             root.typeText(text);
+        }
+
+        function cursor(step: int): void {
+            root.placeCursor(root.cursor + step);
         }
 
         function page(pageName: string): void {
@@ -505,7 +649,30 @@ ShellRoot {
         }
 
         function calendar(): void {
-            root.calendarShown = !root.calendarShown;
+            root.toggleCalendar();
+        }
+
+        function month(step: int): void {
+            root.calendarOffset += step;
+        }
+
+        function dialog(name: string): void {
+            if (root.dialogName === name)
+                root.closeDialog();
+            else
+                root.showDialog(name);
+        }
+
+        function privacy(): void {
+            root.cyclePrivacy();
+        }
+
+        function caps(): void {
+            root.capsLock = !root.capsLock;
+        }
+
+        function desktop(): void {
+            root.desktopShown = !root.desktopShown;
         }
 
         function lock(): void {
@@ -519,20 +686,22 @@ ShellRoot {
         margins.bottom: 10
         exclusionMode: ExclusionMode.Ignore
         implicitWidth: controls.width + 4 * Theme.cellWidth
-        implicitHeight: Theme.barHeight
+        implicitHeight: controls.height + 2 * Theme.barTextY
         color: Theme.slab
         WlrLayershell.namespace: "shell-mockup"
         WlrLayershell.layer: WlrLayer.Top
 
-        Row {
+        Flow {
             id: controls
 
             x: 2 * Theme.cellWidth
             y: Theme.barTextY
+            // Wide enough for two rows of buttons.
+            width: 120 * Theme.cellWidth
             spacing: 2 * Theme.cellWidth
 
             Repeater {
-                model: [["ring", () => root.toggleRing()], ["monitor", () => root.toggleMonitor()], ["vol", () => root.bumpVolume()], ["mute", () => root.toggleMute()], ["bright", () => root.bumpBrightness()], ["notify", () => root.showToast()], ["workspace", () => root.nextWorkspace()], ["states", () => root.cycleStates()], ["rebuild", () => root.startRebuild()], ["calendar", () => root.calendarShown = !root.calendarShown], ["lock", () => root.lockShown = true]]
+                model: [["ring", () => root.toggleRing()], ["monitor", () => root.toggleMonitor()], ["vol", () => root.bumpVolume()], ["mute", () => root.toggleMute()], ["bright", () => root.bumpBrightness()], ["notify", () => root.showToast()], ["workspace", () => root.nextWorkspace()], ["states", () => root.cycleStates()], ["rebuild", () => root.startRebuild()], ["calendar", () => root.toggleCalendar()], ["lock", () => root.lockShown = true], ["password", () => root.showDialog("authenticate")], ["idle", () => root.showDialog("lockSoon")], ["battery", () => root.showDialog("batteryCritical")], ["privacy", () => root.cyclePrivacy()], ["caps", () => root.capsLock = !root.capsLock], ["desktop", () => root.desktopShown = !root.desktopShown]]
 
                 Label {
                     id: button

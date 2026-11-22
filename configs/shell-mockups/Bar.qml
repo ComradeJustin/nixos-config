@@ -5,14 +5,19 @@ import Quickshell.Wayland
 // The bar: a terminal status line. One row of cells, segments separated by
 // dim Powerline arrows that point away from the centre, levels drawn as
 // framed progress bars.
-// Left: workspaces, the focused window, the playing track, the count of
-// waiting notifications, and a system rebuild while one is running.
+// Left: workspaces, the focused window, the playing track, then whatever
+// is going on right now: waiting notifications, the microphone, camera or
+// screen being used, caps lock, a system rebuild.
 // Centre: date and time. Right: network with its signal, volume, battery.
 // A halftone shadow falls under it.
 // One bar is made for each screen (shell.qml).
 //
+// The left half has to fit in front of the clock. The window title gives
+// way first: it is cut short to whatever room is left. If that leaves it
+// too little, the playing track goes.
+//
 // Trouble is shown in the alert colour together with a word or mark: no
-// network, muted sound, a low battery.
+// network, muted sound, a low battery, something recording.
 // Sample values, except the clock and whatever the buttons at the bottom of
 // the screen change.
 PanelWindow {
@@ -44,7 +49,7 @@ PanelWindow {
     component Divider: Label {
         property bool pointsLeft: false
 
-        text: pointsLeft ? " \ue0b3 " : " \ue0b1 "
+        text: pointsLeft ? "  " : "  "
         color: Theme.line
     }
 
@@ -56,6 +61,16 @@ PanelWindow {
     }
 
     readonly property bool batteryLow: shell.battery <= 0.2 && !shell.charging
+
+    // --- Fitting the left half in front of the clock ---
+    // Where the left half has to end, and what is left of that for the
+    // window title once everything else has taken its place.
+    readonly property real leftLimit: clockRow.x - 2 * Theme.cellWidth
+    readonly property real titleRoom: leftLimit - leftRow.x - workspaces.width - firstDivider.width - passingRow.width
+    // The title is worth showing in this many cells or more.
+    readonly property real titleEnough: 12 * Theme.cellWidth
+    readonly property bool trackFits: titleRoom - trackRow.width >= titleEnough
+    readonly property real titleWidth: Math.max(0, titleRoom - (trackFits ? trackRow.width : 0))
 
     // How much of the bar is showing: 1 normally, 0 while the focused window
     // is fullscreen. niri keeps the bar drawn on top of a window for about a
@@ -101,121 +116,164 @@ PanelWindow {
             height: Theme.barHeight
             color: Theme.slab
 
-            // --- Left: workspaces, focused window, playing track ---
+            // --- Left ---
             Row {
+                id: leftRow
+
                 x: Theme.cellWidth
                 y: Theme.barTextY
 
-                Repeater {
-                    model: 5
-
-                    // Focused: reverse video, flashing bright for a moment as
-                    // it takes focus. Occupied: normal. Empty: dim.
-                    Rectangle {
-                        required property int index
-
-                        readonly property bool focused: index === bar.shell.workspace
-                        readonly property bool occupied: index < 3
-
-                        width: 3 * Theme.cellWidth
-                        height: Theme.cellHeight
-                        color: focusFlash.running ? Theme.ink : (focused ? Theme.accent : "transparent")
-
-                        onFocusedChanged: {
-                            if (focused)
-                                focusFlash.restart();
-                        }
-
-                        Label {
-                            x: Theme.cellWidth
-                            text: parent.index + 1
-                            color: parent.focused ? Theme.slab : (parent.occupied ? Theme.ink : Theme.line)
-                        }
-
-                        Timer {
-                            id: focusFlash
-
-                            interval: Theme.flashMs
-                        }
-                    }
-                }
-
-                Divider {}
-
-                Label {
-                    text: "Cursor — nixos-config"
-                }
-
-                Divider {}
-
-                Key {
-                    text: "♪ "
-                }
-
-                Label {
-                    text: "Shelter"
-                }
-
-                // Notifications waiting in the Inbox.
-                Divider {
-                    visible: bar.shell.unreadCount > 0
-                }
-
-                Key {
-                    visible: bar.shell.unreadCount > 0
-                    text: "✦ "
-                }
-
-                Value {
-                    visible: bar.shell.unreadCount > 0
-                    text: bar.shell.unreadCount
-                }
-
-                // A system rebuild, only while one is running: wiped in
-                // when it starts and away when it finishes.
                 Row {
-                    id: rebuild
+                    id: workspaces
 
-                    property real shown: bar.shell.rebuilding ? 1 : 0
+                    Repeater {
+                        model: 5
 
-                    Behavior on shown {
-                        NumberAnimation {
-                            duration: Theme.wipeMs
+                        // Focused: reverse video, flashing bright for a moment as
+                        // it takes focus. Occupied: normal. Empty: dim.
+                        Rectangle {
+                            required property int index
+
+                            readonly property bool focused: index === bar.shell.workspace
+                            readonly property bool occupied: index < 3
+
+                            width: 3 * Theme.cellWidth
+                            height: Theme.cellHeight
+                            color: focusFlash.running ? Theme.ink : (focused ? Theme.accent : "transparent")
+
+                            onFocusedChanged: {
+                                if (focused)
+                                    focusFlash.restart();
+                            }
+
+                            Label {
+                                x: Theme.cellWidth
+                                text: parent.index + 1
+                                color: parent.focused ? Theme.slab : (parent.occupied ? Theme.ink : Theme.line)
+                            }
+
+                            Timer {
+                                id: focusFlash
+
+                                interval: Theme.flashMs
+                            }
                         }
                     }
+                }
 
-                    visible: shown > 0
-                    layer.enabled: shown < 1
-                    layer.effect: DitherFade {
-                        amount: rebuild.shown
-                        spread: Theme.wipeFront
-                    }
+                Divider {
+                    id: firstDivider
+                }
+
+                // The focused window, cut short to the room there is.
+                Label {
+                    width: Math.min(implicitWidth, bar.titleWidth)
+                    text: "Cursor — nixos-config"
+                    elide: Text.ElideRight
+                }
+
+                // The playing track, when there is room for it.
+                Row {
+                    id: trackRow
+
+                    visible: bar.trackFits
 
                     Divider {}
 
-                    Spinner {}
-
                     Key {
-                        text: " nh "
-                    }
-
-                    Level {
-                        level: bar.shell.rebuildProgress
-                        cells: 6
+                        text: "♪ "
                     }
 
                     Label {
-                        text: " " + Math.round(bar.shell.rebuildProgress * 100) + "%"
-                        color: Theme.ink
+                        text: "Shelter"
+                    }
+                }
+
+                // Whatever is going on right now.
+                Row {
+                    id: passingRow
+
+                    // Notifications waiting in the Inbox.
+                    Passing {
+                        active: bar.shell.unreadCount > 0
+
+                        Divider {}
+
+                        Key {
+                            text: "✦ "
+                        }
+
+                        Value {
+                            text: bar.shell.unreadCount
+                        }
+                    }
+
+                    // Something is listening, watching or recording.
+                    Passing {
+                        active: bar.shell.microphoneInUse
+
+                        Flag {
+                            word: "mic"
+                        }
+                    }
+
+                    Passing {
+                        active: bar.shell.cameraInUse
+
+                        Flag {
+                            word: "cam"
+                        }
+                    }
+
+                    Passing {
+                        active: bar.shell.screenShared
+
+                        Flag {
+                            word: "screen"
+                        }
+                    }
+
+                    Passing {
+                        active: bar.shell.capsLock
+
+                        Flag {
+                            word: "caps"
+                            blockColor: Theme.ink
+                        }
+                    }
+
+                    // A system rebuild.
+                    Passing {
+                        active: bar.shell.rebuilding
+
+                        Divider {}
+
+                        Spinner {}
+
+                        Key {
+                            text: " nh "
+                        }
+
+                        Level {
+                            level: bar.shell.rebuildProgress
+                            cells: 6
+                        }
+
+                        Label {
+                            text: " " + Math.round(bar.shell.rebuildProgress * 100) + "%"
+                            color: Theme.ink
+                        }
                     }
                 }
             }
 
             // --- Centre: date and time ---
             Row {
+                id: clockRow
+
                 y: Theme.barTextY
-                // Rounded so the text lands on whole pixels and stays sharp.
-                x: Math.round((parent.width - width) / 2)
+                // On a whole cell, so the text stays sharp.
+                x: Theme.snapX((parent.width - width) / 2)
 
                 Label {
                     text: Qt.formatDateTime(bar.shell.now, "ddd d MMM") + "  "
@@ -246,6 +304,7 @@ PanelWindow {
                     color: bar.shell.online ? Theme.inkSoft : Theme.alert
                 }
 
+                // The exit node traffic leaves through.
                 Label {
                     visible: bar.shell.online
                     text: " → nixpc"

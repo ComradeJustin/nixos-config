@@ -1,10 +1,12 @@
 .pragma library
 
 // Sample content for the shell mockup: the ring's stations, every page that
-// can open inside the ring, the notifications, and the monitor's applets.
+// can open inside the ring, the notifications, the dialogs, the monitor's
+// applets and the desktop widgets.
 // Nothing here is read from the system.
 //
-// A page is { title, field, rows }.
+// A page is { title, field, rows, empty }.
+//   empty   what to say when the page has no rows to show
 //   field   optional line of text input at the top of the page:
 //           { hint, filters, secret }. `filters` narrows the rows to those
 //           that contain the typed text; `secret` shows dots instead of it.
@@ -19,7 +21,9 @@
 //   Any row may also have:
 //     note    dim text at the right edge, e.g. an age
 //     opens   the name of the page that enter opens (shown as "›")
-//     does    "back" or "lock": what enter does instead of opening a page
+//     does    what enter does instead of opening a page: "back", "lock",
+//             "monitor" (open the monitor) or "dismissAll" (empty the inbox)
+//     image   a picture to preview beside the page while the row is selected
 //     alert   true when something is wrong; the value is in the alert colour
 
 // The names on the ring, clockwise, and the page each one opens.
@@ -49,8 +53,35 @@ function history(count, period) {
     return samples;
 }
 
+// The wallpapers in this repository, for the wallpaper page. The paths are
+// relative to this directory.
+var wallpaperFolder = "../../assets/wallpapers/";
+var wallpapers = [
+    "wallpaper.png",
+    "moon.jpg",
+    "paper-airplane-balcony.jpg",
+    "glt_gruvbox.png",
+    "frute.jpg",
+    "sparkle.jpg",
+    "albertep.jpg",
+    "wallhaven-pk6g1j.jpg",
+    "wallhaven-l3d1mp.jpg",
+    "wallhaven-6klm2w.jpg",
+    "wallhaven-x8ylyd.jpg",
+    "wallhaven-3qweed.jpg",
+];
+
+function wallpaperRows() {
+    var rows = [];
+    for (var index = 0; index < wallpapers.length; index++)
+        rows.push({ label: wallpapers[index], kind: "line", note: index === 0 ? "current" : "", image: wallpaperFolder + wallpapers[index] });
+    return rows;
+}
+
 // Every page, by name. `state` holds the few values the mockup's buttons
-// change: { volume, muted, brightness, battery, charging, online }.
+// change: { volume, muted, brightness, battery, charging, online, trouble,
+// inboxEmpty }. `trouble` is the sample state in which things have gone
+// wrong: no network, Bluetooth off, a failed build.
 function pages(state) {
     var batteryPercent = Math.round(state.battery * 100) + "%";
     var batteryLow = state.battery <= 0.2 && !state.charging;
@@ -59,8 +90,15 @@ function pages(state) {
     return {
         launch: {
             title: "Launch",
-            field: { hint: "search apps", filters: true, secret: false },
+            field: { hint: "search windows and apps", filters: true, secret: false },
+            empty: "nothing matches",
             rows: [
+                // Open windows come first: enter switches to one.
+                { label: "Cursor", kind: "text", value: "nixos-config", note: "window 2" },
+                { label: "Firefox", kind: "text", value: "Departure Mono", note: "window 2" },
+                { label: "Ghostty", kind: "text", value: "~/nixos-config", note: "window 1" },
+                { label: "Vesktop", kind: "text", value: "#general", note: "window 3" },
+                // Then apps: enter starts one.
                 { label: "Firefox", kind: "text", value: "browser" },
                 { label: "Ghostty", kind: "text", value: "terminal" },
                 { label: "Cursor", kind: "text", value: "editor" },
@@ -79,6 +117,7 @@ function pages(state) {
         clipboard: {
             title: "Clipboard",
             field: { hint: "filter clipboard", filters: true, secret: false },
+            empty: "nothing matches",
             rows: [
                 { label: "git push -u origin shell-redesign", kind: "line", note: "1m" },
                 { label: "readonly property int wipeMs: 140", kind: "line", note: "4m" },
@@ -97,18 +136,21 @@ function pages(state) {
             ],
         },
 
+        // The System station holds controls. Things to watch (processor,
+        // memory, battery detail, builds) are in the monitor.
         system: {
             title: "System",
             rows: [
                 { label: "Volume", kind: "level", value: state.muted ? "mute" : String(state.volume), level: state.muted ? 0 : state.volume / 100, alert: state.muted },
                 { label: "Mixer", kind: "text", value: "3 apps playing", opens: "mixer" },
                 { label: "Brightness", kind: "level", value: String(state.brightness), level: state.brightness / 100 },
-                { label: "CPU", kind: "graph", value: "12%", samples: history(40, 3) },
-                { label: "Power", kind: "text", value: batteryPercent + " · " + batteryTime, opens: "power", alert: batteryLow },
+                { label: "Power profile", kind: "text", value: "balanced", opens: "powerProfile" },
                 { label: "Night light", kind: "switch", value: "until 07:00", on: true },
                 { label: "Do not disturb", kind: "switch", value: "off", on: false },
                 { label: "Keep awake", kind: "switch", value: "off", on: false },
+                { label: "Background apps", kind: "text", value: "4 running", opens: "tray" },
                 { label: "Settings", kind: "text", value: "", opens: "settings" },
+                { label: "Monitor", kind: "text", value: batteryPercent + " battery, 12% processor", does: "monitor", alert: batteryLow },
             ],
         },
 
@@ -124,16 +166,35 @@ function pages(state) {
             ],
         },
 
-        power: {
-            title: "Power",
+        powerProfile: {
+            title: "Power profile",
             rows: [
-                { label: "Battery", kind: "level", value: batteryPercent, level: state.battery, alert: batteryLow },
-                { label: "Time", kind: "text", value: batteryTime, alert: batteryLow },
-                { label: "Charger", kind: "text", value: state.charging ? "plugged in, 45 W" : "not plugged in" },
-                { label: "Power saver", kind: "switch", value: "", on: false },
+                { label: "Power saver", kind: "switch", value: "longest battery", on: false },
                 { label: "Balanced", kind: "switch", value: "", on: true },
-                { label: "Performance", kind: "switch", value: "", on: false },
-                { label: "Health", kind: "text", value: "91% of design capacity" },
+                { label: "Performance", kind: "switch", value: "fans may run", on: false },
+            ],
+        },
+
+        // The app tray: apps that keep running without a window. Each
+        // opens its own menu.
+        tray: {
+            title: "Background apps",
+            empty: "nothing is running in the background",
+            rows: [
+                { label: "Vesktop", kind: "text", value: "3 unread", opens: "trayMenu" },
+                { label: "Tailscale", kind: "text", value: "connected", opens: "trayMenu" },
+                { label: "Spotify", kind: "text", value: "playing Shelter", opens: "trayMenu" },
+                { label: "Steam", kind: "text", value: "idle", opens: "trayMenu" },
+            ],
+        },
+
+        trayMenu: {
+            title: "Vesktop",
+            rows: [
+                { label: "Open", kind: "text", value: "", does: "back" },
+                { label: "Mute", kind: "switch", value: "notifications", on: false },
+                { label: "Check for updates", kind: "text", value: "", does: "back" },
+                { label: "Quit", kind: "text", value: "", does: "back" },
             ],
         },
 
@@ -147,6 +208,7 @@ function pages(state) {
                 { label: "Lock", kind: "text", value: "after 3 min idle" },
                 { label: "Suspend", kind: "text", value: "after 10 min idle" },
                 { label: "Night light", kind: "text", value: "sunset to 07:00" },
+                { label: "Keyboard", kind: "text", value: "us, caps lock is escape" },
                 { label: "Font", kind: "text", value: "Departure Mono, 11 px" },
                 { label: "About", kind: "text", value: "nixlaptop · NixOS 26.11" },
             ],
@@ -173,24 +235,14 @@ function pages(state) {
         wallpaper: {
             title: "Wallpaper",
             field: { hint: "filter wallpapers", filters: true, secret: false },
-            rows: [
-                { label: "forest-mist.png", kind: "line", note: "current" },
-                { label: "dunes-at-dusk.jpg", kind: "line", note: "" },
-                { label: "harbour-fog.jpg", kind: "line", note: "" },
-                { label: "paper-cranes.png", kind: "line", note: "" },
-                { label: "terminal-grid.png", kind: "line", note: "" },
-                { label: "night-train.jpg", kind: "line", note: "" },
-                { label: "red-cliffs.jpg", kind: "line", note: "" },
-                { label: "snow-line.jpg", kind: "line", note: "" },
-                { label: "tide-pools.jpg", kind: "line", note: "" },
-                { label: "city-from-above.jpg", kind: "line", note: "" },
-                { label: "dithered-moon.png", kind: "line", note: "" },
-            ],
+            empty: "nothing matches",
+            rows: wallpaperRows(),
         },
 
         keys: {
             title: "Key bindings",
             field: { hint: "filter bindings", filters: true, secret: false },
+            empty: "nothing matches",
             rows: [
                 { label: "Mod+Space", kind: "text", value: "summon the ring" },
                 { label: "Mod+Return", kind: "text", value: "open a terminal" },
@@ -222,16 +274,16 @@ function pages(state) {
             title: "Network",
             rows: [
                 { label: "Wi-Fi", kind: "signal", value: state.online ? "Home-5G" : "not connected", level: state.online ? 0.75 : 0, opens: "wifi", alert: !state.online },
-                { label: "Bluetooth", kind: "text", value: "2 devices connected", opens: "bluetooth" },
+                { label: "Bluetooth", kind: "text", value: state.trouble ? "off" : "2 devices connected", opens: "bluetooth" },
                 { label: "Exit node", kind: "switch", value: "nixpc", on: state.online },
                 { label: "Tailnet", kind: "text", value: state.online ? "4 devices online" : "unreachable", alert: !state.online },
-                { label: "Traffic", kind: "graph", value: state.online ? "1.2M/s" : "0", samples: state.online ? history(40, 5) : [] },
             ],
         },
 
         wifi: {
             title: "Wi-Fi",
-            rows: [
+            empty: "no networks in range",
+            rows: state.online ? [
                 { label: "Home-5G", kind: "signal", value: "connected", level: 0.75 },
                 { label: "Home-2G", kind: "signal", value: "saved", level: 1 },
                 { label: "Cafe-Guest", kind: "signal", value: "secured", level: 0.75, opens: "wifiPassword" },
@@ -243,7 +295,7 @@ function pages(state) {
                 { label: "Phone-Hotspot", kind: "signal", value: "secured", level: 0.25, opens: "wifiPassword" },
                 { label: "Train-WiFi", kind: "signal", value: "open", level: 0.25 },
                 { label: "Scan again", kind: "busy", value: "scanning" },
-            ],
+            ] : [],
         },
 
         wifiPassword: {
@@ -258,7 +310,10 @@ function pages(state) {
 
         bluetooth: {
             title: "Bluetooth",
-            rows: [
+            rows: state.trouble ? [
+                { label: "Bluetooth", kind: "switch", value: "off", on: false },
+                { label: "Turn Bluetooth on to see devices", kind: "line", note: "" },
+            ] : [
                 { label: "Bluetooth", kind: "switch", value: "on", on: true },
                 { label: "WH-1000XM5", kind: "text", value: "connected", note: "80%" },
                 { label: "MX Master 3", kind: "text", value: "connected", note: "55%" },
@@ -282,7 +337,8 @@ function pages(state) {
 
         inbox: {
             title: "Inbox",
-            rows: [
+            empty: "no notifications",
+            rows: state.inboxEmpty ? [] : [
                 { label: "Mara", kind: "text", value: "are you still coming tonight?", note: "2m" },
                 { label: "nh", kind: "busy", value: "Rebuilding nixlaptop" },
                 { label: "Vesktop", kind: "text", value: "3 new messages in #general", note: "14m" },
@@ -290,7 +346,7 @@ function pages(state) {
                 { label: "Battery", kind: "text", value: "12% left", note: "2h", alert: true },
                 { label: "Firefox", kind: "text", value: "Download finished", note: "3h" },
                 { label: "Do not disturb", kind: "switch", value: "off", on: false },
-                { label: "Dismiss all", kind: "text", value: "" },
+                { label: "Dismiss all", kind: "text", value: "", does: "dismissAll" },
             ],
         },
 
@@ -332,6 +388,77 @@ function pages(state) {
     };
 }
 
+// --- Dialogs ---
+
+// Things that interrupt: each is a page shown on its own in the middle of
+// the screen (Dialog.qml). `countsDown` means it acts by itself when its
+// time runs out; its first row shows the time left as a level.
+// `state` is { countdown, refused }: the time left from 1 to 0, and whether
+// the last password was turned down.
+function dialogs(state) {
+    return {
+        // An app asks for administrator rights.
+        authenticate: {
+            title: "Authenticate",
+            field: { hint: state.refused ? "wrong password, try again" : "password", filters: false, secret: true },
+            countsDown: false,
+            alert: state.refused,
+            rows: [
+                { label: "Wants to run", kind: "text", value: "nixos-rebuild switch" },
+                { label: "As", kind: "text", value: "root" },
+                { label: "Asked by", kind: "text", value: "nh, in Ghostty" },
+            ],
+        },
+
+        // The screen is about to lock because nothing has been touched.
+        lockSoon: {
+            title: "Still there?",
+            countsDown: true,
+            alert: false,
+            rows: [
+                { label: "Locking in", kind: "level", value: Math.ceil(state.countdown * 30) + " s", level: state.countdown },
+                { label: "Press any key to stay", kind: "line", note: "" },
+            ],
+        },
+
+        // The battery is nearly empty.
+        batteryCritical: {
+            title: "Battery at 5%",
+            countsDown: true,
+            alert: true,
+            rows: [
+                { label: "Suspending in", kind: "level", value: Math.ceil(state.countdown * 60) + " s", level: state.countdown, alert: true },
+                { label: "Plug in, or press any key to keep going", kind: "line", note: "" },
+            ],
+        },
+    };
+}
+
+// --- Desktop widgets ---
+
+// Tiles that sit on the desktop, under the windows. Same shape as a
+// monitor applet's tile: a title and four summary rows.
+var desktopWidgets = [
+    {
+        title: "Now playing",
+        summary: [
+            { label: "Track", kind: "text", value: "Shelter" },
+            { label: "Artist", kind: "text", value: "Porter Robinson & Madeon" },
+            { label: "At", kind: "level", value: "1:32/3:38", level: 0.42 },
+            { label: "Player", kind: "text", value: "Spotify" },
+        ],
+    },
+    {
+        title: "Today",
+        summary: [
+            { label: "Weather", kind: "text", value: "12°, light rain" },
+            { label: "14:00", kind: "text", value: "dentist" },
+            { label: "19:30", kind: "text", value: "dinner with Mara" },
+            { label: "Sunset", kind: "text", value: "16:42" },
+        ],
+    },
+];
+
 // --- The monitor ---
 
 // Packages a pretend rebuild works through, in order, again and again.
@@ -363,6 +490,29 @@ function duration(seconds) {
 // expanded view. `state.rebuilding` and `state.rebuildProgress` (0 to 1)
 // say how far the pretend rebuild has got.
 function buildApplet(state) {
+    if (state.trouble && !state.rebuilding) {
+        return {
+            title: "Build",
+            alert: true,
+            summary: [
+                { label: "Status", kind: "text", value: "failed", alert: true },
+                { label: "At", kind: "text", value: "firefox-140.0", alert: true },
+                { label: "Built", kind: "level", value: "31/" + buildTotal, level: 31 / buildTotal, alert: true },
+                { label: "Took", kind: "text", value: "2m 6s" },
+            ],
+            rows: [
+                { label: "Status", kind: "text", value: "failed, the system was not changed", alert: true },
+                { label: "Failed at", kind: "text", value: "firefox-140.0, buildPhase", alert: true },
+                { label: "Built", kind: "level", value: "31/" + buildTotal, level: 31 / buildTotal, alert: true },
+                { label: "Took", kind: "text", value: "2m 6s" },
+                { label: "error: builder for firefox-140.0 failed with exit code 1", kind: "line", note: "" },
+                { label: "  > ld: final link failed: No space left on device", kind: "line", note: "" },
+                { label: "  > collect2: error: ld returned 1 exit status", kind: "line", note: "" },
+                { label: "For the full log: nix log firefox-140.0", kind: "line", note: "" },
+                { label: "Generation", kind: "text", value: "412, unchanged" },
+            ],
+        };
+    }
     if (!state.rebuilding) {
         return {
             title: "Build",
@@ -554,21 +704,22 @@ function applets(state) {
         },
         {
             title: "Services",
+            alert: state.trouble,
             summary: [
-                { label: "Failed", kind: "text", value: "0 units" },
+                { label: "Failed", kind: "text", value: state.trouble ? "1 unit: cups" : "0 units", alert: state.trouble },
                 { label: "Running", kind: "text", value: "61 system, 14 user" },
                 { label: "Timers", kind: "text", value: "next in 12 min" },
                 { label: "Journal", kind: "text", value: "2 warnings today" },
             ],
             rows: [
-                { label: "Failed", kind: "text", value: "0 units" },
+                { label: "Failed", kind: "text", value: state.trouble ? "1 unit" : "0 units", alert: state.trouble },
+                { label: "cups", kind: "switch", value: state.trouble ? "failed, exit code 1" : "stopped", on: false, alert: state.trouble },
                 { label: "System", kind: "text", value: "61 running" },
                 { label: "User", kind: "text", value: "14 running" },
                 { label: "tailscaled", kind: "switch", value: "running", on: true, note: "3d" },
                 { label: "sshd", kind: "switch", value: "running", on: true, note: "3d" },
                 { label: "pipewire", kind: "switch", value: "running", on: true, note: "5h" },
                 { label: "bluetooth", kind: "switch", value: "stopped", on: false },
-                { label: "cups", kind: "switch", value: "stopped", on: false },
                 { label: "nix-gc.timer", kind: "text", value: "runs in 12 min" },
                 { label: "fstrim.timer", kind: "text", value: "runs in 4 d" },
                 { label: "Journal", kind: "text", value: "2 warnings, 0 errors today" },

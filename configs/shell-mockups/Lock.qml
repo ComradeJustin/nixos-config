@@ -66,7 +66,7 @@ PanelWindow {
         layer.enabled: lock.shown < 1
         layer.effect: DitherFade {
             amount: lock.shown
-            dotSize: 4
+            dotSize: 2 * Theme.dotSize
         }
 
         Keys.onPressed: event => {
@@ -140,15 +140,21 @@ PanelWindow {
 
             Label {
                 y: Theme.cellHeight
-                text: lock.refused ? "wrong password" : "mockup: type anything, then enter"
-                color: lock.refused ? Theme.alert : Theme.inkDim
+                text: {
+                    if (lock.refused)
+                        return "wrong password";
+                    if (lock.shell.capsLock)
+                        return "caps lock is on";
+                    return "mockup: type anything, then enter";
+                }
+                color: lock.refused || lock.shell.capsLock ? Theme.alert : Theme.inkDim
             }
         }
 
         // Who and what is locked, and the battery, at the foot of the screen.
         Label {
             x: stage.centerX - Theme.snapX(width / 2)
-            y: Theme.snapY(parent.height - 80)
+            y: Theme.snapY(parent.height - 3 * Theme.cellHeight)
             text: "nixlaptop  ·  battery " + Math.round(lock.shell.battery * 100) + "%  ·  or touch the fingerprint reader"
             color: Theme.inkDim
         }

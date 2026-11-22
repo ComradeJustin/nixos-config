@@ -13,7 +13,7 @@ ShaderEffect {
     // 0 = gone, 1 = fully shown.
     property real amount: 1
     // Size of one dither dot, in pixels.
-    property real dotSize: 2
+    property real dotSize: Theme.dotSize
     // Width of the dithered front as a share of the item's width. The front
     // runs left to right; the default is so wide that the whole item fades at once.
     property real spread: 1000

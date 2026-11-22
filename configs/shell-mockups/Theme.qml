@@ -33,7 +33,11 @@ Singleton {
     readonly property color alert: base0A
 
     // Departure Mono is a pixel font: it is only sharp at 11 px and whole
-    // multiples of it. At 11 px every character is exactly one cell.
+    // multiples of it, where every character is exactly one cell. `scale`
+    // picks the multiple for the whole shell: 1 for 11 px text, 2 for 22 px.
+    // At 2 one pixel of the font is two pixels of the screen, and a 1920
+    // pixel wide screen is 137 cells across.
+    readonly property int scale: 1
     // This is its Nerd Font build, which is the same font with more symbols
     // added in the same cell: progress-bar pieces (Level.qml), a spinner
     // (Spinner.qml), braille (Graph.qml), Powerline arrows (the bar's
@@ -41,13 +45,15 @@ Singleton {
     // It is not installed system-wide yet, so it is loaded from the link
     // next to this file.
     readonly property string fontFamily: departureMono.status === FontLoader.Ready ? departureMono.name : "DepartureMono Nerd Font Mono"
-    readonly property int fontSize: 11
-    readonly property int cellWidth: 7
-    readonly property int cellHeight: 14
+    readonly property int fontSize: 11 * scale
+    readonly property int cellWidth: 7 * scale
+    readonly property int cellHeight: 14 * scale
+    // Dither dots are twice the size of the font's own pixels.
+    readonly property int dotSize: 2 * scale
 
-    // The bar is two cells tall, with its one row of text centred in it.
-    readonly property int barHeight: 2 * cellHeight
-    readonly property int barTextY: cellHeight / 2
+    // The bar is one row of text with this much space above and below it.
+    readonly property int barTextY: 7
+    readonly property int barHeight: cellHeight + 2 * barTextY
 
     // Motion. There is one way for anything to appear or disappear: a
     // dithered front wipes across it from the left, and wipes back to take

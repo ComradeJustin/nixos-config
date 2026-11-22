@@ -2,30 +2,43 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// The calendar: this month as a grid, with today in reverse video and the
-// weather above it. It drops out of the bar under the clock. The month is
-// real; the weather is sample text.
+// The calendar: a month as a grid, with today in reverse video and the
+// weather above it. It drops out of the bar under the clock and takes the
+// keyboard while it is open: h and l or the arrows change the month, t goes
+// back to today, esc closes it. Changing month wipes the panel away and
+// wipes the new month in. The dates are real; the weather is sample text.
 PanelWindow {
     id: calendar
 
-    // The shell root (shell.qml).
+    // The shell root (shell.qml). shell.calendarOffset says which month is
+    // wanted, counted in months from this one.
     required property var shell
 
+    // The month that is drawn. It follows shell.calendarOffset only once
+    // the panel has been wiped away, so a month never changes on screen.
+    property int drawnOffset: 0
+
     readonly property var today: shell.now
-    readonly property int year: today.getFullYear()
-    readonly property int month: today.getMonth()
-    // Day 0 of next month is the last day of this one.
-    readonly property int daysInMonth: new Date(year, month + 1, 0).getDate()
+    // The first day of the month that is drawn. A month number past
+    // December, or before January, rolls over into the next or last year.
+    readonly property var firstDay: new Date(today.getFullYear(), today.getMonth() + drawnOffset, 1)
+    // Day 0 of the month after is the last day of this one.
+    readonly property int daysInMonth: new Date(firstDay.getFullYear(), firstDay.getMonth() + 1, 0).getDate()
     // Which column the 1st falls in. Weeks start on Monday.
-    readonly property int firstColumn: (new Date(year, month, 1).getDay() + 6) % 7
+    readonly property int firstColumn: (firstDay.getDay() + 6) % 7
 
     // 0 = nothing showing, 1 = the whole panel.
-    property real shown: shell.calendarShown ? 1 : 0
+    property real shown: shell.calendarShown && drawnOffset === shell.calendarOffset ? 1 : 0
 
     Behavior on shown {
         NumberAnimation {
             duration: Theme.wipeMs
         }
+    }
+
+    onShownChanged: {
+        if (shown === 0)
+            drawnOffset = shell.calendarOffset;
     }
 
     // Stay mapped until the panel has been wiped away.
@@ -40,6 +53,14 @@ PanelWindow {
     color: "transparent"
     WlrLayershell.namespace: "shell-mockup"
     WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.keyboardFocus: shell.calendarShown ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+
+    onVisibleChanged: {
+        if (visible) {
+            drawnOffset = shell.calendarOffset;
+            panel.forceActiveFocus();
+        }
+    }
 
     Box {
         id: panel
@@ -48,9 +69,23 @@ PanelWindow {
         columns: 24
         // Two lines of weather, a gap, the weekdays and six weeks.
         rows: 10
-        title: Qt.formatDateTime(calendar.today, "MMMM yyyy")
-        footer: "←→ month"
+        title: Qt.formatDateTime(calendar.firstDay, "MMMM yyyy")
+        footer: "←→ month  t today"
         shown: calendar.shown
+        focus: true
+
+        Keys.onPressed: event => {
+            const shell = calendar.shell;
+            event.accepted = true;
+            if (event.key === Qt.Key_Escape)
+                shell.calendarShown = false;
+            else if (event.key === Qt.Key_H || event.key === Qt.Key_Left)
+                shell.calendarOffset -= 1;
+            else if (event.key === Qt.Key_L || event.key === Qt.Key_Right)
+                shell.calendarOffset += 1;
+            else if (event.key === Qt.Key_T)
+                shell.calendarOffset = 0;
+        }
 
         Label {
             text: "12°  light rain"
@@ -79,7 +114,8 @@ PanelWindow {
 
                 readonly property int day: index - calendar.firstColumn + 1
                 readonly property bool inMonth: day >= 1 && day <= calendar.daysInMonth
-                readonly property bool isToday: inMonth && day === calendar.today.getDate()
+                // Today is only marked in this month.
+                readonly property bool isToday: inMonth && calendar.drawnOffset === 0 && day === calendar.today.getDate()
                 readonly property bool weekend: index % 7 >= 5
 
                 x: (index % 7) * 3 * Theme.cellWidth

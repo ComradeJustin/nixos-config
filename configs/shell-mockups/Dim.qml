@@ -17,7 +17,7 @@ Item {
     // How much of the screen the dots cover when fully dimmed.
     property real cover: 0.75
     // Size of one dot, in pixels. Twice the size used everywhere else.
-    property real dotSize: 4
+    property real dotSize: 2 * Theme.dotSize
 
     anchors.fill: parent
     visible: level > 0

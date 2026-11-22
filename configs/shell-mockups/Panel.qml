@@ -14,8 +14,10 @@ Box {
     // Its rows, after any filtering by the text field.
     property var entries: []
     property int selectedIndex: 0
-    // What has been typed into the text field.
+    // What has been typed into the text field, and where the cursor is in
+    // it, counted in characters from the start.
     property string query: ""
+    property int cursor: 0
 
     // Layout, in cells: where values start, how long a level or graph is,
     // and how many rows show before the list scrolls. Set `columns` to match.
@@ -25,7 +27,7 @@ Box {
 
     readonly property bool hasField: page !== null && page.field !== undefined
     readonly property int fieldRows: hasField ? 1 : 0
-    // An empty list still takes one row, for "nothing matches".
+    // An empty list still takes one row, to say that it is empty.
     readonly property int listRows: Math.max(1, Math.min(entries.length, maxListRows))
     readonly property bool scrolls: entries.length > maxListRows
     // The first entry on screen.
@@ -65,8 +67,13 @@ Box {
         interval: Theme.flashMs
     }
 
-    // --- The text field: a prompt, what was typed, a block cursor ---
+    // --- The text field: a prompt and what was typed, with a block cursor ---
     Row {
+        id: field
+
+        // What is shown for the typed text: a secret is one dot per character.
+        readonly property string typed: panel.hasField && panel.page.field.secret ? "•".repeat(panel.query.length) : panel.query
+
         visible: panel.hasField
 
         Label {
@@ -75,14 +82,26 @@ Box {
         }
 
         Label {
-            // A secret is shown as one dot per character.
-            text: panel.hasField && panel.page.field.secret ? "•".repeat(panel.query.length) : panel.query
+            text: field.typed.slice(0, panel.cursor)
             color: Theme.ink
         }
 
-        Label {
-            text: "█"
+        // The cursor: the character it is on in reverse video, or a blank
+        // block at the end of the text.
+        Rectangle {
+            width: Theme.cellWidth
+            height: Theme.cellHeight
             color: Theme.accent
+
+            Label {
+                text: field.typed.charAt(panel.cursor)
+                color: Theme.slab
+            }
+        }
+
+        Label {
+            text: field.typed.slice(panel.cursor + 1)
+            color: Theme.ink
         }
 
         Label {
@@ -135,7 +154,7 @@ Box {
             Label {
                 x: 2 * Theme.cellWidth
                 visible: line.entry === null
-                text: "nothing matches"
+                text: panel.page && panel.page.empty ? panel.page.empty : "nothing here"
                 color: Theme.line
             }
 
