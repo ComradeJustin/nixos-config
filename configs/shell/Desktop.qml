@@ -3,7 +3,8 @@ import Quickshell
 import Quickshell.Wayland
 
 // Desktop widgets: a clock in the bottom left corner of the desktop, and
-// under it what is playing, when something is.
+// under it what is playing, when something is. Both are panels, so they
+// read over any wallpaper.
 //
 // They show only while the focused workspace has no windows. When a window
 // appears they are wiped away, and when the last one goes they are wiped
@@ -43,8 +44,9 @@ PanelWindow {
         })
 
     readonly property int tileColumns: 40
-    // The clock is this many rows tall, with the gap under it.
-    readonly property int clockRows: 6
+    // The clock's panel: five rows inside its border, and with the border
+    // and the gap under it, eight.
+    readonly property int clockRows: 8
     // A tile of three rows, its border and its shadow.
     readonly property int tileHeight: 5 * Theme.cellHeight + Theme.shadowOffset
 
@@ -75,15 +77,10 @@ PanelWindow {
     mask: Region {}
 
     // The time at four times size, the date under it.
-    Item {
-        width: parent.width
-        height: 5 * Theme.cellHeight
-        // Drawn through the dither only while it is changing.
-        layer.enabled: desktop.shown < 1
-        layer.effect: DitherFade {
-            amount: desktop.shown
-            spread: Theme.wipeFront
-        }
+    Box {
+        columns: desktop.tileColumns
+        rows: 5
+        shown: desktop.shown
 
         Label {
             text: Qt.formatDateTime(desktop.shell.now, "hh:mm")

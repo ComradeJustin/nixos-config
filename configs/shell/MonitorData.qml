@@ -9,7 +9,8 @@ import Quickshell.Io
 //
 // An applet is { title, alert, summary, rows }: four summary rows for its
 // tile and the rows of its expanded view. The rows are the kinds Pages.qml
-// describes.
+// describes. A tile's labels have room for seven characters and its values
+// for about ten.
 Scope {
     id: readings
 
@@ -199,6 +200,18 @@ Scope {
         return 0;
     }
 
+    // Exactly four rows for a tile: the first four, or blank lines added
+    // to make four, so every tile is the same height.
+    function tileRows(rows: var): var {
+        const four = rows.slice(0, 4);
+        while (four.length < 4)
+            four.push({
+                label: "",
+                kind: "note"
+            });
+        return four;
+    }
+
     // --- The applets, in the order they sit in the grid ---
     readonly property var applets: [buildApplet(), processorApplet(), memoryApplet(), networkApplet(), storageApplet(), processesApplet(), powerApplet(), servicesApplet(), systemApplet()]
 
@@ -217,18 +230,23 @@ Scope {
             kind: building ? "busy" : "text",
             value: building ? builders + " build processes" : "idle"
         };
-        const rows = [state,
-            {
-                label: "Generation",
-                kind: "text",
-                value: readings.generation()
-            }
-        ];
         return {
             title: "Build",
             alert: false,
-            summary: rows,
-            rows: rows
+            summary: readings.tileRows([state,
+                {
+                    label: "System",
+                    kind: "text",
+                    value: "generation " + readings.generation()
+                }
+            ]),
+            rows: [state,
+                {
+                    label: "System generation",
+                    kind: "text",
+                    value: readings.generation()
+                }
+            ]
         };
     }
 
@@ -320,13 +338,31 @@ Scope {
         return {
             title: "Memory",
             alert: false,
-            summary: rows.concat([
+            summary: [
+                {
+                    label: "Used",
+                    kind: "level",
+                    value: readings.size(used),
+                    level: total > 0 ? used / total : 0
+                },
+                {
+                    label: "Cache",
+                    kind: "level",
+                    value: readings.size(cached),
+                    level: total > 0 ? cached / total : 0
+                },
+                {
+                    label: "Swap",
+                    kind: "level",
+                    value: readings.size(swapUsed),
+                    level: swapTotal > 0 ? swapUsed / swapTotal : 0
+                },
                 {
                     label: "Top",
                     kind: "text",
-                    value: top.length > 0 ? top[0].label + ", " + top[0].value : ""
+                    value: top.length > 0 ? top[0].label : ""
                 }
-            ]),
+            ],
             rows: rows.concat(readings.processRows(8))
         };
     }
@@ -375,13 +411,14 @@ Scope {
         return {
             title: "Network",
             alert: !online,
-            summary: rows,
+            summary: readings.tileRows(rows),
             rows: rows
         };
     }
 
     function storageApplet(): var {
         const rows = [];
+        const summary = [];
         let full = false;
         for (const line of readings.section("storage")) {
             const fields = line.split(" ");
@@ -396,11 +433,18 @@ Scope {
                 level: share,
                 alert: nearlyFull
             });
+            summary.push({
+                label: fields[2],
+                kind: "level",
+                value: readings.percent(share),
+                level: share,
+                alert: nearlyFull
+            });
         }
         return {
             title: "Storage",
             alert: full,
-            summary: rows,
+            summary: readings.tileRows(summary),
             rows: rows
         };
     }
@@ -434,7 +478,7 @@ Scope {
             return {
                 title: "Power",
                 alert: false,
-                summary: mains,
+                summary: readings.tileRows(mains),
                 rows: mains
             };
         }
@@ -470,19 +514,30 @@ Scope {
         return {
             title: "Power",
             alert: low,
-            summary: rows,
+            summary: readings.tileRows(rows),
             rows: rows
         };
     }
 
     function servicesApplet(): var {
         const failed = readings.section("failed");
+        const running = readings.section("running");
         const rows = [
             {
                 label: "Failed",
                 kind: "text",
                 value: failed.length === 0 ? "none" : failed.length + " units",
                 alert: failed.length > 0
+            },
+            {
+                label: "System",
+                kind: "text",
+                value: (running[0] || "0") + " running"
+            },
+            {
+                label: "Yours",
+                kind: "text",
+                value: (running[1] || "0") + " running"
             }
         ];
         for (const unit of failed) {
@@ -495,7 +550,7 @@ Scope {
         return {
             title: "Services",
             alert: failed.length > 0,
-            summary: rows.slice(0, 4),
+            summary: readings.tileRows(rows),
             rows: rows
         };
     }

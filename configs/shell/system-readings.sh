@@ -40,6 +40,11 @@ ps -e --no-headers | wc -l
 echo "== failed"
 systemctl --failed --no-legend --plain 2>/dev/null | awk '{ print $1 }'
 
+echo "== running"
+# How many system services are running, then how many of the user's.
+systemctl list-units --type=service --state=running --no-legend 2>/dev/null | wc -l
+systemctl --user list-units --type=service --state=running --no-legend 2>/dev/null | wc -l
+
 echo "== builders"
 # How many processes belong to Nix's build users: more than none means
 # something is being built.

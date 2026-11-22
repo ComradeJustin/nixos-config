@@ -639,6 +639,40 @@ ShellRoot {
     readonly property real battery: batteryDevice.percentage
     readonly property bool charging: batteryDevice.state === UPowerDeviceState.Charging
 
+    // The battery is warned about as it runs down past each of these
+    // levels, lowest last, with an urgent notification that stays until it
+    // is dismissed.
+    readonly property var batteryWarnings: [0.2, 0.1, 0.05]
+    // The lowest of those already warned about since the charger was last
+    // plugged in; 1 when none has been.
+    property real batteryWarnedAt: 1
+
+    function checkBattery(): void {
+        if (!root.batteryPresent)
+            return;
+        // On the charger again: start over.
+        if (root.charging || root.batteryDevice.state === UPowerDeviceState.FullyCharged) {
+            root.batteryWarnedAt = 1;
+            return;
+        }
+        // The lowest level the battery has run down past and not been warned about.
+        let passed = 1;
+        for (const level of root.batteryWarnings) {
+            if (root.battery <= level && level < root.batteryWarnedAt)
+                passed = level;
+        }
+        if (passed === 1)
+            return;
+        root.batteryWarnedAt = passed;
+        const minutes = Math.round(root.batteryDevice.timeToEmpty / 60);
+        const timeLeft = minutes > 0 ? "about " + minutes + " minutes left, " : "";
+        Quickshell.execDetached(["notify-send", "--urgency=critical", "--app-name=Battery", Math.round(root.battery * 100) + "% left", timeLeft + "plug in soon"]);
+    }
+
+    onBatteryChanged: root.checkBattery()
+    onChargingChanged: root.checkBattery()
+    onBatteryPresentChanged: root.checkBattery()
+
     // --- Network ---
     // The Wi-Fi network in use, or null.
     readonly property var wifiNetwork: {
