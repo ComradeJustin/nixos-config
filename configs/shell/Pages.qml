@@ -118,6 +118,14 @@ Scope {
     // --- Launch: open windows, then apps, then the shell's own settings ---
     readonly property var launch: launchPage()
 
+    // Start an app. niri starts it, not the shell: a program the shell
+    // starts itself belongs to the shell's service, and is killed with it
+    // whenever the shell is restarted. An app that needs a terminal gets one.
+    function startApp(entry: var): void {
+        const command = entry.runInTerminal ? ["ghostty", "-e"].concat(entry.command) : entry.command;
+        Quickshell.execDetached(["niri", "msg", "action", "spawn", "--"].concat(command));
+    }
+
     function launchPage(): var {
         const rows = [];
         // Open windows come first: enter switches to one.
@@ -143,7 +151,7 @@ Scope {
                 label: entry.name,
                 kind: "text",
                 value: entry.genericName !== "" ? entry.genericName : entry.comment,
-                act: () => entry.execute(),
+                act: () => pages.startApp(entry),
                 closes: true
             });
         }
@@ -665,14 +673,13 @@ Scope {
     }
 
     // What a command asks this shell for, such as "page clipboard". "" when
-    // the binding is not a call to this shell. niri's file gives a command
-    // with each word in quotes.
+    // the binding is not a call to this shell, which is the command
+    // shell-call. niri's file gives a command with each word in quotes.
     function shellCall(action: string): string {
         const words = pages.commandWords(action);
-        const target = words.indexOf("shell");
-        if (!words.includes("ipc") || target < 0)
+        if (words[0] !== "shell-call")
             return "";
-        return words.slice(target + 1).join(" ");
+        return words.slice(1).join(" ");
     }
 
     function commandWords(action: string): var {

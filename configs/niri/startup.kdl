@@ -3,14 +3,9 @@ environment {
  _JAVA_AWT_WM_NONREPARENTING "1"
  XDG_CURRENT_DESKTOP "GNOME"
 }
-// The desktop shell (configs/shell): the bar, notifications, the lock
-// screen, the ring. Started as a unit that comes back if it ever crashes,
-// because the lock screen lives in it.
-// Once the system has been rebuilt with modules/desktop/shell.nix, the user
-// service "shell" starts it instead, and this line can go: until then it is
-// the only thing that does. (With the service in place this line fails
-// harmlessly, because a unit of that name already exists.)
-spawn-at-startup "systemd-run" "--user" "--unit=shell" "--collect" "-p" "Restart=on-failure" "quickshell" "-p" "/home/justin/nixos-config/configs/shell"
+// The desktop shell (configs/shell) is not started here: it is the user
+// service "shell" (modules/desktop/shell.nix), which also brings it back if
+// it ever crashes.
 // sway-audio-idle-inhibit runs as a supervised systemd user service (niri.nix)
 // Idle and sleep. After 150 s the screen dims and the shell warns that it
 // is about to lock, after 180 s the session is
@@ -19,7 +14,7 @@ spawn-at-startup "systemd-run" "--user" "--unit=shell" "--collect" "-p" "Restart
 // here or anywhere else) runs the "lock" command, which is the new shell's
 // lock screen (configs/shell). On waking the lock asks the fingerprint
 // reader again.
-spawn-at-startup "swayidle" "-w" "timeout" "150" "brightnessctl -s set 10%; qs -p /home/justin/nixos-config/configs/shell ipc call shell idleWarning" "resume" "brightnessctl -r; qs -p /home/justin/nixos-config/configs/shell ipc call shell idleResume" "timeout" "180" "loginctl lock-session" "resume" "qs -p /home/justin/nixos-config/configs/shell ipc call shell lockWake" "timeout" "1800" "systemctl suspend" "before-sleep" "loginctl lock-session" "after-resume" "sleep 1; qs -p /home/justin/nixos-config/configs/shell ipc call shell lockWake" "lock" "qs -p /home/justin/nixos-config/configs/shell ipc call shell lock"
+spawn-at-startup "swayidle" "-w" "timeout" "150" "brightnessctl -s set 10%; shell-call idleWarning" "resume" "brightnessctl -r; shell-call idleResume" "timeout" "180" "loginctl lock-session" "resume" "shell-call lockWake" "timeout" "1800" "systemctl suspend" "before-sleep" "loginctl lock-session" "after-resume" "sleep 1; shell-call lockWake" "lock" "shell-call lock"
 spawn-at-startup "awww-daemon"
 spawn-at-startup "awww" "restore"
 spawn-at-startup "wl-paste" "--watch" "cliphist" "store"

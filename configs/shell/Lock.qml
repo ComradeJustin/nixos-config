@@ -137,7 +137,7 @@ Scope {
         id: fingerprintCheck
 
         // The system's rule set that asks the reader and keeps asking.
-        config: "quickshell-bar"
+        config: "shell-lock"
 
         onPamMessage: {
             // After the reader that rule set asks for a password. If it

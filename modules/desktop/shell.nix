@@ -58,10 +58,8 @@ in
   # which only root may do unless the user is named as the operator.
   services.tailscale.extraSetFlags = [ "--operator=justin" ];
 
-  # The lock screen's fingerprint check goes through the PAM service
-  # "shell-lock". hosts/nixlaptop/fingerprint.nix adds the fingerprint
-  # reader to it. "quickshell-bar" is its old name, kept until the shell on
-  # every machine has been restarted with the new one (Lock.qml).
+  # The lock screen's fingerprint check goes through this PAM service
+  # (Lock.qml). hosts/nixlaptop/fingerprint.nix adds the fingerprint reader
+  # to it.
   security.pam.services.shell-lock = { };
-  security.pam.services.quickshell-bar = { };
 }

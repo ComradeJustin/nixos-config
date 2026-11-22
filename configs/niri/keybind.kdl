@@ -11,19 +11,20 @@ binds {
 
     // Mod-Shift-/, which is usually the same as Mod-?,
     // shows the list of keys, in the shell.
-    Mod+Shift+Slash { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "page" "keys"; }
+    Mod+Shift+Slash { spawn "shell-call" "page" "keys"; }
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
     Mod+Return hotkey-overlay-title="Open a Terminal: ghostty" { spawn "ghostty" "+new-window"; }
-    Mod+D { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "page" "clipboard"; }
-    Mod+M { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "monitor"; }
-    // The ring of the new shell (configs/shell). The keys below open it at one page.
-    Mod+Space { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "ring"; }
-    Mod+P { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "page" "wallpaper"; }
-    Mod+Escape { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "page" "session"; }
-    Mod+N { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "page" "system"; }
-    Mod+T { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "tray"; }
-    Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "lock"; }
+    Mod+D { spawn "shell-call" "page" "clipboard"; }
+    Mod+M { spawn "shell-call" "monitor"; }
+    // The desktop shell (configs/shell). shell-call hands it a request
+    // (modules/desktop/shell.nix). The keys below open the ring at one page.
+    Mod+Space { spawn "shell-call" "ring"; }
+    Mod+P { spawn "shell-call" "page" "wallpaper"; }
+    Mod+Escape { spawn "shell-call" "page" "session"; }
+    Mod+N { spawn "shell-call" "page" "system"; }
+    Mod+T { spawn "shell-call" "tray"; }
+    Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "shell-call" "lock"; }
     //Alt+Tab {spawn "~/.config/niri/hotkeyscripts/alttab.sh";} 
     Mod+B hotkey-overlay-title="Run firefox" { spawn "firefox";}
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
@@ -41,16 +42,16 @@ binds {
     // Using spawn-sh allows to pass multiple arguments together with the command.
     // These go to the new shell (configs/shell), which changes the volume
     // and shows it.
-    XF86AudioRaiseVolume allow-when-locked=true { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "volumeUp"; }
-    XF86AudioLowerVolume allow-when-locked=true { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "volumeDown"; }
-    XF86AudioMute        allow-when-locked=true { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "volumeMute"; }
-    XF86AudioMicMute     allow-when-locked=true { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "microphoneMute"; }
+    XF86AudioRaiseVolume allow-when-locked=true { spawn "shell-call" "volumeUp"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn "shell-call" "volumeDown"; }
+    XF86AudioMute        allow-when-locked=true { spawn "shell-call" "volumeMute"; }
+    XF86AudioMicMute     allow-when-locked=true { spawn "shell-call" "microphoneMute"; }
 
     // Example brightness key mappings for brightnessctl.
     // You can use regular spawn with multiple arguments too (to avoid going through "sh"),
     // but you need to manually put each argument in separate "" quotes.
-    XF86MonBrightnessUp allow-when-locked=true { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "brightnessUp"; }
-    XF86MonBrightnessDown allow-when-locked=true { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "brightnessDown"; }
+    XF86MonBrightnessUp allow-when-locked=true { spawn "shell-call" "brightnessUp"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn "shell-call" "brightnessDown"; }
 
     // Open/close the Overview: a zoomed-out view of workspaces and windows.
     // You can also move the mouse into the top-left hot corner,
