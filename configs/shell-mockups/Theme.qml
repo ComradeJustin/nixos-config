@@ -50,6 +50,8 @@ Singleton {
     // back in the same way.
     readonly property int ringOpenMs: 120
     readonly property int ringOpenSteps: 5
+    // The ring's names, orbit and hints are typed in or erased in this long.
+    readonly property int typeMs: 90
     // A panel prints one line in this long, and is erased at the same rate.
     readonly property int lineMs: 30
 

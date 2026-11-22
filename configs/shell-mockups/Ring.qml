@@ -6,13 +6,16 @@ import Quickshell.Wayland
 //
 // Six station names travel on a dotted orbit around a large clock. h and l
 // turn the ring, and the name on the right is the focused one, shown in
-// reverse video. Enter opens it: a bordered panel is printed in its place,
-// listing that station's settings. Esc backs out.
+// reverse video. Enter opens it: the ring's names are erased and a bordered
+// panel is printed where the focused name was, listing that station's
+// settings. Esc backs out.
 //
-// It moves the way a terminal redraws. Three numbers below (openness, angle,
-// dive) run at a steady rate with no easing, and each is rounded to a few
-// whole steps before anything is drawn from it. Positions snap to the
-// character grid and nothing fades, so every frame is a clean redraw.
+// It moves the way a terminal redraws: at a steady rate, in whole steps,
+// with positions on the character grid. Nothing fades and nothing is cut.
+// Text is typed in and erased a character at a time, the orbit is plotted
+// and un-plotted dot by dot, panels are printed line by line, and the
+// dimming behind it all changes in steps. Everything that appears leaves
+// the same way, in reverse.
 PanelWindow {
     id: ring
 
@@ -27,22 +30,33 @@ PanelWindow {
     readonly property int focusedIndex: ((shell.turns % stationCount) + stationCount) % stationCount
     readonly property int focusedRowCount: stations[focusedIndex].controls.length
 
-    // --- The three animated values, and the stepped versions that are drawn ---
-    // 0 = hidden, 1 = open.
-    // It stays open until any open panel has been erased, so closing runs
-    // in order: the panel first, then the ring.
+    // --- The four animated values ---
+    // Each runs at a steady rate with no easing. They are chained so that
+    // things happen in order: opening a station erases the names and then
+    // prints the panel; leaving it erases the panel and then retypes the
+    // names; closing erases whatever is showing and then shuts the ring.
+
+    // How far the ring has opened: 0 = closed, 1 = open. It stays open until
+    // an open panel has been erased.
     property real openness: shell.ringOpen || panelOpen ? 1 : 0
     // Rotation of the ring, in degrees.
     property real angle: -stepDegrees * shell.turns
-    // 0 = ring view, 1 = the focused station's panel fully printed.
-    property real dive: shell.dived ? 1 : 0
+    // 0 = the names, orbit and hints are printed. 1 = they are erased, to
+    // make room for a panel or because the ring is closing.
+    property real aside: !shell.ringOpen || shell.dived || panelOpen ? 1 : 0
+    // How much of the focused station's panel is printed. It starts only
+    // once the names have been erased.
+    property real dive: shell.dived && aside === 1 ? 1 : 0
 
+    // --- What is drawn from them ---
     // The orbit's size jumps outward in a few steps as the ring opens.
     readonly property real drawnOpenness: Math.round(openness * Theme.ringOpenSteps) / Theme.ringOpenSteps
     // One turn is drawn as a few equal jumps round the orbit.
     readonly property real angleJump: stepDegrees / Theme.turnSteps
     readonly property real drawnAngle: Math.round(angle / angleJump) * angleJump
-    // True from the first printed row of a panel until the last one is erased.
+    // How much of the ring's own text and orbit is printed, from 0 to 1.
+    readonly property real ringPrinted: Math.min(openness, 1 - aside)
+    // True from the first printed line of a panel until the last one is erased.
     readonly property bool panelOpen: dive > 0
 
     Behavior on openness {
@@ -55,6 +69,11 @@ PanelWindow {
             duration: Theme.turnMs
         }
     }
+    Behavior on aside {
+        NumberAnimation {
+            duration: Theme.typeMs
+        }
+    }
     Behavior on dive {
         NumberAnimation {
             duration: (ring.focusedRowCount + 2) * Theme.lineMs
@@ -63,6 +82,7 @@ PanelWindow {
 
     // --- Geometry, all on the character grid ---
     readonly property real orbitRadius: 280
+    readonly property int orbitDots: 60
     // Width of an opened station's panel, in character cells.
     readonly property int panelColumns: 52
     // Where the value column starts inside a panel row, in cells.
@@ -89,11 +109,12 @@ PanelWindow {
             stage.forceActiveFocus();
     }
 
-    // Dim everything behind the ring. It cuts in and out; nothing fades.
+    // Dim everything behind the ring, darker in steps as the ring opens and
+    // lighter in the same steps as it closes.
     Rectangle {
         anchors.fill: parent
         color: Theme.slab
-        opacity: 0.9
+        opacity: 0.9 * ring.drawnOpenness
     }
 
     Item {
@@ -127,44 +148,46 @@ PanelWindow {
             event.accepted = true;
         }
 
-        // --- The orbit: a circle plotted in dot characters, as a terminal would ---
+        // --- The orbit: a circle plotted in dot characters, one after another ---
         Repeater {
-            model: 60
+            model: ring.orbitDots
 
             Label {
                 required property int index
 
-                readonly property real theta: index * 6 * Math.PI / 180
+                readonly property real theta: index * (360 / ring.orbitDots) * Math.PI / 180
 
                 x: ring.centerX + Theme.snapX(ring.orbitRadius * ring.drawnOpenness * Math.cos(theta))
                 y: ring.centerY + Theme.snapY(ring.orbitRadius * ring.drawnOpenness * Math.sin(theta)) - Theme.cellHeight / 2
-                visible: !ring.panelOpen && ring.drawnOpenness > 0
+                // Dots are plotted clockwise from the right, and un-plotted in reverse.
+                visible: index < Math.round(ring.ringPrinted * ring.orbitDots)
                 text: "·"
                 color: Theme.line
             }
         }
 
         // --- The clock at the centre: the time at four times size, the date under it ---
+        // Both are typed in as the ring opens and erased as it closes.
         Item {
             x: ring.centerX
             y: ring.centerY
 
             Label {
-                id: time
-
-                x: -Theme.snapX(width / 2)
+                x: -Theme.snapX(implicitWidth / 2)
                 y: -3 * Theme.cellHeight
                 text: Qt.formatDateTime(ring.shell.now, "hh:mm")
                 scaleFactor: 4
-                // Steps back to the border colour while a panel is open.
-                color: ring.panelOpen ? Theme.line : Theme.ink
+                typed: ring.openness
+                // Steps back to the border colour while a station is open.
+                color: ring.shell.dived || ring.panelOpen ? Theme.line : Theme.ink
             }
 
             Label {
-                x: -Theme.snapX(width / 2)
+                x: -Theme.snapX(implicitWidth / 2)
                 y: Theme.cellHeight
                 text: Qt.formatDateTime(ring.shell.now, "dddd d MMMM")
-                color: ring.panelOpen ? Theme.line : Theme.inkDim
+                typed: ring.openness
+                color: ring.shell.dived || ring.panelOpen ? Theme.line : Theme.inkDim
             }
         }
 
@@ -187,11 +210,9 @@ PanelWindow {
                 z: focused ? 1 : 0
                 x: ring.centerX + Theme.snapX(distance * Math.cos(theta))
                 y: ring.centerY + Theme.snapY(distance * Math.sin(theta))
-                // Hidden while the orbit has no size. While a panel is open
-                // only the focused station is drawn.
-                visible: ring.drawnOpenness > 0 && (focused || !ring.panelOpen)
 
-                // The reverse-video block behind the focused name.
+                // The reverse-video block behind the focused name. It is as
+                // wide as the part of the name that is printed.
                 Rectangle {
                     id: block
 
@@ -199,23 +220,23 @@ PanelWindow {
                     y: name.y
                     width: name.width + 4 * Theme.cellWidth
                     height: name.height
-                    visible: station.focused && !ring.panelOpen
+                    visible: station.focused && name.typedCharacters > 0
                     color: Theme.accent
                 }
 
-                // The name, at double size.
+                // The name, at double size, typed in and erased with the ring.
                 Label {
                     id: name
 
-                    x: -Theme.snapX(width / 2)
+                    x: -Theme.snapX(implicitWidth / 2)
                     y: -Theme.cellHeight
-                    visible: !ring.panelOpen
                     text: station.modelData.name
                     scaleFactor: 2
+                    typed: ring.ringPrinted
                     color: station.focused ? Theme.slab : Theme.inkSoft
                 }
 
-                // The panel, printed a row at a time from where the name was.
+                // The panel, printed a line at a time from where the name was.
                 Box {
                     id: panel
 
@@ -295,25 +316,33 @@ PanelWindow {
         }
 
         // --- Key hints for the ring view; an open panel carries its own ---
-        Row {
-            x: Theme.snapX((parent.width - width) / 2)
+        // The whole line is typed in and erased by widening and narrowing
+        // this window onto it, one character at a time.
+        Item {
+            x: Theme.snapX((parent.width - hints.width) / 2)
             y: Theme.snapY(parent.height - 80)
-            visible: !ring.panelOpen
+            width: Theme.snapX(ring.ringPrinted * hints.width)
+            height: hints.height
+            clip: true
 
-            Repeater {
-                model: [["h/l", " turn    "], ["enter", " open    "], ["esc", " close"]]
+            Row {
+                id: hints
 
-                Row {
-                    required property var modelData
+                Repeater {
+                    model: [["h/l", " turn    "], ["enter", " open    "], ["esc", " close"]]
 
-                    Label {
-                        text: parent.modelData[0]
-                        color: Theme.ink
-                    }
+                    Row {
+                        required property var modelData
 
-                    Label {
-                        text: parent.modelData[1]
-                        color: Theme.inkDim
+                        Label {
+                            text: parent.modelData[0]
+                            color: Theme.ink
+                        }
+
+                        Label {
+                            text: parent.modelData[1]
+                            color: Theme.inkDim
+                        }
                     }
                 }
             }
