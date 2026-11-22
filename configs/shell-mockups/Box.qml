@@ -5,8 +5,8 @@ import QtQuick
 // into the bottom edge. Sizes are in character cells.
 //
 // It appears and disappears the same way all text in the shell does: typed
-// in from the left a character at a time, every line at once, and erased in
-// reverse.
+// in from the left a character at a time behind a dithered edge, every line
+// at once, and erased in reverse.
 Item {
     id: box
 
@@ -21,8 +21,9 @@ Item {
 
     // The inside width in cells: the border and one space of padding on each side are taken off.
     readonly property int contentColumns: columns - 4
-    // Whole characters only, so the panel never shows part of one.
-    readonly property int typedColumns: Math.round(Math.max(0, Math.min(1, typed)) * columns)
+    // Whole characters only, so the panel never shows part of one. The edge
+    // travels on past the right side, so it leaves completely.
+    readonly property int typedColumns: Theme.typedLength(columns, typed)
 
     implicitWidth: columns * Theme.cellWidth
     implicitHeight: (rows + 2) * Theme.cellHeight
@@ -90,5 +91,12 @@ Item {
         y: Theme.cellHeight
         width: box.contentColumns * Theme.cellWidth
         height: box.rows * Theme.cellHeight
+    }
+
+    // The dithered leading edge, over the last columns that are showing.
+    TypeEdge {
+        reached: Theme.typedReach(box.columns, box.typed)
+        columns: box.columns
+        lines: box.rows + 2
     }
 }

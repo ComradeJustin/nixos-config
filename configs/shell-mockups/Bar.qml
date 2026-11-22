@@ -45,9 +45,12 @@ PanelWindow {
         }
     }
 
+    // The bar's width in whole characters.
+    readonly property int columns: Math.floor(width / Theme.cellWidth)
+
     // A window onto the bar's line that widens and narrows by whole characters.
     Item {
-        width: Theme.snapX(bar.typed * bar.width)
+        width: bar.typed >= 1 ? bar.width : Theme.typedLength(bar.columns, bar.typed) * Theme.cellWidth
         height: bar.height
         clip: true
 
@@ -165,6 +168,13 @@ PanelWindow {
                     color: Theme.ink
                 }
             }
+        }
+
+        // The dithered leading edge of the line.
+        TypeEdge {
+            y: Theme.barTextY
+            reached: Theme.typedReach(bar.columns, bar.typed)
+            columns: bar.columns
         }
     }
 }
