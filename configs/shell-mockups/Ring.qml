@@ -29,7 +29,9 @@ PanelWindow {
 
     // --- The three animated values, and the stepped versions that are drawn ---
     // 0 = hidden, 1 = open.
-    property real openness: shell.ringOpen ? 1 : 0
+    // It stays open until any open panel has been erased, so closing runs
+    // in order: the panel first, then the ring.
+    property real openness: shell.ringOpen || panelOpen ? 1 : 0
     // Rotation of the ring, in degrees.
     property real angle: -stepDegrees * shell.turns
     // 0 = ring view, 1 = the focused station's panel fully printed.
@@ -55,7 +57,7 @@ PanelWindow {
     }
     Behavior on dive {
         NumberAnimation {
-            duration: (ring.focusedRowCount + 1) * Theme.rowMs
+            duration: (ring.focusedRowCount + 2) * Theme.lineMs
         }
     }
 
@@ -136,7 +138,7 @@ PanelWindow {
 
                 x: ring.centerX + Theme.snapX(ring.orbitRadius * ring.drawnOpenness * Math.cos(theta))
                 y: ring.centerY + Theme.snapY(ring.orbitRadius * ring.drawnOpenness * Math.sin(theta)) - Theme.cellHeight / 2
-                visible: !ring.panelOpen
+                visible: !ring.panelOpen && ring.drawnOpenness > 0
                 text: "·"
                 color: Theme.line
             }
@@ -185,8 +187,9 @@ PanelWindow {
                 z: focused ? 1 : 0
                 x: ring.centerX + Theme.snapX(distance * Math.cos(theta))
                 y: ring.centerY + Theme.snapY(distance * Math.sin(theta))
-                // While a panel is open only the focused station is drawn.
-                visible: focused || !ring.panelOpen
+                // Hidden while the orbit has no size. While a panel is open
+                // only the focused station is drawn.
+                visible: ring.drawnOpenness > 0 && (focused || !ring.panelOpen)
 
                 // The reverse-video block behind the focused name.
                 Rectangle {

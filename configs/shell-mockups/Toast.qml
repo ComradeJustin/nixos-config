@@ -15,7 +15,7 @@ PanelWindow {
 
     Behavior on reveal {
         NumberAnimation {
-            duration: (panel.rows + 1) * Theme.rowMs
+            duration: panel.lineCount * Theme.lineMs
         }
     }
 

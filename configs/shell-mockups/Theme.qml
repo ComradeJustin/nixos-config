@@ -46,11 +46,12 @@ Singleton {
     // Turning the ring one place takes this long, drawn as this many jumps.
     readonly property int turnMs: 96
     readonly property int turnSteps: 6
-    // The ring opens out from the centre in this many jumps.
-    readonly property int ringOpenMs: 64
-    readonly property int ringOpenSteps: 4
-    // A panel prints or erases one row in this long.
-    readonly property int rowMs: 16
+    // The ring opens out from the centre in this many jumps, and closes
+    // back in the same way.
+    readonly property int ringOpenMs: 120
+    readonly property int ringOpenSteps: 5
+    // A panel prints one line in this long, and is erased at the same rate.
+    readonly property int lineMs: 30
 
     // Snap a distance in pixels to whole cells, so text never sits between them.
     function snapX(pixels: real): real {
