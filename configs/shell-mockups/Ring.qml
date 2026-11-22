@@ -166,7 +166,8 @@ PanelWindow {
                 // Plotted clockwise from the right, and un-plotted in reverse.
                 visible: index < Math.round(ring.clamp01(ring.ringShown / ring.sweepShare) * ring.orbitDots)
                 text: "·"
-                color: Theme.line
+                // Brighter than a border, so it reads over the dimming's dots.
+                color: Theme.inkDim
             }
         }
 
@@ -206,6 +207,7 @@ PanelWindow {
                 y: 4 * Theme.cellHeight
                 text: clock.dateText
                 color: clock.steppedBack ? Theme.line : Theme.inkDim
+                smallCaps: true
             }
         }
 
@@ -248,14 +250,15 @@ PanelWindow {
                     interval: Theme.flashMs
                 }
 
-                // The name at double size, with two cells of margin each
-                // side. The focused one is in reverse video.
+                // The name at double size. The focused one is in reverse
+                // video: a block that starts one double-size cell before
+                // the name and trails off after it.
                 Item {
                     id: plate
 
                     x: -Theme.snapX(station.nameWidth / 2) - 2 * Theme.cellWidth
                     y: -Theme.cellHeight
-                    width: station.nameWidth + 4 * Theme.cellWidth
+                    width: focusBlock.width
                     height: 2 * Theme.cellHeight
                     visible: station.shown > 0
                     // Drawn through the dither only while it is changing.
@@ -265,9 +268,12 @@ PanelWindow {
                         spread: Theme.wipeFront
                     }
 
-                    Rectangle {
-                        anchors.fill: parent
+                    FocusBlock {
+                        id: focusBlock
+
                         visible: station.focused
+                        solidCells: 1 + station.nameText.length
+                        scaleFactor: 2
                         color: focusFlash.running ? Theme.ink : Theme.accent
                     }
 
@@ -327,10 +333,10 @@ PanelWindow {
 
                             // Reverse video behind the name. It flashes
                             // bright for a moment as the line is selected.
-                            Rectangle {
-                                width: (ring.valueColumn - 1) * Theme.cellWidth
-                                height: parent.height
+                            FocusBlock {
                                 visible: row.selected
+                                // Block and tail together end one cell before the values.
+                                solidCells: ring.valueColumn - 1 - tail.length
                                 color: selectFlash.running ? Theme.ink : Theme.accent
                             }
 

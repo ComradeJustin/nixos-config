@@ -16,6 +16,8 @@ import Quickshell.Wayland
 //   Toast          a panel that drops out of the bar for a notification
 //   Box, Level     the panel frame and the bar they are all built from
 //   Graph, Spinner a braille history graph and a busy mark, used in panels
+//   FocusBlock     the reverse-video block behind whatever has focus
+//   SignalBars     Wi-Fi strength as four rising bars
 //   DitherFade     the dithered wipe everything appears and disappears with
 //
 // The motion is real. The content is sample data; only the clock is live and

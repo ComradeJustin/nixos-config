@@ -1,9 +1,9 @@
 import QtQuick
 
 // A terminal-style panel: a border of box-drawing characters with rounded
-// corners, a title set into the top edge and an optional line of hints set
-// into the bottom edge. Sizes are in character cells. It casts a halftone
-// shadow to the right and below.
+// corners, a title in small capitals set into the top edge and an optional
+// line of hints set into the bottom edge. Sizes are in character cells. It
+// casts a halftone shadow to the right and below.
 //
 // It appears and disappears the same way everything in the shell does: a
 // dithered front wipes across it from the left, shadow included, and wipes
@@ -72,6 +72,7 @@ Item {
         x: 3 * Theme.cellWidth
         text: box.title
         color: Theme.ink
+        smallCaps: true
     }
 
     // Left and right edges: one "│" per row.
