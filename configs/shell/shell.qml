@@ -53,6 +53,8 @@ import Quickshell.Wayland
 //   tailscale      "tailscale status", asked at the start, when the
 //                  Network page opens and after a change
 //   camera         inotifywait on the camera's device files
+//   displays       "niri msg outputs", asked when their pages open
+//   idle and sleep swayidle, which the shell runs with the chosen times
 //   rebuild        scripts/rebuild.sh, which tells the shell how it is going
 //   playing track  MPRIS
 //   input method   fcitx5, through its tray item
@@ -60,8 +62,9 @@ import Quickshell.Wayland
 //   brightness     brightnessctl, asked only when a key changes it
 //   night light    wlsunset, run while it is switched on
 //   admin rights   polkit: the shell is the agent that asks for the password
-// Night light, keep awake and do not disturb are remembered across a
-// restart, in a small file in the shell's state folder.
+// Night light, keep awake, do not disturb, the idle and sleep settings and
+// which bar segments show are remembered across a restart, in a small file
+// in the shell's state folder.
 //
 // Keys reach it through IPC, from niri's key bindings (configs/niri):
 //   qs -p ~/nixos-config/configs/shell ipc call shell <name>
@@ -85,7 +88,7 @@ import Quickshell.Wayland
 // text field, letters type, up and down select, and left, right, home,
 // end, backspace, delete and ctrl+u edit the text. The mouse works too.
 // A panel dropped out of the bar takes the same keys (pressKey below).
-// The lock is also reached through swayidle (configs/niri/startup.kdl),
+// The lock is also reached through swayidle (see "Idle and sleep" below),
 // which calls it when the session is asked to lock: after sitting idle,
 // before a suspend, and by "loginctl lock-session".
 //
@@ -121,6 +124,13 @@ ShellRoot {
             property bool nightLight: false
             property bool keepAwake: false
             property bool quiet: false
+            // Whether the machine goes to sleep by itself, and after how
+            // long sitting idle it locks and sleeps.
+            property bool sleepsItself: true
+            property int lockMinutes: 3
+            property int sleepMinutes: 30
+            // The bar's segments that are switched off, by name.
+            property var barHidden: []
         }
     }
 
@@ -539,7 +549,7 @@ ShellRoot {
     onAuthRequestChanged: root.dialogTyped = ""
 
     // The warning before the idle lock: swayidle says when the machine has
-    // sat idle and when it is touched again (configs/niri/startup.kdl).
+    // sat idle and when it is touched again (see "Idle and sleep").
     property bool idleWarning: false
     readonly property int idleWarningSeconds: 30
     property int idleSecondsLeft: 0
@@ -584,12 +594,16 @@ ShellRoot {
     readonly property var dialogPage: {
         if (root.authRequest !== null)
             return root.passwordPage(root.authRequest);
+        if (root.batteryCritical)
+            return root.batteryPage();
         if (root.idleWarning)
             return root.idlePage();
         return null;
     }
-    // Only the password prompt needs the keyboard.
-    readonly property bool dialogTakesKeys: root.authRequest !== null
+    // The password prompt needs the keyboard, and the battery warning takes
+    // any key as "keep going". The idle warning goes when swayidle sees the
+    // machine touched.
+    readonly property bool dialogTakesKeys: root.authRequest !== null || root.batteryCritical
 
     function passwordPage(request: var): var {
         // A line of the dialog holds 44 characters.
@@ -645,10 +659,13 @@ ShellRoot {
         root.dialogTyped = "";
     }
 
-    // Esc in the password prompt: turn the request down.
+    // Esc in the password prompt: turn the request down. Any key in the
+    // battery warning: call the sleep off.
     function cancelDialog(): void {
         if (root.authRequest !== null)
             root.authRequest.cancelAuthenticationRequest();
+        else
+            root.batteryCritical = false;
     }
 
     // --- The monitor ---
@@ -779,6 +796,11 @@ ShellRoot {
             root.soundInput.audio.muted = !root.soundInput.audio.muted;
     }
 
+    function changeMicrophoneVolume(step: int): void {
+        if (root.microphoneReady)
+            root.soundInput.audio.volume = Math.max(0, Math.min(1, root.soundInput.audio.volume + 0.05 * step));
+    }
+
     // Whether any program is taking sound from the microphone: there is a
     // connection that starts at it.
     readonly property bool microphoneInUse: {
@@ -838,6 +860,115 @@ ShellRoot {
         running: root.nightLight
     }
 
+    // --- Idle and sleep ---
+    // After sitting idle the screen dims and a warning shows, then the
+    // session locks, then the machine sleeps. swayidle does the waiting; the
+    // shell runs it, so that the times can be changed here, and starts it
+    // again whenever one changes.
+    property alias lockMinutes: remembered.lockMinutes
+    property alias sleepMinutes: remembered.sleepMinutes
+    // Whether the machine goes to sleep by itself: after sitting idle, and
+    // when the lid is shut. Switched off, it keeps running with the lid
+    // shut; the screen still dims and locks.
+    property alias sleepsItself: remembered.sleepsItself
+
+    // swayidle's arguments: each "timeout" is seconds of idleness and what
+    // to run then, with "resume" for when the machine is touched again.
+    // Being asked to lock ("loginctl lock-session", from here or anywhere
+    // else) runs the "lock" command, which is the lock screen. After a
+    // sleep the lock asks the fingerprint reader again.
+    readonly property var idleWatcherArguments: {
+        const lockSeconds = root.lockMinutes * 60;
+        let watcherArguments = ["timeout", String(lockSeconds - root.idleWarningSeconds), "brightnessctl -s set 10%; shell-call idleWarning", "resume", "brightnessctl -r; shell-call idleResume", "timeout", String(lockSeconds), "loginctl lock-session", "resume", "shell-call lockWake"];
+        if (root.sleepsItself)
+            watcherArguments = watcherArguments.concat(["timeout", String(root.sleepMinutes * 60), "systemctl suspend"]);
+        return watcherArguments.concat(["before-sleep", "loginctl lock-session", "after-resume", "sleep 1; shell-call lockWake", "lock", "shell-call lock"]);
+    }
+    // New times: stop the watcher, and start it again a moment later with
+    // them. The same timer starts it when the shell does.
+    onIdleWatcherArgumentsChanged: {
+        idleWatcher.running = false;
+        idleWatcherStart.restart();
+    }
+
+    Timer {
+        id: idleWatcherStart
+
+        interval: 300
+        running: true
+        onTriggered: idleWatcher.running = true
+    }
+
+    Process {
+        id: idleWatcher
+
+        // Only one idle watcher may run, or the screen is dimmed twice and
+        // stays dim: any other is stopped first.
+        command: ["sh", "-c", "pkill -x swayidle; exec swayidle -w \"$@\"", "sh"].concat(root.idleWatcherArguments)
+    }
+
+    // While the machine is not to sleep by itself, shutting the lid must
+    // not put it to sleep either: this holds the system's lid switch off.
+    Process {
+        command: ["systemd-inhibit", "--what=handle-lid-switch", "--who=Desktop shell", "--why=Sleep is switched off", "sleep", "infinity"]
+        running: !root.sleepsItself
+    }
+
+    // --- The bar's segments ---
+    // Any of them can be switched off (the Bar page, Pages.qml).
+    property alias barHidden: remembered.barHidden
+
+    function barShows(segment: string): bool {
+        return !root.barHidden.includes(segment);
+    }
+
+    function toggleBarSegment(segment: string): void {
+        const hidden = [];
+        for (const name of root.barHidden) {
+            if (name !== segment)
+                hidden.push(name);
+        }
+        if (hidden.length === root.barHidden.length)
+            hidden.push(segment);
+        root.barHidden = hidden;
+    }
+
+    // --- Displays ---
+    // What niri says about each screen, by its name such as "eDP-1": its
+    // modes, the one in use, its scale and rotation. Read when the System
+    // page or a display's page opens and after each change (Pages.qml).
+    property var displays: ({})
+
+    function readDisplays(): void {
+        displayReader.running = true;
+    }
+
+    // Change a display with "niri msg output <name> ...", then read them
+    // again. The change lasts until niri next loads its configuration.
+    function changeDisplay(name: string, change: var): void {
+        displayChange.command = ["niri", "msg", "output", name].concat(change);
+        displayChange.running = true;
+    }
+
+    Process {
+        id: displayReader
+
+        command: ["niri", "msg", "--json", "outputs"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (text !== "")
+                    root.displays = JSON.parse(text);
+            }
+        }
+    }
+
+    Process {
+        id: displayChange
+
+        onExited: root.readDisplays()
+    }
+
     // --- The readout ---
     // Which of the three it is showing: "volume", "brightness" or
     // "microphone", and whether it is up.
@@ -869,6 +1000,25 @@ ShellRoot {
     readonly property alias toastList: toastModel
     // How long a notification shows when it does not say, in milliseconds.
     readonly property int toastLifetime: 4500
+
+    // When each notification arrived, by its id, in milliseconds.
+    property var notificationArrivals: ({})
+
+    // How long ago a notification arrived, in a few characters: "now",
+    // "14m", "3h", "2d". The clock ticks once a minute, and so does this.
+    function notificationAge(id: int): string {
+        const arrived = root.notificationArrivals[id];
+        if (arrived === undefined)
+            return "";
+        const minutes = Math.floor((root.now - arrived) / 60000);
+        if (minutes < 1)
+            return "now";
+        if (minutes < 60)
+            return minutes + "m";
+        if (minutes < 1440)
+            return Math.floor(minutes / 60) + "h";
+        return Math.floor(minutes / 1440) + "d";
+    }
 
     // The waiting notification with this id, or null.
     function notificationWithId(id: int): var {
@@ -994,12 +1144,14 @@ ShellRoot {
 
         bodySupported: true
         actionsSupported: true
+        inlineReplySupported: true
         // Keep what is waiting when a file is saved and the shell reloads.
         keepOnReload: true
 
         onNotification: notification => {
             // Tracked means kept: it stays in the list until dismissed.
             notification.tracked = true;
+            root.notificationArrivals[notification.id] = Date.now();
             if (!root.quiet || notification.urgency === NotificationUrgency.Critical)
                 root.showToast(notification);
         }
@@ -1030,6 +1182,7 @@ ShellRoot {
         // On the charger again: start over.
         if (root.charging || root.batteryDevice.state === UPowerDeviceState.FullyCharged) {
             root.batteryWarnedAt = 1;
+            root.batteryCritical = false;
             return;
         }
         // The lowest level the battery has run down past and not been warned about.
@@ -1041,9 +1194,60 @@ ShellRoot {
         if (passed === 1)
             return;
         root.batteryWarnedAt = passed;
+        // At the last level the machine is put to sleep, after a warning.
+        if (passed === root.batteryWarnings[root.batteryWarnings.length - 1]) {
+            root.warnBatteryCritical();
+            return;
+        }
         const minutes = Math.round(root.batteryDevice.timeToEmpty / 60);
         const timeLeft = minutes > 0 ? "about " + minutes + " minutes left, " : "";
         Quickshell.execDetached(["notify-send", "--urgency=critical", "--app-name=Battery", Math.round(root.battery * 100) + "% left", timeLeft + "plug in soon"]);
+    }
+
+    // The battery is nearly empty: a dialog counts down a minute, and then
+    // the machine is put to sleep so that nothing is lost. Plugging in or
+    // pressing a key calls it off.
+    property bool batteryCritical: false
+    readonly property int batteryCriticalSeconds: 60
+    property int batterySecondsLeft: 0
+
+    function warnBatteryCritical(): void {
+        root.batterySecondsLeft = root.batteryCriticalSeconds;
+        root.batteryCritical = true;
+    }
+
+    // Counts the warning down. Only runs while it is up.
+    Timer {
+        interval: 1000
+        repeat: true
+        running: root.batteryCritical
+        onTriggered: {
+            root.batterySecondsLeft -= 1;
+            if (root.batterySecondsLeft > 0)
+                return;
+            root.batteryCritical = false;
+            Quickshell.execDetached(["systemctl", "suspend"]);
+        }
+    }
+
+    function batteryPage(): var {
+        return {
+            title: "Battery at " + Math.round(root.battery * 100) + "%",
+            footer: "any key keeps going",
+            rows: [
+                {
+                    label: "Sleeping in",
+                    kind: "level",
+                    value: root.batterySecondsLeft + " s",
+                    level: root.batterySecondsLeft / root.batteryCriticalSeconds,
+                    alert: true
+                },
+                {
+                    label: "Plug in, or press any key to keep going",
+                    kind: "note"
+                }
+            ]
+        };
     }
 
     onBatteryChanged: root.checkBattery()

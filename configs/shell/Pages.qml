@@ -90,6 +90,10 @@ Scope {
             sound: 2,
             soundDevices: 2,
             power: 2,
+            bar: 2,
+            displays: 2,
+            display: 2,
+            displayModes: 2,
             keys: 2,
             tray: 2,
             trayMenu: 2,
@@ -100,6 +104,7 @@ Scope {
             media: 4,
             inbox: 5,
             notification: 5,
+            notificationReply: 5,
             session: 6
         })
 
@@ -114,6 +119,7 @@ Scope {
     property int openNotificationId: 0
     property var wifiTarget: null
     property var trayTarget: null
+    property string displayTarget: ""
 
     // --- Launch: open windows, then apps, then the shell's own settings ---
     readonly property var launch: launchPage()
@@ -169,7 +175,7 @@ Scope {
                 act: () => pages.shell.openPage(station.page)
             });
         }
-        for (const name of ["system", "media", "session"]) {
+        for (const name of ["system", "power", "media", "session"]) {
             const page = pages[name];
             for (let index = 0; index < page.rows.length; index++) {
                 const row = page.rows[index];
@@ -306,8 +312,16 @@ Scope {
         });
         rows.push({
             label: "Microphone",
+            kind: "level",
+            value: pages.shell.microphoneMuted ? "mute" : String(pages.shell.microphoneVolume),
+            level: pages.shell.microphoneMuted ? 0 : pages.shell.microphoneVolume / 100,
+            alert: pages.shell.microphoneMuted,
+            adjust: step => pages.shell.changeMicrophoneVolume(step)
+        });
+        rows.push({
+            label: "Mute microphone",
             kind: "switch",
-            on: !pages.shell.microphoneMuted,
+            on: pages.shell.microphoneMuted,
             toggle: () => pages.shell.toggleMicrophoneMute()
         });
         rows.push({
@@ -442,13 +456,26 @@ Scope {
                     on: pages.shell.nightLight,
                     toggle: () => pages.shell.nightLight = !pages.shell.nightLight
                 },
-                pages.keepAwakeRow(), pages.quietRow(),
+                pages.quietRow(),
                 {
                     label: "Japanese input",
                     kind: "switch",
                     note: pages.shell.inputAvailable ? "alt+space" : "fcitx5 is not running",
                     on: pages.shell.inputJapanese,
                     toggle: () => pages.shell.toggleInput()
+                },
+                {
+                    label: "Power",
+                    kind: "text",
+                    value: pages.shell.sleepsItself ? "locks after " + pages.shell.lockMinutes + " min, sleeps after " + pages.shell.sleepMinutes : "locks after " + pages.shell.lockMinutes + " min, never sleeps",
+                    opens: "power"
+                },
+                pages.displaysRow(),
+                {
+                    label: "Bar",
+                    kind: "text",
+                    value: (pages.barSegments.length - pages.shell.barHidden.length) + " of " + pages.barSegments.length + " segments shown",
+                    opens: "bar"
                 },
                 {
                     label: "Tray",
@@ -471,12 +498,298 @@ Scope {
                 pages.monitorRow()])
         })
 
-    // --- Power: the battery in full, and what bears on it ---
-    // The panel that drops out of the bar's battery.
-    readonly property var power: ({
+    // --- Power: the battery in full, and when the machine locks and sleeps ---
+    // Also the panel that drops out of the bar's battery.
+    readonly property var power: powerPage()
+
+    function powerPage(): var {
+        const shell = pages.shell;
+        const rows = shell.powerRows.concat([pages.brightnessRow(), pages.keepAwakeRow(),
+            {
+                label: "Lock after",
+                kind: "level",
+                value: shell.lockMinutes + " min",
+                // From one minute to half an hour.
+                level: shell.lockMinutes / 30,
+                adjust: step => shell.lockMinutes = Math.max(1, Math.min(30, shell.lockMinutes + step))
+            },
+            {
+                label: "Sleep",
+                kind: "switch",
+                note: "lid shut, or idle",
+                on: shell.sleepsItself,
+                toggle: () => shell.sleepsItself = !shell.sleepsItself
+            }
+        ]);
+        if (shell.sleepsItself) {
+            rows.push({
+                label: "Sleep after",
+                kind: "level",
+                value: shell.sleepMinutes + " min",
+                // From five minutes to two hours, five minutes at a time.
+                level: shell.sleepMinutes / 120,
+                adjust: step => shell.sleepMinutes = Math.max(5, Math.min(120, shell.sleepMinutes + 5 * step))
+            });
+        } else {
+            rows.push({
+                label: "Sleep after",
+                kind: "text",
+                value: "never, lid shut or not"
+            });
+        }
+        rows.push(pages.monitorRow());
+        return {
             title: "Power",
-            rows: pages.shell.powerRows.concat([pages.brightnessRow(), pages.keepAwakeRow(), pages.monitorRow()])
-        })
+            rows: rows
+        };
+    }
+
+    // --- Bar: which of its segments show ---
+    // Each is { name, label }: the name is what Bar.qml asks the shell about.
+    readonly property var barSegments: [
+        {
+            name: "workspaces",
+            label: "Workspaces"
+        },
+        {
+            name: "title",
+            label: "Window title"
+        },
+        {
+            name: "track",
+            label: "Playing track"
+        },
+        {
+            name: "notifications",
+            label: "Notifications"
+        },
+        {
+            name: "clock",
+            label: "Clock"
+        },
+        {
+            name: "tray",
+            label: "Tray"
+        },
+        {
+            name: "input",
+            label: "Input method"
+        },
+        {
+            name: "network",
+            label: "Network"
+        },
+        {
+            name: "volume",
+            label: "Volume"
+        },
+        {
+            name: "battery",
+            label: "Battery"
+        }
+    ]
+    readonly property var bar: barPage()
+
+    function barPage(): var {
+        const rows = [];
+        for (const segment of pages.barSegments) {
+            rows.push({
+                label: segment.label,
+                kind: "switch",
+                on: pages.shell.barShows(segment.name),
+                toggle: () => pages.shell.toggleBarSegment(segment.name)
+            });
+        }
+        return {
+            title: "Bar",
+            rows: rows
+        };
+    }
+
+    // --- Displays: the screens, as niri reports them ---
+    // A screen's mode in words: "1920 × 1080, 60 Hz". niri gives the
+    // refresh rate in thousandths of a hertz.
+    function modeText(mode: var): string {
+        return mode.width + " × " + mode.height + ", " + Math.round(mode.refresh_rate / 1000) + " Hz";
+    }
+
+    // The System page's row for the screens. With one screen it opens that
+    // screen's page; with more, the list of them.
+    function displaysRow(): var {
+        const names = Object.keys(pages.shell.displays);
+        if (names.length === 1) {
+            return {
+                label: "Display",
+                kind: "text",
+                value: names[0],
+                act: () => pages.displayTarget = names[0],
+                opens: "display"
+            };
+        }
+        return {
+            label: "Displays",
+            kind: "text",
+            value: names.length + " connected",
+            opens: "displays"
+        };
+    }
+
+    readonly property var displays: displaysPage()
+
+    function displaysPage(): var {
+        const rows = [];
+        for (const name in pages.shell.displays) {
+            const display = pages.shell.displays[name];
+            // A screen that is switched off has no mode in use.
+            const on = display.current_mode !== null;
+            rows.push({
+                label: name,
+                kind: "text",
+                value: on ? pages.modeText(display.modes[display.current_mode]) : "off",
+                act: () => pages.displayTarget = name,
+                opens: "display"
+            });
+        }
+        return {
+            title: "Displays",
+            empty: "no screens",
+            rows: rows
+        };
+    }
+
+    // One screen. Changes are made with "niri msg output" and last until
+    // niri next loads its configuration.
+    readonly property var display: displayPage()
+
+    // niri's names for a screen's rotation, in the order enter steps
+    // through them, with what it takes as the argument for each.
+    readonly property var rotations: [
+        {
+            name: "Normal",
+            argument: "normal"
+        },
+        {
+            name: "90",
+            argument: "90"
+        },
+        {
+            name: "180",
+            argument: "180"
+        },
+        {
+            name: "270",
+            argument: "270"
+        }
+    ]
+
+    function displayPage(): var {
+        const shell = pages.shell;
+        const name = pages.displayTarget;
+        const display = shell.displays[name];
+        if (display === undefined) {
+            return {
+                title: "Display",
+                empty: "it has gone",
+                rows: []
+            };
+        }
+        const on = display.current_mode !== null;
+        const rows = [];
+        // The only screen cannot be switched off from here: there would be
+        // nothing left to switch it back on with.
+        if (Object.keys(shell.displays).length > 1) {
+            rows.push({
+                label: "Enabled",
+                kind: "switch",
+                on: on,
+                toggle: () => shell.changeDisplay(name, [on ? "off" : "on"])
+            });
+        }
+        if (on) {
+            const mode = {
+                label: "Mode",
+                kind: "text",
+                value: pages.modeText(display.modes[display.current_mode])
+            };
+            if (display.modes.length > 1)
+                mode.opens = "displayModes";
+            rows.push(mode);
+            const scale = display.logical.scale;
+            rows.push({
+                label: "Scale",
+                kind: "level",
+                value: String(scale),
+                // From a half to three times, a quarter at a time.
+                level: scale / 3,
+                adjust: step => shell.changeDisplay(name, ["scale", String(Math.max(0.5, Math.min(3, scale + 0.25 * step)))])
+            });
+            let turned = 0;
+            for (let index = 0; index < pages.rotations.length; index++) {
+                if (pages.rotations[index].name === display.logical.transform)
+                    turned = index;
+            }
+            const next = pages.rotations[(turned + 1) % pages.rotations.length];
+            rows.push({
+                label: "Rotation",
+                kind: "text",
+                value: turned === 0 ? "none" : pages.rotations[turned].name + "°",
+                note: "enter turns it",
+                act: () => shell.changeDisplay(name, ["transform", next.argument])
+            });
+            if (display.vrr_supported) {
+                rows.push({
+                    label: "Variable refresh",
+                    kind: "switch",
+                    on: display.vrr_enabled,
+                    toggle: () => shell.changeDisplay(name, ["vrr", display.vrr_enabled ? "off" : "on"])
+                });
+            }
+        }
+        rows.push({
+            label: display.make + " " + display.model,
+            kind: "note"
+        });
+        rows.push({
+            label: "Changes last until niri reloads its configuration",
+            kind: "note"
+        });
+        return {
+            title: name,
+            rows: rows
+        };
+    }
+
+    // The modes a screen can run in. Enter switches to one.
+    readonly property var displayModes: displayModesPage()
+
+    function displayModesPage(): var {
+        const name = pages.displayTarget;
+        const display = pages.shell.displays[name];
+        const rows = [];
+        if (display !== undefined) {
+            for (let index = 0; index < display.modes.length; index++) {
+                const mode = display.modes[index];
+                let mark = "";
+                if (index === display.current_mode)
+                    mark = "in use";
+                else if (mode.is_preferred)
+                    mark = "preferred";
+                rows.push({
+                    label: mode.width + " × " + mode.height,
+                    kind: "text",
+                    value: (mode.refresh_rate / 1000).toFixed(3) + " Hz",
+                    note: mark,
+                    // niri takes a mode as 1920x1080@60.010.
+                    act: () => pages.shell.changeDisplay(name, ["mode", mode.width + "x" + mode.height + "@" + (mode.refresh_rate / 1000).toFixed(3)])
+                });
+            }
+        }
+        return {
+            title: name + " modes",
+            empty: "it has gone",
+            rows: rows
+        };
+    }
 
     // --- Tray ---
     // What a tray app is called. One that gives no title is known by its
@@ -978,23 +1291,35 @@ Scope {
             };
         }
         for (const device of adapter.devices.values) {
+            // Pairing with a new device asks first, on its own row, as
+            // ending the session does (armedRow, below).
+            const armed = pages.armedRow === "pair " + device.address;
             let state = "found, not paired";
             if (device.connected)
                 state = "connected";
             else if (device.paired)
                 state = "paired";
+            else if (armed)
+                state = "enter again to pair";
             const row = {
                 label: device.name,
                 kind: "text",
                 value: state,
+                alert: armed,
                 note: device.batteryAvailable ? Math.round(device.battery * 100) + "%" : ""
             };
-            if (device.connected)
+            if (device.connected) {
                 row.act = () => device.disconnect();
-            else if (device.paired)
+            } else if (device.paired) {
                 row.act = () => device.connect();
-            else
-                row.act = () => device.pair();
+            } else if (armed) {
+                row.act = () => {
+                    pages.armedRow = "";
+                    device.pair();
+                };
+            } else {
+                row.act = () => pages.armedRow = "pair " + device.address;
+            }
             rows.push(row);
         }
         rows.push({
@@ -1013,6 +1338,43 @@ Scope {
     // --- Media: the player that is playing, or else the first one ---
     readonly property var mediaPlayer: pages.shell.mediaPlayer
     readonly property var media: mediaPage()
+
+    // Seconds as minutes and seconds: 92 is "1:32".
+    function trackTime(seconds: real): string {
+        const whole = Math.max(0, Math.floor(seconds));
+        const rest = whole % 60;
+        return Math.floor(whole / 60) + ":" + (rest < 10 ? "0" : "") + rest;
+    }
+
+    // How far through the track the player is; left and right move it by
+    // five seconds. A player that does not say is "not known".
+    function positionRow(player: var): var {
+        if (!player.positionSupported || !player.lengthSupported || player.length <= 0) {
+            return {
+                label: "Position",
+                kind: "text",
+                value: "not known"
+            };
+        }
+        const row = {
+            label: "Position",
+            kind: "level",
+            value: pages.trackTime(player.position) + "/" + pages.trackTime(player.length),
+            level: player.position / player.length
+        };
+        if (player.canSeek)
+            row.adjust = step => player.seek(5 * step);
+        return row;
+    }
+
+    // A player only says where it is when asked. While the Media page is
+    // open and something plays, ask once a second.
+    Timer {
+        interval: 1000
+        repeat: true
+        running: pages.shell.pageName === "media" && pages.mediaPlayer !== null && pages.mediaPlayer.isPlaying
+        onTriggered: pages.mediaPlayer.positionChanged()
+    }
 
     function mediaPage(): var {
         const player = pages.mediaPlayer;
@@ -1041,6 +1403,7 @@ Scope {
                     kind: "text",
                     value: player.identity
                 },
+                pages.positionRow(player),
                 {
                     label: player.isPlaying ? "Pause" : "Play",
                     kind: "text",
@@ -1073,6 +1436,7 @@ Scope {
                 label: notification.appName,
                 kind: "text",
                 value: pages.shell.plainText(notification.summary),
+                note: pages.shell.notificationAge(notification.id),
                 act: () => pages.openNotificationId = notification.id,
                 opens: "notification"
             });
@@ -1120,6 +1484,14 @@ Scope {
                 kind: "note"
             }
         ];
+        if (notification.hasInlineReply) {
+            rows.push({
+                label: "Reply",
+                kind: "text",
+                value: "",
+                opens: "notificationReply"
+            });
+        }
         for (const action of notification.actions) {
             rows.push({
                 label: action.text,
@@ -1148,10 +1520,41 @@ Scope {
         };
     }
 
+    // A reply typed to a notification whose app takes one, such as a chat
+    // message. The page is only its text field: enter sends.
+    readonly property var notificationReply: notificationReplyPage()
+
+    function notificationReplyPage(): var {
+        const notification = pages.shell.notificationWithId(pages.openNotificationId);
+        if (notification === null) {
+            return {
+                title: "Reply",
+                empty: "it has gone",
+                rows: []
+            };
+        }
+        return {
+            title: "Reply to " + notification.appName,
+            field: {
+                hint: notification.inlineReplyPlaceholder !== "" ? notification.inlineReplyPlaceholder : "reply",
+                filters: false,
+                secret: false,
+                submitHint: "send",
+                submit: text => {
+                    notification.sendInlineReply(text);
+                    // Back past the notification, to the inbox.
+                    pages.shell.changeStack(pages.shell.pageStack.slice(0, -2), pages.shell.selectionStack.slice(0, -2));
+                }
+            },
+            rows: []
+        };
+    }
+
     // --- Session ---
     // Anything that ends the session asks first, on its own row: the first
     // enter arms the row, a second one does it, and moving away from the
-    // row disarms it. This is the label of the armed row, or "".
+    // row disarms it. This names the armed row, or is "". Pairing with a
+    // Bluetooth device is asked the same way.
     property string armedRow: ""
 
     function endingRow(label: string, command: var): var {
@@ -1210,6 +1613,8 @@ Scope {
                 keyBindingList.running = true;
             else if (pages.shell.pageName === "network")
                 pages.shell.checkTailscale();
+            else if (pages.shell.pageName === "system" || pages.shell.pageName === "displays" || pages.shell.pageName === "display")
+                pages.shell.readDisplays();
         }
     }
 }

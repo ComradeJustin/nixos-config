@@ -4,12 +4,14 @@ import Quickshell.Wayland
 
 // Things that interrupt, shown as one page in the middle of the screen over
 // the dimming: the password prompt when a program asks for administrator
-// rights, and the warning that the screen is about to lock.
+// rights, the warning that the battery is nearly empty, and the warning
+// that the screen is about to lock.
 //
 // shell.qml decides which is up and what it says (shell.dialogPage). The
 // password prompt takes the keyboard: typing fills its field, enter
-// answers, esc turns the request down. The lock warning takes nothing: any
-// key or movement makes the system take it away.
+// answers, esc turns the request down. The battery warning takes it too:
+// any key calls the sleep off. The lock warning takes nothing: any key or
+// movement makes the system take it away.
 PanelWindow {
     id: dialog
 
@@ -70,6 +72,12 @@ PanelWindow {
         Keys.onPressed: event => {
             const shell = dialog.shell;
             event.accepted = true;
+            // Only the password prompt is typed into. In the battery
+            // warning any key means "keep going".
+            if (shell.authRequest === null) {
+                shell.cancelDialog();
+                return;
+            }
             if (event.key === Qt.Key_Escape)
                 shell.cancelDialog();
             else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)

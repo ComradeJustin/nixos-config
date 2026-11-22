@@ -198,12 +198,13 @@ Box {
             // A level and a graph end with their value at the right edge.
             readonly property bool endsWithValue: kind === "level" || kind === "graph" || kind === "bars"
             // The short text at the right edge: "›" for a row that opens a
-            // page, a level's or graph's value, or the row's note.
+            // page (after its note, if it has one), a level's or graph's
+            // value, or the row's note.
             readonly property string endText: {
                 if (!entry)
                     return "";
                 if (entry.opens)
-                    return "›";
+                    return entry.note ? entry.note + " ›" : "›";
                 if (endsWithValue)
                     return entry.value;
                 return entry.note || "";

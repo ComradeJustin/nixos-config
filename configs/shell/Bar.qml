@@ -9,8 +9,9 @@ import Quickshell.Wayland
 // then how many notifications are waiting, how far a rebuild has got,
 // whether do not disturb is on,
 // whether the microphone or camera is in use or the screen is being
-// shared, whether a Tailscale exit node is in use, and whether keep awake
-// is on.
+// shared, whether a Tailscale exit node is in use, whether sleep is
+// switched off, and whether keep awake is on.
+// Each segment can be switched off (the Bar page in System).
 // Centre: date and time. Right: the tray, the input method, network with
 // its signal, volume, battery.
 // A halftone shadow falls under it.
@@ -93,7 +94,7 @@ PanelWindow {
     // Where the left half has to end, and what is left of that for the
     // window title once the workspaces have taken their place.
     readonly property real leftLimit: clockRow.x - 2 * Theme.cellWidth
-    readonly property real titleRoom: leftLimit - leftRow.x - workspaceRow.width - firstDivider.width - passingRow.width
+    readonly property real titleRoom: leftLimit - leftRow.x - (workspaceRow.visible ? workspaceRow.width : 0) - firstDivider.width - passingRow.width
     // The title is worth showing in this many cells or more.
     readonly property real titleEnough: 12 * Theme.cellWidth
     readonly property bool trackFits: titleRoom - trackRow.width >= titleEnough
@@ -152,6 +153,8 @@ PanelWindow {
                 Row {
                     id: workspaceRow
 
+                    visible: bar.shell.barShows("workspaces")
+
                     Repeater {
                         // A count, not the list itself: the list is made
                         // afresh on every change, and a cell should live
@@ -206,11 +209,12 @@ PanelWindow {
                 Divider {
                     id: firstDivider
 
-                    visible: bar.shell.niri.focusedTitle !== ""
+                    visible: bar.shell.niri.focusedTitle !== "" && bar.shell.barShows("title")
                 }
 
                 // The focused window, cut short to the room there is.
                 Label {
+                    visible: bar.shell.barShows("title")
                     width: Math.min(implicitWidth, bar.titleWidth)
                     text: bar.shell.niri.focusedTitle
                     elide: Text.ElideRight
@@ -221,7 +225,7 @@ PanelWindow {
                 Passing {
                     id: trackRow
 
-                    active: bar.trackPlaying && bar.trackFits
+                    active: bar.trackPlaying && bar.trackFits && bar.shell.barShows("track")
 
                     Divider {}
 
@@ -245,7 +249,7 @@ PanelWindow {
                     // Notifications that have not been dismissed. A click
                     // drops the inbox; a right click dismisses them all.
                     Passing {
-                        active: bar.shell.unreadCount > 0
+                        active: bar.shell.unreadCount > 0 && bar.shell.barShows("notifications")
 
                         Divider {}
 
@@ -335,6 +339,17 @@ PanelWindow {
                         }
                     }
 
+                    // The machine does not go to sleep by itself, even
+                    // with the lid shut.
+                    Passing {
+                        active: !bar.shell.sleepsItself
+
+                        Flag {
+                            word: "no sleep"
+                            blockColor: Theme.inkDim
+                        }
+                    }
+
                     // Kept awake: nothing dims or locks by itself.
                     Passing {
                         active: bar.shell.keepAwake
@@ -351,6 +366,7 @@ PanelWindow {
             Segment {
                 id: clockRow
 
+                visible: bar.shell.barShows("clock")
                 y: Theme.barTextY
                 // On a whole cell, so the text stays sharp.
                 x: Theme.snapX((parent.width - width) / 2)
@@ -386,7 +402,7 @@ PanelWindow {
                 Segment {
                     id: trayTab
 
-                    visible: bar.shell.trayCount > 0
+                    visible: bar.shell.trayCount > 0 && bar.shell.barShows("tray")
                     onTapped: bar.shell.openDrop("tray", bar.shell.trayTabX)
 
                     Key {
@@ -406,7 +422,7 @@ PanelWindow {
                 // Japanese in the accent colour. It flashes when it
                 // changes, and a click switches it.
                 Segment {
-                    visible: bar.shell.inputAvailable
+                    visible: bar.shell.inputAvailable && bar.shell.barShows("input")
                     onTapped: bar.shell.toggleInput()
 
                     Value {
@@ -423,6 +439,7 @@ PanelWindow {
                 Segment {
                     id: networkTab
 
+                    visible: bar.shell.barShows("network")
                     onTapped: bar.shell.openDrop("network", networkTab.mapToItem(slab, 0, 0).x)
 
                     Key {
@@ -446,6 +463,7 @@ PanelWindow {
                 Segment {
                     id: soundTab
 
+                    visible: bar.shell.barShows("volume")
                     onTapped: bar.shell.openDrop("sound", soundTab.mapToItem(slab, 0, 0).x)
                     onRightTapped: bar.shell.toggleMute()
                     onWheelTurned: step => bar.shell.changeVolume(step)
@@ -473,7 +491,7 @@ PanelWindow {
                 Segment {
                     id: powerTab
 
-                    visible: bar.shell.batteryPresent
+                    visible: bar.shell.batteryPresent && bar.shell.barShows("battery")
                     onTapped: bar.shell.openDrop("power", powerTab.mapToItem(slab, 0, 0).x)
 
                     Divider {
