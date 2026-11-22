@@ -209,7 +209,9 @@ PanelWindow {
         Keys.onPressed: event => {
             const shell = ring.shell;
             const key = event.key;
-            const hasField = shell.page !== null && shell.page.field !== undefined;
+            // Whether letters go into a text field: the page's own, or
+            // the search field that "/" brings up on any other page.
+            const hasField = shell.page !== null && (shell.page.field !== undefined || shell.searching);
             event.accepted = true;
 
             if (key === Qt.Key_Escape) {
@@ -264,8 +266,14 @@ PanelWindow {
                 return;
             }
 
-            // Without one, the letters move too. On a level, left and
-            // right move the level; anywhere else they go back and act.
+            // Without one, "/" brings up a search field.
+            if (key === Qt.Key_Slash) {
+                shell.searching = true;
+                return;
+            }
+
+            // And the letters move too. On a level, left and right move
+            // the level; anywhere else they go back and act.
             const left = key === Qt.Key_H || key === Qt.Key_Left;
             const right = key === Qt.Key_L || key === Qt.Key_Right;
             const onLevel = shell.pageRows.length > 0 && shell.pageRows[shell.selectedIndex].kind === "level";
@@ -450,6 +458,8 @@ PanelWindow {
             selectedIndex: ring.shell.selectedIndex
             query: ring.shell.query
             cursor: ring.shell.cursor
+            searchable: true
+            searching: ring.shell.searching
             // A page can ask for more room for its labels.
             valueColumn: ring.shell.page !== null && ring.shell.page.valueColumn !== undefined ? ring.shell.page.valueColumn : 18
             shown: ring.dive

@@ -80,6 +80,7 @@ Scope {
             clipboard: 1,
             system: 2,
             mixer: 2,
+            keys: 2,
             tray: 2,
             trayMenu: 2,
             wallpaper: 2,
@@ -124,6 +125,23 @@ Scope {
                 closes: true
             });
         }
+        // Then everything in the shell's own pages: enter opens the page
+        // at that row.
+        for (const name of ["system", "network", "media", "session"]) {
+            const page = pages[name];
+            for (let index = 0; index < page.rows.length; index++) {
+                const row = page.rows[index];
+                if (row.kind === "note")
+                    continue;
+                rows.push({
+                    label: row.label,
+                    kind: "text",
+                    value: page.title,
+                    note: "shell",
+                    act: () => pages.shell.openPageAt(name, index)
+                });
+            }
+        }
         // Then apps, by name: enter starts one.
         const apps = [];
         for (const entry of DesktopEntries.applications.values) {
@@ -143,7 +161,7 @@ Scope {
         return {
             title: "Launch",
             field: {
-                hint: "search windows and apps",
+                hint: "search windows, settings and apps",
                 filters: true,
                 secret: false
             },
@@ -281,6 +299,12 @@ Scope {
                     opens: "wallpaper"
                 },
                 {
+                    label: "Key bindings",
+                    kind: "text",
+                    value: "",
+                    opens: "keys"
+                },
+                {
                     label: "Monitor",
                     kind: "text",
                     value: "processor, memory, disks and more",
@@ -412,6 +436,81 @@ Scope {
         id: trayMenuOpener
 
         menu: pages.trayTarget !== null ? pages.trayTarget.menu : null
+    }
+
+    // --- Key bindings: read out of niri's own list of them ---
+    // Each is { keys, does }, read when the page opens.
+    property var keyBindings: []
+    readonly property var keys: keysPage()
+
+    function keysPage(): var {
+        const rows = [];
+        for (const binding of pages.keyBindings) {
+            rows.push({
+                label: binding.keys,
+                kind: "text",
+                value: binding.does
+            });
+        }
+        return {
+            title: "Key bindings",
+            field: {
+                hint: "filter bindings",
+                filters: true,
+                secret: false
+            },
+            empty: "nothing matches",
+            // Key names such as Mod+Shift+Ctrl+Right are long.
+            valueColumn: 24,
+            rows: rows
+        };
+    }
+
+    // What a binding does, in words. niri's file gives an action such as
+    // focus-column-left, or a command to run with each word in quotes.
+    function bindingAction(action: string): string {
+        if (!action.startsWith("spawn"))
+            return action.replace(/-/g, " ");
+        // The quoted words of the command.
+        const words = [];
+        for (const quoted of action.match(/"[^"]*"/g) || [])
+            words.push(quoted.slice(1, -1));
+        // A call to this shell: say only what it asks for.
+        const shellCall = words.indexOf("shell");
+        if (words.includes("ipc") && shellCall >= 0)
+            return "shell: " + words.slice(shellCall + 1).join(" ");
+        return "run " + words.join(" ");
+    }
+
+    // A binding is one line: the keys, then options, then the action in
+    // braces. A line may carry its own description as
+    // hotkey-overlay-title="...". Comment lines start with "//".
+    function readBindings(text: string): void {
+        const bindings = [];
+        for (const rawLine of text.split("\n")) {
+            const line = rawLine.trim();
+            if (line.startsWith("//"))
+                continue;
+            // Keys, anything, then { action }.
+            const parts = line.match(/^([A-Za-z0-9_+]+)\s+(.*?)\{\s*(.*?)\s*;?\s*\}$/);
+            if (parts === null)
+                continue;
+            const title = parts[2].match(/hotkey-overlay-title="([^"]*)"/);
+            bindings.push({
+                keys: parts[1],
+                does: title !== null ? title[1] : pages.bindingAction(parts[3])
+            });
+        }
+        pages.keyBindings = bindings;
+    }
+
+    Process {
+        id: keyBindingList
+
+        command: ["cat", Quickshell.env("HOME") + "/.config/niri/keybind.kdl"]
+        stdout: StdioCollector {
+            onStreamFinished: pages.readBindings(text)
+        }
     }
 
     // --- Wallpaper: the pictures in the repository's wallpaper folder ---
@@ -875,6 +974,8 @@ Scope {
                 clipboardList.running = true;
             else if (pages.shell.pageName === "wallpaper")
                 wallpaperList.running = true;
+            else if (pages.shell.pageName === "keys")
+                keyBindingList.running = true;
         }
     }
 }

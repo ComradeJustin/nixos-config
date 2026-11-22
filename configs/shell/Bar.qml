@@ -9,8 +9,8 @@ import Quickshell.Wayland
 // then how many notifications are waiting, whether do not disturb is on,
 // whether the microphone is in use or the screen is being shared, and
 // whether keep awake is on.
-// Centre: date and time. Right: the input method, network with its
-// signal, volume, battery.
+// Centre: date and time. Right: the tray's tab, the input method, network
+// with its signal, volume, battery.
 // A halftone shadow falls under it.
 // One bar is made for each screen (shell.qml), and everything it shows is
 // real: it comes from shell.qml.
@@ -24,7 +24,8 @@ import Quickshell.Wayland
 //
 // With the mouse: a workspace switches to it, the track pauses it, the
 // bell shows the waiting notifications again (a right click dismisses
-// them all), the clock opens the calendar, the input method switches
+// them all), the clock opens the calendar, the apps tab drops the tray
+// out of the bar, the input method switches
 // language, the volume mutes on a click and moves with the wheel, and the
 // battery opens the monitor.
 PanelWindow {
@@ -320,10 +321,41 @@ PanelWindow {
                 }
             }
 
-            // --- Right: input method, network, volume, battery ---
+            // Tell the shell where the tray's tab is, so the drop-down
+            // opens under it.
+            Binding {
+                target: bar.shell
+                property: "trayTabX"
+                value: rightRow.x + trayTab.x
+            }
+
+            // --- Right: tray, input method, network, volume, battery ---
             Row {
+                id: rightRow
+
                 y: Theme.barTextY
                 x: parent.width - width - Theme.cellWidth
+
+                // The tray: how many apps are running in the background.
+                // A click drops their list out of the bar.
+                Segment {
+                    id: trayTab
+
+                    visible: bar.shell.trayCount > 0
+                    onTapped: bar.shell.trayOpen = !bar.shell.trayOpen
+
+                    Key {
+                        text: "apps "
+                    }
+
+                    Value {
+                        text: bar.shell.trayCount
+                    }
+
+                    Divider {
+                        pointsLeft: true
+                    }
+                }
 
                 // The input method, when fcitx5 is running: English, or
                 // Japanese in the accent colour. It flashes when it

@@ -33,6 +33,7 @@ import Quickshell.Wayland
 //   MonitorData    reads the system for it while it is open
 //                  (system-readings.sh)
 //   Calendar       a month that drops out of the bar's clock
+//   TrayDrop       background apps and their menus, from the bar's tab
 //   Dialog         things that interrupt: the password prompt for
 //                  administrator rights, the warning before the idle lock
 //   Desktop        a clock and the playing track on an empty desktop
@@ -65,14 +66,15 @@ import Quickshell.Wayland
 //   lockWake (ask the fingerprint reader again, after a suspend),
 //   ring (open or close the ring), page <name> (open the ring at a page:
 //   launch, clipboard, system, network, media, inbox, session, ...),
-//   monitor (open or close the monitor), calendar,
+//   monitor (open or close the monitor), calendar, tray, search,
 //   idleWarning and idleResume (swayidle calls these before the idle lock),
 //   and, for driving the ring without the keyboard: turn <steps>, open,
 //   select <steps>, adjust <step>, back, type <text>
 // In the ring: h l turn, enter opens or acts, j k or the arrows select,
-// left and right move a level, esc backs out. In a page with a text
-// field, letters type, up and down select, and left, right, home, end,
-// backspace, delete and ctrl+u edit the text. The mouse works too.
+// left and right move a level, esc backs out. "/" searches the page:
+// it brings up a field, and typing narrows the rows. In a page with a
+// text field, letters type, up and down select, and left, right, home,
+// end, backspace, delete and ctrl+u edit the text. The mouse works too.
 // The lock is also reached through swayidle (configs/niri/startup.kdl),
 // which calls it when the session is asked to lock: after sitting idle,
 // before a suspend, and by "loginctl lock-session".
@@ -118,6 +120,9 @@ ShellRoot {
     // the text cursor is in it, counted in characters from the start.
     property string query: ""
     property int cursor: 0
+    // Whether "/" has brought up a search field on a page without a text
+    // field of its own.
+    property bool searching: false
     // A change of page waits here while the page on screen is wiped away.
     // Ring.qml calls commitStack() once it has gone.
     property bool stackPending: false
@@ -131,7 +136,7 @@ ShellRoot {
     // The innermost page's rows, narrowed by what has been typed.
     readonly property var pageRows: page ? matchingRows(page, query) : []
     // Whether there is a text field to type into right now.
-    readonly property bool fieldOpen: page !== null && page.field !== undefined && !stackPending
+    readonly property bool fieldOpen: page !== null && (page.field !== undefined || searching) && !stackPending
 
     // Only one of the ring and the monitor is open at a time.
     function toggleRing(): void {
@@ -172,16 +177,22 @@ ShellRoot {
             root.closeRing();
             return;
         }
+        root.openPageAt(name, 0);
+    }
+
+    // Open the ring at one page with one of its rows selected.
+    function openPageAt(name: string, row: int): void {
         root.closeMonitor();
         root.ringOpen = true;
         root.focusStation(pageSource.pageStation[name]);
-        root.changeStack([name], [0]);
+        root.changeStack([name], [row]);
     }
 
-    // The rows of a page that contain what has been typed. A page without a
-    // filtering text field always shows all of its rows.
+    // The rows of a page that contain what has been typed. Typing narrows
+    // a page whose own text field filters, and any page being searched.
     function matchingRows(page: var, typed: string): var {
-        if (!page.field || !page.field.filters || typed === "")
+        const filters = root.searching || (page.field !== undefined && page.field.filters);
+        if (!filters || typed === "")
             return page.rows;
         const wanted = typed.toLowerCase();
         const matches = [];
@@ -206,6 +217,7 @@ ShellRoot {
         root.selectionStack = root.nextSelectionStack;
         root.query = "";
         root.cursor = 0;
+        root.searching = false;
         root.stackPending = false;
         root.selectReadable();
     }
@@ -241,10 +253,18 @@ ShellRoot {
             row.adjust(step);
     }
 
-    // Esc: leave the innermost page, then close the ring.
+    // Esc: end a search, then leave the innermost page, then close the ring.
     function back(): void {
         if (root.stackPending)
             return;
+        if (root.searching) {
+            root.searching = false;
+            root.query = "";
+            root.cursor = 0;
+            root.select(0);
+            root.selectReadable();
+            return;
+        }
         if (root.dived)
             root.changeStack(root.pageStack.slice(0, -1), root.selectionStack.slice(0, -1));
         else
@@ -510,6 +530,17 @@ ShellRoot {
         const last = root.applets[root.monitorIndex].rows.length - 1;
         root.monitorSelected = Math.max(0, Math.min(last, root.monitorSelected + step));
     }
+
+    // --- The tray drop-down ---
+    // Whether the panel under the bar's "apps" tab is open.
+    property bool trayOpen: false
+    // Where the tab starts, in pixels from the left of the screen. The
+    // bar keeps this up to date.
+    property real trayTabX: 0
+    // The pages, for the drop-down to show the same two the ring has.
+    readonly property alias pages: pageSource
+    // How many apps are running in the background.
+    readonly property int trayCount: SystemTray.items.values.length
 
     // --- The calendar ---
     property bool calendarShown: false
@@ -968,6 +999,10 @@ ShellRoot {
         shell: root
     }
 
+    TrayDrop {
+        shell: root
+    }
+
     Dialog {
         shell: root
     }
@@ -1038,6 +1073,14 @@ ShellRoot {
 
         function calendar(): void {
             root.toggleCalendar();
+        }
+
+        function tray(): void {
+            root.trayOpen = !root.trayOpen;
+        }
+
+        function search(): void {
+            root.searching = true;
         }
 
         function idleWarning(): void {

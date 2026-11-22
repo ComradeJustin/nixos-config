@@ -22,6 +22,11 @@ Box {
     signal rowClicked(int entryIndex)
     signal wheelTurned(int step)
 
+    // Whether "/" brings up a search field here, and whether one is
+    // showing now on a page that has no text field of its own. Typing into
+    // it narrows the rows.
+    property bool searchable: false
+    property bool searching: false
     // What has been typed into the text field, and where the cursor is in
     // it, counted in characters from the start.
     property string query: ""
@@ -33,7 +38,10 @@ Box {
     property int levelCells: 20
     property int maxListRows: 10
 
-    readonly property bool hasField: page !== null && page.field !== undefined
+    readonly property bool ownField: page !== null && page.field !== undefined
+    readonly property bool hasField: ownField || searching
+    readonly property bool secret: ownField && page.field.secret
+    readonly property string hint: ownField ? page.field.hint : "search"
     readonly property int fieldRows: hasField ? 1 : 0
     // An empty list still takes one row, to say that it is empty.
     readonly property int listRows: Math.max(1, Math.min(entries.length, maxListRows))
@@ -77,13 +85,18 @@ Box {
     function footerText(): string {
         if (panel.entries.length === 0)
             return "esc back";
-        let keys = panel.hasField ? "↑↓ select" : "↑↓ jk select";
+        let keys = "↑↓ select";
+        if (!panel.hasField)
+            keys = panel.searchable ? "↑↓ select  / search" : "↑↓ jk select";
         const action = panel.actionHint();
         if (action !== "")
             keys += "  " + action;
         keys += "  esc back";
-        if (panel.scrolls)
-            keys += "  " + (panel.selectedIndex + 1) + "/" + panel.entries.length;
+        // Where the selection is in a long list, if there is room left.
+        // The border needs five cells beside the footer (Box.qml).
+        const place = "  " + (panel.selectedIndex + 1) + "/" + panel.entries.length;
+        if (panel.scrolls && keys.length + place.length <= panel.columns - 5)
+            keys += place;
         return keys;
     }
 
@@ -106,7 +119,7 @@ Box {
         id: field
 
         // What is shown for the typed text: a secret is one dot per character.
-        readonly property string typed: panel.hasField && panel.page.field.secret ? "•".repeat(panel.query.length) : panel.query
+        readonly property string typed: panel.secret ? "•".repeat(panel.query.length) : panel.query
 
         visible: panel.hasField
 
@@ -140,7 +153,7 @@ Box {
 
         Label {
             visible: panel.query === ""
-            text: panel.hasField ? " " + panel.page.field.hint : ""
+            text: " " + panel.hint
             color: Theme.line
         }
     }
