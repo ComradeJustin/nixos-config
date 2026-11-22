@@ -739,8 +739,9 @@ ShellRoot {
     // fcitx5 has no way to tell a program when the input method changes,
     // but it keeps a tray item whose tooltip names the one in use, and a
     // tray item's changes do arrive as they happen. The tooltip reads
-    // "Keyboard - English (US)" for plain typing and names the input
-    // method, such as Mozc for Japanese, otherwise.
+    // "Keyboard - English (US)" for plain typing, and names Mozc when the
+    // Japanese input method is on. It reads other things at other times,
+    // for instance while the ring has the keyboard, so only Mozc counts.
     readonly property var inputTrayItem: {
         for (const item of SystemTray.items.values) {
             if (item.id === "Fcitx")
@@ -750,7 +751,7 @@ ShellRoot {
     }
     // False when fcitx5 is not running: there is nothing to show then.
     readonly property bool inputAvailable: inputTrayItem !== null
-    readonly property bool inputJapanese: inputAvailable && !inputTrayItem.tooltipTitle.startsWith("Keyboard")
+    readonly property bool inputJapanese: inputAvailable && inputTrayItem.tooltipTitle.toLowerCase().includes("mozc")
 
     function toggleInput(): void {
         Quickshell.execDetached(["fcitx5-remote", "-t"]);
