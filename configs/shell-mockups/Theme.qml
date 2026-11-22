@@ -15,6 +15,7 @@ Singleton {
     readonly property color base04: Quickshell.env("BASE04") || "#a78e84"
     readonly property color base05: Quickshell.env("BASE05") || "#b8a59d"
     readonly property color base07: Quickshell.env("BASE07") || "#dcd2ce"
+    readonly property color base0A: Quickshell.env("BASE0A") || "#ffc37a"
     readonly property color base0F: Quickshell.env("BASE0F") || "#f1ae97"
 
     // What each colour is for.
@@ -26,6 +27,10 @@ Singleton {
     readonly property color line: base03
     // Reverse-video blocks and filled bars.
     readonly property color accent: base0F
+    // Something is wrong or needs attention: a low battery, muted sound, no
+    // network, a wrong password. Never the only sign: a word or mark says
+    // so too.
+    readonly property color alert: base0A
 
     // Departure Mono is a pixel font: it is only sharp at 11 px and whole
     // multiples of it. At 11 px every character is exactly one cell.

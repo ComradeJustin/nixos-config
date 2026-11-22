@@ -2,17 +2,22 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// What a volume key press looks like: a small panel is wiped in at the right
-// end of the bar with a long bar and the number, then wiped away. The number
-// flashes each time it changes.
+// What a volume or brightness key press looks like: a small panel is wiped
+// in at the right end of the bar with a long bar and the number, then wiped
+// away. The number flashes each time it changes. Muted sound shows an empty
+// bar and the word in the alert colour.
 PanelWindow {
     id: readout
 
     // The shell root (shell.qml).
     required property var shell
 
+    readonly property bool showsVolume: shell.readoutKind === "volume"
+    readonly property bool muted: showsVolume && shell.muted
+    readonly property int amount: showsVolume ? shell.volume : shell.brightness
+
     // 0 = nothing showing, 1 = the whole panel.
-    property real shown: shell.volumeShown ? 1 : 0
+    property real shown: shell.readoutShown ? 1 : 0
 
     Behavior on shown {
         NumberAnimation {
@@ -21,7 +26,7 @@ PanelWindow {
     }
 
     // Stay mapped until the panel has been wiped away.
-    visible: shell.volumeShown || shown > 0
+    visible: shell.readoutShown || shown > 0
     anchors {
         top: true
         right: true
@@ -42,17 +47,19 @@ PanelWindow {
 
         columns: 36
         rows: 1
-        title: "volume"
+        title: readout.shell.readoutKind
         shown: readout.shown
 
         Level {
-            level: readout.shell.volume / 100
-            cells: panel.contentColumns - 4
+            level: readout.muted ? 0 : readout.amount / 100
+            // Leaves room for the longest value, "mute", and a space.
+            cells: panel.contentColumns - 5
         }
 
         Value {
             anchors.right: parent.right
-            text: readout.shell.volume
+            text: readout.muted ? "mute" : readout.amount
+            restColor: readout.muted ? Theme.alert : Theme.ink
         }
     }
 }

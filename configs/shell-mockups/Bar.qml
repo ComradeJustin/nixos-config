@@ -5,12 +5,16 @@ import Quickshell.Wayland
 // The bar: a terminal status line. One row of cells, segments separated by
 // dim Powerline arrows that point away from the centre, levels drawn as
 // framed progress bars.
-// Left: workspaces, the focused window and the playing track.
+// Left: workspaces, the focused window, the playing track, the count of
+// waiting notifications, and a system rebuild while one is running.
 // Centre: date and time. Right: network with its signal, volume, battery.
 // A halftone shadow falls under it.
 // One bar is made for each screen (shell.qml).
-// Sample values, except the clock, and the volume and the focused workspace,
-// which the buttons at the bottom of the screen change.
+//
+// Trouble is shown in the alert colour together with a word or mark: no
+// network, muted sound, a low battery.
+// Sample values, except the clock and whatever the buttons at the bottom of
+// the screen change.
 PanelWindow {
     id: bar
 
@@ -50,6 +54,8 @@ PanelWindow {
         color: Theme.inkDim
         smallCaps: true
     }
+
+    readonly property bool batteryLow: shell.battery <= 0.2 && !shell.charging
 
     // How much of the bar is showing: 1 normally, 0 while the focused window
     // is fullscreen. niri keeps the bar drawn on top of a window for about a
@@ -149,6 +155,60 @@ PanelWindow {
                 Label {
                     text: "Shelter"
                 }
+
+                // Notifications waiting in the Inbox.
+                Divider {
+                    visible: bar.shell.unreadCount > 0
+                }
+
+                Key {
+                    visible: bar.shell.unreadCount > 0
+                    text: "✦ "
+                }
+
+                Value {
+                    visible: bar.shell.unreadCount > 0
+                    text: bar.shell.unreadCount
+                }
+
+                // A system rebuild, only while one is running: wiped in
+                // when it starts and away when it finishes.
+                Row {
+                    id: rebuild
+
+                    property real shown: bar.shell.rebuilding ? 1 : 0
+
+                    Behavior on shown {
+                        NumberAnimation {
+                            duration: Theme.wipeMs
+                        }
+                    }
+
+                    visible: shown > 0
+                    layer.enabled: shown < 1
+                    layer.effect: DitherFade {
+                        amount: rebuild.shown
+                        spread: Theme.wipeFront
+                    }
+
+                    Divider {}
+
+                    Spinner {}
+
+                    Key {
+                        text: " nh "
+                    }
+
+                    Level {
+                        level: bar.shell.rebuildProgress
+                        cells: 6
+                    }
+
+                    Label {
+                        text: " " + Math.round(bar.shell.rebuildProgress * 100) + "%"
+                        color: Theme.ink
+                    }
+                }
             }
 
             // --- Centre: date and time ---
@@ -178,14 +238,16 @@ PanelWindow {
                 }
 
                 SignalBars {
-                    level: 0.75
+                    level: bar.shell.online ? 0.75 : 0
                 }
 
                 Label {
-                    text: " Home-5G"
+                    text: bar.shell.online ? " Home-5G" : " offline"
+                    color: bar.shell.online ? Theme.inkSoft : Theme.alert
                 }
 
                 Label {
+                    visible: bar.shell.online
                     text: " → nixpc"
                     color: Theme.inkDim
                 }
@@ -199,7 +261,7 @@ PanelWindow {
                 }
 
                 Level {
-                    level: bar.shell.volume / 100
+                    level: bar.shell.muted ? 0 : bar.shell.volume / 100
                     cells: 10
                 }
 
@@ -208,7 +270,8 @@ PanelWindow {
                 }
 
                 Value {
-                    text: bar.shell.volume + "%"
+                    text: bar.shell.muted ? "mute" : bar.shell.volume + "%"
+                    restColor: bar.shell.muted ? Theme.alert : Theme.ink
                 }
 
                 Divider {
@@ -220,13 +283,20 @@ PanelWindow {
                 }
 
                 Level {
-                    level: 0.28
+                    level: bar.shell.battery
                     cells: 10
+                    fillColor: bar.batteryLow ? Theme.alert : Theme.accent
                 }
 
+                // An arrow while charging.
                 Label {
-                    text: " 28%"
-                    color: Theme.ink
+                    text: bar.shell.charging ? " ↑" : " "
+                    color: Theme.accent
+                }
+
+                Value {
+                    text: Math.round(bar.shell.battery * 100) + "%" + (bar.batteryLow ? " !" : "")
+                    restColor: bar.batteryLow ? Theme.alert : Theme.ink
                 }
             }
         }

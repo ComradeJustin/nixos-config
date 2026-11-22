@@ -16,6 +16,7 @@ Item {
     property int rows: 1
     property string title: ""
     property string footer: ""
+    property color titleColor: Theme.ink
     // How much of the panel is showing, from 0 to 1.
     property real shown: 1
     default property alias content: inner.data
@@ -71,7 +72,7 @@ Item {
     Label {
         x: 3 * Theme.cellWidth
         text: box.title
-        color: Theme.ink
+        color: box.titleColor
         smallCaps: true
     }
 

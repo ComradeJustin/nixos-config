@@ -6,7 +6,10 @@ import QtQuick
 Label {
     id: value
 
-    color: flash.running ? Theme.slab : Theme.ink
+    // Its colour when it is not flashing.
+    property color restColor: Theme.ink
+
+    color: flash.running ? Theme.slab : restColor
 
     onTextChanged: flash.restart()
 
