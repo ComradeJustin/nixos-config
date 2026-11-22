@@ -5,6 +5,7 @@ import Quickshell.Networking
 import Quickshell.Services.Mpris
 import Quickshell.Services.Notifications
 import Quickshell.Services.Pipewire
+import Quickshell.Services.Polkit
 import Quickshell.Services.SystemTray
 import Quickshell.Services.UPower
 import Quickshell.Wayland
@@ -32,6 +33,8 @@ import Quickshell.Wayland
 //   MonitorData    reads the system for it while it is open
 //                  (system-readings.sh)
 //   Calendar       a month that drops out of the bar's clock
+//   Dialog         things that interrupt: the password prompt for
+//                  administrator rights, the warning before the idle lock
 //   Desktop        a clock and the playing track on an empty desktop
 //   Niri           workspaces and the focused window, from niri
 //   Theme          colours, the character grid, motion
@@ -52,6 +55,7 @@ import Quickshell.Wayland
 //   notifications  what apps send, kept until dismissed
 //   brightness     brightnessctl, asked only when a key changes it
 //   night light    wlsunset, run while it is switched on
+//   admin rights   polkit: the shell is the agent that asks for the password
 //
 // Keys reach it through IPC, from niri's key bindings (configs/niri):
 //   qs -p ~/nixos-config/configs/shell ipc call shell <name>
@@ -62,6 +66,7 @@ import Quickshell.Wayland
 //   ring (open or close the ring), page <name> (open the ring at a page:
 //   launch, clipboard, system, network, media, inbox, session, ...),
 //   monitor (open or close the monitor), calendar,
+//   idleWarning and idleResume (swayidle calls these before the idle lock),
 //   and, for driving the ring without the keyboard: turn <steps>, open,
 //   select <steps>, adjust <step>, back, type <text>
 // In the ring: h l turn, enter opens or acts, j k or the arrows select,
@@ -319,7 +324,137 @@ ShellRoot {
     }
 
     function lock(): void {
+        root.idleWarning = false;
         lockScreen.engage(false);
+    }
+
+    // --- Dialogs ---
+    // The password prompt. The shell is the session's polkit agent: when a
+    // program asks for administrator rights, polkit hands the request here
+    // as a flow, which asks for what it needs a step at a time.
+    PolkitAgent {
+        id: polkitAgent
+    }
+
+    // The request being answered, or null.
+    readonly property var authRequest: polkitAgent.isActive ? polkitAgent.flow : null
+    // What has been typed into the dialog's field. It is cleared as soon as
+    // it has been handed over.
+    property string dialogTyped: ""
+
+    onAuthRequestChanged: root.dialogTyped = ""
+
+    // The warning before the idle lock: swayidle says when the machine has
+    // sat idle and when it is touched again (configs/niri/startup.kdl).
+    property bool idleWarning: false
+    readonly property int idleWarningSeconds: 30
+    property int idleSecondsLeft: 0
+
+    function warnIdle(): void {
+        if (lockScreen.locked)
+            return;
+        root.idleSecondsLeft = root.idleWarningSeconds;
+        root.idleWarning = true;
+    }
+
+    // Counts the warning down. Only runs while it is up.
+    Timer {
+        interval: 1000
+        repeat: true
+        running: root.idleWarning
+        onTriggered: {
+            root.idleSecondsLeft -= 1;
+            if (root.idleSecondsLeft <= 0)
+                root.idleWarning = false;
+        }
+    }
+
+    // A sentence as lines no longer than `width` characters, broken at spaces.
+    function wrappedLines(sentence: string, width: int): var {
+        const lines = [];
+        let line = "";
+        for (const word of sentence.split(" ")) {
+            if (line !== "" && line.length + 1 + word.length > width) {
+                lines.push(line);
+                line = word;
+            } else {
+                line = line === "" ? word : line + " " + word;
+            }
+        }
+        if (line !== "")
+            lines.push(line);
+        return lines;
+    }
+
+    // The dialog that is up, as a page for Dialog.qml, or null for none.
+    readonly property var dialogPage: {
+        if (root.authRequest !== null)
+            return root.passwordPage(root.authRequest);
+        if (root.idleWarning)
+            return root.idlePage();
+        return null;
+    }
+    // Only the password prompt needs the keyboard.
+    readonly property bool dialogTakesKeys: root.authRequest !== null
+
+    function passwordPage(request: var): var {
+        // A line of the dialog holds 44 characters.
+        const rows = [];
+        for (const line of root.wrappedLines(request.message, 44))
+            rows.push({
+                label: line,
+                kind: "note"
+            });
+        // What the request has said since: a wrong password, or the
+        // fingerprint reader asking for a finger.
+        for (const line of root.wrappedLines(request.supplementaryMessage, 44))
+            rows.push({
+                label: line,
+                kind: "note",
+                alert: request.supplementaryIsError
+            });
+        const page = {
+            title: "Authenticate",
+            footer: "↵ allow  esc deny",
+            rows: rows
+        };
+        // The field is there once the request asks for something typed.
+        if (request.isResponseRequired)
+            page.field = {
+                hint: request.inputPrompt.replace(":", "").trim().toLowerCase(),
+                filters: false,
+                secret: !request.responseVisible
+            };
+        return page;
+    }
+
+    function idlePage(): var {
+        return {
+            title: "Still there?",
+            footer: "any key or movement stays",
+            rows: [
+                {
+                    label: "Locking in",
+                    kind: "level",
+                    value: root.idleSecondsLeft + " s",
+                    level: root.idleSecondsLeft / root.idleWarningSeconds
+                }
+            ]
+        };
+    }
+
+    // Enter in the password prompt: hand over what was typed.
+    function submitDialog(): void {
+        if (root.authRequest === null || !root.authRequest.isResponseRequired)
+            return;
+        root.authRequest.submit(root.dialogTyped);
+        root.dialogTyped = "";
+    }
+
+    // Esc in the password prompt: turn the request down.
+    function cancelDialog(): void {
+        if (root.authRequest !== null)
+            root.authRequest.cancelAuthenticationRequest();
     }
 
     // --- The monitor ---
@@ -421,6 +556,16 @@ ShellRoot {
     function toggleMicrophoneMute(): void {
         if (root.microphoneReady)
             root.soundInput.audio.muted = !root.soundInput.audio.muted;
+    }
+
+    // Whether any program is taking sound from the microphone: there is a
+    // connection that starts at it.
+    readonly property bool microphoneInUse: {
+        for (const link of Pipewire.linkGroups.values) {
+            if (link.source === root.soundInput)
+                return true;
+        }
+        return false;
     }
 
     // --- Screen brightness ---
@@ -823,6 +968,10 @@ ShellRoot {
         shell: root
     }
 
+    Dialog {
+        shell: root
+    }
+
     Desktop {
         shell: root
     }
@@ -889,6 +1038,14 @@ ShellRoot {
 
         function calendar(): void {
             root.toggleCalendar();
+        }
+
+        function idleWarning(): void {
+            root.warnIdle();
+        }
+
+        function idleResume(): void {
+            root.idleWarning = false;
         }
 
         function page(name: string): void {

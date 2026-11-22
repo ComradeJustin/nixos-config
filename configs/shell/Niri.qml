@@ -27,6 +27,11 @@ Scope {
     // by mistake.
     property bool focusedWorkspaceEmpty: false
 
+    // Whether a program is recording or sharing the screen.
+    property bool screenShared: false
+    // niri's record of each recording or share, by its stream id.
+    property var castByStream: ({})
+
     // niri's own records, by id. Plain bookkeeping: after every event the
     // four properties above are worked out again from these.
     property var workspaceById: ({})
@@ -57,6 +62,16 @@ Scope {
         } else if (event.WindowFocusChanged) {
             // The id is null when no window has the keyboard.
             niri.markFocused(event.WindowFocusChanged.id);
+        } else if (event.CastsChanged) {
+            const casts = {};
+            for (const cast of event.CastsChanged.casts)
+                casts[cast.stream_id] = cast;
+            niri.castByStream = casts;
+        } else if (event.CastStartedOrChanged) {
+            const cast = event.CastStartedOrChanged.cast;
+            niri.castByStream[cast.stream_id] = cast;
+        } else if (event.CastStopped) {
+            delete niri.castByStream[event.CastStopped.stream_id];
         } else {
             // Some other event: nothing here depends on it.
             return;
@@ -127,6 +142,13 @@ Scope {
         niri.focusedTitle = title;
         niri.windows = windows;
         niri.focusedWorkspaceEmpty = focusedEmpty;
+
+        let shared = false;
+        for (const streamId in niri.castByStream) {
+            if (niri.castByStream[streamId].is_active)
+                shared = true;
+        }
+        niri.screenShared = shared;
     }
 
     // Switch to a workspace by its number.

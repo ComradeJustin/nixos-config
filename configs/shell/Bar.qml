@@ -6,8 +6,9 @@ import Quickshell.Wayland
 // dim Powerline arrows that point away from the centre, levels drawn as
 // framed progress bars.
 // Left: this screen's workspaces, the focused window, the playing track,
-// then how many notifications are waiting, and whether do not disturb or
-// keep awake is on.
+// then how many notifications are waiting, whether do not disturb is on,
+// whether the microphone is in use or the screen is being shared, and
+// whether keep awake is on.
 // Centre: date and time. Right: the input method, network with its
 // signal, volume, battery.
 // A halftone shadow falls under it.
@@ -267,6 +268,23 @@ PanelWindow {
                         Flag {
                             word: "quiet"
                             blockColor: Theme.inkDim
+                        }
+                    }
+
+                    // Something is listening, or recording or sharing the screen.
+                    Passing {
+                        active: bar.shell.microphoneInUse
+
+                        Flag {
+                            word: "mic"
+                        }
+                    }
+
+                    Passing {
+                        active: bar.shell.niri.screenShared
+
+                        Flag {
+                            word: "screen"
                         }
                     }
 

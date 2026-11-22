@@ -210,7 +210,13 @@ Box {
                 x: 2 * Theme.cellWidth
                 width: (line.wholeLine ? panel.contentColumns - 3 - line.endCells : panel.valueColumn - 3) * Theme.cellWidth
                 text: line.entry ? line.entry.label : ""
-                color: line.selected ? Theme.slab : (line.kind === "note" ? Theme.inkSoft : Theme.ink)
+                color: {
+                    if (line.selected)
+                        return Theme.slab;
+                    if (line.kind !== "note")
+                        return Theme.ink;
+                    return line.alert ? Theme.alert : Theme.inkSoft;
+                }
                 elide: Text.ElideRight
             }
 

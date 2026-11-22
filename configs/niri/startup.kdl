@@ -13,13 +13,14 @@ spawn-at-startup "systemd-run" "--user" "--unit=shell" "--collect" "-p" "Restart
 // ags-shell now runs as a supervised systemd user service (ags.nix)
 // sway-audio-idle-inhibit runs as a supervised systemd user service (niri.nix)
 // spawn-at-startup "swaync"
-// Idle and sleep. After 150 s the screen dims, after 180 s the session is
+// Idle and sleep. After 150 s the screen dims and the shell warns that it
+// is about to lock, after 180 s the session is
 // asked to lock, after 30 min the machine suspends, and it is asked to lock
 // before any suspend. Being asked to lock ("loginctl lock-session", from
 // here or anywhere else) runs the "lock" command, which is the new shell's
 // lock screen (configs/shell). On waking the lock asks the fingerprint
 // reader again.
-spawn-at-startup "swayidle" "-w" "timeout" "150" "brightnessctl -s set 10%" "resume" "brightnessctl -r" "timeout" "180" "loginctl lock-session" "resume" "qs -p /home/justin/nixos-config/configs/shell ipc call shell lockWake" "timeout" "1800" "systemctl suspend" "before-sleep" "loginctl lock-session" "after-resume" "sleep 1; qs -p /home/justin/nixos-config/configs/shell ipc call shell lockWake" "lock" "qs -p /home/justin/nixos-config/configs/shell ipc call shell lock"
+spawn-at-startup "swayidle" "-w" "timeout" "150" "brightnessctl -s set 10%; qs -p /home/justin/nixos-config/configs/shell ipc call shell idleWarning" "resume" "brightnessctl -r; qs -p /home/justin/nixos-config/configs/shell ipc call shell idleResume" "timeout" "180" "loginctl lock-session" "resume" "qs -p /home/justin/nixos-config/configs/shell ipc call shell lockWake" "timeout" "1800" "systemctl suspend" "before-sleep" "loginctl lock-session" "after-resume" "sleep 1; qs -p /home/justin/nixos-config/configs/shell ipc call shell lockWake" "lock" "qs -p /home/justin/nixos-config/configs/shell ipc call shell lock"
 spawn-at-startup "awww-daemon"
 spawn-at-startup "awww" "restore"
 // polkit-gnome agent starts via systemd user service (see portals.nix)
