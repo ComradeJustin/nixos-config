@@ -1,4 +1,4 @@
-# XDG portals (file pickers, screen sharing), polkit prompts and the GNOME keyring.
+# XDG portals (file pickers, screen sharing), polkit and the GNOME keyring.
 { pkgs, ... }:
 {
   environment.pathsToLink = [
@@ -12,28 +12,12 @@
   services.gnome.gnome-remote-desktop.enable = true;
   security.polkit.enable = true;
 
-  systemd.user.services.polkit-gnome-authentication-agent-1 = {
-    description = "polkit-gnome-authentication-agent-1";
-    wantedBy = [ "graphical-session.target" ];
-    after = [ "graphical-session.target" ];
-    serviceConfig = {
-      Type = "simple";
-      ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
-      Restart = "on-failure";
-      RestartSec = 1;
-      TimeoutStopSec = 10;
-    };
-  };
+  # Password prompts for administrator rights come from the desktop shell
+  # (configs/shell), which registers itself as the session's polkit agent.
+  # Only one agent can register, so no other one is started here.
 
   environment.systemPackages = [
     pkgs.seahorse
-    # NOTE: polkit_gnome is intentionally NOT in systemPackages. The explicit
-    # user service above references its binary by store path, so it stays in
-    # the closure regardless. Adding it here also installs its
-    # /etc/xdg/autostart/*.desktop, which systemd-xdg-autostart-generator turns
-    # into a second agent (app-polkit-gnome...@autostart.service). That duplicate
-    # wins the registration race and makes our explicit service fail
-    # ("agent already exists"). One launcher only.
   ];
 
   xdg.portal = {
