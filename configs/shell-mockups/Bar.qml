@@ -199,8 +199,9 @@ PanelWindow {
 
                         Divider {}
 
+                        // The font's bell icon.
                         Key {
-                            text: "✦ "
+                            text: "\uf0f3 "
                         }
 
                         Value {

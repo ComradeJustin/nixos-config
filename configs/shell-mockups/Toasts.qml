@@ -70,7 +70,8 @@ PanelWindow {
             y: place * toasts.placeHeight
             columns: toasts.panelColumns
             rows: toasts.panelRows
-            title: "✦ " + message.app
+            // The same bell the bar counts notifications with.
+            title: "\uf0f3 " + message.app
             titleColor: urgent ? Theme.alert : Theme.ink
             lineColor: urgent ? Theme.alert : Theme.line
             footer: urgent ? "stays until dismissed" : "now"
