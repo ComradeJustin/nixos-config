@@ -7,15 +7,14 @@ import Quickshell.Wayland
 // Six station names travel on a dotted orbit around a large clock. h and l
 // turn the ring, and the name on the right is the focused one, shown in
 // reverse video. Enter opens it: the ring's names are erased and a bordered
-// panel is printed where the focused name was, listing that station's
+// panel is typed in where the focused name was, listing that station's
 // settings. Esc backs out.
 //
-// It moves the way a terminal redraws: at a steady rate, in whole steps,
-// with positions on the character grid. Nothing fades and nothing is cut.
-// Text is typed in and erased a character at a time, the orbit is plotted
-// and un-plotted dot by dot, panels are printed line by line, and the
-// dimming behind it all changes in steps. Everything that appears leaves
-// the same way, in reverse.
+// There is one way for anything here to appear or disappear: it is typed in
+// from the left a character at a time and erased in reverse. Names, the
+// clock, the hints and the panel all do it, at the same speed; the orbit is
+// plotted dot by dot alongside, and the dimming changes in steps. The only
+// movement is the ring turning, in whole jumps on the character grid.
 PanelWindow {
     id: ring
 
@@ -28,40 +27,39 @@ PanelWindow {
     // shell.turns counts presses and never wraps, so the ring keeps turning
     // the same way when it passes the last station.
     readonly property int focusedIndex: ((shell.turns % stationCount) + stationCount) % stationCount
-    readonly property int focusedRowCount: stations[focusedIndex].controls.length
 
     // --- The four animated values ---
     // Each runs at a steady rate with no easing. They are chained so that
     // things happen in order: opening a station erases the names and then
-    // prints the panel; leaving it erases the panel and then retypes the
+    // types the panel; leaving it erases the panel and then retypes the
     // names; closing erases whatever is showing and then shuts the ring.
 
-    // How far the ring has opened: 0 = closed, 1 = open. It stays open until
-    // an open panel has been erased.
+    // How much of the ring is typed in: 0 = closed, 1 = open. It stays open
+    // until an open panel has been erased.
     property real openness: shell.ringOpen || panelOpen ? 1 : 0
     // Rotation of the ring, in degrees.
     property real angle: -stepDegrees * shell.turns
     // 0 = the names, orbit and hints are printed. 1 = they are erased, to
     // make room for a panel or because the ring is closing.
     property real aside: !shell.ringOpen || shell.dived || panelOpen ? 1 : 0
-    // How much of the focused station's panel is printed. It starts only
+    // How much of the focused station's panel is typed in. It starts only
     // once the names have been erased.
     property real dive: shell.dived && aside === 1 ? 1 : 0
 
     // --- What is drawn from them ---
-    // The orbit's size jumps outward in a few steps as the ring opens.
-    readonly property real drawnOpenness: Math.round(openness * Theme.ringOpenSteps) / Theme.ringOpenSteps
+    // The dimming behind the ring, in a few whole steps.
+    readonly property real dimLevel: Math.round(openness * Theme.dimSteps) / Theme.dimSteps
     // One turn is drawn as a few equal jumps round the orbit.
     readonly property real angleJump: stepDegrees / Theme.turnSteps
     readonly property real drawnAngle: Math.round(angle / angleJump) * angleJump
     // How much of the ring's own text and orbit is printed, from 0 to 1.
     readonly property real ringPrinted: Math.min(openness, 1 - aside)
-    // True from the first printed line of a panel until the last one is erased.
+    // True from the first typed character of a panel until the last one is erased.
     readonly property bool panelOpen: dive > 0
 
     Behavior on openness {
         NumberAnimation {
-            duration: Theme.ringOpenMs
+            duration: Theme.typeMs
         }
     }
     Behavior on angle {
@@ -76,7 +74,7 @@ PanelWindow {
     }
     Behavior on dive {
         NumberAnimation {
-            duration: (ring.focusedRowCount + 2) * Theme.lineMs
+            duration: Theme.typeMs
         }
     }
 
@@ -114,7 +112,7 @@ PanelWindow {
     Rectangle {
         anchors.fill: parent
         color: Theme.slab
-        opacity: 0.9 * ring.drawnOpenness
+        opacity: 0.9 * ring.dimLevel
     }
 
     Item {
@@ -157,8 +155,8 @@ PanelWindow {
 
                 readonly property real theta: index * (360 / ring.orbitDots) * Math.PI / 180
 
-                x: ring.centerX + Theme.snapX(ring.orbitRadius * ring.drawnOpenness * Math.cos(theta))
-                y: ring.centerY + Theme.snapY(ring.orbitRadius * ring.drawnOpenness * Math.sin(theta)) - Theme.cellHeight / 2
+                x: ring.centerX + Theme.snapX(ring.orbitRadius * Math.cos(theta))
+                y: ring.centerY + Theme.snapY(ring.orbitRadius * Math.sin(theta)) - Theme.cellHeight / 2
                 // Dots are plotted clockwise from the right, and un-plotted in reverse.
                 visible: index < Math.round(ring.ringPrinted * ring.orbitDots)
                 text: "·"
@@ -205,11 +203,10 @@ PanelWindow {
 
                 readonly property bool focused: index === ring.focusedIndex
                 readonly property real theta: (ring.stepDegrees * index + ring.drawnAngle) * Math.PI / 180
-                readonly property real distance: ring.orbitRadius * ring.drawnOpenness
 
                 z: focused ? 1 : 0
-                x: ring.centerX + Theme.snapX(distance * Math.cos(theta))
-                y: ring.centerY + Theme.snapY(distance * Math.sin(theta))
+                x: ring.centerX + Theme.snapX(ring.orbitRadius * Math.cos(theta))
+                y: ring.centerY + Theme.snapY(ring.orbitRadius * Math.sin(theta))
 
                 // The reverse-video block behind the focused name. It is as
                 // wide as the part of the name that is printed.
@@ -236,7 +233,7 @@ PanelWindow {
                     color: station.focused ? Theme.slab : Theme.inkSoft
                 }
 
-                // The panel, printed a line at a time from where the name was.
+                // The panel, typed in where the name was.
                 Box {
                     id: panel
 
@@ -247,7 +244,7 @@ PanelWindow {
                     rows: station.modelData.controls.length
                     title: station.modelData.name
                     footer: "j/k select  enter act  esc back"
-                    reveal: station.focused ? ring.dive : 0
+                    typed: station.focused ? ring.dive : 0
 
                     Repeater {
                         model: station.modelData.controls

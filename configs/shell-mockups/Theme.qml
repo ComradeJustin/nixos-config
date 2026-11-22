@@ -40,20 +40,18 @@ Singleton {
     readonly property int barHeight: 2 * cellHeight
     readonly property int barTextY: cellHeight / 2
 
-    // Motion, the way a terminal redraws. Nothing glides, fades or
-    // overshoots: things jump in whole cells at a steady rate, and panels
-    // print one row at a time. Nothing runs while idle.
-    // Turning the ring one place takes this long, drawn as this many jumps.
+    // Motion, the way a terminal redraws. There is one way for anything to
+    // appear or disappear: it is typed in from the left a character at a
+    // time, and erased in reverse. Names, the clock, hints and whole panels
+    // all do this, at the same speed. Nothing fades, slides or is cut.
+    readonly property int typeMs: 90
+    // The only movement is turning the ring: one place takes this long,
+    // drawn as this many equal jumps on the character grid.
     readonly property int turnMs: 96
     readonly property int turnSteps: 6
-    // The ring opens out from the centre in this many jumps, and closes
-    // back in the same way.
-    readonly property int ringOpenMs: 120
-    readonly property int ringOpenSteps: 5
-    // The ring's names, orbit and hints are typed in or erased in this long.
-    readonly property int typeMs: 90
-    // A panel prints one line in this long, and is erased at the same rate.
-    readonly property int lineMs: 30
+    // The dimming behind the ring changes in this many steps.
+    readonly property int dimSteps: 5
+    // Nothing runs while idle.
 
     // Snap a distance in pixels to whole cells, so text never sits between them.
     function snapX(pixels: real): real {

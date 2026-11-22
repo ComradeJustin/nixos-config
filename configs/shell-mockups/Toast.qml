@@ -2,29 +2,30 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// What a notification looks like: a panel titled with the app is printed
-// under the clock, a row at a time, then erased.
+// What a notification looks like: a panel titled with the app is typed in
+// under the clock, then erased.
 PanelWindow {
     id: toast
 
     // The shell root (shell.qml).
     required property var shell
 
-    // 0 = nothing printed, 1 = the whole panel.
-    property real reveal: shell.toastShown ? 1 : 0
+    // 0 = nothing typed, 1 = the whole panel.
+    property real typed: shell.toastShown ? 1 : 0
 
-    Behavior on reveal {
+    Behavior on typed {
         NumberAnimation {
-            duration: panel.lineCount * Theme.lineMs
+            duration: Theme.typeMs
         }
     }
 
-    // Stay mapped until the last row has been erased.
-    visible: shell.toastShown || reveal > 0
+    // Stay mapped until the last character has been erased.
+    visible: shell.toastShown || typed > 0
     anchors.top: true
-    // Zone 0 in normal mode places this directly under the bar.
-    exclusionMode: ExclusionMode.Normal
-    exclusiveZone: 0
+    // Directly under the bar, or against the top of the screen when a
+    // fullscreen window has covered the bar.
+    margins.top: shell.fullscreen ? 0 : Theme.barHeight
+    exclusionMode: ExclusionMode.Ignore
     implicitWidth: panel.implicitWidth
     implicitHeight: panel.implicitHeight
     color: "transparent"
@@ -38,7 +39,7 @@ PanelWindow {
         rows: 2
         title: "Vesktop"
         footer: "now"
-        reveal: toast.reveal
+        typed: toast.typed
 
         Label {
             text: "Mara"

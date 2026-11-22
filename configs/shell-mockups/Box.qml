@@ -4,9 +4,9 @@ import QtQuick
 // corners, a title set into the top edge and an optional line of hints set
 // into the bottom edge. Sizes are in character cells.
 //
-// It is printed one line at a time and erased the same way in reverse.
-// `reveal` runs from 0 (nothing) to 1 (everything): first the top edge, then
-// each row with the bottom edge moving down under it.
+// It appears and disappears the same way all text in the shell does: typed
+// in from the left a character at a time, every line at once, and erased in
+// reverse.
 Item {
     id: box
 
@@ -15,24 +15,20 @@ Item {
     property int rows: 1
     property string title: ""
     property string footer: ""
-    // How much of the panel has been printed, from 0 to 1.
-    property real reveal: 1
+    // How much of the panel is typed in, from 0 to 1.
+    property real typed: 1
     default property alias content: inner.data
 
     // The inside width in cells: the border and one space of padding on each side are taken off.
     readonly property int contentColumns: columns - 4
-    // Every line of the panel, counting the two edges.
-    readonly property int lineCount: rows + 2
-    // Whole lines only, so the panel never shows part of one.
-    readonly property int shownLines: Math.round(Math.max(0, Math.min(1, reveal)) * lineCount)
-    // The bottom edge is the second line to appear; rows fill in above it after that.
-    readonly property int shownRows: Math.max(0, shownLines - 2)
-    readonly property bool fullyShown: shownLines === lineCount
+    // Whole characters only, so the panel never shows part of one.
+    readonly property int typedColumns: Math.round(Math.max(0, Math.min(1, typed)) * columns)
 
     implicitWidth: columns * Theme.cellWidth
-    implicitHeight: lineCount * Theme.cellHeight
-    width: implicitWidth
-    height: shownLines * Theme.cellHeight
+    implicitHeight: (rows + 2) * Theme.cellHeight
+    width: typedColumns * Theme.cellWidth
+    height: implicitHeight
+    clip: true
 
     // An edge with a gap left for a word set into it, e.g. "╭─        ─────╮".
     function edge(left: string, right: string, word: string): string {
@@ -42,64 +38,57 @@ Item {
     }
 
     Rectangle {
-        anchors.fill: parent
+        width: box.implicitWidth
+        height: box.implicitHeight
         color: Theme.slab
     }
 
-    // Top edge, with the title in its gap. The first line to be printed.
+    // Top edge, with the title in its gap.
     Label {
-        visible: box.shownLines >= 1
         text: box.edge("╭", "╮", box.title)
         color: Theme.line
     }
 
     Label {
         x: 3 * Theme.cellWidth
-        visible: box.shownLines >= 1
         text: box.title
         color: Theme.ink
     }
 
-    // Left and right edges: one "│" per printed row.
+    // Left and right edges: one "│" per row.
     Label {
         y: Theme.cellHeight
-        visible: box.shownRows > 0
-        text: Array(box.shownRows).fill("│").join("\n")
+        text: Array(box.rows).fill("│").join("\n")
         color: Theme.line
     }
 
     Label {
         x: (box.columns - 1) * Theme.cellWidth
         y: Theme.cellHeight
-        visible: box.shownRows > 0
-        text: Array(box.shownRows).fill("│").join("\n")
+        text: Array(box.rows).fill("│").join("\n")
         color: Theme.line
     }
 
-    // Bottom edge, under the last printed row. The hints appear once the panel is complete.
+    // Bottom edge, with the hints in its gap.
     Label {
-        y: (box.shownRows + 1) * Theme.cellHeight
-        visible: box.shownLines >= 2
-        text: box.edge("╰", "╯", box.fullyShown ? box.footer : "")
+        y: (box.rows + 1) * Theme.cellHeight
+        text: box.edge("╰", "╯", box.footer)
         color: Theme.line
     }
 
     Label {
         x: 3 * Theme.cellWidth
-        y: (box.shownRows + 1) * Theme.cellHeight
-        visible: box.fullyShown
+        y: (box.rows + 1) * Theme.cellHeight
         text: box.footer
         color: Theme.inkDim
     }
 
-    // The content, cut off at the last printed row.
     Item {
         id: inner
 
         x: 2 * Theme.cellWidth
         y: Theme.cellHeight
         width: box.contentColumns * Theme.cellWidth
-        height: box.shownRows * Theme.cellHeight
-        clip: true
+        height: box.rows * Theme.cellHeight
     }
 }

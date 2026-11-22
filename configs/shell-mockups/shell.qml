@@ -41,6 +41,13 @@ ShellRoot {
     property int volume: 35
     property bool volumeShown: false
     property bool toastShown: false
+    // Whether the focused window is fullscreen. niri then covers the bar, so
+    // drop-down panels sit against the top of the screen instead of hanging
+    // under a bar that is not there.
+    property bool fullscreen: false
+    // Panels waiting for the fullscreen check before they appear.
+    property bool volumeWanted: false
+    property bool toastWanted: false
 
     readonly property var now: clock.date
 
@@ -251,14 +258,56 @@ ShellRoot {
     // Pretend a volume key was pressed: raise the volume and show the readout.
     function bumpVolume(): void {
         root.volume = root.volume >= 100 ? 10 : root.volume + 10;
-        root.volumeShown = true;
         volumeHide.restart();
+        // Already on screen: its position is settled, nothing to check.
+        if (root.volumeShown)
+            return;
+        root.volumeWanted = true;
+        fullscreenCheck.running = true;
     }
 
     // Pretend a notification arrived.
     function showToast(): void {
-        root.toastShown = true;
         toastHide.restart();
+        if (root.toastShown)
+            return;
+        root.toastWanted = true;
+        fullscreenCheck.running = true;
+    }
+
+    // Asks niri about the focused window once, right before a panel appears.
+    // No polling: nothing runs while idle.
+    Process {
+        id: fullscreenCheck
+
+        command: ["niri", "msg", "--json", "focused-window"]
+
+        stdout: SplitParser {
+            onRead: line => {
+                const screen = Quickshell.screens[0];
+                let size = [0, 0];
+                try {
+                    const focusedWindow = JSON.parse(line);
+                    if (focusedWindow && focusedWindow.layout && focusedWindow.layout.window_size)
+                        size = focusedWindow.layout.window_size;
+                } catch (error) {
+                    // No focused window, or output this version does not have: treat as not fullscreen.
+                }
+                // A fullscreen window is exactly as large as the screen.
+                root.fullscreen = size[0] >= screen.width && size[1] >= screen.height;
+            }
+        }
+
+        onExited: {
+            if (root.volumeWanted) {
+                root.volumeWanted = false;
+                root.volumeShown = true;
+            }
+            if (root.toastWanted) {
+                root.toastWanted = false;
+                root.toastShown = true;
+            }
+        }
     }
 
     SystemClock {
