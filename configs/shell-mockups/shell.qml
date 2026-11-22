@@ -20,8 +20,9 @@ import Quickshell.Wayland
 // The motion is real. The content is sample data; only the clock is live and
 // nothing is wired to the system.
 //
-// One-time setup (the font is not installed system-wide yet):
+// One-time setup (the fonts are not installed system-wide yet):
 //   nix build nixpkgs#departure-mono -o ~/nixos-config/configs/shell-mockups/departure-mono-font
+//   nix build nixpkgs#pixel-code -o ~/nixos-config/configs/shell-mockups/pixel-code-font
 // Start:  systemd-run --user --unit=shell-mockup --collect quickshell -p ~/nixos-config/configs/shell-mockups
 // Stop:   systemctl --user stop shell-mockup
 // Drive:  the four buttons at the bottom of the screen, or

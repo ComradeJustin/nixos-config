@@ -1,3 +1,5 @@
-# Link to the Departure Mono font package, made by:
+# Links to the font packages, made by:
 #   nix build nixpkgs#departure-mono -o departure-mono-font
+#   nix build nixpkgs#pixel-code -o pixel-code-font
 departure-mono-font
+pixel-code-font

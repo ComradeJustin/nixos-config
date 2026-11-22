@@ -1,10 +1,13 @@
 import QtQuick
 
-// A level drawn the terminal way: full blocks for the filled part, light
-// shade for the rest. The last filled cell is one of the font's eighth-wide
-// blocks, so the bar moves in eighths of a cell rather than whole cells.
-// Used for volume, brightness, battery and signal.
-Row {
+// A level drawn as a framed progress bar: an outline with a solid fill
+// inside it. Used for volume, brightness, battery and signal.
+//
+// It is made of Pixel Code's six progress-bar characters: a left end, a
+// middle and a right end, each in an empty and a filled version. Those are
+// 6 px wide where a cell is 7 px, so the bar is as many of them as fit in
+// `cells` cells, with the few pixels left over at the right.
+Item {
     id: root
 
     // How full the bar is, from 0 to 1.
@@ -14,20 +17,48 @@ Row {
     property color fillColor: Theme.accent
     property color emptyColor: Theme.line
 
-    // Blocks one eighth to seven eighths of a cell wide, narrowest first.
-    readonly property string partBlocks: "▏▎▍▌▋▊▉"
-    readonly property int filledEighths: Math.round(Math.max(0, Math.min(1, level)) * cells * 8)
-    readonly property int fullCells: Math.floor(filledEighths / 8)
-    readonly property int extraEighths: filledEighths % 8
-    readonly property int usedCells: fullCells + (extraEighths > 0 ? 1 : 0)
+    readonly property int segments: Math.floor(cells * Theme.cellWidth / Theme.levelSegmentWidth)
+    readonly property int filledSegments: Math.round(Math.max(0, Math.min(1, level)) * segments)
 
-    Label {
-        text: "█".repeat(root.fullCells) + (root.extraEighths > 0 ? root.partBlocks[root.extraEighths - 1] : "")
-        color: root.fillColor
+    // The filled or the empty part of the bar, as text. The first and last
+    // segments of the whole bar are the end pieces.
+    function part(filled: bool): string {
+        const leftEnd = filled ? "\uee03" : "\uee00";
+        const middle = filled ? "\uee04" : "\uee01";
+        const rightEnd = filled ? "\uee05" : "\uee02";
+        const first = filled ? 0 : root.filledSegments;
+        const last = filled ? root.filledSegments : root.segments;
+        let text = "";
+        for (let segment = first; segment < last; segment++) {
+            if (segment === 0)
+                text += leftEnd;
+            else if (segment === root.segments - 1)
+                text += rightEnd;
+            else
+                text += middle;
+        }
+        return text;
     }
 
-    Label {
-        text: "░".repeat(root.cells - root.usedCells)
-        color: root.emptyColor
+    width: cells * Theme.cellWidth
+    height: Theme.cellHeight
+
+    Row {
+        // Centred in the row of text beside it.
+        y: (Theme.cellHeight - Theme.levelSegmentHeight) / 2
+
+        Label {
+            text: root.part(true)
+            color: root.fillColor
+            font.family: Theme.levelFontFamily
+            font.pixelSize: Theme.levelFontSize
+        }
+
+        Label {
+            text: root.part(false)
+            color: root.emptyColor
+            font.family: Theme.levelFontFamily
+            font.pixelSize: Theme.levelFontSize
+        }
     }
 }

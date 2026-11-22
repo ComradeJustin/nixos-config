@@ -36,6 +36,15 @@ Singleton {
     readonly property int cellWidth: 7
     readonly property int cellHeight: 14
 
+    // Departure Mono has no progress-bar characters, so levels (Level.qml)
+    // are drawn with the ones in a second pixel font, Pixel Code. That font
+    // is only sharp at 9 px, where each of its characters is 6 x 12 px, so
+    // a level does not sit on the cell grid: it is fitted into whole cells.
+    readonly property string levelFontFamily: pixelCode.status === FontLoader.Ready ? pixelCode.name : "Pixel Code"
+    readonly property int levelFontSize: 9
+    readonly property int levelSegmentWidth: 6
+    readonly property int levelSegmentHeight: 12
+
     // The bar is two cells tall, with its one row of text centred in it.
     readonly property int barHeight: 2 * cellHeight
     readonly property int barTextY: cellHeight / 2
@@ -73,5 +82,11 @@ Singleton {
         id: departureMono
 
         source: Qt.resolvedUrl("departure-mono-font/share/fonts/otf/DepartureMono-Regular.otf")
+    }
+
+    FontLoader {
+        id: pixelCode
+
+        source: Qt.resolvedUrl("pixel-code-font/share/fonts/opentype/PixelCode.otf")
     }
 }
