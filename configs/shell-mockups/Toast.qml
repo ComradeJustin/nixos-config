@@ -2,16 +2,16 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// What a notification looks like: a slab drops out of the bar under the
-// clock, then slides back up.
+// What a notification looks like: two lines of type drop out of the bar
+// under the clock, then slide back up.
 PanelWindow {
     id: toast
 
     // The shell root (shell.qml).
     required property var shell
 
-    readonly property int slabWidth: 440
-    readonly property int slabHeight: 76
+    readonly property int slabWidth: 420
+    readonly property int slabHeight: 66
 
     // 0 = tucked into the bar, 1 = fully dropped.
     property real drop: shell.toastShown ? 1 : 0
@@ -42,48 +42,37 @@ PanelWindow {
         width: toast.slabWidth
         height: toast.slabHeight
         color: Theme.slab
-        border.width: 1
-        border.color: Theme.rule
 
-        // Halftone strip down the left edge, marking it as a message.
-        Dither {
-            x: 1
-            y: 1
-            width: 10
-            height: parent.height - 2
-            color: Theme.accent
-        }
+        Column {
+            x: 20
+            anchors.verticalCenter: parent.verticalCenter
+            width: parent.width - 40
+            spacing: 4
 
-        Label {
-            x: 26
-            y: 12
-            text: "vesktop  ·  now"
-            caps: true
-            color: Theme.inkDim
-            font.pixelSize: 8
-        }
+            // Who it is from, heavy; which app, light.
+            Row {
+                spacing: 10
 
-        Label {
-            x: 26
-            y: 26
-            width: parent.width - 42
-            text: "Mara"
-            mono: false
-            weight: 780
-            color: Theme.ink
-            elide: Text.ElideRight
-            font.pixelSize: 14
-        }
+                Label {
+                    text: "Mara"
+                    weight: 850
+                    color: Theme.ink
+                    font.pixelSize: 15
+                }
 
-        Label {
-            x: 26
-            y: 47
-            width: parent.width - 42
-            text: "are you still coming tonight?"
-            mono: false
-            color: Theme.inkSoft
-            elide: Text.ElideRight
-            font.pixelSize: 12
+                Label {
+                    text: "Vesktop"
+                    weight: 320
+                    color: Theme.inkDim
+                    font.pixelSize: 15
+                }
+            }
+
+            Label {
+                width: parent.width
+                text: "are you still coming tonight?"
+                elide: Text.ElideRight
+            }
         }
     }
 }

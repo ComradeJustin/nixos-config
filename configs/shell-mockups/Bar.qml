@@ -2,214 +2,112 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// The bar: a strip of ruled cells along the top edge, laid out like a
-// departure board. Every cell is a small label over its value.
-// Left: workspaces and the focused window. Centre: date and time.
-// Right: network, tailnet, volume, battery. Sample values, except the clock.
+// The bar: one line of type and nothing else.
+// Left: workspace numbers and the focused window. Centre: date and time.
+// Right: network and battery. Volume is not here; it shows itself when it
+// changes (VolumeReadout). Sample values, except the clock.
 PanelWindow {
     id: bar
 
     // The shell root (shell.qml).
     required property var shell
 
-    readonly property int barHeight: 36
-    // Horizontal padding inside every cell.
-    readonly property int cellPadding: 14
+    // Space between the screen edge and the first and last words.
+    readonly property int edgeMargin: 18
 
     anchors {
         top: true
         left: true
         right: true
     }
-    implicitHeight: barHeight
+    implicitHeight: 30
     color: Theme.slab
     WlrLayershell.namespace: "shell-mockup"
     WlrLayershell.layer: WlrLayer.Top
 
-    // One cell: a small label on the first line, the value on the second.
-    component Cell: Item {
-        id: cell
-
-        property string label
-        default property alias content: valueRow.data
-
-        implicitWidth: Math.max(cellLabel.implicitWidth, valueRow.implicitWidth) + bar.cellPadding * 2
-        height: bar.barHeight
-
-        Label {
-            id: cellLabel
-
-            x: bar.cellPadding
-            y: 6
-            text: cell.label
-            caps: true
-            color: Theme.inkDim
-            font.pixelSize: 8
-        }
-
-        Row {
-            id: valueRow
-
-            x: bar.cellPadding
-            y: 16
-            height: 14
-            spacing: 8
-        }
-    }
-
-    // The value text inside a cell.
-    component Value: Label {
-        anchors.verticalCenter: parent.verticalCenter
-        caps: true
-        weight: 650
-        color: Theme.ink
-        font.pixelSize: 11
-    }
-
-    // The vertical rule between cells.
-    component Rule: Rectangle {
-        width: 1
-        height: bar.barHeight
-        color: Theme.rule
-    }
-
-    // --- Left: workspaces, focused window ---
+    // --- Left: workspaces, then the focused window ---
     Row {
         anchors.left: parent.left
+        anchors.leftMargin: bar.edgeMargin
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: 22
 
-        Cell {
-            label: "workspace"
+        Row {
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 13
 
-            Row {
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 4
+            Repeater {
+                model: 5
 
-                Repeater {
-                    model: 5
+                // Focused: heavy and in the accent colour. Occupied: normal. Empty: dim.
+                Label {
+                    required property int index
 
-                    // Focused: an inverted block. Occupied: outlined. Empty: just the number.
-                    Rectangle {
-                        required property int index
+                    readonly property bool focused: index === 1
+                    readonly property bool occupied: index < 3
 
-                        readonly property bool focused: index === 1
-                        readonly property bool occupied: index < 3
-
-                        width: 20
-                        height: 14
-                        color: focused ? Theme.accent : "transparent"
-                        border.width: occupied && !focused ? 1 : 0
-                        border.color: Theme.rule
-
-                        Label {
-                            anchors.centerIn: parent
-                            text: parent.index + 1
-                            weight: parent.focused ? 800 : 550
-                            color: parent.focused ? Theme.onAccent : (parent.occupied ? Theme.ink : Theme.inkDim)
-                            font.pixelSize: 10
-                        }
-                    }
+                    text: index + 1
+                    mono: true
+                    weight: focused ? 900 : 450
+                    color: focused ? Theme.accent : (occupied ? Theme.inkSoft : Theme.inkDim)
+                    opacity: occupied || focused ? 1 : 0.55
                 }
             }
         }
 
-        Rule {}
-
-        Cell {
-            label: "focus"
-
-            Value {
-                text: "Cursor — nixos-config"
-            }
+        Label {
+            anchors.verticalCenter: parent.verticalCenter
+            text: "Cursor — nixos-config"
         }
-
-        Rule {}
     }
 
-    // --- Centre: date over time ---
+    // --- Centre: date, then the time ---
     Row {
-        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.centerIn: parent
+        spacing: 10
 
-        Rule {}
-
-        Cell {
-            label: Qt.formatDateTime(bar.shell.now, "ddd d MMM")
-
-            Value {
-                text: Qt.formatDateTime(bar.shell.now, "hh:mm")
-                weight: 850
-                font.pixelSize: 13
-            }
+        Label {
+            anchors.verticalCenter: parent.verticalCenter
+            text: Qt.formatDateTime(bar.shell.now, "ddd d MMM")
+            color: Theme.inkDim
         }
 
-        Rule {}
+        Label {
+            anchors.verticalCenter: parent.verticalCenter
+            text: Qt.formatDateTime(bar.shell.now, "hh:mm")
+            mono: true
+            weight: 800
+            color: Theme.ink
+        }
     }
 
-    // --- Right: network, tailnet, volume, battery ---
+    // --- Right: network, then battery ---
     Row {
         anchors.right: parent.right
+        anchors.rightMargin: bar.edgeMargin
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: 22
 
-        Rule {}
+        Row {
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 8
 
-        Cell {
-            label: "network"
-
-            Value {
+            Label {
                 text: "Home-5G"
             }
 
-            LevelBar {
-                anchors.verticalCenter: parent.verticalCenter
-                level: 0.75
+            Label {
+                text: "via nixpc"
+                color: Theme.inkDim
             }
         }
 
-        Rule {}
-
-        Cell {
-            label: "tailnet"
-
-            Value {
-                text: "exit nixpc"
-            }
+        Label {
+            anchors.verticalCenter: parent.verticalCenter
+            text: "28%"
+            mono: true
+            weight: 800
+            color: Theme.ink
         }
-
-        Rule {}
-
-        Cell {
-            label: "volume"
-
-            Value {
-                text: bar.shell.volume
-            }
-
-            LevelBar {
-                anchors.verticalCenter: parent.verticalCenter
-                level: bar.shell.volume / 100
-            }
-        }
-
-        Rule {}
-
-        Cell {
-            label: "battery"
-
-            Value {
-                text: "28%"
-            }
-
-            LevelBar {
-                anchors.verticalCenter: parent.verticalCenter
-                level: 0.28
-            }
-        }
-    }
-
-    // Rule along the bottom of the bar.
-    Rectangle {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        height: 1
-        color: Theme.rule
     }
 }

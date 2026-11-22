@@ -1,19 +1,15 @@
 import QtQuick
 
-// Text set in Recursive. One family covers every voice in the shell:
-//   weight   300 (light) to 1000 (black)
-//   mono     true for numbers and labels
-//   caps     upper case with wide tracking, for the small labels
+// Text set in Recursive, the only visual material in the shell.
+//   weight   300 (light) to 1000 (black); this is how emphasis is shown
+//   mono     true for numbers, so digits keep their width as they change
 Text {
-    property real weight: 500
-    property bool mono: true
-    property bool caps: false
+    property real weight: 450
+    property bool mono: false
 
     color: Theme.inkSoft
     font.family: Theme.fontFamily
-    font.pixelSize: 12
-    font.capitalization: caps ? Font.AllUppercase : Font.MixedCase
-    font.letterSpacing: caps ? 1.2 : 0
+    font.pixelSize: 13
     font.variableAxes: ({
             "wght": weight,
             "MONO": mono ? 1 : 0,

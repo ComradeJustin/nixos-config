@@ -2,16 +2,16 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// What a volume key press looks like: a slab drops out of the right end of
-// the bar with the number and a long level, then slides back up.
+// What a volume key press looks like: the word and the number drop out of
+// the right end of the bar, then slide back up.
 PanelWindow {
     id: readout
 
     // The shell root (shell.qml).
     required property var shell
 
-    readonly property int slabWidth: 264
-    readonly property int slabHeight: 76
+    readonly property int slabWidth: 230
+    readonly property int slabHeight: 62
 
     // 0 = tucked into the bar, 1 = fully dropped.
     property real drop: shell.volumeShown ? 1 : 0
@@ -45,34 +45,31 @@ PanelWindow {
         width: readout.slabWidth
         height: readout.slabHeight
         color: Theme.slab
-        border.width: 1
-        border.color: Theme.rule
 
-        Label {
-            x: 16
-            y: 12
-            text: "volume"
-            caps: true
-            color: Theme.inkDim
-            font.pixelSize: 8
-        }
-
-        Label {
+        // The same size for both; only the weight tells the word from the number.
+        Row {
             anchors.right: parent.right
-            anchors.rightMargin: 16
-            y: 6
-            text: readout.shell.volume
-            weight: 850
-            color: Theme.ink
-            font.pixelSize: 30
-        }
+            anchors.rightMargin: 18
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 12
 
-        LevelBar {
-            x: 16
-            y: 52
-            width: readout.slabWidth - 32
-            height: 8
-            level: readout.shell.volume / 100
+            Label {
+                anchors.baseline: number.baseline
+                text: "Volume"
+                weight: 320
+                color: Theme.inkDim
+                font.pixelSize: 28
+            }
+
+            Label {
+                id: number
+
+                text: readout.shell.volume
+                mono: true
+                weight: 900
+                color: Theme.ink
+                font.pixelSize: 28
+            }
         }
     }
 }
