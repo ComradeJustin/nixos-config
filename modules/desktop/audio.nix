@@ -1,6 +1,10 @@
 # PipeWire audio.
 { pkgs, ... }:
 {
+  # Hands PipeWire realtime scheduling priority. Without it audio threads
+  # compete with everything else and can crackle or drop out under load.
+  security.rtkit.enable = true;
+
   services.pipewire = {
     enable = true;
     pulse.enable = true;

@@ -48,7 +48,12 @@
     };
   };
 
-  environment.sessionVariables = {
+  # The palette as environment variables, read by the shell widgets.
+  # These are `variables`, not `sessionVariables`: session variables are also
+  # written to PAM's environment file, where `#` starts a comment, so every
+  # one of these failed to parse there and logged a warning on each login
+  # and sudo.
+  environment.variables = {
     BASE00 = "#${config.lib.stylix.colors.base00}";
     BASE01 = "#${config.lib.stylix.colors.base01}";
     BASE02 = "#${config.lib.stylix.colors.base02}";
