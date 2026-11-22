@@ -5,8 +5,9 @@ import Quickshell.Wayland
 // The bar: a terminal status line. One row of cells, segments separated by
 // dim Powerline arrows that point away from the centre, levels drawn as
 // framed progress bars.
-// Left: workspaces and the focused window. Centre: date and time.
-// Right: the playing track, network, volume, battery.
+// Left: workspaces, the focused window and the playing track.
+// Centre: date and time. Right: network, volume, battery.
+// One bar is made for each screen (shell.qml).
 // Sample values, except the clock, and the volume and the focused workspace,
 // which the buttons at the bottom of the screen change.
 PanelWindow {
@@ -68,7 +69,7 @@ PanelWindow {
             amount: bar.shown
         }
 
-        // --- Left: workspaces, focused window ---
+        // --- Left: workspaces, focused window, playing track ---
         Row {
             x: Theme.cellWidth
             y: Theme.barTextY
@@ -112,6 +113,16 @@ PanelWindow {
             Label {
                 text: "Cursor — nixos-config"
             }
+
+            Divider {}
+
+            Key {
+                text: "♪ "
+            }
+
+            Label {
+                text: "Shelter"
+            }
         }
 
         // --- Centre: date and time ---
@@ -131,22 +142,10 @@ PanelWindow {
             }
         }
 
-        // --- Right: track, network, volume, battery ---
+        // --- Right: network, volume, battery ---
         Row {
             y: Theme.barTextY
             x: parent.width - width - Theme.cellWidth
-
-            Key {
-                text: "♪ "
-            }
-
-            Label {
-                text: "Shelter"
-            }
-
-            Divider {
-                pointsLeft: true
-            }
 
             Key {
                 text: "net "
@@ -171,7 +170,7 @@ PanelWindow {
 
             Level {
                 level: bar.shell.volume / 100
-                cells: 8
+                cells: 10
             }
 
             Label {
@@ -192,7 +191,7 @@ PanelWindow {
 
             Level {
                 level: 0.28
-                cells: 8
+                cells: 10
             }
 
             Label {

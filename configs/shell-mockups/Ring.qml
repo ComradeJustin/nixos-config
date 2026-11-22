@@ -289,7 +289,7 @@ PanelWindow {
                     columns: ring.panelColumns
                     rows: station.modelData.controls.length
                     title: station.nameText
-                    footer: "↑↓ select  ↵ act  esc back"
+                    footer: "↑↓ jk select  ↵ act  esc back"
                     shown: station.focused ? ring.dive : 0
 
                     Repeater {
@@ -314,11 +314,24 @@ PanelWindow {
                             width: panel.contentColumns * Theme.cellWidth
                             height: Theme.cellHeight
 
+                            onSelectedChanged: {
+                                if (selected)
+                                    selectFlash.restart();
+                            }
+
+                            Timer {
+                                id: selectFlash
+
+                                interval: Theme.flashMs
+                            }
+
+                            // Reverse video behind the name. It flashes
+                            // bright for a moment as the line is selected.
                             Rectangle {
                                 width: (ring.valueColumn - 1) * Theme.cellWidth
                                 height: parent.height
                                 visible: row.selected
-                                color: Theme.accent
+                                color: selectFlash.running ? Theme.ink : Theme.accent
                             }
 
                             Label {
@@ -390,7 +403,7 @@ PanelWindow {
             }
 
             Repeater {
-                model: [["←→", " turn    "], ["↵", " open    "], ["esc", " close"]]
+                model: [["←→ hl", " turn    "], ["↵", " open    "], ["esc", " close"]]
 
                 Row {
                     required property var modelData

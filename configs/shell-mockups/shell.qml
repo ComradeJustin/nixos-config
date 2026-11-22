@@ -9,7 +9,7 @@ import Quickshell.Wayland
 // a fixed grid of character cells: borders are box-drawing characters, bars
 // are block characters, and whatever is focused or selected is in reverse
 // video.
-//   Bar            a status line along the top edge
+//   Bar            a status line along the top edge of every screen
 //   Ring           the summoned layer: six station names on a dotted orbit
 //                  around a clock; the focused one opens into a panel
 //   VolumeReadout  a panel that drops out of the bar on a volume change
@@ -26,7 +26,7 @@ import Quickshell.Wayland
 // Start:  systemd-run --user --unit=shell-mockup --collect quickshell -p ~/nixos-config/configs/shell-mockups
 // Stop:   systemctl --user stop shell-mockup
 // Drive:  the four buttons at the bottom of the screen, or
-//   qs -p ~/nixos-config/configs/shell-mockups ipc call shell-mockup <ring|turn 1|open|back|volume|toast|workspace>
+//   qs -p ~/nixos-config/configs/shell-mockups ipc call shell-mockup <ring|turn 1|open|select 1|back|volume|toast|workspace>
 // In the ring: h l turn, enter opens a station, j k select, esc backs out.
 // Files reload on save.
 ShellRoot {
@@ -319,8 +319,17 @@ ShellRoot {
         onTriggered: root.toastShown = false
     }
 
-    Bar {
-        shell: root
+    // One bar on every screen. The ring and the drop-down panels are made
+    // once and appear on one screen.
+    Variants {
+        model: Quickshell.screens
+
+        Bar {
+            required property var modelData
+
+            shell: root
+            screen: modelData
+        }
     }
 
     Ring {
@@ -348,6 +357,10 @@ ShellRoot {
 
         function open(): void {
             root.diveIn();
+        }
+
+        function select(step: int): void {
+            root.moveSelection(step);
         }
 
         function back(): void {
