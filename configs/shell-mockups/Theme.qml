@@ -2,14 +2,16 @@ pragma Singleton
 import QtQuick
 import Quickshell
 
-// Colours, type and motion shared by the whole mockup. The palette comes
-// from the BASE00–BASE0F environment variables (modules/desktop/theme.nix).
+// Colours, the character grid and motion shared by the whole mockup. The
+// palette comes from the BASE00–BASE0F environment variables
+// (modules/desktop/theme.nix).
 //
-// The design is type only: no boxes, rules, icons or meters. Hierarchy comes
-// from weight, size and three text colours, plus one accent for whatever is
-// focused or selected.
+// The shell is drawn like a terminal UI: one pixel font on a fixed grid of
+// cells, borders made of box-drawing characters, bars made of block
+// characters, and reverse video for whatever is focused or selected.
 Singleton {
     readonly property color base00: Quickshell.env("BASE00") || "#241d1a"
+    readonly property color base03: Quickshell.env("BASE03") || "#594740"
     readonly property color base04: Quickshell.env("BASE04") || "#a78e84"
     readonly property color base05: Quickshell.env("BASE05") || "#b8a59d"
     readonly property color base07: Quickshell.env("BASE07") || "#dcd2ce"
@@ -20,11 +22,19 @@ Singleton {
     readonly property color ink: base07
     readonly property color inkSoft: base05
     readonly property color inkDim: base04
+    // Borders and the empty part of bars.
+    readonly property color line: base03
+    // Reverse-video blocks and filled bars.
     readonly property color accent: base0F
 
-    // Recursive is one variable font (see Label.qml). It is not installed
-    // system-wide yet, so it is loaded from the link next to this file.
-    readonly property string fontFamily: recursive.status === FontLoader.Ready ? recursive.name : "Recursive"
+    // Departure Mono is a pixel font: it is only sharp at 11 px and whole
+    // multiples of it. At 11 px every character is exactly one cell.
+    // It is not installed system-wide yet, so it is loaded from the link
+    // next to this file.
+    readonly property string fontFamily: departureMono.status === FontLoader.Ready ? departureMono.name : "Departure Mono"
+    readonly property int fontSize: 11
+    readonly property int cellWidth: 7
+    readonly property int cellHeight: 14
 
     // Motion. Springs, so repeated key presses carry momentum, tuned to
     // settle fast (measured): turning the ring about 130 ms with a slight
@@ -43,8 +53,8 @@ Singleton {
     }
 
     FontLoader {
-        id: recursive
+        id: departureMono
 
-        source: Qt.resolvedUrl("recursive-font/share/fonts/truetype/Recursive_VF_1.085.ttf")
+        source: Qt.resolvedUrl("departure-mono-font/share/fonts/otf/DepartureMono-Regular.otf")
     }
 }

@@ -2,111 +2,145 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// The bar: one line of type and nothing else.
-// Left: workspace numbers and the focused window. Centre: date and time.
-// Right: network and battery. Volume is not here; it shows itself when it
-// changes (VolumeReadout). Sample values, except the clock.
+// The bar: a terminal status line. One row of cells, segments separated by
+// a dim "│", bars drawn with block characters.
+// Left: workspaces and the focused window. Centre: date and time.
+// Right: the playing track, network, volume, battery.
+// Sample values, except the clock and the volume the "volume key" changes.
 PanelWindow {
     id: bar
 
     // The shell root (shell.qml).
     required property var shell
 
-    // Space between the screen edge and the first and last words.
-    readonly property int edgeMargin: 18
-
     anchors {
         top: true
         left: true
         right: true
     }
-    implicitHeight: 30
+    // One row of text with four pixels above and below.
+    implicitHeight: Theme.cellHeight + 8
     color: Theme.slab
     WlrLayershell.namespace: "shell-mockup"
     WlrLayershell.layer: WlrLayer.Top
 
-    // --- Left: workspaces, then the focused window ---
+    // The divider between segments.
+    component Divider: Label {
+        text: " │ "
+        color: Theme.line
+    }
+
+    // A dim key in front of a value, e.g. "vol".
+    component Key: Label {
+        color: Theme.inkDim
+    }
+
+    // --- Left: workspaces, focused window ---
     Row {
-        anchors.left: parent.left
-        anchors.leftMargin: bar.edgeMargin
-        anchors.verticalCenter: parent.verticalCenter
-        spacing: 22
+        x: Theme.cellWidth
+        y: 4
 
-        Row {
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 13
+        Repeater {
+            model: 5
 
-            Repeater {
-                model: 5
+            // Focused: reverse video. Occupied: normal. Empty: dim.
+            Rectangle {
+                required property int index
 
-                // Focused: heavy and in the accent colour. Occupied: normal. Empty: dim.
+                readonly property bool focused: index === 1
+                readonly property bool occupied: index < 3
+
+                width: 3 * Theme.cellWidth
+                height: Theme.cellHeight
+                color: focused ? Theme.accent : "transparent"
+
                 Label {
-                    required property int index
-
-                    readonly property bool focused: index === 1
-                    readonly property bool occupied: index < 3
-
-                    text: index + 1
-                    mono: true
-                    weight: focused ? 900 : 450
-                    color: focused ? Theme.accent : (occupied ? Theme.inkSoft : Theme.inkDim)
-                    opacity: occupied || focused ? 1 : 0.55
+                    x: Theme.cellWidth
+                    text: parent.index + 1
+                    color: parent.focused ? Theme.slab : (parent.occupied ? Theme.ink : Theme.line)
                 }
             }
         }
 
+        Divider {}
+
         Label {
-            anchors.verticalCenter: parent.verticalCenter
             text: "Cursor — nixos-config"
         }
     }
 
-    // --- Centre: date, then the time ---
+    // --- Centre: date and time ---
     Row {
-        anchors.centerIn: parent
-        spacing: 10
+        y: 4
+        // Rounded so the text lands on whole pixels and stays sharp.
+        x: Math.round((parent.width - width) / 2)
 
-        Label {
-            anchors.verticalCenter: parent.verticalCenter
-            text: Qt.formatDateTime(bar.shell.now, "ddd d MMM")
-            color: Theme.inkDim
+        Key {
+            text: Qt.formatDateTime(bar.shell.now, "ddd d MMM") + "  "
         }
 
         Label {
-            anchors.verticalCenter: parent.verticalCenter
             text: Qt.formatDateTime(bar.shell.now, "hh:mm")
-            mono: true
-            weight: 800
             color: Theme.ink
         }
     }
 
-    // --- Right: network, then battery ---
+    // --- Right: track, network, volume, battery ---
     Row {
-        anchors.right: parent.right
-        anchors.rightMargin: bar.edgeMargin
-        anchors.verticalCenter: parent.verticalCenter
-        spacing: 22
+        y: 4
+        x: parent.width - width - Theme.cellWidth
 
-        Row {
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 8
-
-            Label {
-                text: "Home-5G"
-            }
-
-            Label {
-                text: "via nixpc"
-                color: Theme.inkDim
-            }
+        Key {
+            text: "♪ "
         }
 
         Label {
-            anchors.verticalCenter: parent.verticalCenter
-            text: "28%"
-            mono: true
-            weight: 800
+            text: "Shelter"
+        }
+
+        Divider {}
+
+        Key {
+            text: "net "
+        }
+
+        Label {
+            text: "Home-5G"
+        }
+
+        Key {
+            text: " via nixpc"
+        }
+
+        Divider {}
+
+        Key {
+            text: "vol "
+        }
+
+        Level {
+            level: bar.shell.volume / 100
+            cells: 8
+        }
+
+        Label {
+            text: " " + bar.shell.volume + "%"
+            color: Theme.ink
+        }
+
+        Divider {}
+
+        Key {
+            text: "bat "
+        }
+
+        Level {
+            level: 0.28
+            cells: 8
+        }
+
+        Label {
+            text: " 28%"
             color: Theme.ink
         }
     }

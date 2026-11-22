@@ -4,13 +4,14 @@ import Quickshell.Wayland
 
 // The summoned layer: the rotation ring, now carrying the whole shell.
 //
-// Six words travel on an orbit around the time. h and l turn the ring, and
-// the word on the right is the focused one: it gets heavy and takes the
-// accent colour. Enter opens it: the word becomes a title and its settings
-// list out beneath it while the other words move away. Esc backs out.
+// Six station names travel on a dotted orbit around a large clock. h and l
+// turn the ring, and the name on the right is the focused one, shown in
+// reverse video. Enter opens it: a bordered panel unrolls from the name and
+// lists that station's settings, while the other names move away. Esc backs
+// out.
 //
-// It is type only. Everything on screen is positioned from three animated
-// numbers below (openness, angle, dive), so the motion is one system.
+// Everything on screen is positioned from three animated numbers below
+// (openness, angle, dive), so the motion is one continuous system.
 PanelWindow {
     id: ring
 
@@ -29,7 +30,7 @@ PanelWindow {
     property real openness: shell.ringOpen ? 1 : 0
     // Rotation of the ring, in degrees.
     property real angle: -stepDegrees * shell.turns
-    // 0 = ring view, 1 = the focused station opened into its list.
+    // 0 = ring view, 1 = the focused station opened into its panel.
     property real dive: shell.dived ? 1 : 0
 
     Behavior on openness {
@@ -55,15 +56,16 @@ PanelWindow {
     }
 
     // --- Geometry ---
-    readonly property real orbitRadius: 290
-    // An opened station's list of settings.
-    readonly property real listWidth: 340
-    readonly property real rowHeight: 34
-    // How much further the other words move out when one opens.
+    readonly property real orbitRadius: 280
+    // Width of an opened station's panel, in character cells.
+    readonly property int panelColumns: 52
+    // Where the value column starts inside a panel row, in cells.
+    readonly property int valueColumn: 18
+    // How much further the other names move out when one opens.
     readonly property real divePush: 120
     // The whole figure slides left when a station opens, to keep it centred.
-    readonly property real centerX: width / 2 - 120 * dive
-    readonly property real centerY: height / 2
+    readonly property real centerX: Math.round(width / 2 - 150 * dive)
+    readonly property real centerY: Math.round(height / 2)
 
     function clamp01(value: real): real {
         return Math.max(0, Math.min(1, value));
@@ -88,7 +90,7 @@ PanelWindow {
             stage.forceActiveFocus();
     }
 
-    // Dim everything behind the ring so the type reads cleanly.
+    // Dim everything behind the ring.
     Rectangle {
         anchors.fill: parent
         color: Theme.slab
@@ -127,39 +129,54 @@ PanelWindow {
             event.accepted = true;
         }
 
-        // The orbit, drawn very faintly: the one line in the design, so the
-        // turning reads as turning.
-        Rectangle {
-            width: ring.orbitRadius * 2 * ring.openness
-            height: width
-            x: ring.centerX - width / 2
-            y: ring.centerY - height / 2
-            radius: width / 2
-            color: "transparent"
-            border.width: 1
-            border.color: Theme.mix(Theme.slab, Theme.inkDim, 0.3)
-            opacity: 1 - ring.clamp01(ring.dive)
+        // --- The orbit: a circle of dots, as a terminal would draw it ---
+        Repeater {
+            model: 72
+
+            Rectangle {
+                required property int index
+
+                readonly property real theta: index * 5 * Math.PI / 180
+
+                x: Math.round(ring.centerX + ring.orbitRadius * ring.openness * Math.cos(theta)) - 1
+                y: Math.round(ring.centerY + ring.orbitRadius * ring.openness * Math.sin(theta)) - 1
+                width: 2
+                height: 2
+                color: Theme.line
+                opacity: 1 - ring.clamp01(ring.dive)
+            }
         }
 
-        // The time at the centre. It steps back when a station is open.
-        Label {
-            x: ring.centerX - width / 2
-            y: ring.centerY - height / 2
-            scale: 0.8 + 0.2 * ring.openness
+        // --- The clock at the centre: the time at four times size, the date under it ---
+        Item {
+            x: ring.centerX
+            y: ring.centerY
             opacity: 1 - 0.65 * ring.clamp01(ring.dive)
-            text: Qt.formatDateTime(ring.shell.now, "hh:mm")
-            mono: true
-            weight: 800
-            color: Theme.ink
-            font.pixelSize: 60
+
+            Label {
+                id: time
+
+                x: -Math.round(width / 2)
+                y: -Math.round(height / 2) - Theme.cellHeight
+                text: Qt.formatDateTime(ring.shell.now, "hh:mm")
+                scaleFactor: 4
+                color: Theme.ink
+            }
+
+            Label {
+                x: -Math.round(width / 2)
+                y: time.y + time.height + 4
+                text: Qt.formatDateTime(ring.shell.now, "dddd d MMMM")
+                color: Theme.inkDim
+            }
         }
 
         // --- Stations ---
         Repeater {
             model: ring.stations
 
-            // Zero-sized, sitting exactly on its point of the orbit; the word
-            // and the list are placed around that point.
+            // Zero-sized, sitting exactly on its point of the orbit; the name
+            // and the panel are placed around that point.
             Item {
                 id: station
 
@@ -167,87 +184,129 @@ PanelWindow {
                 required property int index
 
                 readonly property bool focused: index === ring.focusedIndex
-                // 0 = resting, 1 = focused. Drives the word's weight and colour.
+                // 0 = resting, 1 = focused. Fades the reverse-video block in.
                 property real emphasis: focused ? 1 : 0
-                // How far this station has opened into its list. Only the focused one opens.
-                readonly property real opening: focused ? Math.max(0, ring.dive) : 0
+                // How far this station has opened into its panel. Only the focused one opens.
+                readonly property real opening: focused ? ring.clamp01(ring.dive) : 0
                 readonly property int rowCount: modelData.controls.length
                 readonly property real theta: (ring.stepDegrees * index + ring.angle) * Math.PI / 180
                 readonly property real distance: ring.orbitRadius * ring.openness + (focused ? 0 : ring.divePush * ring.dive)
 
                 Behavior on emphasis {
                     NumberAnimation {
-                        duration: 110
+                        duration: 90
                     }
                 }
 
-                x: ring.centerX + distance * Math.cos(theta)
-                y: ring.centerY + distance * Math.sin(theta)
+                z: focused ? 1 : 0
+                x: Math.round(ring.centerX + distance * Math.cos(theta))
+                y: Math.round(ring.centerY + distance * Math.sin(theta))
                 opacity: focused ? 1 : 1 - ring.clamp01(ring.dive)
 
-                // The word. Centred on the orbit point; when the station
-                // opens it moves to the top left of the list as its title.
-                Label {
-                    id: word
+                // The reverse-video block behind the focused name.
+                Rectangle {
+                    id: block
 
-                    x: -width / 2 + station.opening * (width / 2 - ring.listWidth / 2)
-                    y: -height / 2 - station.opening * station.rowCount * ring.rowHeight / 2
-                    text: station.modelData.name
-                    weight: 360 + 540 * station.emphasis
-                    color: Theme.mix(Theme.inkDim, Theme.accent, station.emphasis)
-                    font.pixelSize: 24
+                    x: -Math.round(width / 2)
+                    y: -Math.round(height / 2)
+                    width: name.width + 4 * Theme.cellWidth
+                    height: name.height + 4
+                    color: Theme.accent
+                    opacity: station.emphasis * (1 - station.opening)
                 }
 
-                // The list: one line per setting, name on the left, state on the right.
-                Column {
-                    x: -ring.listWidth / 2
-                    y: word.y + word.height + 10
-                    width: ring.listWidth
+                // The name, at double size.
+                Label {
+                    id: name
+
+                    x: -Math.round(width / 2)
+                    y: -Math.round(height / 2)
+                    text: station.modelData.name
+                    scaleFactor: 2
+                    color: Theme.mix(Theme.inkSoft, Theme.slab, station.emphasis)
+                    opacity: 1 - station.opening
+                }
+
+                // The panel. It unrolls from its middle row, starting where the name was.
+                Item {
+                    id: reveal
+
+                    x: block.x
+                    y: -Math.round(height / 2)
+                    width: panel.implicitWidth
+                    height: Math.round(panel.implicitHeight * station.opening)
                     visible: station.opening > 0.01
+                    clip: true
 
-                    Repeater {
-                        model: station.modelData.controls
+                    Box {
+                        id: panel
 
-                        Item {
-                            id: row
+                        y: -Math.round((implicitHeight - reveal.height) / 2)
+                        columns: ring.panelColumns
+                        rows: station.rowCount
+                        title: station.modelData.name
+                        footer: "j/k select  enter act  esc back"
 
-                            required property var modelData
-                            required property int index
+                        Repeater {
+                            model: station.modelData.controls
 
-                            readonly property bool selected: station.focused && index === ring.shell.fanIndex
+                            // One setting. The selected one has its name in reverse video.
+                            Item {
+                                id: row
 
-                            width: ring.listWidth
-                            height: ring.rowHeight
-                            // Lines appear one after another as the list opens.
-                            opacity: ring.clamp01(station.opening * (station.rowCount + 1) - index)
+                                required property var modelData
+                                required property int index
 
-                            // The selected line is marked the way the reference marks links: with ">".
-                            Label {
-                                x: -20
-                                anchors.verticalCenter: parent.verticalCenter
-                                visible: row.selected
-                                text: ">"
-                                mono: true
-                                weight: 800
-                                color: Theme.accent
-                                font.pixelSize: 15
-                            }
+                                readonly property bool selected: station.focused && index === ring.shell.fanIndex
+                                readonly property color nameColor: selected ? Theme.slab : Theme.ink
 
-                            Label {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: row.modelData.label
-                                weight: row.selected ? 800 : 420
-                                color: row.selected ? Theme.accent : Theme.inkSoft
-                                font.pixelSize: 15
-                            }
+                                y: index * Theme.cellHeight
+                                width: panel.contentColumns * Theme.cellWidth
+                                height: Theme.cellHeight
 
-                            Label {
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: row.modelData.value
-                                weight: row.selected ? 800 : 420
-                                color: row.selected ? Theme.accent : Theme.inkDim
-                                font.pixelSize: 15
+                                Rectangle {
+                                    width: (ring.valueColumn - 1) * Theme.cellWidth
+                                    height: parent.height
+                                    visible: row.selected
+                                    color: Theme.accent
+                                }
+
+                                Label {
+                                    text: row.selected ? ">" : " "
+                                    color: row.nameColor
+                                }
+
+                                Label {
+                                    x: 2 * Theme.cellWidth
+                                    text: row.modelData.label
+                                    color: row.nameColor
+                                }
+
+                                // A level: a bar, then its number at the right edge.
+                                Level {
+                                    x: ring.valueColumn * Theme.cellWidth
+                                    visible: row.modelData.kind === "level"
+                                    level: row.modelData.kind === "level" ? row.modelData.level : 0
+                                    cells: 22
+                                }
+
+                                Label {
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: Theme.cellWidth
+                                    visible: row.modelData.kind === "level"
+                                    text: row.modelData.value
+                                    color: Theme.ink
+                                }
+
+                                // A switch: a checkbox, then its state. Anything else: just its value.
+                                Label {
+                                    x: ring.valueColumn * Theme.cellWidth
+                                    width: (panel.contentColumns - ring.valueColumn - 1) * Theme.cellWidth
+                                    visible: row.modelData.kind !== "level"
+                                    text: row.modelData.kind === "switch" ? (row.modelData.on ? "[x] " : "[ ] ") + row.modelData.value : row.modelData.value
+                                    color: Theme.inkSoft
+                                    elide: Text.ElideRight
+                                }
                             }
                         }
                     }
@@ -255,33 +314,26 @@ PanelWindow {
             }
         }
 
-        // --- Key hints: the key heavy, what it does light ---
+        // --- Key hints for the ring view; an open panel carries its own ---
         Row {
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 72
-            spacing: 30
+            x: Math.round((parent.width - width) / 2)
+            y: parent.height - 80
+            opacity: 1 - ring.clamp01(ring.dive)
 
             Repeater {
-                model: ring.shell.dived ? [["j k", "select"], ["enter", "act"], ["esc", "back"]] : [["h l", "turn"], ["enter", "open"], ["esc", "close"]]
+                model: [["h/l", " turn    "], ["enter", " open    "], ["esc", " close"]]
 
                 Row {
                     required property var modelData
 
-                    spacing: 8
-
                     Label {
                         text: parent.modelData[0]
-                        mono: true
-                        weight: 800
-                        color: Theme.inkSoft
-                        font.pixelSize: 12
+                        color: Theme.ink
                     }
 
                     Label {
                         text: parent.modelData[1]
                         color: Theme.inkDim
-                        font.pixelSize: 12
                     }
                 }
             }

@@ -2,16 +2,13 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// What a volume key press looks like: the word and the number drop out of
-// the right end of the bar, then slide back up.
+// What a volume key press looks like: a small panel drops out of the right
+// end of the bar with a long bar and the number, then slides back up.
 PanelWindow {
     id: readout
 
     // The shell root (shell.qml).
     required property var shell
-
-    readonly property int slabWidth: 230
-    readonly property int slabHeight: 62
 
     // 0 = tucked into the bar, 1 = fully dropped.
     property real drop: shell.volumeShown ? 1 : 0
@@ -30,46 +27,34 @@ PanelWindow {
         top: true
         right: true
     }
+    margins.right: Theme.cellWidth
     // Zone 0 in normal mode places this directly under the bar.
     exclusionMode: ExclusionMode.Normal
     exclusiveZone: 0
-    implicitWidth: slabWidth
-    implicitHeight: slabHeight
+    implicitWidth: panel.implicitWidth
+    implicitHeight: panel.implicitHeight
     color: "transparent"
     WlrLayershell.namespace: "shell-mockup"
     WlrLayershell.layer: WlrLayer.Overlay
 
-    // The window clips the slab, so it appears to slide out from under the bar.
-    Rectangle {
-        y: -readout.slabHeight * (1 - readout.drop)
-        width: readout.slabWidth
-        height: readout.slabHeight
-        color: Theme.slab
+    // The window clips the panel, so it appears to slide out from under the bar.
+    Box {
+        id: panel
 
-        // The same size for both; only the weight tells the word from the number.
-        Row {
+        y: Math.round(-implicitHeight * (1 - readout.drop))
+        columns: 36
+        rows: 1
+        title: "volume"
+
+        Level {
+            level: readout.shell.volume / 100
+            cells: panel.contentColumns - 4
+        }
+
+        Label {
             anchors.right: parent.right
-            anchors.rightMargin: 18
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 12
-
-            Label {
-                anchors.baseline: number.baseline
-                text: "Volume"
-                weight: 320
-                color: Theme.inkDim
-                font.pixelSize: 28
-            }
-
-            Label {
-                id: number
-
-                text: readout.shell.volume
-                mono: true
-                weight: 900
-                color: Theme.ink
-                font.pixelSize: 28
-            }
+            text: readout.shell.volume
+            color: Theme.ink
         }
     }
 }

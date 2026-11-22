@@ -3,25 +3,27 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 
-// Design mockup for the shell redesign, round four. Entry point.
+// Design mockup for the shell redesign, round five. Entry point.
 //
-// The design is type only: no boxes, rules, icons, meters or small headers.
-// Weight, size and colour carry the hierarchy; one accent marks what is
-// focused or selected.
-//   Bar            one line of type along the top edge
-//   Ring           the summoned layer: six words on an orbit around the
-//                  time; the focused word opens into a list of its settings
-//   VolumeReadout  a word and a number that drop out of the bar on a volume change
-//   Toast          two lines that drop out of the bar for a notification
+// The shell is drawn like a terminal UI, in the pixel font Departure Mono on
+// a fixed grid of character cells: borders are box-drawing characters, bars
+// are block characters, and whatever is focused or selected is in reverse
+// video.
+//   Bar            a status line along the top edge
+//   Ring           the summoned layer: six station names on a dotted orbit
+//                  around a clock; the focused one opens into a panel
+//   VolumeReadout  a panel that drops out of the bar on a volume change
+//   Toast          a panel that drops out of the bar for a notification
+//   Box, Level     the panel frame and the bar they are all built from
 //
 // The motion is real. The content is sample data; only the clock is live and
 // nothing is wired to the system.
 //
 // One-time setup (the font is not installed system-wide yet):
-//   nix build nixpkgs#recursive -o ~/nixos-config/configs/shell-mockups/recursive-font
+//   nix build nixpkgs#departure-mono -o ~/nixos-config/configs/shell-mockups/departure-mono-font
 // Start:  systemd-run --user --unit=shell-mockup --collect quickshell -p ~/nixos-config/configs/shell-mockups
 // Stop:   systemctl --user stop shell-mockup
-// Drive:  the three words at the bottom of the screen, or
+// Drive:  the three buttons at the bottom of the screen, or
 //   qs -p ~/nixos-config/configs/shell-mockups ipc call shell-mockup <ring|turn 1|open|back|volume|toast>
 // In the ring: h l turn, enter opens a station, j k select, esc backs out.
 // Files reload on save.
@@ -42,29 +44,36 @@ ShellRoot {
 
     readonly property var now: clock.date
 
-    // --- Sample content: the six stations and the lines inside each ---
+    // --- Sample content: the six stations and the settings inside each ---
+    // kind "level" has a bar (level 0 to 1) and a number; "switch" is on or
+    // off; "text" is just a value.
     readonly property var stations: [
         {
             name: "Launch",
             controls: [
                 {
                     label: "Firefox",
+                    kind: "text",
                     value: "browser"
                 },
                 {
                     label: "Ghostty",
+                    kind: "text",
                     value: "terminal"
                 },
                 {
                     label: "Cursor",
+                    kind: "text",
                     value: "editor"
                 },
                 {
                     label: "Files",
+                    kind: "text",
                     value: "file manager"
                 },
                 {
                     label: "Search",
+                    kind: "text",
                     value: "type to find anything"
                 }
             ]
@@ -74,23 +83,33 @@ ShellRoot {
             controls: [
                 {
                     label: "Volume",
-                    value: String(root.volume)
+                    kind: "level",
+                    value: String(root.volume),
+                    level: root.volume / 100
                 },
                 {
                     label: "Brightness",
-                    value: "60"
+                    kind: "level",
+                    value: "60",
+                    level: 0.6
                 },
                 {
                     label: "Night light",
-                    value: "Until 07:00"
+                    kind: "switch",
+                    value: "until 07:00",
+                    on: true
                 },
                 {
                     label: "Quiet",
-                    value: "Off"
+                    kind: "switch",
+                    value: "off",
+                    on: false
                 },
                 {
                     label: "Keep awake",
-                    value: "Off"
+                    kind: "switch",
+                    value: "off",
+                    on: false
                 }
             ]
         },
@@ -99,19 +118,26 @@ ShellRoot {
             controls: [
                 {
                     label: "Wi-Fi",
-                    value: "Home-5G"
+                    kind: "level",
+                    value: "Home-5G",
+                    level: 0.75
                 },
                 {
                     label: "Exit node",
-                    value: "nixpc"
+                    kind: "switch",
+                    value: "nixpc",
+                    on: true
                 },
                 {
                     label: "Tailnet",
-                    value: "4 devices"
+                    kind: "text",
+                    value: "4 devices online"
                 },
                 {
                     label: "Bluetooth",
-                    value: "Off"
+                    kind: "switch",
+                    value: "off",
+                    on: false
                 }
             ]
         },
@@ -120,14 +146,23 @@ ShellRoot {
             controls: [
                 {
                     label: "Shelter",
+                    kind: "level",
+                    value: "1:32",
+                    level: 0.4
+                },
+                {
+                    label: "Artist",
+                    kind: "text",
                     value: "Porter Robinson & Madeon"
                 },
                 {
                     label: "Pause",
+                    kind: "text",
                     value: ""
                 },
                 {
                     label: "Next track",
+                    kind: "text",
                     value: ""
                 }
             ]
@@ -137,14 +172,17 @@ ShellRoot {
             controls: [
                 {
                     label: "Mara",
+                    kind: "text",
                     value: "are you still coming tonight?"
                 },
                 {
                     label: "nh",
+                    kind: "text",
                     value: "Rebuild finished"
                 },
                 {
                     label: "Dismiss all",
+                    kind: "text",
                     value: ""
                 }
             ]
@@ -154,22 +192,27 @@ ShellRoot {
             controls: [
                 {
                     label: "Lock",
+                    kind: "text",
                     value: ""
                 },
                 {
                     label: "Suspend",
+                    kind: "text",
                     value: ""
                 },
                 {
                     label: "Log out",
+                    kind: "text",
                     value: ""
                 },
                 {
                     label: "Restart",
+                    kind: "text",
                     value: ""
                 },
                 {
                     label: "Power off",
+                    kind: "text",
                     value: ""
                 }
             ]
@@ -282,13 +325,13 @@ ShellRoot {
         }
     }
 
-    // Three words for driving the mockup. Not part of the design.
+    // Three buttons for driving the mockup. Not part of the design.
     PanelWindow {
         anchors.bottom: true
         margins.bottom: 10
         exclusionMode: ExclusionMode.Ignore
-        implicitWidth: controls.implicitWidth + 36
-        implicitHeight: 30
+        implicitWidth: controls.width + 4 * Theme.cellWidth
+        implicitHeight: Theme.cellHeight + 8
         color: Theme.slab
         WlrLayershell.namespace: "shell-mockup"
         WlrLayershell.layer: WlrLayer.Top
@@ -296,29 +339,27 @@ ShellRoot {
         Row {
             id: controls
 
-            anchors.centerIn: parent
-            spacing: 26
+            x: 2 * Theme.cellWidth
+            y: 4
+            spacing: 2 * Theme.cellWidth
 
             Repeater {
-                model: [["Summon ring", () => root.toggleRing()], ["Volume key", () => root.bumpVolume()], ["Notification", () => root.showToast()]]
+                model: [["summon ring", () => root.toggleRing()], ["volume key", () => root.bumpVolume()], ["notification", () => root.showToast()]]
 
                 Label {
-                    id: word
+                    id: button
 
                     required property var modelData
 
-                    text: modelData[0]
-                    weight: wordArea.containsMouse ? 800 : 420
-                    color: wordArea.containsMouse ? Theme.accent : Theme.inkDim
-                    font.pixelSize: 12
+                    text: "[ " + modelData[0] + " ]"
+                    color: buttonArea.containsMouse ? Theme.accent : Theme.inkDim
 
                     MouseArea {
-                        id: wordArea
+                        id: buttonArea
 
                         anchors.fill: parent
-                        anchors.margins: -8
                         hoverEnabled: true
-                        onClicked: word.modelData[1]()
+                        onClicked: button.modelData[1]()
                     }
                 }
             }
