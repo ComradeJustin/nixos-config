@@ -23,7 +23,7 @@ binds {
     Mod+P { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "page" "wallpaper"; }
     Mod+Escape { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "page" "session"; }
     Mod+N { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "page" "system"; }
-    Mod+A { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "tray"; }
+    Mod+T { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "tray"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "lock"; }
     //Alt+Tab {spawn "~/.config/niri/hotkeyscripts/alttab.sh";} 
     Mod+B hotkey-overlay-title="Run firefox" { spawn "firefox";}

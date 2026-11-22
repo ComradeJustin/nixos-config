@@ -224,7 +224,7 @@ PanelWindow {
             page: applet
             entries: applet.rows
             selectedIndex: monitor.shell.monitorSelected
-            footer: "↑↓ jk scroll  esc back"
+            footer: "↑↓ scroll  esc back"
             titleColor: applet.alert === true ? Theme.alert : Theme.ink
             lineColor: applet.alert === true ? Theme.alert : Theme.line
             shown: monitor.dive
@@ -248,7 +248,7 @@ PanelWindow {
             }
 
             Repeater {
-                model: [["←↓↑→ hjkl", " move    "], ["↵", " expand    "], ["esc", " close"]]
+                model: [["←↓↑→", " move    "], ["↵", " expand    "], ["esc", " close"]]
 
                 Row {
                     required property var modelData

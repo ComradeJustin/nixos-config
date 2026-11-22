@@ -9,8 +9,8 @@ import Quickshell.Wayland
 // then how many notifications are waiting, whether do not disturb is on,
 // whether the microphone is in use or the screen is being shared, and
 // whether keep awake is on.
-// Centre: date and time. Right: the tray's tab, the input method, network
-// with its signal, volume, battery.
+// Centre: date and time. Right: the tray, the input method, network with
+// its signal, volume, battery.
 // A halftone shadow falls under it.
 // One bar is made for each screen (shell.qml), and everything it shows is
 // real: it comes from shell.qml.
@@ -22,12 +22,12 @@ import Quickshell.Wayland
 // Trouble is shown in the alert colour together with a word or mark: no
 // network, muted sound, a low battery.
 //
-// With the mouse: a workspace switches to it, the track pauses it, the
-// bell shows the waiting notifications again (a right click dismisses
-// them all), the clock opens the calendar, the apps tab drops the tray
-// out of the bar, the input method switches
-// language, the volume mutes on a click and moves with the wheel, and the
-// battery opens the monitor.
+// With the mouse: a workspace switches to it, the track pauses it, and the
+// input method switches language. Everything else drops a panel out of the
+// bar under itself (Drop.qml): the bell the inbox (a right click dismisses
+// every notification), the clock the calendar, the tray its apps, the
+// network the networks in range, the volume the sound controls (the wheel
+// moves the volume, a right click mutes), and the battery power.
 PanelWindow {
     id: bar
 
@@ -241,14 +241,16 @@ PanelWindow {
                     id: passingRow
 
                     // Notifications that have not been dismissed. A click
-                    // shows them again; a right click dismisses them all.
+                    // drops the inbox; a right click dismisses them all.
                     Passing {
                         active: bar.shell.unreadCount > 0
 
                         Divider {}
 
                         Segment {
-                            onTapped: bar.shell.showWaiting()
+                            id: bellTab
+
+                            onTapped: bar.shell.openDrop("inbox", bellTab.mapToItem(slab, 0, 0).x)
                             onRightTapped: bar.shell.dismissAll()
 
                             // The font's bell icon.
@@ -321,8 +323,8 @@ PanelWindow {
                 }
             }
 
-            // Tell the shell where the tray's tab is, so the drop-down
-            // opens under it.
+            // Tell the shell where the tray is, so that its panel drops
+            // under it when a key opens it, too.
             Binding {
                 target: bar.shell
                 property: "trayTabX"
@@ -337,15 +339,14 @@ PanelWindow {
                 x: parent.width - width - Theme.cellWidth
 
                 // The tray: how many apps are running in the background.
-                // A click drops their list out of the bar.
                 Segment {
                     id: trayTab
 
                     visible: bar.shell.trayCount > 0
-                    onTapped: bar.shell.trayOpen = !bar.shell.trayOpen
+                    onTapped: bar.shell.openDrop("tray", bar.shell.trayTabX)
 
                     Key {
-                        text: "apps "
+                        text: "tray "
                     }
 
                     Value {
@@ -375,25 +376,34 @@ PanelWindow {
                     }
                 }
 
-                Key {
-                    text: "net "
-                }
+                Segment {
+                    id: networkTab
 
-                SignalBars {
-                    level: bar.shell.networkSignal
-                }
+                    onTapped: bar.shell.openDrop("network", networkTab.mapToItem(slab, 0, 0).x)
 
-                Label {
-                    text: " " + bar.shell.networkName
-                    color: bar.shell.online ? Theme.inkSoft : Theme.alert
-                }
+                    Key {
+                        text: "net "
+                    }
 
-                Divider {
-                    pointsLeft: true
+                    SignalBars {
+                        level: bar.shell.networkSignal
+                    }
+
+                    Label {
+                        text: " " + bar.shell.networkName
+                        color: bar.shell.online ? Theme.inkSoft : Theme.alert
+                    }
+
+                    Divider {
+                        pointsLeft: true
+                    }
                 }
 
                 Segment {
-                    onTapped: bar.shell.toggleMute()
+                    id: soundTab
+
+                    onTapped: bar.shell.openDrop("sound", soundTab.mapToItem(slab, 0, 0).x)
+                    onRightTapped: bar.shell.toggleMute()
                     onWheelTurned: step => bar.shell.changeVolume(step)
 
                     Key {
@@ -415,11 +425,12 @@ PanelWindow {
                     }
                 }
 
-                // The battery, on a machine that has one. A click opens
-                // the monitor.
+                // The battery, on a machine that has one.
                 Segment {
+                    id: powerTab
+
                     visible: bar.shell.batteryPresent
-                    onTapped: bar.shell.toggleMonitor()
+                    onTapped: bar.shell.openDrop("power", powerTab.mapToItem(slab, 0, 0).x)
 
                     Divider {
                         pointsLeft: true

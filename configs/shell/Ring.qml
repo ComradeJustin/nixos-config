@@ -7,7 +7,7 @@ import Quickshell.Wayland
 // Station names travel on a braille orbit around a large clock. h and l
 // turn the ring, and the name on the right is the focused one, shown in
 // reverse video. Enter opens it: the ring's names are wiped away and a
-// page (Panel.qml) is wiped in where the focused name was. Rows of a page
+// page (PageView.qml) is wiped in where the focused name was. Rows of a page
 // can open further pages; esc backs out one page at a time.
 //
 // There is one way for anything here to appear or disappear: a dithered
@@ -54,7 +54,9 @@ PanelWindow {
     property real aside: !shell.ringOpen || shell.dived || panelOpen ? 1 : 0
     // How much of the page is showing. It starts only once the names have
     // been wiped away, and drops to nothing while a change of page waits.
-    property real dive: shell.dived && !shell.stackPending && aside === 1 ? 1 : 0
+    // Pages that are open in a panel under the bar (Drop.qml) are not
+    // drawn here.
+    property real dive: shell.dived && !shell.dropOpen && !shell.stackPending && aside === 1 ? 1 : 0
 
     // --- What is drawn from them ---
     // One turn is drawn as a few equal jumps round the orbit.
@@ -79,7 +81,7 @@ PanelWindow {
 
         // No page is on screen, so there is nothing to wipe away first.
         function onStackPendingChanged(): void {
-            if (ring.shell.stackPending && ring.dive === 0)
+            if (ring.shell.stackPending && !ring.shell.dropOpen && ring.dive === 0)
                 ring.shell.commitStack();
         }
     }
@@ -206,90 +208,7 @@ PanelWindow {
         anchors.fill: parent
         focus: true
 
-        Keys.onPressed: event => {
-            const shell = ring.shell;
-            const key = event.key;
-            // Whether letters go into a text field: the page's own, or
-            // the search field that "/" brings up on any other page.
-            const hasField = shell.page !== null && (shell.page.field !== undefined || shell.searching);
-            event.accepted = true;
-
-            if (key === Qt.Key_Escape) {
-                shell.back();
-                return;
-            }
-            if (key === Qt.Key_Return || key === Qt.Key_Enter) {
-                shell.act();
-                return;
-            }
-
-            // The ring's names are showing: turn it, or open the focused one.
-            if (!shell.dived) {
-                if (key === Qt.Key_L || key === Qt.Key_Right)
-                    shell.rotate(1);
-                else if (key === Qt.Key_H || key === Qt.Key_Left)
-                    shell.rotate(-1);
-                else if (key === Qt.Key_Space)
-                    shell.act();
-                return;
-            }
-
-            // A page is open. The arrows always move the selection.
-            if (key === Qt.Key_Down) {
-                shell.moveSelection(1);
-                return;
-            }
-            if (key === Qt.Key_Up) {
-                shell.moveSelection(-1);
-                return;
-            }
-
-            // With a text field, the other keys edit its text.
-            if (hasField) {
-                const control = (event.modifiers & Qt.ControlModifier) !== 0;
-                if (key === Qt.Key_Left)
-                    shell.placeCursor(shell.cursor - 1);
-                else if (key === Qt.Key_Right)
-                    shell.placeCursor(shell.cursor + 1);
-                else if (key === Qt.Key_Home || (control && key === Qt.Key_A))
-                    shell.placeCursor(0);
-                else if (key === Qt.Key_End || (control && key === Qt.Key_E))
-                    shell.placeCursor(shell.query.length);
-                else if (control && key === Qt.Key_U)
-                    shell.clearText();
-                else if (key === Qt.Key_Backspace)
-                    shell.eraseText();
-                else if (key === Qt.Key_Delete)
-                    shell.deleteText();
-                else if (event.text.length === 1 && event.text >= " ")
-                    shell.typeText(event.text);
-                return;
-            }
-
-            // Without one, "/" brings up a search field.
-            if (key === Qt.Key_Slash) {
-                shell.searching = true;
-                return;
-            }
-
-            // And the letters move too. On a level, left and right move
-            // the level; anywhere else they go back and act.
-            const left = key === Qt.Key_H || key === Qt.Key_Left;
-            const right = key === Qt.Key_L || key === Qt.Key_Right;
-            const onLevel = shell.pageRows.length > 0 && shell.pageRows[shell.selectedIndex].kind === "level";
-            if (key === Qt.Key_J)
-                shell.moveSelection(1);
-            else if (key === Qt.Key_K)
-                shell.moveSelection(-1);
-            else if (left && onLevel)
-                shell.adjust(-1);
-            else if (right && onLevel)
-                shell.adjust(1);
-            else if (left)
-                shell.back();
-            else if (right)
-                shell.act();
-        }
+        Keys.onPressed: event => ring.shell.pressKey(event)
 
         // --- The mouse on the empty part of the ring ---
         // A click beside everything goes back one step, like esc. The
@@ -444,7 +363,7 @@ PanelWindow {
         }
 
         // --- The open page, wiped in where the focused name was ---
-        Panel {
+        PageView {
             id: page
 
             // Always in the same place whichever station is open: where
@@ -453,30 +372,8 @@ PanelWindow {
             x: Math.min(ring.centerX + ring.orbitRadius - ring.longestName * Theme.cellWidth - 2 * Theme.cellWidth, Theme.snapX(parent.width - implicitWidth - Theme.cellWidth))
             y: ring.centerY - Theme.cellHeight
             visible: ring.panelOpen
-            page: ring.shell.page
-            entries: ring.shell.pageRows
-            selectedIndex: ring.shell.selectedIndex
-            query: ring.shell.query
-            cursor: ring.shell.cursor
-            searchable: true
-            searching: ring.shell.searching
-            // A page can ask for more room for its labels.
-            valueColumn: ring.shell.page !== null && ring.shell.page.valueColumn !== undefined ? ring.shell.page.valueColumn : 18
+            shell: ring.shell
             shown: ring.dive
-            // The mouse selects the row it is over, a click acts on it,
-            // and the wheel moves the selection.
-            interactive: true
-            onRowEntered: entryIndex => {
-                if (!ring.shell.stackPending)
-                    ring.shell.select(entryIndex);
-            }
-            onRowClicked: entryIndex => {
-                if (ring.shell.stackPending)
-                    return;
-                ring.shell.select(entryIndex);
-                ring.shell.act();
-            }
-            onWheelTurned: step => ring.shell.moveSelection(step)
         }
 
         // --- A picture of the selected row, when it has one ---
@@ -525,7 +422,7 @@ PanelWindow {
             }
 
             Repeater {
-                model: [["←→ hl", " turn    "], ["↵", " open    "], ["esc", " close"]]
+                model: [["←→", " turn    "], ["↵", " open    "], ["esc", " close"]]
 
                 Row {
                     required property var modelData

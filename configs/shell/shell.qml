@@ -28,12 +28,14 @@ import Quickshell.Wayland
 //   Pages          the stations and what every page holds, from the system
 //   Panel          draws one page: a line of text input and a scrolling
 //                  list of rows
+//   PageView       the Panel that shows whichever page is open
+//   Drop           a panel that drops out of the bar under what was clicked
+//                  and shows a page there: inbox, tray, network, sound, power
 //   Monitor        the other summoned layer: a grid of applets (processor,
 //                  memory, disks, ...) that each expand to a full view
 //   MonitorData    reads the system for it while it is open
 //                  (system-readings.sh)
 //   Calendar       a month that drops out of the bar's clock
-//   TrayDrop       background apps and their menus, from the bar's tab
 //   Dialog         things that interrupt: the password prompt for
 //                  administrator rights, the warning before the idle lock
 //   Desktop        a clock and the playing track on an empty desktop
@@ -66,7 +68,9 @@ import Quickshell.Wayland
 //   lockWake (ask the fingerprint reader again, after a suspend),
 //   ring (open or close the ring), page <name> (open the ring at a page:
 //   launch, clipboard, system, network, media, inbox, session, ...),
-//   monitor (open or close the monitor), calendar, tray, search,
+//   monitor (open or close the monitor), calendar, tray (drop the tray
+//   out of the bar), drop <name> (drop another page there: inbox, network,
+//   sound, power), search,
 //   idleWarning and idleResume (swayidle calls these before the idle lock),
 //   and, for driving the ring without the keyboard: turn <steps>, open,
 //   select <steps>, adjust <step>, back, type <text>
@@ -75,6 +79,7 @@ import Quickshell.Wayland
 // it brings up a field, and typing narrows the rows. In a page with a
 // text field, letters type, up and down select, and left, right, home,
 // end, backspace, delete and ctrl+u edit the text. The mouse works too.
+// A panel dropped out of the bar takes the same keys (pressKey below).
 // The lock is also reached through swayidle (configs/niri/startup.kdl),
 // which calls it when the session is asked to lock: after sitting idle,
 // before a suspend, and by "loginctl lock-session".
@@ -129,6 +134,16 @@ ShellRoot {
     property var nextPageStack: []
     property var nextSelectionStack: []
 
+    // Open pages are drawn in the ring, or in a panel that drops out of
+    // the bar under the segment that was clicked (Drop.qml). `dropOpen`
+    // says which, and `dropX` where the panel hangs, in pixels from the
+    // left of the screen. Like the pages, they change only once the page
+    // on screen has been wiped away, so a change waits in the two below.
+    property bool dropOpen: false
+    property real dropX: 0
+    property bool nextDropOpen: false
+    property real nextDropX: 0
+
     readonly property bool dived: pageStack.length > 0
     readonly property string pageName: dived ? pageStack[pageStack.length - 1] : ""
     readonly property var page: dived ? pageSource.named(pageName) : null
@@ -144,14 +159,22 @@ ShellRoot {
             root.closeRing();
         } else {
             root.closeMonitor();
+            root.closePages();
             root.ringOpen = true;
         }
     }
 
-    function closeRing(): void {
-        root.ringOpen = false;
+    // Close whatever pages are open, in the ring or in a dropped panel.
+    function closePages(): void {
+        root.nextDropOpen = false;
         if (root.dived)
             root.changeStack([], []);
+    }
+
+    // Close the ring, and a dropped panel with it.
+    function closeRing(): void {
+        root.ringOpen = false;
+        root.closePages();
     }
 
     function rotate(step: int): void {
@@ -184,8 +207,27 @@ ShellRoot {
     function openPageAt(name: string, row: int): void {
         root.closeMonitor();
         root.ringOpen = true;
+        root.nextDropOpen = false;
         root.focusStation(pageSource.pageStation[name]);
         root.changeStack([name], [row]);
+    }
+
+    // Drop a page out of the bar, with the panel's left edge at `x`. Asking
+    // for the one that is already there closes it, so one click or key
+    // opens and closes it.
+    function openDrop(name: string, x: real): void {
+        if (pageSource.named(name) === null)
+            return;
+        if (root.dropOpen && root.pageStack[0] === name) {
+            root.closePages();
+            return;
+        }
+        root.closeMonitor();
+        root.calendarShown = false;
+        root.ringOpen = false;
+        root.nextDropOpen = true;
+        root.nextDropX = x;
+        root.changeStack([name], [0]);
     }
 
     // The rows of a page that contain what has been typed. Typing narrows
@@ -197,7 +239,7 @@ ShellRoot {
         const wanted = typed.toLowerCase();
         const matches = [];
         for (const row of page.rows) {
-            const text = (row.label + " " + (row.value || "")).toLowerCase();
+            const text = (row.label + " " + (row.value || "") + " " + (row.keywords || "")).toLowerCase();
             if (text.includes(wanted))
                 matches.push(row);
         }
@@ -213,6 +255,10 @@ ShellRoot {
     }
 
     function commitStack(): void {
+        // With no page left open, a dropped panel is closed.
+        root.dropOpen = root.nextDropOpen && root.nextPageStack.length > 0;
+        root.nextDropOpen = root.dropOpen;
+        root.dropX = root.nextDropX;
         root.pageStack = root.nextPageStack;
         root.selectionStack = root.nextSelectionStack;
         root.query = "";
@@ -228,11 +274,16 @@ ShellRoot {
         if (root.stackPending)
             return;
         if (!root.dived) {
-            root.changeStack([root.stations[root.focusedIndex].page], [0]);
+            if (root.ringOpen)
+                root.changeStack([root.stations[root.focusedIndex].page], [0]);
             return;
         }
-        if (root.pageRows.length === 0)
+        if (root.pageRows.length === 0) {
+            // A page that is only a text field: hand over what was typed.
+            if (root.page !== null && root.page.field !== undefined && root.page.field.submit)
+                root.page.field.submit(root.query);
             return;
+        }
         const row = root.pageRows[root.selectedIndex];
         if (row.act)
             row.act();
@@ -253,7 +304,8 @@ ShellRoot {
             row.adjust(step);
     }
 
-    // Esc: end a search, then leave the innermost page, then close the ring.
+    // Esc: end a search, then leave the innermost page, then close the
+    // ring. A dropped panel closes when its last page is left.
     function back(): void {
         if (root.stackPending)
             return;
@@ -261,8 +313,7 @@ ShellRoot {
             root.searching = false;
             root.query = "";
             root.cursor = 0;
-            root.select(0);
-            root.selectReadable();
+            root.selectFirst();
             return;
         }
         if (root.dived)
@@ -274,6 +325,15 @@ ShellRoot {
     function select(index: int): void {
         root.selectionStack = root.selectionStack.slice(0, -1).concat([index]);
     }
+
+    // Select the first row that can be selected.
+    function selectFirst(): void {
+        root.select(0);
+        root.selectReadable();
+    }
+
+    // Rows can arrive after their page has opened, and can go while it is.
+    onPageRowsChanged: root.selectReadable()
 
     // Move the selection one row up or down, passing over notes, which are
     // only there to be read. It stays put when there is no row that way.
@@ -290,9 +350,14 @@ ShellRoot {
         }
     }
 
-    // If the selection is on a note, move it to the first row that is not.
+    // Keep the selection on a row that can be selected: back inside a list
+    // that has grown shorter, and off a note onto the first row that is not.
     function selectReadable(): void {
-        if (!root.dived || root.pageRows.length === 0 || root.pageRows[root.selectedIndex].kind !== "note")
+        if (!root.dived || root.pageRows.length === 0)
+            return;
+        if (root.selectedIndex >= root.pageRows.length)
+            root.select(root.pageRows.length - 1);
+        if (root.pageRows[root.selectedIndex].kind !== "note")
             return;
         for (let index = 0; index < root.pageRows.length; index++) {
             if (root.pageRows[index].kind !== "note") {
@@ -308,7 +373,7 @@ ShellRoot {
             return;
         root.query = root.query.slice(0, root.cursor) + text + root.query.slice(root.cursor);
         root.cursor += text.length;
-        root.select(0);
+        root.selectFirst();
     }
 
     // Backspace: take out the character before the cursor.
@@ -317,7 +382,7 @@ ShellRoot {
             return;
         root.query = root.query.slice(0, root.cursor - 1) + root.query.slice(root.cursor);
         root.cursor -= 1;
-        root.select(0);
+        root.selectFirst();
     }
 
     // Delete: take out the character under the cursor.
@@ -325,7 +390,7 @@ ShellRoot {
         if (!root.fieldOpen || root.cursor >= root.query.length)
             return;
         root.query = root.query.slice(0, root.cursor) + root.query.slice(root.cursor + 1);
-        root.select(0);
+        root.selectFirst();
     }
 
     function clearText(): void {
@@ -333,7 +398,7 @@ ShellRoot {
             return;
         root.query = "";
         root.cursor = 0;
-        root.select(0);
+        root.selectFirst();
     }
 
     // Move the cursor to this position, kept inside the text.
@@ -341,6 +406,91 @@ ShellRoot {
         if (!root.fieldOpen)
             return;
         root.cursor = Math.max(0, Math.min(root.query.length, position));
+    }
+
+    // A key pressed in the ring or in a dropped panel.
+    function pressKey(event: var): void {
+        const key = event.key;
+        // Whether letters go into a text field: the page's own, or the
+        // search field that "/" brings up on any other page.
+        const hasField = root.page !== null && (root.page.field !== undefined || root.searching);
+        event.accepted = true;
+
+        if (key === Qt.Key_Escape) {
+            root.back();
+            return;
+        }
+        if (key === Qt.Key_Return || key === Qt.Key_Enter) {
+            root.act();
+            return;
+        }
+
+        // The ring's names are showing: turn it, or open the focused one.
+        if (!root.dived) {
+            if (key === Qt.Key_L || key === Qt.Key_Right)
+                root.rotate(1);
+            else if (key === Qt.Key_H || key === Qt.Key_Left)
+                root.rotate(-1);
+            else if (key === Qt.Key_Space)
+                root.act();
+            return;
+        }
+
+        // A page is open. The arrows always move the selection.
+        if (key === Qt.Key_Down) {
+            root.moveSelection(1);
+            return;
+        }
+        if (key === Qt.Key_Up) {
+            root.moveSelection(-1);
+            return;
+        }
+
+        // With a text field, the other keys edit its text.
+        if (hasField) {
+            const control = (event.modifiers & Qt.ControlModifier) !== 0;
+            if (key === Qt.Key_Left)
+                root.placeCursor(root.cursor - 1);
+            else if (key === Qt.Key_Right)
+                root.placeCursor(root.cursor + 1);
+            else if (key === Qt.Key_Home || (control && key === Qt.Key_A))
+                root.placeCursor(0);
+            else if (key === Qt.Key_End || (control && key === Qt.Key_E))
+                root.placeCursor(root.query.length);
+            else if (control && key === Qt.Key_U)
+                root.clearText();
+            else if (key === Qt.Key_Backspace)
+                root.eraseText();
+            else if (key === Qt.Key_Delete)
+                root.deleteText();
+            else if (event.text.length === 1 && event.text >= " ")
+                root.typeText(event.text);
+            return;
+        }
+
+        // Without one, "/" brings up a search field.
+        if (key === Qt.Key_Slash) {
+            root.searching = true;
+            return;
+        }
+
+        // And the letters move too. On a level, left and right move the
+        // level; anywhere else they go back and act.
+        const left = key === Qt.Key_H || key === Qt.Key_Left;
+        const right = key === Qt.Key_L || key === Qt.Key_Right;
+        const onLevel = root.pageRows.length > 0 && root.pageRows[root.selectedIndex].adjust !== undefined;
+        if (key === Qt.Key_J)
+            root.moveSelection(1);
+        else if (key === Qt.Key_K)
+            root.moveSelection(-1);
+        else if (left && onLevel)
+            root.adjust(-1);
+        else if (right && onLevel)
+            root.adjust(1);
+        else if (left)
+            root.back();
+        else if (right)
+            root.act();
     }
 
     function lock(): void {
@@ -493,8 +643,7 @@ ShellRoot {
             root.closeMonitor();
             return;
         }
-        if (root.ringOpen)
-            root.closeRing();
+        root.closeRing();
         root.monitorOpen = true;
     }
 
@@ -531,14 +680,11 @@ ShellRoot {
         root.monitorSelected = Math.max(0, Math.min(last, root.monitorSelected + step));
     }
 
-    // --- The tray drop-down ---
-    // Whether the panel under the bar's "apps" tab is open.
-    property bool trayOpen: false
-    // Where the tab starts, in pixels from the left of the screen. The
-    // bar keeps this up to date.
+    // --- The tray ---
+    // Where the bar's tray segment starts, in pixels from the left of the
+    // screen. The bar keeps this up to date, so a key can drop the tray's
+    // panel under it.
     property real trayTabX: 0
-    // The pages, for the drop-down to show the same two the ring has.
-    readonly property alias pages: pageSource
     // How many apps are running in the background.
     readonly property int trayCount: SystemTray.items.values.length
 
@@ -548,6 +694,8 @@ ShellRoot {
     property int calendarOffset: 0
 
     function toggleCalendar(): void {
+        if (root.dropOpen)
+            root.closePages();
         root.calendarOffset = 0;
         root.calendarShown = !root.calendarShown;
     }
@@ -789,12 +937,6 @@ ShellRoot {
             notification.dismiss();
     }
 
-    // Show every waiting notification again.
-    function showWaiting(): void {
-        for (const notification of root.waitingNotifications)
-            root.showToast(notification);
-    }
-
     function dismissAll(): void {
         // A copy of the list, because dismissing takes them out of it.
         for (const notification of root.waitingNotifications.slice())
@@ -828,6 +970,9 @@ ShellRoot {
     // From 0 to 1.
     readonly property real battery: batteryDevice.percentage
     readonly property bool charging: batteryDevice.state === UPowerDeviceState.Charging
+
+    // The battery in full, as rows: charge, rate, time left, health.
+    readonly property var powerRows: monitorData.power.rows
 
     // The battery is warned about as it runs down past each of these
     // levels, lowest last, with an urgent notification that stays until it
@@ -999,7 +1144,7 @@ ShellRoot {
         shell: root
     }
 
-    TrayDrop {
+    Drop {
         shell: root
     }
 
@@ -1076,7 +1221,11 @@ ShellRoot {
         }
 
         function tray(): void {
-            root.trayOpen = !root.trayOpen;
+            root.openDrop("tray", root.trayTabX);
+        }
+
+        function drop(name: string): void {
+            root.openDrop(name, root.trayTabX);
         }
 
         function search(): void {

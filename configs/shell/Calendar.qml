@@ -70,7 +70,8 @@ PanelWindow {
         // The weekdays and six weeks.
         rows: 7
         title: Qt.formatDateTime(calendar.firstDay, "MMMM yyyy")
-        footer: "←→ month  t today"
+        // Only the keys that do something: "today" once it has moved away.
+        footer: calendar.drawnOffset === 0 ? "←→ month  esc close" : "t today  esc close"
         shown: calendar.shown
         focus: true
 

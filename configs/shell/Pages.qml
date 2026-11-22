@@ -7,26 +7,35 @@ import Quickshell.Services.Mpris
 import Quickshell.Services.Pipewire
 import Quickshell.Services.SystemTray
 
-// The ring's stations and every page that can open inside it, made from
-// what the system reports. Panel.qml draws a page; shell.qml moves between
-// pages and acts on rows.
+// The ring's stations and every page that can open, in the ring or in a
+// panel dropped out of the bar, made from what the system reports.
+// Panel.qml draws a page; shell.qml moves between pages and acts on rows.
 //
-// A page is { title, field, rows, empty, valueColumn }.
+// A page exists only where there is a list worth opening. Anything smaller
+// happens on the row it belongs to: the apps playing sound sit under the
+// volume, and ending the session is confirmed on its own row.
+//
+// A page is { title, field, rows, empty, valueColumn, columns }.
 //   valueColumn  optional: the cell values start at, for a page whose
 //           labels are longer than usual
+//   columns optional: how wide the panel is, for a page with long lines
 //   field   optional line of text input at the top of the page:
 //           { hint, filters, secret }. `filters` narrows the rows to those
 //           that contain the typed text; `secret` shows dots instead of it.
+//           A page that is only a text field gives it `submit`, a function
+//           that enter hands the text to, and `submitHint`, the word for
+//           that in the footer.
 //   empty   what to say when the page has no rows to show
 //   rows    the lines of the page. Each is { label, kind, ... }:
 //     kind "text"    label, then `value`
 //     kind "line"    `label` across the whole width (no value)
 //     kind "note"    the same, but only to be read: it cannot be selected
 //     kind "level"   a bar (`level` 0 to 1), then `value` at the right edge
-//     kind "switch"  on or off (`on`), then `value`
+//     kind "switch"  on or off (`on`); `note` says what it does
 //     kind "signal"  signal bars (`level` 0 to 1), then `value`
 //   Any row may also have:
 //     note    dim text at the right edge
+//     keywords  more words that a search for this row should match
 //     alert   true when something is wrong; the value is in the alert colour
 //     image   a picture to preview beside the page while the row is selected
 //     opens   the name of the page that enter opens (shown as "›")
@@ -79,22 +88,19 @@ Scope {
             launch: 0,
             clipboard: 1,
             system: 2,
-            mixer: 2,
+            sound: 2,
+            power: 2,
             keys: 2,
             tray: 2,
             trayMenu: 2,
             wallpaper: 2,
             network: 3,
-            wifi: 3,
             wifiPassword: 3,
             bluetooth: 3,
             media: 4,
             inbox: 5,
             notification: 5,
-            session: 6,
-            confirmLogOut: 6,
-            confirmRestart: 6,
-            confirmPowerOff: 6
+            session: 6
         })
 
     // The page with this name, or null when there is none.
@@ -109,7 +115,7 @@ Scope {
     property var wifiTarget: null
     property var trayTarget: null
 
-    // --- Launch: open windows, then apps ---
+    // --- Launch: open windows, then apps, then the shell's own settings ---
     readonly property var launch: launchPage()
 
     function launchPage(): var {
@@ -124,23 +130,6 @@ Scope {
                 act: () => pages.shell.niri.focusWindow(window.id),
                 closes: true
             });
-        }
-        // Then everything in the shell's own pages: enter opens the page
-        // at that row.
-        for (const name of ["system", "network", "media", "session"]) {
-            const page = pages[name];
-            for (let index = 0; index < page.rows.length; index++) {
-                const row = page.rows[index];
-                if (row.kind === "note")
-                    continue;
-                rows.push({
-                    label: row.label,
-                    kind: "text",
-                    value: page.title,
-                    note: "shell",
-                    act: () => pages.shell.openPageAt(name, index)
-                });
-            }
         }
         // Then apps, by name: enter starts one.
         const apps = [];
@@ -157,6 +146,35 @@ Scope {
                 act: () => entry.execute(),
                 closes: true
             });
+        }
+        // Last, the shell itself, to be found by typing: each station, and
+        // every row of the pages that hold settings. Enter opens the page
+        // at that row.
+        for (const station of pages.stations) {
+            if (station.page === "launch")
+                continue;
+            rows.push({
+                label: station.name,
+                kind: "text",
+                value: "open",
+                note: "shell",
+                act: () => pages.shell.openPage(station.page)
+            });
+        }
+        for (const name of ["system", "media", "session"]) {
+            const page = pages[name];
+            for (let index = 0; index < page.rows.length; index++) {
+                const row = page.rows[index];
+                if (row.kind === "note")
+                    continue;
+                rows.push({
+                    label: row.label,
+                    kind: "text",
+                    value: page.title,
+                    note: "shell",
+                    act: () => pages.shell.openPageAt(name, index)
+                });
+            }
         }
         return {
             title: "Launch",
@@ -219,101 +237,7 @@ Scope {
         }
     }
 
-    // --- System: controls ---
-    readonly property var system: ({
-            title: "System",
-            rows: [
-                {
-                    label: "Volume",
-                    kind: "level",
-                    value: pages.shell.muted ? "mute" : String(pages.shell.volume),
-                    level: pages.shell.muted ? 0 : pages.shell.volume / 100,
-                    alert: pages.shell.muted,
-                    adjust: step => pages.shell.changeVolume(step)
-                },
-                {
-                    label: "Mute",
-                    kind: "switch",
-                    value: "sound",
-                    on: pages.shell.muted,
-                    toggle: () => pages.shell.toggleMute()
-                },
-                {
-                    label: "Microphone",
-                    kind: "switch",
-                    value: pages.shell.microphoneMuted ? "muted" : "on",
-                    on: !pages.shell.microphoneMuted,
-                    toggle: () => pages.shell.toggleMicrophoneMute()
-                },
-                {
-                    label: "Mixer",
-                    kind: "text",
-                    value: pages.playingStreams.length + " playing",
-                    opens: "mixer"
-                },
-                {
-                    label: "Brightness",
-                    kind: "level",
-                    value: String(pages.shell.brightness),
-                    level: pages.shell.brightness / 100,
-                    adjust: step => pages.shell.changeBrightness(step, false)
-                },
-                {
-                    label: "Night light",
-                    kind: "switch",
-                    value: "warm from 19:00 to 07:00",
-                    on: pages.shell.nightLight,
-                    toggle: () => pages.shell.nightLight = !pages.shell.nightLight
-                },
-                {
-                    label: "Keep awake",
-                    kind: "switch",
-                    value: pages.shell.keepAwake ? "no dimming, no idle lock" : "off",
-                    on: pages.shell.keepAwake,
-                    toggle: () => pages.shell.keepAwake = !pages.shell.keepAwake
-                },
-                {
-                    label: "Do not disturb",
-                    kind: "switch",
-                    value: pages.shell.quiet ? "notifications are held" : "off",
-                    on: pages.shell.quiet,
-                    toggle: () => pages.shell.quiet = !pages.shell.quiet
-                },
-                {
-                    label: "Japanese input",
-                    kind: "switch",
-                    value: pages.shell.inputAvailable ? "alt+space" : "fcitx5 is not running",
-                    on: pages.shell.inputJapanese,
-                    toggle: () => pages.shell.toggleInput()
-                },
-                {
-                    label: "Background apps",
-                    kind: "text",
-                    value: SystemTray.items.values.length + " running",
-                    opens: "tray"
-                },
-                {
-                    label: "Wallpaper",
-                    kind: "text",
-                    value: "",
-                    opens: "wallpaper"
-                },
-                {
-                    label: "Key bindings",
-                    kind: "text",
-                    value: "",
-                    opens: "keys"
-                },
-                {
-                    label: "Monitor",
-                    kind: "text",
-                    value: "processor, memory, disks and more",
-                    act: () => pages.shell.toggleMonitor()
-                }
-            ]
-        })
-
-    // --- Mixer: the volume of each app that is playing sound ---
+    // --- Sound: the volume, each app that is playing, mute, the microphone ---
     // The apps playing are whatever is connected to the speakers: each
     // connection's source is one app's stream.
     PwNodeLinkTracker {
@@ -334,28 +258,152 @@ Scope {
         objects: pages.playingStreams
     }
 
-    readonly property var mixer: mixerPage()
-
-    function mixerPage(): var {
-        const rows = [];
+    // These rows are the top of the System page, and all of the panel that
+    // drops out of the bar's volume.
+    function soundRows(): var {
+        const rows = [
+            {
+                label: "Volume",
+                kind: "level",
+                value: pages.shell.muted ? "mute" : String(pages.shell.volume),
+                level: pages.shell.muted ? 0 : pages.shell.volume / 100,
+                alert: pages.shell.muted,
+                adjust: step => pages.shell.changeVolume(step)
+            }
+        ];
+        // Each app that is playing, hung under the volume it is a part of.
+        // A stream has no volume to read until it has been bound.
+        const streams = [];
         for (const stream of pages.playingStreams) {
-            // A stream has no volume to read until it has been bound.
-            if (stream.audio === null)
-                continue;
+            if (stream.audio !== null)
+                streams.push(stream);
+        }
+        for (let index = 0; index < streams.length; index++) {
+            const stream = streams[index];
             const appName = stream.properties["application.name"];
+            const branch = index === streams.length - 1 ? "└ " : "├ ";
             rows.push({
-                label: appName !== undefined ? appName : stream.name,
+                label: branch + (appName !== undefined ? appName : stream.name),
                 kind: "level",
                 value: String(Math.round(stream.audio.volume * 100)),
                 level: stream.audio.volume,
                 adjust: step => stream.audio.volume = Math.max(0, Math.min(1, stream.audio.volume + 0.05 * step))
             });
         }
+        rows.push({
+            label: "Mute",
+            kind: "switch",
+            on: pages.shell.muted,
+            toggle: () => pages.shell.toggleMute()
+        });
+        rows.push({
+            label: "Microphone",
+            kind: "switch",
+            on: !pages.shell.microphoneMuted,
+            toggle: () => pages.shell.toggleMicrophoneMute()
+        });
+        return rows;
+    }
+
+    readonly property var sound: ({
+            title: "Sound",
+            rows: pages.soundRows()
+        })
+
+    // --- Rows that sit on more than one page ---
+    function brightnessRow(): var {
         return {
-            title: "Mixer",
-            empty: "no app is playing sound",
-            rows: rows
+            label: "Brightness",
+            kind: "level",
+            value: String(pages.shell.brightness),
+            level: pages.shell.brightness / 100,
+            adjust: step => pages.shell.changeBrightness(step, false)
         };
+    }
+
+    function keepAwakeRow(): var {
+        return {
+            label: "Keep awake",
+            kind: "switch",
+            note: "no dimming or idle lock",
+            on: pages.shell.keepAwake,
+            toggle: () => pages.shell.keepAwake = !pages.shell.keepAwake
+        };
+    }
+
+    function quietRow(): var {
+        return {
+            label: "Do not disturb",
+            kind: "switch",
+            note: "holds notifications",
+            on: pages.shell.quiet,
+            toggle: () => pages.shell.quiet = !pages.shell.quiet
+        };
+    }
+
+    function monitorRow(): var {
+        return {
+            label: "Monitor",
+            kind: "text",
+            value: "processor, memory, disks and more",
+            act: () => pages.shell.toggleMonitor()
+        };
+    }
+
+    // --- System: controls ---
+    readonly property var system: ({
+            title: "System",
+            rows: pages.soundRows().concat([pages.brightnessRow(),
+                {
+                    label: "Night light",
+                    kind: "switch",
+                    note: "warm from 19:00 to 07:00",
+                    on: pages.shell.nightLight,
+                    toggle: () => pages.shell.nightLight = !pages.shell.nightLight
+                },
+                pages.keepAwakeRow(), pages.quietRow(),
+                {
+                    label: "Japanese input",
+                    kind: "switch",
+                    note: pages.shell.inputAvailable ? "alt+space" : "fcitx5 is not running",
+                    on: pages.shell.inputJapanese,
+                    toggle: () => pages.shell.toggleInput()
+                },
+                {
+                    label: "Tray",
+                    kind: "text",
+                    value: pages.shell.trayCount + " running",
+                    opens: "tray"
+                },
+                {
+                    label: "Wallpaper",
+                    kind: "text",
+                    value: "",
+                    opens: "wallpaper"
+                },
+                {
+                    label: "Key bindings",
+                    kind: "text",
+                    value: "",
+                    opens: "keys"
+                },
+                pages.monitorRow()])
+        })
+
+    // --- Power: the battery in full, and what bears on it ---
+    // The panel that drops out of the bar's battery.
+    readonly property var power: ({
+            title: "Power",
+            rows: pages.shell.powerRows.concat([pages.brightnessRow(), pages.keepAwakeRow(), pages.monitorRow()])
+        })
+
+    // --- Tray ---
+    // What a tray app is called. One that gives no title is known by its
+    // id, which often ends in "_status_icon_1".
+    function trayName(item: var): string {
+        let name = item.title !== "" ? item.title : item.id.replace(/_status_icon.*$/, "");
+        name = name.replace(/[_-]/g, " ");
+        return name.charAt(0).toUpperCase() + name.slice(1);
     }
 
     // The app tray: apps that keep running without a window. Enter opens an
@@ -366,10 +414,12 @@ Scope {
     function trayPage(): var {
         const rows = [];
         for (const item of SystemTray.items.values) {
+            const name = pages.trayName(item);
             const row = {
-                label: item.title !== "" ? item.title : item.id,
+                label: name,
                 kind: "text",
-                value: item.tooltipTitle
+                // What the app says about itself, unless that is its name.
+                value: item.tooltipTitle !== name ? item.tooltipTitle : ""
             };
             if (item.hasMenu) {
                 row.act = () => pages.trayTarget = item;
@@ -381,7 +431,7 @@ Scope {
             rows.push(row);
         }
         return {
-            title: "Background apps",
+            title: "Tray",
             empty: "nothing is running in the background",
             rows: rows
         };
@@ -427,7 +477,7 @@ Scope {
             });
         }
         return {
-            title: item.title !== "" ? item.title : item.id,
+            title: pages.trayName(item),
             rows: rows
         };
     }
@@ -439,18 +489,34 @@ Scope {
     }
 
     // --- Key bindings: read out of niri's own list of them ---
-    // Each is { keys, does }, read when the page opens.
+    // Each is { keys, does, group }, read when the page opens.
     property var keyBindings: []
+    // The groups, in the order the page lists them.
+    readonly property var bindingGroups: ["Shell", "Apps", "Windows", "Workspaces", "Screens", "Screenshots", "Other"]
     readonly property var keys: keysPage()
 
     function keysPage(): var {
         const rows = [];
-        for (const binding of pages.keyBindings) {
+        for (const group of pages.bindingGroups) {
+            const inGroup = [];
+            for (const binding of pages.keyBindings) {
+                if (binding.group === group)
+                    inGroup.push(binding);
+            }
+            if (inGroup.length === 0)
+                continue;
             rows.push({
-                label: binding.keys,
-                kind: "text",
-                value: binding.does
+                label: "── " + group + " ──",
+                kind: "note"
             });
+            for (const binding of inGroup) {
+                rows.push({
+                    label: binding.keys,
+                    kind: "text",
+                    value: binding.does,
+                    keywords: group
+                });
+            }
         }
         return {
             title: "Key bindings",
@@ -460,26 +526,116 @@ Scope {
                 secret: false
             },
             empty: "nothing matches",
-            // Key names such as Mod+Shift+Ctrl+Right are long.
-            valueColumn: 24,
+            // Both the keys and what they do are long.
+            columns: 72,
+            valueColumn: 26,
             rows: rows
         };
     }
 
-    // What a binding does, in words. niri's file gives an action such as
-    // focus-column-left, or a command to run with each word in quotes.
-    function bindingAction(action: string): string {
-        if (!action.startsWith("spawn"))
-            return action.replace(/-/g, " ");
-        // The quoted words of the command.
+    // How niri spells a key, and how it is shown. "Mod" is the Super key.
+    readonly property var keyNames: ({
+            Mod: "Super",
+            Return: "Enter",
+            Slash: "/",
+            Comma: ",",
+            Period: ".",
+            Minus: "-",
+            Equal: "=",
+            BracketLeft: "[",
+            BracketRight: "]",
+            Left: "←",
+            Right: "→",
+            Up: "↑",
+            Down: "↓",
+            Page_Up: "PgUp",
+            Page_Down: "PgDn",
+            Print: "PrtSc",
+            WheelScrollUp: "Wheel↑",
+            WheelScrollDown: "Wheel↓",
+            WheelScrollLeft: "Wheel←",
+            WheelScrollRight: "Wheel→",
+            XF86AudioRaiseVolume: "Volume up key",
+            XF86AudioLowerVolume: "Volume down key",
+            XF86AudioMute: "Mute key",
+            XF86AudioMicMute: "Microphone mute key",
+            XF86MonBrightnessUp: "Brightness up key",
+            XF86MonBrightnessDown: "Brightness down key",
+            XF86Display: "Display key"
+        })
+
+    // What this shell is asked for by a binding, in words.
+    readonly property var shellCallNames: ({
+            "ring": "Open the ring",
+            "monitor": "System monitor",
+            "tray": "Tray",
+            "lock": "Lock the screen",
+            "page clipboard": "Clipboard history",
+            "page system": "System settings",
+            "page wallpaper": "Wallpaper",
+            "page session": "Session",
+            "volumeUp": "Volume up",
+            "volumeDown": "Volume down",
+            "volumeMute": "Mute",
+            "microphoneMute": "Mute the microphone",
+            "brightnessUp": "Brightness up",
+            "brightnessDown": "Brightness down"
+        })
+
+    // Keys as niri writes them, such as Mod+Shift+Slash, as they are shown.
+    function bindingKeys(keys: string): string {
+        const shown = [];
+        for (const key of keys.split("+"))
+            shown.push(pages.keyNames[key] !== undefined ? pages.keyNames[key] : key);
+        return shown.join("+");
+    }
+
+    // What a command asks this shell for, such as "page clipboard". "" when
+    // the binding is not a call to this shell. niri's file gives a command
+    // with each word in quotes.
+    function shellCall(action: string): string {
+        const words = pages.commandWords(action);
+        const target = words.indexOf("shell");
+        if (!words.includes("ipc") || target < 0)
+            return "";
+        return words.slice(target + 1).join(" ");
+    }
+
+    function commandWords(action: string): var {
         const words = [];
         for (const quoted of action.match(/"[^"]*"/g) || [])
             words.push(quoted.slice(1, -1));
-        // A call to this shell: say only what it asks for.
-        const shellCall = words.indexOf("shell");
-        if (words.includes("ipc") && shellCall >= 0)
-            return "shell: " + words.slice(shellCall + 1).join(" ");
-        return "run " + words.join(" ");
+        return words;
+    }
+
+    // What a binding does, in words.
+    function bindingAction(action: string): string {
+        if (!action.startsWith("spawn")) {
+            // One of niri's own actions, such as focus-column-left or
+            // set-column-width "-10%". The hyphens between words become
+            // spaces; the one in front of a number stays.
+            const words = action.replace(/-(?=[a-z])/g, " ").replace(/"/g, "");
+            return words.charAt(0).toUpperCase() + words.slice(1);
+        }
+        const call = pages.shellCall(action);
+        if (call !== "")
+            return pages.shellCallNames[call] !== undefined ? pages.shellCallNames[call] : call;
+        return "Run " + pages.commandWords(action).join(" ");
+    }
+
+    // Which group a binding is listed under.
+    function bindingGroup(action: string): string {
+        if (action.startsWith("spawn"))
+            return pages.shellCall(action) !== "" ? "Shell" : "Apps";
+        if (action.includes("screenshot"))
+            return "Screenshots";
+        if (action.includes("monitor"))
+            return "Screens";
+        if (action.includes("workspace"))
+            return "Workspaces";
+        if (action.includes("window") || action.includes("column"))
+            return "Windows";
+        return "Other";
     }
 
     // A binding is one line: the keys, then options, then the action in
@@ -497,8 +653,9 @@ Scope {
                 continue;
             const title = parts[2].match(/hotkey-overlay-title="([^"]*)"/);
             bindings.push({
-                keys: parts[1],
-                does: title !== null ? title[1] : pages.bindingAction(parts[3])
+                keys: pages.bindingKeys(parts[1]),
+                does: title !== null ? title[1] : pages.bindingAction(parts[3]),
+                group: pages.bindingGroup(parts[3])
             });
         }
         pages.keyBindings = bindings;
@@ -568,26 +725,6 @@ Scope {
     }
     readonly property var bluetoothAdapter: Bluetooth.defaultAdapter
 
-    readonly property var network: ({
-            title: "Network",
-            rows: [
-                {
-                    label: "Wi-Fi",
-                    kind: "signal",
-                    value: pages.shell.networkName,
-                    level: pages.shell.networkSignal,
-                    alert: !pages.shell.online,
-                    opens: "wifi"
-                },
-                {
-                    label: "Bluetooth",
-                    kind: "text",
-                    value: pages.bluetoothSummary(),
-                    opens: "bluetooth"
-                }
-            ]
-        })
-
     function bluetoothSummary(): string {
         if (pages.bluetoothAdapter === null)
             return "no adapter";
@@ -601,10 +738,11 @@ Scope {
         return connected + " connected";
     }
 
-    // The networks in range: the one in use first, then the saved ones,
-    // then the rest, each group strongest first. Enter joins one: a network
-    // that is saved or open straight away, any other after its password.
-    readonly property var wifi: wifiPage()
+    // Bluetooth, then the Wi-Fi networks in range: the one in use first,
+    // then the saved ones, then the rest, each group strongest first. Enter
+    // joins one: a network that is saved or open straight away, any other
+    // after its password.
+    readonly property var network: networkPage()
 
     // Where a network goes in the list: lower comes first.
     function wifiRank(network: var): int {
@@ -613,8 +751,15 @@ Scope {
         return network.known ? 1 : 2;
     }
 
-    function wifiPage(): var {
-        const rows = [];
+    function networkPage(): var {
+        const rows = [
+            {
+                label: "Bluetooth",
+                kind: "text",
+                value: pages.bluetoothSummary(),
+                opens: "bluetooth"
+            }
+        ];
         if (pages.wifiDevice !== null) {
             const networks = pages.wifiDevice.networks.values.slice();
             networks.sort((first, second) => {
@@ -647,48 +792,44 @@ Scope {
                 rows.push(row);
             }
         }
+        if (rows.length === 1) {
+            rows.push({
+                label: "no Wi-Fi networks in range",
+                kind: "note"
+            });
+        }
         return {
-            title: "Wi-Fi",
-            empty: "no networks in range",
+            title: "Network",
             // Network names can be up to 32 characters long.
             valueColumn: 30,
             rows: rows
         };
     }
 
-    // The Wi-Fi card looks for networks only while the Wi-Fi page is open.
+    // The Wi-Fi card looks for networks only while the Network page is open.
     Binding {
         target: pages.wifiDevice
         property: "scannerEnabled"
-        value: pages.shell.pageName === "wifi"
+        value: pages.shell.pageName === "network"
         when: pages.wifiDevice !== null
     }
 
+    // The password of a network that has not been joined before. The page
+    // is only its text field: enter joins, esc goes back.
     readonly property var wifiPassword: ({
             title: pages.wifiTarget !== null ? "Join " + pages.wifiTarget.name : "Join",
             field: {
                 hint: "password",
                 filters: false,
-                secret: true
-            },
-            rows: [
-                {
-                    label: "Connect",
-                    kind: "text",
-                    value: "",
-                    act: () => {
-                        if (pages.wifiTarget !== null)
-                            pages.wifiTarget.connectWithPsk(pages.shell.query);
-                        pages.shell.back();
-                    }
-                },
-                {
-                    label: "Cancel",
-                    kind: "text",
-                    value: "",
-                    act: () => pages.shell.back()
+                secret: true,
+                submitHint: "join",
+                submit: text => {
+                    if (pages.wifiTarget !== null)
+                        pages.wifiTarget.connectWithPsk(text);
+                    pages.shell.back();
                 }
-            ]
+            },
+            rows: []
         })
 
     // Bluetooth: the adapter, then its devices. Enter connects a paired
@@ -708,7 +849,6 @@ Scope {
             {
                 label: "Bluetooth",
                 kind: "switch",
-                value: adapter.enabled ? "on" : "off",
                 on: adapter.enabled,
                 toggle: () => adapter.enabled = !adapter.enabled
             }
@@ -746,7 +886,7 @@ Scope {
         rows.push({
             label: "Find devices",
             kind: "switch",
-            value: adapter.discovering ? "looking" : "off",
+            note: adapter.discovering ? "looking" : "",
             on: adapter.discovering,
             toggle: () => adapter.discovering = !adapter.discovering
         });
@@ -830,13 +970,7 @@ Scope {
                 rows: rows
             };
         }
-        rows.push({
-            label: "Do not disturb",
-            kind: "switch",
-            value: pages.shell.quiet ? "notifications are held" : "off",
-            on: pages.shell.quiet,
-            toggle: () => pages.shell.quiet = !pages.shell.quiet
-        });
+        rows.push(pages.quietRow());
         rows.push({
             label: "Dismiss all",
             kind: "text",
@@ -901,6 +1035,29 @@ Scope {
     }
 
     // --- Session ---
+    // Anything that ends the session asks first, on its own row: the first
+    // enter arms the row, a second one does it, and moving away from the
+    // row disarms it. This is the label of the armed row, or "".
+    property string armedRow: ""
+
+    function endingRow(label: string, command: var): var {
+        const armed = pages.armedRow === label;
+        return {
+            label: label,
+            kind: "text",
+            value: armed ? "enter again to confirm" : "",
+            alert: armed,
+            act: () => {
+                if (armed) {
+                    pages.armedRow = "";
+                    Quickshell.execDetached(command);
+                } else {
+                    pages.armedRow = label;
+                }
+            }
+        };
+    }
+
     readonly property var session: ({
             title: "Session",
             rows: [
@@ -918,58 +1075,19 @@ Scope {
                     act: () => Quickshell.execDetached(["systemctl", "suspend"]),
                     closes: true
                 },
-                {
-                    label: "Log out",
-                    kind: "text",
-                    value: "",
-                    opens: "confirmLogOut"
-                },
-                {
-                    label: "Restart",
-                    kind: "text",
-                    value: "",
-                    opens: "confirmRestart"
-                },
-                {
-                    label: "Power off",
-                    kind: "text",
-                    value: "",
-                    opens: "confirmPowerOff"
-                }
-            ]
+                pages.endingRow("Log out", ["niri", "msg", "action", "quit", "--skip-confirmation"]), pages.endingRow("Restart", ["systemctl", "reboot"]), pages.endingRow("Power off", ["systemctl", "poweroff"])]
         })
-
-    // Anything that ends the session asks first, with "Cancel" selected.
-    function confirmPage(question: string, answer: string, command: var): var {
-        return {
-            title: question,
-            rows: [
-                {
-                    label: "Cancel",
-                    kind: "text",
-                    value: "",
-                    act: () => pages.shell.back()
-                },
-                {
-                    label: answer,
-                    kind: "text",
-                    value: "open windows will close",
-                    alert: true,
-                    act: () => Quickshell.execDetached(command)
-                }
-            ]
-        };
-    }
-
-    readonly property var confirmLogOut: confirmPage("Log out?", "Log out now", ["niri", "msg", "action", "quit", "--skip-confirmation"])
-    readonly property var confirmRestart: confirmPage("Restart?", "Restart now", ["systemctl", "reboot"])
-    readonly property var confirmPowerOff: confirmPage("Power off?", "Power off now", ["systemctl", "poweroff"])
 
     // Pages whose rows are read from a command are read when they open.
     Connections {
         target: pages.shell
 
+        function onSelectedIndexChanged(): void {
+            pages.armedRow = "";
+        }
+
         function onPageNameChanged(): void {
+            pages.armedRow = "";
             if (pages.shell.pageName === "clipboard")
                 clipboardList.running = true;
             else if (pages.shell.pageName === "wallpaper")

@@ -1,7 +1,7 @@
 import QtQuick
 
-// One page inside the ring: a Box holding an optional line of text input
-// and a list of rows. The list shows at most ten rows and scrolls to keep
+// One page: a Box holding an optional line of text input and a list of
+// rows. The list shows at most ten rows and scrolls to keep
 // the selected one near its middle; a heavy stretch of the right border
 // shows where the visible part sits in the whole list.
 //
@@ -37,14 +37,20 @@ Box {
     property int valueColumn: 18
     property int levelCells: 20
     property int maxListRows: 10
+    // What the footer says esc does: "back", or "close" where there is
+    // nothing to go back to.
+    property string backWord: "back"
 
     readonly property bool ownField: page !== null && page.field !== undefined
     readonly property bool hasField: ownField || searching
     readonly property bool secret: ownField && page.field.secret
     readonly property string hint: ownField ? page.field.hint : "search"
     readonly property int fieldRows: hasField ? 1 : 0
-    // An empty list still takes one row, to say that it is empty.
-    readonly property int listRows: Math.max(1, Math.min(entries.length, maxListRows))
+    // Whether the page is only its text field, which enter hands over.
+    readonly property bool submits: ownField && page.field.submit !== undefined
+    // An empty list still takes one row, to say that it is empty. A page
+    // that is only a text field has no list at all.
+    readonly property int listRows: submits ? 0 : Math.max(1, Math.min(entries.length, maxListRows))
     readonly property bool scrolls: entries.length > maxListRows
     // The first entry on screen.
     readonly property int firstEntry: Math.max(0, Math.min(entries.length - listRows, selectedIndex - Math.floor(listRows / 2)))
@@ -74,7 +80,7 @@ Box {
             return "↵ open";
         if (entry.kind === "switch")
             return "↵ switch";
-        if (entry.kind === "level")
+        if (entry.adjust)
             return "←→ adjust";
         if (entry.act)
             return "↵ go";
@@ -83,15 +89,17 @@ Box {
 
     // The keys that do something here, and no others.
     function footerText(): string {
+        if (panel.submits)
+            return "↵ " + panel.page.field.submitHint + "  esc " + panel.backWord;
         if (panel.entries.length === 0)
-            return "esc back";
+            return "esc " + panel.backWord;
         let keys = "↑↓ select";
-        if (!panel.hasField)
-            keys = panel.searchable ? "↑↓ select  / search" : "↑↓ jk select";
+        if (panel.searchable && !panel.hasField)
+            keys += "  / search";
         const action = panel.actionHint();
         if (action !== "")
             keys += "  " + action;
-        keys += "  esc back";
+        keys += "  esc " + panel.backWord;
         // Where the selection is in a long list, if there is room left.
         // The border needs five cells beside the footer (Box.qml).
         const place = "  " + (panel.selectedIndex + 1) + "/" + panel.entries.length;
@@ -271,17 +279,18 @@ Box {
                 visible: line.kind === "busy"
             }
 
-            // The value's text. A switch has a filled or empty square first.
+            // The value's text. A switch is a filled square and "on", or
+            // an empty one and "off".
             Label {
                 x: line.textColumn * Theme.cellWidth
                 width: (panel.contentColumns - line.textColumn - line.endCells) * Theme.cellWidth
                 visible: line.entry !== null && !line.wholeLine && !line.endsWithValue
                 text: {
-                    if (!line.entry || line.entry.value === undefined)
+                    if (!line.entry)
                         return "";
                     if (line.kind === "switch")
-                        return (line.entry.on ? "■ " : "□ ") + line.entry.value;
-                    return line.entry.value;
+                        return line.entry.on ? "■ on" : "□ off";
+                    return line.entry.value !== undefined ? line.entry.value : "";
                 }
                 color: line.alert ? Theme.alert : Theme.inkSoft
                 elide: Text.ElideRight

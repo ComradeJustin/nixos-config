@@ -213,7 +213,10 @@ Scope {
     }
 
     // --- The applets, in the order they sit in the grid ---
-    readonly property var applets: [buildApplet(), processorApplet(), memoryApplet(), networkApplet(), storageApplet(), processesApplet(), powerApplet(), servicesApplet(), systemApplet()]
+    // The power applet is also the top of the panel that drops out of the
+    // bar's battery (Pages.qml).
+    readonly property var power: powerApplet()
+    readonly property var applets: [buildApplet(), processorApplet(), memoryApplet(), networkApplet(), storageApplet(), processesApplet(), power, servicesApplet(), systemApplet()]
 
     // The system's generation number, out of a link named "system-287-link".
     function generation(): string {
