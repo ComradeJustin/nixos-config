@@ -3,15 +3,18 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 
-// Design mockup for the shell redesign. Entry point.
+// Design mockup for the shell redesign, round three. Entry point.
 //
-// The idea being tried: the rotation ring is the whole shell. At rest only
-// three small readouts sit in the top gap (AmbientStrip). Summoning the ring
-// (Ring) brings everything else. Volume changes and notifications grow out of
-// the resting readouts and shrink back into them (VolumeReadout, Toast).
+// The look borrows from departuremono.com: flat slabs, thin rules, small
+// labels over larger values, and an inverted block for whatever is selected.
+//   Bar            a ruled strip of cells along the top edge
+//   Ring           the summoned layer: six stations on an orbit; the focused
+//                  one opens into a table of its controls
+//   VolumeReadout  a slab that drops out of the bar on a volume change
+//   Toast          a slab that drops out of the bar for a notification
 //
-// Everything shown is sample content; only the clock and the animations are
-// real. Nothing is wired to the system.
+// The motion is real. The content is sample data; only the clock is live and
+// nothing is wired to the system.
 //
 // One-time setup (the font is not installed system-wide yet):
 //   nix build nixpkgs#recursive -o ~/nixos-config/configs/shell-mockups/recursive-font
@@ -90,18 +93,18 @@ ShellRoot {
                 },
                 {
                     label: "night light",
-                    value: "on until 07:00",
-                    level: 1
+                    value: "On until 07:00",
+                    level: -1
                 },
                 {
                     label: "quiet",
-                    value: "off",
-                    level: 0
+                    value: "Off",
+                    level: -1
                 },
                 {
                     label: "keep awake",
-                    value: "off",
-                    level: 0
+                    value: "Off",
+                    level: -1
                 }
             ]
         },
@@ -118,12 +121,12 @@ ShellRoot {
                 {
                     label: "exit node",
                     value: "nixpc",
-                    level: 1
+                    level: -1
                 },
                 {
                     label: "bluetooth",
-                    value: "off",
-                    level: 0
+                    value: "Off",
+                    level: -1
                 },
                 {
                     label: "tailnet",
@@ -277,7 +280,7 @@ ShellRoot {
         onTriggered: root.toastShown = false
     }
 
-    AmbientStrip {
+    Bar {
         shell: root
     }
 
@@ -334,10 +337,9 @@ ShellRoot {
 
         Rectangle {
             anchors.fill: parent
-            radius: 8
-            color: Theme.surface
+            color: Theme.slab
             border.width: 1
-            border.color: Theme.stroke
+            border.color: Theme.rule
 
             Row {
                 id: controls
@@ -372,8 +374,7 @@ ShellRoot {
 
         width: choiceLabel.implicitWidth + 20
         height: 22
-        radius: 6
-        color: choiceArea.containsMouse ? Theme.raised : "transparent"
+        color: choiceArea.containsMouse ? Theme.accent : "transparent"
 
         Label {
             id: choiceLabel
@@ -381,9 +382,8 @@ ShellRoot {
             anchors.centerIn: parent
             text: choice.label
             caps: true
-            mono: true
-            color: Theme.textDim
-            font.pixelSize: 10
+            color: choiceArea.containsMouse ? Theme.onAccent : Theme.inkDim
+            font.pixelSize: 9
         }
 
         MouseArea {

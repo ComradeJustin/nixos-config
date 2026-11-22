@@ -2,80 +2,88 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// What a notification looks like. The clock pill in the top gap grows
-// downward into the message, then shrinks back into the pill.
+// What a notification looks like: a slab drops out of the bar under the
+// clock, then slides back up.
 PanelWindow {
     id: toast
 
     // The shell root (shell.qml).
     required property var shell
 
-    // 0 = the resting pill, 1 = the full message.
-    property real growth: shell.toastShown ? 1 : 0
-    readonly property real shown: Math.max(0, Math.min(1, growth))
+    readonly property int slabWidth: 440
+    readonly property int slabHeight: 76
 
-    Behavior on growth {
+    // 0 = tucked into the bar, 1 = fully dropped.
+    property real drop: shell.toastShown ? 1 : 0
+
+    Behavior on drop {
         SpringAnimation {
-            spring: Theme.panelSpring
-            damping: Theme.panelDamping
+            spring: Theme.dropSpring
+            damping: Theme.dropDamping
             epsilon: 0.002
         }
     }
 
     // Stay mapped while the closing spring is still settling.
-    visible: shell.toastShown || growth > 0.02
+    visible: shell.toastShown || drop > 0.02
     anchors.top: true
-    exclusionMode: ExclusionMode.Ignore
-    implicitWidth: 420
-    implicitHeight: 100
+    // Zone 0 in normal mode places this directly under the bar.
+    exclusionMode: ExclusionMode.Normal
+    exclusiveZone: 0
+    implicitWidth: slabWidth
+    implicitHeight: slabHeight
     color: "transparent"
     WlrLayershell.namespace: "shell-mockup"
     WlrLayershell.layer: WlrLayer.Overlay
 
+    // The window clips the slab, so it appears to slide out from under the bar.
     Rectangle {
-        anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
-        // From the size of the clock pill to the full message.
-        width: 130 + 270 * toast.growth
-        height: 16 + 62 * toast.growth
-        radius: 8 + 4 * toast.shown
-        color: Theme.surface
+        y: -toast.slabHeight * (1 - toast.drop)
+        width: toast.slabWidth
+        height: toast.slabHeight
+        color: Theme.slab
         border.width: 1
-        border.color: Theme.stroke
-        clip: true
+        border.color: Theme.rule
 
-        Column {
-            x: 16
-            y: 13
-            width: parent.width - 32
-            spacing: 3
-            // The contents arrive in the second half of the growth.
-            opacity: Math.max(0, (toast.shown - 0.5) * 2)
+        // Halftone strip down the left edge, marking it as a message.
+        Dither {
+            x: 1
+            y: 1
+            width: 10
+            height: parent.height - 2
+            color: Theme.accent
+        }
 
-            Label {
-                text: "vesktop  ·  now"
-                caps: true
-                mono: true
-                color: Theme.textDim
-                font.pixelSize: 9
-            }
+        Label {
+            x: 26
+            y: 12
+            text: "vesktop  ·  now"
+            caps: true
+            color: Theme.inkDim
+            font.pixelSize: 8
+        }
 
-            Label {
-                width: parent.width
-                text: "Mara"
-                weight: 780
-                color: Theme.textStrong
-                elide: Text.ElideRight
-                font.pixelSize: 14
-            }
+        Label {
+            x: 26
+            y: 26
+            width: parent.width - 42
+            text: "Mara"
+            mono: false
+            weight: 780
+            color: Theme.ink
+            elide: Text.ElideRight
+            font.pixelSize: 14
+        }
 
-            Label {
-                width: parent.width
-                text: "are you still coming tonight?"
-                color: Theme.text
-                elide: Text.ElideRight
-                font.pixelSize: 12
-            }
+        Label {
+            x: 26
+            y: 47
+            width: parent.width - 42
+            text: "are you still coming tonight?"
+            mono: false
+            color: Theme.inkSoft
+            elide: Text.ElideRight
+            font.pixelSize: 12
         }
     }
 }

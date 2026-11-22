@@ -2,88 +2,77 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// What a volume key press looks like. The status pill in the top-right gap
-// grows downward into a larger readout, then shrinks back into the pill:
-// the same object changing size, not a separate popup.
+// What a volume key press looks like: a slab drops out of the right end of
+// the bar with the number and a long level, then slides back up.
 PanelWindow {
     id: readout
 
     // The shell root (shell.qml).
     required property var shell
 
-    // 0 = the resting pill, 1 = the full readout.
-    property real growth: shell.volumeShown ? 1 : 0
-    readonly property real shown: Math.max(0, Math.min(1, growth))
+    readonly property int slabWidth: 264
+    readonly property int slabHeight: 76
 
-    Behavior on growth {
+    // 0 = tucked into the bar, 1 = fully dropped.
+    property real drop: shell.volumeShown ? 1 : 0
+
+    Behavior on drop {
         SpringAnimation {
-            spring: Theme.panelSpring
-            damping: Theme.panelDamping
+            spring: Theme.dropSpring
+            damping: Theme.dropDamping
             epsilon: 0.002
         }
     }
 
     // Stay mapped while the closing spring is still settling.
-    visible: shell.volumeShown || growth > 0.02
+    visible: shell.volumeShown || drop > 0.02
     anchors {
         top: true
         right: true
     }
-    margins.right: 16
-    exclusionMode: ExclusionMode.Ignore
-    implicitWidth: 300
-    implicitHeight: 96
+    // Zone 0 in normal mode places this directly under the bar.
+    exclusionMode: ExclusionMode.Normal
+    exclusiveZone: 0
+    implicitWidth: slabWidth
+    implicitHeight: slabHeight
     color: "transparent"
     WlrLayershell.namespace: "shell-mockup"
     WlrLayershell.layer: WlrLayer.Overlay
 
+    // The window clips the slab, so it appears to slide out from under the bar.
     Rectangle {
-        anchors.top: parent.top
-        anchors.right: parent.right
-        // From the size of the status pill to the full readout.
-        width: 190 + 100 * readout.growth
-        height: 16 + 60 * readout.growth
-        radius: 8 + 4 * readout.shown
-        color: Theme.surface
+        y: -readout.slabHeight * (1 - readout.drop)
+        width: readout.slabWidth
+        height: readout.slabHeight
+        color: Theme.slab
         border.width: 1
-        border.color: Theme.stroke
-        clip: true
+        border.color: Theme.rule
 
-        Item {
-            anchors.fill: parent
-            anchors.margins: 14
-            // The contents arrive in the second half of the growth.
-            opacity: Math.max(0, (readout.shown - 0.5) * 2)
+        Label {
+            x: 16
+            y: 12
+            text: "volume"
+            caps: true
+            color: Theme.inkDim
+            font.pixelSize: 8
+        }
 
-            Label {
-                anchors.left: parent.left
-                anchors.top: parent.top
-                text: "volume"
-                caps: true
-                mono: true
-                color: Theme.textDim
-                font.pixelSize: 10
-            }
+        Label {
+            anchors.right: parent.right
+            anchors.rightMargin: 16
+            y: 6
+            text: readout.shell.volume
+            weight: 850
+            color: Theme.ink
+            font.pixelSize: 30
+        }
 
-            Label {
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.topMargin: -8
-                text: readout.shell.volume
-                mono: true
-                weight: 850
-                color: Theme.textStrong
-                font.pixelSize: 26
-            }
-
-            Meter {
-                anchors.left: parent.left
-                anchors.bottom: parent.bottom
-                level: readout.shell.volume / 100
-                segments: 32
-                segmentWidth: 6
-                segmentHeight: 14
-            }
+        LevelBar {
+            x: 16
+            y: 52
+            width: readout.slabWidth - 32
+            height: 8
+            level: readout.shell.volume / 100
         }
     }
 }

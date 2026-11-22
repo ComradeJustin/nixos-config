@@ -4,10 +4,10 @@ import Quickshell.Wayland
 
 // The summoned layer: the rotation ring, now carrying the whole shell.
 //
-// Six stations sit on a ring around a hub. h and l turn the ring, and the
-// station on the right is the focused one. Enter "dives": the focused
-// station collapses into the hub, the others fly outward, and that station's
-// controls fan out on an arc to the right. Esc backs out.
+// Six stations travel on an orbit around a clock. h and l turn the ring, and
+// the station on the right is the focused one, drawn as an inverted block.
+// Enter opens it: the block itself grows into a table of that station's
+// controls while the other stations move away. Esc backs out.
 //
 // Everything on screen is positioned from three animated numbers below
 // (openness, angle, dive), so the motion is one continuous system.
@@ -23,47 +23,50 @@ PanelWindow {
     // shell.turns counts presses and never wraps, so the ring keeps turning
     // the same way when it passes the last station.
     readonly property int focusedIndex: ((shell.turns % stationCount) + stationCount) % stationCount
-    readonly property var focusedStation: stations[focusedIndex]
 
     // --- The three animated values ---
     // 0 = hidden, 1 = open.
     property real openness: shell.ringOpen ? 1 : 0
     // Rotation of the ring, in degrees.
     property real angle: -stepDegrees * shell.turns
-    // 0 = ring view, 1 = dived into the focused station.
+    // 0 = ring view, 1 = the focused station opened into its table.
     property real dive: shell.dived ? 1 : 0
 
     Behavior on openness {
         SpringAnimation {
-            spring: Theme.panelSpring
-            damping: Theme.panelDamping
+            spring: Theme.openSpring
+            damping: Theme.openDamping
             epsilon: 0.002
         }
     }
     Behavior on angle {
         SpringAnimation {
-            spring: Theme.ringSpring
-            damping: Theme.ringDamping
+            spring: Theme.turnSpring
+            damping: Theme.turnDamping
             epsilon: 0.02
         }
     }
     Behavior on dive {
         SpringAnimation {
-            spring: Theme.panelSpring
-            damping: Theme.panelDamping
+            spring: Theme.openSpring
+            damping: Theme.openDamping
             epsilon: 0.002
         }
     }
 
     // --- Geometry ---
-    readonly property real ringRadius: 250
-    // How much further the unfocused stations fly out on dive.
-    readonly property real divePush: 150
-    readonly property real fanRadius: 330
-    readonly property real fanStepDegrees: 9.5
-    readonly property real hubDiameter: 140 + 44 * dive
-    // The whole figure slides left on dive to make room for the fan.
-    readonly property real centerX: width / 2 - 190 * dive
+    readonly property real orbitRadius: 270
+    readonly property real hubDiameter: 152
+    // A closed station.
+    readonly property real ticketWidth: 212
+    readonly property real ticketHeight: 56
+    // An opened station: the same block, wider, with one row per control.
+    readonly property real tableWidth: 440
+    readonly property real rowHeight: 32
+    // How much further the other stations move out when one opens.
+    readonly property real divePush: 120
+    // The whole figure slides left when a station opens, to keep it centred.
+    readonly property real centerX: width / 2 - 110 * dive
     readonly property real centerY: height / 2
 
     function clamp01(value: real): real {
@@ -92,8 +95,8 @@ PanelWindow {
     // Dim everything behind the ring.
     Rectangle {
         anchors.fill: parent
-        color: Theme.base00
-        opacity: 0.78 * ring.clamp01(ring.openness)
+        color: Theme.slab
+        opacity: 0.86 * ring.clamp01(ring.openness)
     }
 
     Item {
@@ -128,17 +131,80 @@ PanelWindow {
             event.accepted = true;
         }
 
-        // Faint guide circle the stations travel on.
+        // --- The orbit the stations travel on ---
         Rectangle {
-            width: ring.ringRadius * 2 * ring.openness
+            width: ring.orbitRadius * 2 * ring.openness
             height: width
             x: ring.centerX - width / 2
             y: ring.centerY - height / 2
             radius: width / 2
             color: "transparent"
             border.width: 1
-            border.color: Theme.stroke
-            opacity: 0.6 * (1 - ring.clamp01(ring.dive))
+            border.color: Theme.rule
+            opacity: 1 - ring.clamp01(ring.dive)
+        }
+
+        // Line from the clock to the focused position on the right.
+        Rectangle {
+            x: ring.centerX + ring.hubDiameter / 2 + 10
+            y: ring.centerY
+            width: Math.max(0, ring.orbitRadius * ring.openness - ring.ticketWidth / 2 - ring.hubDiameter / 2 - 20)
+            height: 1
+            color: Theme.inkDim
+        }
+
+        // --- The clock at the centre ---
+        Rectangle {
+            width: ring.hubDiameter
+            height: width
+            x: ring.centerX - width / 2
+            y: ring.centerY - height / 2
+            radius: width / 2
+            scale: 0.7 + 0.3 * ring.openness
+            color: Theme.slab
+            border.width: 1
+            border.color: Theme.inkDim
+
+            // Four short marks at 12, 3, 6 and 9 o'clock.
+            Repeater {
+                model: 4
+
+                Item {
+                    required property int index
+
+                    anchors.fill: parent
+                    rotation: index * 90
+
+                    Rectangle {
+                        x: parent.width / 2
+                        y: 8
+                        width: 1
+                        height: 8
+                        color: Theme.inkDim
+                    }
+                }
+            }
+
+            Column {
+                anchors.centerIn: parent
+                spacing: 2
+
+                Label {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: Qt.formatDateTime(ring.shell.now, "ddd d MMM")
+                    caps: true
+                    color: Theme.inkDim
+                    font.pixelSize: 8
+                }
+
+                Label {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: Qt.formatDateTime(ring.shell.now, "hh:mm")
+                    weight: 850
+                    color: Theme.ink
+                    font.pixelSize: 32
+                }
+            }
         }
 
         // --- Stations ---
@@ -152,295 +218,193 @@ PanelWindow {
                 required property int index
 
                 readonly property bool focused: index === ring.focusedIndex
-                // 0 = resting, 1 = focused. Drives weight, border and notch.
+                // 0 = resting, 1 = focused. Blends every colour towards the inverted block.
                 property real emphasis: focused ? 1 : 0
+                // How far this station has opened into its table. Only the focused one opens.
+                readonly property real opening: focused ? Math.max(0, ring.dive) : 0
+                // How inverted the header is: fully when focused on the ring, not at all once opened.
+                readonly property real inversion: emphasis * (1 - ring.clamp01(opening))
+                readonly property int rowCount: modelData.controls.length
                 readonly property real theta: (ring.stepDegrees * index + ring.angle) * Math.PI / 180
-                // The focused station falls into the hub on dive; the rest fly out.
-                readonly property real distance: focused ? ring.ringRadius * ring.openness * (1 - ring.dive) : ring.ringRadius * ring.openness + ring.divePush * ring.dive
+                readonly property real distance: ring.orbitRadius * ring.openness + (focused ? 0 : ring.divePush * ring.dive)
 
                 Behavior on emphasis {
                     NumberAnimation {
-                        duration: 200
-                        easing.type: Easing.OutCubic
+                        duration: 90
                     }
                 }
 
-                width: 224
-                height: 60
-                x: ring.centerX + distance * Math.cos(theta) - width / 2
+                z: focused ? 1 : 0
+                width: ring.ticketWidth + (ring.tableWidth - ring.ticketWidth) * opening
+                height: ring.ticketHeight + rowCount * ring.rowHeight * opening
+                // The left edge stays put, so an opening station grows to the right.
+                x: ring.centerX + distance * Math.cos(theta) - ring.ticketWidth / 2
                 y: ring.centerY + distance * Math.sin(theta) - height / 2
-                radius: 10
-                opacity: 1 - ring.clamp01(ring.dive)
-                color: Theme.surface
+                opacity: focused ? 1 : 1 - ring.clamp01(ring.dive)
+                clip: true
+                color: Theme.slab
                 border.width: 1
-                border.color: Qt.tint(Theme.stroke, Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, emphasis))
+                border.color: Theme.mix(Theme.rule, Theme.accent, emphasis)
 
-                // Notch on the left edge that grows when focused.
+                // Header: a small readout line over the station's name.
                 Rectangle {
-                    x: 10
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 3
-                    height: 10 + 22 * station.emphasis
-                    radius: 1.5
-                    color: Qt.tint(Theme.stroke, Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, station.emphasis))
-                }
-
-                Column {
-                    x: 24
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 3
+                    width: parent.width
+                    height: ring.ticketHeight
+                    color: Theme.mix(Theme.slab, Theme.accent, station.inversion)
 
                     Label {
+                        x: 14
+                        y: 10
+                        width: parent.width - 52
+                        text: station.modelData.readout
+                        caps: true
+                        color: Theme.mix(Theme.inkDim, Theme.onAccent, station.inversion)
+                        elide: Text.ElideRight
+                        font.pixelSize: 8
+                    }
+
+                    Label {
+                        anchors.right: parent.right
+                        anchors.rightMargin: 14
+                        y: 10
+                        text: "0" + (station.index + 1)
+                        color: Theme.mix(Theme.inkDim, Theme.onAccent, station.inversion)
+                        font.pixelSize: 8
+                    }
+
+                    Label {
+                        x: 14
+                        y: 24
                         text: station.modelData.name
                         caps: true
-                        mono: true
-                        weight: 480 + 420 * station.emphasis
-                        color: Qt.tint(Theme.text, Qt.rgba(Theme.textStrong.r, Theme.textStrong.g, Theme.textStrong.b, station.emphasis))
-                        font.pixelSize: 14
-                    }
-
-                    Label {
-                        width: 150
-                        text: station.modelData.readout
-                        color: Theme.textDim
-                        elide: Text.ElideRight
-                        font.pixelSize: 11
+                        weight: 600 + 250 * station.emphasis
+                        color: Theme.mix(Theme.ink, Theme.onAccent, station.inversion)
+                        font.pixelSize: 17
                     }
                 }
 
-                // Position number, engraved in the corner.
-                Label {
-                    anchors.right: parent.right
-                    anchors.rightMargin: 12
-                    anchors.top: parent.top
-                    anchors.topMargin: 9
-                    text: "0" + (station.index + 1)
-                    mono: true
-                    color: Theme.textFaint
-                    font.pixelSize: 10
-                }
-
-                Meter {
-                    anchors.right: parent.right
-                    anchors.rightMargin: 12
-                    anchors.bottom: parent.bottom
-                    anchors.bottomMargin: 11
-                    visible: station.modelData.level >= 0
-                    level: station.modelData.level
-                }
-            }
-        }
-
-        // --- Hub ---
-        Item {
-            id: hub
-
-            readonly property int minute: ring.shell.now.getMinutes()
-
-            width: ring.hubDiameter
-            height: width
-            x: ring.centerX - width / 2
-            y: ring.centerY - height / 2
-            scale: 0.6 + 0.4 * ring.openness
-
-            // Battery level as an arc just outside the hub.
-            Arc {
-                anchors.centerIn: parent
-                width: parent.width + 24
-                height: width
-                level: 0.28
-                thickness: 3
-            }
-
-            Rectangle {
-                anchors.fill: parent
-                radius: width / 2
-                color: Theme.surface
-                border.width: 1
-                border.color: Theme.stroke
-            }
-
-            // Sixty minute ticks around the rim; the current minute is lit.
-            Repeater {
-                model: 60
-
-                Item {
-                    id: tick
-
-                    required property int index
-
-                    readonly property bool major: index % 5 === 0
-
-                    anchors.fill: parent
-                    rotation: index * 6
-
-                    Rectangle {
-                        x: parent.width / 2 - width / 2
-                        y: 6
-                        width: tick.index === hub.minute ? 2 : 1
-                        height: tick.index === hub.minute ? 10 : (tick.major ? 7 : 3)
-                        color: tick.index === hub.minute ? Theme.accent : (tick.major ? Theme.textDim : Theme.textFaint)
-                    }
-                }
-            }
-
-            // Resting face: the time.
-            Column {
-                anchors.centerIn: parent
-                opacity: 1 - ring.clamp01(ring.dive)
-                spacing: 1
-
-                Label {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: Qt.formatDateTime(ring.shell.now, "hh:mm")
-                    mono: true
-                    weight: 820
-                    color: Theme.textStrong
-                    font.pixelSize: 30
-                }
-
-                Label {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: Qt.formatDateTime(ring.shell.now, "ddd d MMM")
-                    caps: true
-                    mono: true
-                    color: Theme.textDim
-                    font.pixelSize: 9
-                }
-            }
-
-            // Dived face: which station this is.
-            Column {
-                anchors.centerIn: parent
-                opacity: ring.clamp01(ring.dive)
-                spacing: 3
-
-                Label {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: "0" + (ring.focusedIndex + 1) + " / 0" + ring.stationCount
-                    mono: true
-                    color: Theme.textDim
-                    font.pixelSize: 10
-                }
-
-                Label {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: ring.focusedStation.name
-                    caps: true
-                    mono: true
-                    weight: 850
-                    color: Theme.textStrong
-                    font.pixelSize: 18
-                }
-
-                Label {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: 120
-                    horizontalAlignment: Text.AlignHCenter
-                    text: ring.focusedStation.readout
-                    color: Theme.textDim
-                    elide: Text.ElideRight
-                    font.pixelSize: 10
-                }
-            }
-        }
-
-        // --- Fan: the focused station's controls, on an arc to the right ---
-        Repeater {
-            model: ring.focusedStation.controls
-
-            Rectangle {
-                id: control
-
-                required property var modelData
-                required property int index
-
-                readonly property int count: ring.focusedStation.controls.length
-                readonly property bool selected: index === ring.shell.fanIndex
-                property real emphasis: selected ? 1 : 0
-                // Each control starts moving a little after the one above it.
-                readonly property real progress: Math.max(0, (ring.dive - index * 0.07) / (1 - index * 0.07))
-                readonly property real theta: (index - (count - 1) / 2) * ring.fanStepDegrees * Math.PI / 180
-                readonly property real distance: ring.hubDiameter / 2 + (ring.fanRadius - ring.hubDiameter / 2) * progress
-
-                Behavior on emphasis {
-                    NumberAnimation {
-                        duration: 160
-                        easing.type: Easing.OutCubic
-                    }
-                }
-
-                width: 300
-                height: 46
-                x: ring.centerX + distance * Math.cos(theta) - width / 2
-                y: ring.centerY + distance * Math.sin(theta) - height / 2
-                radius: 10
-                visible: ring.dive > 0.01
-                opacity: ring.clamp01(progress)
-                color: Theme.surface
-                border.width: 1
-                border.color: Qt.tint(Theme.stroke, Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, emphasis))
-
+                // Heavy rule under the header of an opened station, as on a departure board.
                 Rectangle {
-                    x: 10
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 3
-                    height: 8 + 16 * control.emphasis
-                    radius: 1.5
-                    color: Qt.tint(Theme.stroke, Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, control.emphasis))
+                    y: ring.ticketHeight - 2
+                    width: parent.width
+                    height: 2
+                    color: Theme.ink
+                    opacity: ring.clamp01(station.opening)
                 }
 
-                Label {
-                    id: controlLabel
+                // Table: one row per control, label on the left, value on the right.
+                Column {
+                    y: ring.ticketHeight
+                    width: parent.width
+                    visible: station.opening > 0.01
 
-                    x: 24
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 84
-                    text: control.modelData.label
-                    caps: true
-                    mono: true
-                    color: Theme.textDim
-                    elide: Text.ElideRight
-                    font.pixelSize: 10
-                }
+                    Repeater {
+                        model: station.modelData.controls
 
-                Label {
-                    anchors.left: controlLabel.right
-                    anchors.leftMargin: 8
-                    anchors.right: controlMeter.visible ? controlMeter.left : parent.right
-                    anchors.rightMargin: 12
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: control.modelData.value
-                    weight: 480 + 320 * control.emphasis
-                    color: Theme.textStrong
-                    elide: Text.ElideRight
-                    font.pixelSize: 13
-                }
+                        Item {
+                            id: row
 
-                Meter {
-                    id: controlMeter
+                            required property var modelData
+                            required property int index
 
-                    anchors.right: parent.right
-                    anchors.rightMargin: 14
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: control.modelData.level >= 0
-                    level: control.modelData.level
-                    segments: 8
-                    segmentHeight: 10
+                            readonly property bool selected: station.focused && index === ring.shell.fanIndex
+                            readonly property color inkColor: selected ? Theme.onAccent : Theme.ink
+                            readonly property color dimColor: selected ? Theme.onAccent : Theme.inkDim
+
+                            width: station.width
+                            height: ring.rowHeight
+                            // Rows appear one after another as the table opens.
+                            opacity: ring.clamp01(station.opening * (station.rowCount + 1) - index)
+
+                            // The selected row is an inverted block.
+                            Rectangle {
+                                x: 1
+                                width: parent.width - 2
+                                height: parent.height - 1
+                                visible: row.selected
+                                color: Theme.accent
+                            }
+
+                            Label {
+                                id: rowLabel
+
+                                x: 14
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: row.modelData.label
+                                caps: true
+                                color: row.dimColor
+                                font.pixelSize: 9
+                            }
+
+                            Label {
+                                id: rowValue
+
+                                anchors.right: parent.right
+                                anchors.rightMargin: 14
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: row.modelData.value
+                                weight: row.selected ? 800 : 600
+                                color: row.inkColor
+                                font.pixelSize: 12
+                            }
+
+                            LevelBar {
+                                id: rowLevel
+
+                                anchors.right: rowValue.left
+                                anchors.rightMargin: 10
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 56
+                                visible: row.modelData.level >= 0
+                                level: row.modelData.level
+                                fillColor: row.inkColor
+                                emptyColor: row.selected ? Theme.mix(Theme.accent, Theme.onAccent, 0.35) : Theme.rule
+                            }
+
+                            // Dotted leader between the label and the value, as on a receipt.
+                            Item {
+                                anchors.left: rowLabel.right
+                                anchors.leftMargin: 10
+                                anchors.right: rowLevel.visible ? rowLevel.left : rowValue.left
+                                anchors.rightMargin: 10
+                                anchors.verticalCenter: parent.verticalCenter
+                                height: 12
+                                clip: true
+
+                                Label {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."
+                                    color: row.selected ? Theme.mix(Theme.accent, Theme.onAccent, 0.45) : Theme.rule
+                                    font.pixelSize: 9
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        // Key hints.
-        Label {
+        // --- Key hints ---
+        Row {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 64
-            text: ring.shell.dived ? "j k  select     enter  act     esc  back" : "h l  turn     enter  open     esc  close"
-            caps: true
-            mono: true
-            color: Theme.textDim
-            font.pixelSize: 10
+            anchors.bottomMargin: 72
+            spacing: 28
+
+            KeyHint {
+                keys: ring.shell.dived ? "j k" : "h l"
+                action: ring.shell.dived ? "select" : "turn"
+            }
+
+            KeyHint {
+                keys: "enter"
+                action: ring.shell.dived ? "act" : "open"
+            }
+
+            KeyHint {
+                keys: "esc"
+                action: ring.shell.dived ? "back" : "close"
+            }
         }
     }
 }

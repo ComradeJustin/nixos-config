@@ -4,10 +4,11 @@ import Quickshell
 
 // Colours, type and motion shared by the whole mockup. The palette comes
 // from the BASE00–BASE0F environment variables (modules/desktop/theme.nix).
+//
+// The look borrows from departuremono.com: flat slabs, thin rules, tiny
+// labels over larger values, and one inverted block to mark what is selected.
 Singleton {
     readonly property color base00: Quickshell.env("BASE00") || "#241d1a"
-    readonly property color base01: Quickshell.env("BASE01") || "#362b27"
-    readonly property color base02: Quickshell.env("BASE02") || "#473933"
     readonly property color base03: Quickshell.env("BASE03") || "#594740"
     readonly property color base04: Quickshell.env("BASE04") || "#a78e84"
     readonly property color base05: Quickshell.env("BASE05") || "#b8a59d"
@@ -15,27 +16,34 @@ Singleton {
     readonly property color base0F: Quickshell.env("BASE0F") || "#f1ae97"
 
     // What each colour is for.
-    readonly property color surface: base00
-    readonly property color raised: base01
-    readonly property color stroke: base02
-    readonly property color text: base05
-    readonly property color textStrong: base07
-    readonly property color textDim: base04
-    readonly property color textFaint: base03
+    readonly property color slab: base00
+    readonly property color rule: base03
+    readonly property color ink: base07
+    readonly property color inkSoft: base05
+    readonly property color inkDim: base04
+    // The inverted block that marks focus or selection, and the text on it.
     readonly property color accent: base0F
+    readonly property color onAccent: base00
 
-    // Recursive is one variable font: weight, monospace and "casual" are
-    // axes of the same family (see Label.qml). It is not installed
+    // Recursive is one variable font (see Label.qml). It is not installed
     // system-wide yet, so it is loaded from the link next to this file.
     readonly property string fontFamily: recursive.status === FontLoader.Ready ? recursive.name : "Recursive"
 
-    // Motion. Everything moves on springs: they overshoot once and keep their
-    // velocity when retargeted, so repeated key presses carry momentum.
+    // Motion. Springs, so repeated key presses carry momentum, tuned to
+    // settle fast (measured): turning the ring about 130 ms with a slight
+    // overshoot, opening a station about 145 ms, bar drop-downs about 115 ms.
     // Nothing runs while idle.
-    readonly property real ringSpring: 3.0
-    readonly property real ringDamping: 0.26
-    readonly property real panelSpring: 3.6
-    readonly property real panelDamping: 0.38
+    readonly property real turnSpring: 8
+    readonly property real turnDamping: 0.5
+    readonly property real openSpring: 10
+    readonly property real openDamping: 0.6
+    readonly property real dropSpring: 14
+    readonly property real dropDamping: 0.7
+
+    // A colour partway between two others. amount 0 gives `from`, 1 gives `to`.
+    function mix(from: color, to: color, amount: real): color {
+        return Qt.rgba(from.r + (to.r - from.r) * amount, from.g + (to.g - from.g) * amount, from.b + (to.b - from.b) * amount, 1);
+    }
 
     FontLoader {
         id: recursive
