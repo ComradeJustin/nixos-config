@@ -27,10 +27,16 @@ import Quickshell.Wayland
 //   Pages          the stations and what every page holds, from the system
 //   Panel          draws one page: a line of text input and a scrolling
 //                  list of rows
+//   Monitor        the other summoned layer: a grid of applets (processor,
+//                  memory, disks, ...) that each expand to a full view
+//   MonitorData    reads the system for it while it is open
+//                  (system-readings.sh)
+//   Calendar       a month that drops out of the bar's clock
+//   Desktop        a clock and the playing track on an empty desktop
 //   Niri           workspaces and the focused window, from niri
 //   Theme          colours, the character grid, motion
 //   Box, Label, Level, SignalBars, Value, Passing, Flag, Segment, Dim,
-//   Graph, Spinner, DitherFade, DitherImage
+//   Graph, Spinner, Tile, DitherFade, DitherImage
 //                  what those are built from
 //
 // This file gathers what they show from the system and holds what they
@@ -54,6 +60,7 @@ import Quickshell.Wayland
 //   lockWake (ask the fingerprint reader again, after a suspend),
 //   ring (open or close the ring), page <name> (open the ring at a page:
 //   launch, clipboard, system, network, media, inbox, session, ...),
+//   monitor (open or close the monitor), calendar,
 //   and, for driving the ring without the keyboard: turn <steps>, open,
 //   select <steps>, adjust <step>, back, type <text>
 // In the ring: h l turn, enter opens or acts, j k or the arrows select,
@@ -66,11 +73,19 @@ import Quickshell.Wayland
 //
 // One-time setup (the font is not installed system-wide yet):
 //   nix build nixpkgs#nerd-fonts.departure-mono -o ~/nixos-config/configs/shell/departure-mono-font
-// Start:  systemd-run --user --unit=shell --collect quickshell -p ~/nixos-config/configs/shell
+// Start:  systemd-run --user --unit=shell --collect -p Restart=on-failure quickshell -p ~/nixos-config/configs/shell
 // Stop:   systemctl --user stop shell
-// Files reload on save.
+// After changing a file, stop and start it again. It does not reload by
+// itself, and it is started so that it comes back if it ever crashes:
+// the lock screen lives in here, and a locked session whose lock screen
+// has gone shows nothing to unlock it with. (Lock.qml puts the lock
+// screen back whenever the shell starts on a locked session.)
 ShellRoot {
     id: root
+
+    // Reloading while the session is locked destroys the lock screen in a
+    // way the compositor refuses, which takes the whole shell down.
+    settings.watchFiles: false
 
     // --- Time ---
     readonly property var now: clock.date
@@ -112,11 +127,14 @@ ShellRoot {
     // Whether there is a text field to type into right now.
     readonly property bool fieldOpen: page !== null && page.field !== undefined && !stackPending
 
+    // Only one of the ring and the monitor is open at a time.
     function toggleRing(): void {
-        if (root.ringOpen)
+        if (root.ringOpen) {
             root.closeRing();
-        else
+        } else {
+            root.closeMonitor();
             root.ringOpen = true;
+        }
     }
 
     function closeRing(): void {
@@ -148,6 +166,7 @@ ShellRoot {
             root.closeRing();
             return;
         }
+        root.closeMonitor();
         root.ringOpen = true;
         root.focusStation(pageSource.pageStation[name]);
         root.changeStack([name], [0]);
@@ -301,6 +320,74 @@ ShellRoot {
     function lock(): void {
         lockScreen.engage(false);
     }
+
+    // --- The monitor ---
+    property bool monitorOpen: false
+    // Which applet is focused, and whether it is expanded.
+    property int monitorIndex: 0
+    property bool monitorExpanded: false
+    // The selected row of the expanded applet.
+    property int monitorSelected: 0
+    // How many applets sit side by side in the grid.
+    readonly property int monitorColumns: 3
+    readonly property var applets: monitorData.applets
+
+    function toggleMonitor(): void {
+        if (root.monitorOpen) {
+            root.closeMonitor();
+            return;
+        }
+        if (root.ringOpen)
+            root.closeRing();
+        root.monitorOpen = true;
+    }
+
+    function closeMonitor(): void {
+        root.monitorOpen = false;
+        root.monitorExpanded = false;
+    }
+
+    // Move the focus by this many applets, if there is one there.
+    function moveApplet(step: int): void {
+        const target = root.monitorIndex + step;
+        if (root.monitorExpanded || target < 0 || target >= root.applets.length)
+            return;
+        root.monitorIndex = target;
+    }
+
+    function expandApplet(): void {
+        root.monitorSelected = 0;
+        root.monitorExpanded = true;
+    }
+
+    // Esc: collapse the expanded applet, then close the monitor.
+    function monitorBack(): void {
+        if (root.monitorExpanded)
+            root.monitorExpanded = false;
+        else
+            root.monitorOpen = false;
+    }
+
+    function monitorScroll(step: int): void {
+        if (!root.monitorExpanded)
+            return;
+        const last = root.applets[root.monitorIndex].rows.length - 1;
+        root.monitorSelected = Math.max(0, Math.min(last, root.monitorSelected + step));
+    }
+
+    // --- The calendar ---
+    property bool calendarShown: false
+    // Which month it shows, counted in months from this one.
+    property int calendarOffset: 0
+
+    function toggleCalendar(): void {
+        root.calendarOffset = 0;
+        root.calendarShown = !root.calendarShown;
+    }
+
+    // --- The desktop widgets ---
+    // Whether the focused workspace has no windows, from niri.
+    readonly property bool workspaceEmpty: niriState.focusedWorkspaceEmpty
 
     // --- Sound ---
     // The speakers or headphones sound goes to. It has no volume to read
@@ -587,6 +674,13 @@ ShellRoot {
         return null;
     }
     readonly property string trackTitle: playingPlayer !== null ? playingPlayer.trackTitle : ""
+    // The player to show and control: the one playing, or else the first one.
+    readonly property var mediaPlayer: {
+        if (root.playingPlayer !== null)
+            return root.playingPlayer;
+        const players = Mpris.players.values;
+        return players.length > 0 ? players[0] : null;
+    }
 
     function pausePlaying(): void {
         if (root.playingPlayer !== null && root.playingPlayer.canPause)
@@ -666,6 +760,24 @@ ShellRoot {
         shell: root
     }
 
+    MonitorData {
+        id: monitorData
+
+        shell: root
+    }
+
+    Monitor {
+        shell: root
+    }
+
+    Calendar {
+        shell: root
+    }
+
+    Desktop {
+        shell: root
+    }
+
     // What niri's key bindings call.
     IpcHandler {
         target: "shell"
@@ -720,6 +832,14 @@ ShellRoot {
 
         function ring(): void {
             root.toggleRing();
+        }
+
+        function monitor(): void {
+            root.toggleMonitor();
+        }
+
+        function calendar(): void {
+            root.toggleCalendar();
         }
 
         function page(name: string): void {

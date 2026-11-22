@@ -22,9 +22,13 @@ Scope {
     property string focusedTitle: ""
     // Every open window: { id, app, title }.
     property var windows: []
+    // Whether the workspace with the keyboard has no windows. False until
+    // niri has reported, so nothing that waits for an empty desktop shows
+    // by mistake.
+    property bool focusedWorkspaceEmpty: false
 
     // niri's own records, by id. Plain bookkeeping: after every event the
-    // three properties above are worked out again from these.
+    // four properties above are worked out again from these.
     property var workspaceById: ({})
     property var windowById: ({})
 
@@ -104,8 +108,11 @@ Scope {
         }
 
         const summary = [];
+        let focusedEmpty = false;
         for (const workspaceId in niri.workspaceById) {
             const workspace = niri.workspaceById[workspaceId];
+            if (workspace.is_focused)
+                focusedEmpty = occupied[workspace.id] !== true;
             summary.push({
                 index: workspace.idx,
                 output: workspace.output,
@@ -119,6 +126,7 @@ Scope {
         niri.workspaces = summary;
         niri.focusedTitle = title;
         niri.windows = windows;
+        niri.focusedWorkspaceEmpty = focusedEmpty;
     }
 
     // Switch to a workspace by its number.

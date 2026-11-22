@@ -22,8 +22,9 @@ import Quickshell.Wayland
 //
 // With the mouse: a workspace switches to it, the track pauses it, the
 // bell shows the waiting notifications again (a right click dismisses
-// them all), the input method switches language, and the volume mutes on a
-// click and moves with the wheel.
+// them all), the clock opens the calendar, the input method switches
+// language, the volume mutes on a click and moves with the wheel, and the
+// battery opens the monitor.
 PanelWindow {
     id: bar
 
@@ -263,13 +264,14 @@ PanelWindow {
                 }
             }
 
-            // --- Centre: date and time ---
-            Row {
+            // --- Centre: date and time. A click opens the calendar. ---
+            Segment {
                 id: clockRow
 
                 y: Theme.barTextY
                 // On a whole cell, so the text stays sharp.
                 x: Theme.snapX((parent.width - width) / 2)
+                onTapped: bar.shell.toggleCalendar()
 
                 Label {
                     text: Qt.formatDateTime(bar.shell.now, "ddd d MMM") + "  "
@@ -345,9 +347,11 @@ PanelWindow {
                     }
                 }
 
-                // The battery, on a machine that has one.
-                Row {
+                // The battery, on a machine that has one. A click opens
+                // the monitor.
+                Segment {
                     visible: bar.shell.batteryPresent
+                    onTapped: bar.shell.toggleMonitor()
 
                     Divider {
                         pointsLeft: true

@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Pam
 import Quickshell.Wayland
 
@@ -24,6 +25,12 @@ import Quickshell.Wayland
 //
 // A practice lock is an ordinary lock that also lets go by itself after a
 // minute. It is for trying this out without any risk of being locked out.
+//
+// The lock screen belongs to the shell, so if the shell restarts, or
+// reloads because one of its files was saved, while the session is locked,
+// the session stays locked but there is nothing on screen to unlock it
+// with. So whenever the shell starts it asks the system whether the session
+// is locked, and if it is, puts the lock screen back.
 Scope {
     id: lock
 
@@ -83,6 +90,19 @@ Scope {
             passwordCheck.abort();
         if (fingerprintCheck.active)
             fingerprintCheck.abort();
+    }
+
+    // Ask the system whether this user's session is locked already. It
+    // prints "yes" or "no".
+    Process {
+        command: ["sh", "-c", "loginctl show-session \"$(loginctl show-user \"$USER\" --property=Display --value)\" --property=LockedHint --value"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (text.trim() === "yes")
+                    lock.engage(false);
+            }
+        }
     }
 
     // --- The password ---

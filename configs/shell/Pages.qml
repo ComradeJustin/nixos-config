@@ -255,6 +255,12 @@ Scope {
                     kind: "text",
                     value: "",
                     opens: "wallpaper"
+                },
+                {
+                    label: "Monitor",
+                    kind: "text",
+                    value: "processor, memory, disks and more",
+                    act: () => pages.shell.toggleMonitor()
                 }
             ]
         })
@@ -525,12 +531,7 @@ Scope {
     }
 
     // --- Media: the player that is playing, or else the first one ---
-    readonly property var mediaPlayer: {
-        if (pages.shell.playingPlayer !== null)
-            return pages.shell.playingPlayer;
-        const players = Mpris.players.values;
-        return players.length > 0 ? players[0] : null;
-    }
+    readonly property var mediaPlayer: pages.shell.mediaPlayer
     readonly property var media: mediaPage()
 
     function mediaPage(): var {
