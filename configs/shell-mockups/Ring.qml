@@ -250,15 +250,14 @@ PanelWindow {
                     interval: Theme.flashMs
                 }
 
-                // The name at double size. The focused one is in reverse
-                // video: a block that starts one double-size cell before
-                // the name and trails off after it.
+                // The name at double size, with two cells of margin each
+                // side. The focused one is in reverse video.
                 Item {
                     id: plate
 
                     x: -Theme.snapX(station.nameWidth / 2) - 2 * Theme.cellWidth
                     y: -Theme.cellHeight
-                    width: focusBlock.width
+                    width: station.nameWidth + 4 * Theme.cellWidth
                     height: 2 * Theme.cellHeight
                     visible: station.shown > 0
                     // Drawn through the dither only while it is changing.
@@ -268,12 +267,9 @@ PanelWindow {
                         spread: Theme.wipeFront
                     }
 
-                    FocusBlock {
-                        id: focusBlock
-
+                    Rectangle {
+                        anchors.fill: parent
                         visible: station.focused
-                        solidCells: 1 + station.nameText.length
-                        scaleFactor: 2
                         color: focusFlash.running ? Theme.ink : Theme.accent
                     }
 
@@ -333,10 +329,10 @@ PanelWindow {
 
                             // Reverse video behind the name. It flashes
                             // bright for a moment as the line is selected.
-                            FocusBlock {
+                            Rectangle {
+                                width: (ring.valueColumn - 1) * Theme.cellWidth
+                                height: parent.height
                                 visible: row.selected
-                                // Block and tail together end one cell before the values.
-                                solidCells: ring.valueColumn - 1 - tail.length
                                 color: selectFlash.running ? Theme.ink : Theme.accent
                             }
 

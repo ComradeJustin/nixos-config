@@ -105,7 +105,7 @@ PanelWindow {
 
                     // Focused: reverse video, flashing bright for a moment as
                     // it takes focus. Occupied: normal. Empty: dim.
-                    Item {
+                    Rectangle {
                         required property int index
 
                         readonly property bool focused: index === bar.shell.workspace
@@ -113,19 +113,11 @@ PanelWindow {
 
                         width: 3 * Theme.cellWidth
                         height: Theme.cellHeight
+                        color: focusFlash.running ? Theme.ink : (focused ? Theme.accent : "transparent")
 
                         onFocusedChanged: {
                             if (focused)
                                 focusFlash.restart();
-                        }
-
-                        // Solid behind the number; the tail runs over the
-                        // gap before the next number.
-                        FocusBlock {
-                            visible: parent.focused
-                            solidCells: 2
-                            tail: "▒░"
-                            color: focusFlash.running ? Theme.ink : Theme.accent
                         }
 
                         Label {
