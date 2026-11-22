@@ -9,9 +9,14 @@ import "sample-data.js" as SampleData
 // hand. An urgent one has its border in the alert colour and no time
 // limit: it stays until it is dismissed.
 //
+// A click on a notification opens it in the Inbox; a right click dismisses
+// it.
+//
 // Each one keeps the place in the stack it was given until it leaves, and a
 // new one takes the highest free place. So nothing ever jumps: when one
-// leaves, the ones under it stay where they are.
+// leaves, the ones under it stay where they are. The one exception is an
+// urgent notification, which outlasts the rest: when a place above it comes
+// free it moves up, wiped away where it was and wiped in again higher.
 PanelWindow {
     id: toasts
 
@@ -63,9 +68,47 @@ PanelWindow {
             // Set once it exists, so that it is wiped in.
             property bool arrived: false
             readonly property bool urgent: message.alert === true
-            // Set when its time is up, so that it is wiped away.
+            // Set when its time is up, or when it is dismissed by hand, so
+            // that it is wiped away.
             property bool timedOut: false
-            readonly property bool leaving: timedOut || toasts.shell.dismissedSerial === serial
+            property bool dismissed: false
+            readonly property bool leaving: timedOut || dismissed
+            // Set while it is wiped away to move to a higher place.
+            property bool moving: false
+
+            Connections {
+                target: toasts.shell
+
+                function onDismissedSerialChanged(): void {
+                    if (toasts.shell.dismissedSerial === toast.serial)
+                        toast.dismissed = true;
+                }
+            }
+
+            // Another notification came or went: an urgent one checks
+            // whether a place above it is free now.
+            Connections {
+                target: toasts.shell.toastList
+                enabled: toast.urgent
+
+                function onCountChanged(): void {
+                    if (toasts.shell.freePlaceAbove(toast.place) >= 0)
+                        toast.moving = true;
+                }
+            }
+
+            TapHandler {
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                onTapped: (point, button) => {
+                    if (button === Qt.LeftButton)
+                        toasts.shell.openPage("notification");
+                    toasts.shell.dismissToast(toast.serial);
+                }
+            }
+
+            HoverHandler {
+                cursorShape: Qt.PointingHandCursor
+            }
 
             y: place * toasts.placeHeight
             columns: toasts.panelColumns
@@ -75,7 +118,7 @@ PanelWindow {
             titleColor: urgent ? Theme.alert : Theme.ink
             lineColor: urgent ? Theme.alert : Theme.line
             footer: urgent ? "stays until dismissed" : "now"
-            shown: arrived && !leaving ? 1 : 0
+            shown: arrived && !leaving && !moving ? 1 : 0
 
             Behavior on shown {
                 NumberAnimation {
@@ -83,16 +126,25 @@ PanelWindow {
                 }
             }
 
-            // Once it has been wiped away it leaves the list. That is put
-            // off until this handler has returned, because it belongs to
-            // the panel being removed. Each notification queues its own
-            // function: Qt runs a function queued twice in one frame only
-            // once, which would leave one of two that finish together behind.
+            // Once it has been wiped away it either leaves the list or, if
+            // it was only moving, takes its new place and is wiped back in.
+            // Leaving is put off until this handler has returned, because
+            // the handler belongs to the panel being removed. Each
+            // notification queues its own function: Qt runs a function
+            // queued twice in one frame only once, which would leave one
+            // of two that finish together behind.
             onShownChanged: {
-                if (!leaving || shown !== 0)
+                if (shown !== 0)
                     return;
-                const finishedSerial = toast.serial;
-                Qt.callLater(() => toasts.shell.removeToast(finishedSerial));
+                if (leaving) {
+                    const finishedSerial = toast.serial;
+                    Qt.callLater(() => toasts.shell.removeToast(finishedSerial));
+                } else if (moving) {
+                    const freePlace = toasts.shell.freePlaceAbove(toast.place);
+                    if (freePlace >= 0)
+                        toasts.shell.moveToast(toast.serial, freePlace);
+                    moving = false;
+                }
             }
 
             Component.onCompleted: arrived = true

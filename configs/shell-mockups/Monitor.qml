@@ -145,6 +145,13 @@ PanelWindow {
                 shell.moveApplet(-shell.monitorColumns);
         }
 
+        // --- The mouse on the empty part of the monitor ---
+        // A click beside everything goes back one step, like esc.
+        MouseArea {
+            anchors.fill: parent
+            onClicked: monitor.shell.monitorBack()
+        }
+
         // --- The tiles ---
         Repeater {
             model: monitor.appletCount
@@ -180,7 +187,26 @@ PanelWindow {
 
                     interval: Theme.flashMs
                 }
+
+                // The mouse focuses the tile it moves over; a click expands it.
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onPositionChanged: monitor.shell.moveApplet(tile.index - monitor.shell.monitorIndex)
+                    onClicked: {
+                        monitor.shell.moveApplet(tile.index - monitor.shell.monitorIndex);
+                        monitor.shell.expandApplet();
+                    }
+                }
             }
+        }
+
+        // A click on the expanded view itself must not reach the empty
+        // part of the monitor and go back.
+        MouseArea {
+            anchors.fill: view
+            visible: view.visible
         }
 
         // --- The expanded view of the focused applet ---
@@ -203,6 +229,10 @@ PanelWindow {
             lineColor: applet.alert === true ? Theme.alert : Theme.line
             shown: monitor.dive
             visible: monitor.viewOpen
+            // The mouse selects the row it is over; the wheel scrolls.
+            interactive: true
+            onRowEntered: entryIndex => monitor.shell.monitorScroll(entryIndex - monitor.shell.monitorSelected)
+            onWheelTurned: step => monitor.shell.monitorScroll(step)
         }
 
         // --- Key hints for the tiles; an expanded view carries its own ---

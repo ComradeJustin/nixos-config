@@ -3,7 +3,9 @@ import Quickshell
 import Quickshell.Wayland
 
 // What the lock screen looks like: the whole screen in the background
-// colour, the clock, and a panel with a password field.
+// colour, the clock, how many notifications are waiting (not what they
+// say) and what is playing, and a panel with a password field. A low
+// battery is called out at the foot of the screen.
 //
 // This is a picture of a lock screen, not a lock: it does not use the
 // session-lock protocol and it checks nothing. Enter with something typed
@@ -113,6 +115,14 @@ PanelWindow {
             smallCaps: true
         }
 
+        // How many notifications are waiting, and the playing track.
+        Label {
+            x: stage.centerX - Theme.snapX(width / 2)
+            y: stage.centerY - 3 * Theme.cellHeight
+            text: (lock.shell.unreadCount > 0 ? "\uf0f3 " + lock.shell.unreadCount + " waiting   " : "") + "♪ Shelter"
+            color: Theme.inkDim
+        }
+
         Box {
             id: panel
 
@@ -179,8 +189,10 @@ PanelWindow {
         Label {
             x: stage.centerX - Theme.snapX(width / 2)
             y: Theme.snapY(parent.height - 3 * Theme.cellHeight)
-            text: "nixlaptop  ·  battery " + Math.round(lock.shell.battery * 100) + "%"
-            color: Theme.inkDim
+            readonly property bool batteryLow: lock.shell.battery <= 0.2 && !lock.shell.charging
+
+            text: "nixlaptop  ·  battery " + Math.round(lock.shell.battery * 100) + "%" + (batteryLow ? " !  plug in soon" : "")
+            color: batteryLow ? Theme.alert : Theme.inkDim
         }
     }
 }

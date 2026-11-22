@@ -13,6 +13,7 @@
 //   rows    the lines of the page. Each is { label, kind, ... }:
 //     kind "text"    label, then `value`
 //     kind "line"    `label` across the whole width (no value)
+//     kind "note"    the same, but only to be read: it cannot be selected
 //     kind "level"   a bar (`level` 0 to 1), then `value` at the right edge
 //     kind "graph"   a history (`samples` 0 to 1), then `value` at the right edge
 //     kind "switch"  on or off (`on`), then `value`
@@ -22,9 +23,13 @@
 //     note    dim text at the right edge, e.g. an age
 //     opens   the name of the page that enter opens (shown as "›")
 //     does    what enter does instead of opening a page: "back", "lock",
-//             "monitor" (open the monitor), "dismissAll" (empty the inbox)
-//             or "toggleQuiet" (turn do not disturb on or off)
+//             "monitor" (open the monitor), "dismissAll" (empty the inbox),
+//             "toggleQuiet" (turn do not disturb on or off), "inputEnglish"
+//             or "inputJapanese" (pick the input method)
 //     image   a picture to preview beside the page while the row is selected
+//     group   for a switch: only one switch of a group is on at a time
+//     adjusts for a level: "volume" or "brightness", when left and right
+//             should change that instead of only this row
 //     alert   true when something is wrong; the value is in the alert colour
 
 // The names on the ring, clockwise, and the page each one opens.
@@ -37,6 +42,19 @@ var stations = [
     { name: "Inbox", page: "inbox" },
     { name: "Session", page: "session" },
 ];
+
+// Which station each page belongs to, counted from 0 in the order above.
+// Opening a page directly, as a key binding does, turns the ring there.
+var pageStation = {
+    launch: 0,
+    clipboard: 1,
+    system: 2, mixer: 2, powerProfile: 2, tray: 2, trayMenu: 2, settings: 2, displays: 2, display: 2,
+    barSegments: 2, wallpaper: 2, keys: 2, keyboard: 2,
+    network: 3, wifi: 3, wifiPassword: 3, exitNode: 3, bluetooth: 3, bluetoothPair: 3,
+    media: 4,
+    inbox: 5, notification: 5, notificationReply: 5,
+    session: 6, confirmLogOut: 6, confirmRestart: 6, confirmPowerOff: 6,
+};
 
 // The notifications the "notify" button cycles through. An `alert` one is
 // urgent: it stays on screen until it is dismissed.
@@ -82,7 +100,8 @@ function wallpaperRows() {
 
 // Every page, by name. `state` holds the few values the mockup's buttons
 // change: { volume, muted, brightness, battery, charging, online, trouble,
-// inboxEmpty, quiet }. `quiet` is do not disturb. `trouble` is the sample
+// inboxEmpty, quiet, japanese }. `quiet` is do not disturb, `japanese` is
+// whether the Japanese input method is on. `trouble` is the sample
 // state in which things have gone
 // wrong: no network, Bluetooth off, a failed build.
 function pages(state) {
@@ -144,9 +163,9 @@ function pages(state) {
         system: {
             title: "System",
             rows: [
-                { label: "Volume", kind: "level", value: state.muted ? "mute" : String(state.volume), level: state.muted ? 0 : state.volume / 100, alert: state.muted },
+                { label: "Volume", kind: "level", value: state.muted ? "mute" : String(state.volume), level: state.muted ? 0 : state.volume / 100, alert: state.muted, adjusts: "volume" },
                 { label: "Mixer", kind: "text", value: "3 apps playing", opens: "mixer" },
-                { label: "Brightness", kind: "level", value: String(state.brightness), level: state.brightness / 100 },
+                { label: "Brightness", kind: "level", value: String(state.brightness), level: state.brightness / 100, adjusts: "brightness" },
                 { label: "Power profile", kind: "text", value: "balanced", opens: "powerProfile" },
                 { label: "Night light", kind: "switch", value: "until 07:00", on: true },
                 { label: "Do not disturb", kind: "switch", value: state.quiet ? "notifications are held" : "off", on: state.quiet, does: "toggleQuiet" },
@@ -172,9 +191,9 @@ function pages(state) {
         powerProfile: {
             title: "Power profile",
             rows: [
-                { label: "Power saver", kind: "switch", value: "longest battery", on: false },
-                { label: "Balanced", kind: "switch", value: "", on: true },
-                { label: "Performance", kind: "switch", value: "fans may run", on: false },
+                { label: "Power saver", kind: "switch", value: "longest battery", on: false, group: "profile" },
+                { label: "Balanced", kind: "switch", value: "", on: true, group: "profile" },
+                { label: "Performance", kind: "switch", value: "fans may run", on: false, group: "profile" },
             ],
         },
 
@@ -196,7 +215,7 @@ function pages(state) {
             rows: [
                 { label: "Open", kind: "text", value: "", does: "back" },
                 { label: "Mute", kind: "switch", value: "notifications", on: false },
-                { label: "Check for updates", kind: "text", value: "", does: "back" },
+                { label: "Check updates", kind: "text", value: "", does: "back" },
                 { label: "Quit", kind: "text", value: "", does: "back" },
             ],
         },
@@ -212,9 +231,23 @@ function pages(state) {
                 { label: "Lock", kind: "text", value: "after 3 min idle" },
                 { label: "Suspend", kind: "text", value: "after 10 min idle" },
                 { label: "Night light", kind: "text", value: "sunset to 07:00" },
-                { label: "Keyboard", kind: "text", value: "us, caps lock is escape" },
+                { label: "Keyboard", kind: "text", value: state.japanese ? "Japanese" : "English", opens: "keyboard" },
                 { label: "Font", kind: "text", value: "Departure Mono, 11 px" },
                 { label: "About", kind: "text", value: "nixlaptop · NixOS 26.11" },
+            ],
+        },
+
+        // The input method (fcitx5 with mozc for Japanese) and the layout.
+        keyboard: {
+            title: "Keyboard",
+            rows: [
+                { label: "English", kind: "switch", value: "typed as is", on: !state.japanese, does: "inputEnglish" },
+                { label: "Japanese", kind: "switch", value: "mozc", on: state.japanese, does: "inputJapanese" },
+                { label: "Switch with", kind: "text", value: "alt+space" },
+                { label: "Live conversion", kind: "switch", value: "kanji as you type", on: true },
+                { label: "Suggestions", kind: "switch", value: "from dictionary and history", on: true },
+                { label: "Layout", kind: "text", value: "English (US)" },
+                { label: "Caps lock", kind: "text", value: "acts as escape" },
             ],
         },
 
@@ -227,10 +260,10 @@ function pages(state) {
                 { label: "eDP-1", kind: "text", value: "1920 × 1080, 60 Hz", opens: "display" },
                 { label: "Mirror", kind: "switch", value: "off", on: false },
                 { label: "Lid closed", kind: "text", value: "use DP-2 only" },
-                { label: "┌──────────────────┐┌────────────┐", kind: "line", note: "" },
-                { label: "│       DP-2       ││   eDP-1    │", kind: "line", note: "" },
-                { label: "│   2560 × 1440    ││ 1920 × 1080│", kind: "line", note: "" },
-                { label: "└──────────────────┘└────────────┘", kind: "line", note: "" },
+                { label: "┌──────────────────┐┌────────────┐", kind: "note" },
+                { label: "│       DP-2       ││   eDP-1    │", kind: "note" },
+                { label: "│   2560 × 1440    ││ 1920 × 1080│", kind: "note" },
+                { label: "└──────────────────┘└────────────┘", kind: "note" },
             ],
         },
 
@@ -318,10 +351,10 @@ function pages(state) {
             title: "Exit node",
             empty: "no device on the tailnet offers an exit node",
             rows: state.online ? [
-                { label: "None", kind: "switch", value: "leave directly", on: false },
-                { label: "nixpc", kind: "switch", value: "home", on: true, note: "4 ms" },
-                { label: "vps-fra", kind: "switch", value: "Frankfurt", on: false, note: "31 ms" },
-                { label: "phone", kind: "switch", value: "offline", on: false },
+                { label: "None", kind: "switch", value: "leave directly", on: false, group: "exit" },
+                { label: "nixpc", kind: "switch", value: "home", on: true, note: "4 ms", group: "exit" },
+                { label: "vps-fra", kind: "switch", value: "Frankfurt", on: false, note: "31 ms", group: "exit" },
+                { label: "phone", kind: "switch", value: "offline", on: false, group: "exit" },
                 { label: "Local network", kind: "switch", value: "still reachable", on: true },
             ] : [],
         },
@@ -358,7 +391,7 @@ function pages(state) {
             title: "Bluetooth",
             rows: state.trouble ? [
                 { label: "Bluetooth", kind: "switch", value: "off", on: false },
-                { label: "Turn Bluetooth on to see devices", kind: "line", note: "" },
+                { label: "Turn Bluetooth on to see devices", kind: "note" },
             ] : [
                 { label: "Bluetooth", kind: "switch", value: "on", on: true },
                 { label: "WH-1000XM5", kind: "text", value: "connected", note: "80%" },
@@ -375,7 +408,7 @@ function pages(state) {
             title: "Pair Galaxy Buds?",
             rows: [
                 { label: "Code", kind: "text", value: "482 913" },
-                { label: "Check that the device shows the same code", kind: "line", note: "" },
+                { label: "Check that the device shows the same code", kind: "note" },
                 { label: "Pair", kind: "text", value: "", does: "back" },
                 { label: "Cancel", kind: "text", value: "", does: "back" },
             ],
@@ -414,7 +447,7 @@ function pages(state) {
             title: "Vesktop",
             rows: [
                 { label: "From", kind: "text", value: "Mara", note: "2m" },
-                { label: "are you still coming tonight?", kind: "line", note: "" },
+                { label: "are you still coming tonight?", kind: "note" },
                 { label: "Reply", kind: "text", value: "", opens: "notificationReply" },
                 { label: "Mark read", kind: "text", value: "", does: "back" },
                 { label: "Open Vesktop", kind: "text", value: "", does: "back" },
@@ -498,7 +531,7 @@ function dialogs(state) {
             alert: false,
             rows: [
                 { label: "Locking in", kind: "level", value: Math.ceil(state.countdown * 30) + " s", level: state.countdown },
-                { label: "Press any key to stay", kind: "line", note: "" },
+                { label: "Press any key to stay", kind: "note" },
             ],
         },
 
@@ -509,7 +542,7 @@ function dialogs(state) {
             alert: true,
             rows: [
                 { label: "Suspending in", kind: "level", value: Math.ceil(state.countdown * 60) + " s", level: state.countdown, alert: true },
-                { label: "Plug in, or press any key to keep going", kind: "line", note: "" },
+                { label: "Plug in, or press any key to keep going", kind: "note" },
             ],
         },
     };
@@ -586,10 +619,10 @@ function buildApplet(state) {
                 { label: "Failed at", kind: "text", value: "firefox-140.0, buildPhase", alert: true },
                 { label: "Built", kind: "level", value: "31/" + buildTotal, level: 31 / buildTotal, alert: true },
                 { label: "Took", kind: "text", value: "2m 6s" },
-                { label: "error: builder for firefox-140.0 failed with exit code 1", kind: "line", note: "" },
-                { label: "  > ld: final link failed: No space left on device", kind: "line", note: "" },
-                { label: "  > collect2: error: ld returned 1 exit status", kind: "line", note: "" },
-                { label: "For the full log: nix log firefox-140.0", kind: "line", note: "" },
+                { label: "error: builder for firefox-140.0 failed with exit code 1", kind: "note" },
+                { label: "  > ld: final link failed: No space left on device", kind: "note" },
+                { label: "  > collect2: error: ld returned 1 exit status", kind: "note" },
+                { label: "For the full log: nix log firefox-140.0", kind: "note" },
                 { label: "Generation", kind: "text", value: "412, unchanged" },
             ],
         };

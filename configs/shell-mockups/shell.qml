@@ -42,15 +42,20 @@ import "sample-data.js" as SampleData
 // Stop:   systemctl --user stop shell-mockup
 // Drive:  the buttons at the bottom of the screen, or
 //   qs -p ~/nixos-config/configs/shell-mockups ipc call shell-mockup <name>
-//   where <name> is one of: ring, turn 1, open, select 1, back, type abc,
+//   where <name> is one of: ring, turn 1, open, select 1, adjust 1, back,
+//   type abc, input,
 //   cursor -1, page clipboard, monitor, applet 2, expand, scroll 1,
 //   volume, mute, microphone, brightness, toast, dismiss, quiet,
 //   workspace, states, rebuild, calendar, month 1, lock, finger,
 //   dialog authenticate, privacy, caps, desktop
-// In the ring: h l turn, enter opens, j k or the arrows select, esc backs
+// In the ring: h l turn, enter opens or flips a switch, j k or the arrows
+// select, left and right move a level, esc backs
 // out. In a page with a text field, letters type, up and down select, and
 // left, right, home, end, backspace, delete and ctrl+u edit the text.
 // In the monitor: h j k l move between applets, enter expands, esc backs out.
+// The mouse works too: click a bar segment, a ring name, a row, a tile or a
+// notification; turn the wheel over the ring, a page, the volume or the
+// calendar; click beside a page to go back.
 // Files reload on save.
 ShellRoot {
     id: root
@@ -80,8 +85,13 @@ ShellRoot {
     readonly property bool dived: pageStack.length > 0
     readonly property var page: dived ? pages[pageStack[pageStack.length - 1]] : null
     readonly property int selectedIndex: dived && selectionStack.length > 0 ? selectionStack[selectionStack.length - 1] : 0
-    // The innermost page's rows, narrowed by what has been typed.
-    readonly property var pageRows: page ? matchingRows(page, query) : []
+    readonly property string pageName: dived ? pageStack[pageStack.length - 1] : ""
+    // The innermost page's rows, narrowed by what has been typed, with any
+    // switch or level that has been changed by hand shown as it now is.
+    readonly property var pageRows: page ? changedRows(pageName, matchingRows(page, query)) : []
+    // Switches flipped and levels adjusted by hand, by page name and row
+    // label: true or false for a switch, 0 to 1 for a level.
+    property var changes: ({})
 
     // --- The monitor ---
     property bool monitorOpen: false
@@ -127,6 +137,8 @@ ShellRoot {
     property bool cameraInUse: false
     property bool screenShared: false
     property bool capsLock: false
+    // Whether the Japanese input method is on; otherwise typing is English.
+    property bool inputJapanese: false
     // Which of the privacy samples is showing: 0 nothing, 1 the microphone,
     // 2 the microphone, camera and screen.
     property int privacyStep: 0
@@ -179,7 +191,8 @@ ShellRoot {
         online: root.online,
         trouble: root.statePreset === 1,
         inboxEmpty: root.inboxEmpty,
-        quiet: root.quiet
+        quiet: root.quiet,
+        japanese: root.inputJapanese
     })
 
     // The monitor's applets, in grid order.
@@ -239,6 +252,75 @@ ShellRoot {
         root.query = "";
         root.cursor = 0;
         root.stackPending = false;
+        root.selectReadable();
+    }
+
+    // --- Rows that have been changed by hand ---
+    function changeKey(pageName: string, row: var): string {
+        return pageName + "/" + row.label;
+    }
+
+    // Remember a row's new state. A fresh object, so that pageRows notices.
+    function setChange(key: string, value: var): void {
+        const changes = Object.assign({}, root.changes);
+        changes[key] = value;
+        root.changes = changes;
+    }
+
+    // The rows as they now are: a switch or level that was changed by hand
+    // shows its new state. A switch whose value said "on" or "off" says the
+    // new one; a level whose value was a plain number shows the new number.
+    function changedRows(pageName: string, rows: var): var {
+        const result = [];
+        for (const row of rows) {
+            const change = root.changes[root.changeKey(pageName, row)];
+            if (change === undefined) {
+                result.push(row);
+            } else if (row.kind === "switch") {
+                const saidOnOrOff = row.value === "on" || row.value === "off";
+                result.push(Object.assign({}, row, {
+                    on: change,
+                    value: saidOnOrOff ? (change ? "on" : "off") : row.value
+                }));
+            } else {
+                const wasNumber = /^[0-9]+$/.test(row.value);
+                result.push(Object.assign({}, row, {
+                    level: change,
+                    value: wasNumber ? String(Math.round(change * 100)) : row.value
+                }));
+            }
+        }
+        return result;
+    }
+
+    // Enter on a switch flips it. In a group, turning one on turns the
+    // others off, and the one that is on stays on.
+    function flipSwitch(row: var): void {
+        if (row.group === undefined) {
+            root.setChange(root.changeKey(root.pageName, row), !row.on);
+            return;
+        }
+        for (const other of root.pageRows) {
+            if (other.group === row.group)
+                root.setChange(root.changeKey(root.pageName, other), other.label === row.label);
+        }
+    }
+
+    // Left and right on a level move it one step.
+    function adjust(step: int): void {
+        if (!root.dived || root.stackPending || root.pageRows.length === 0)
+            return;
+        const row = root.pageRows[root.selectedIndex];
+        if (row.kind !== "level")
+            return;
+        if (row.adjusts === "volume") {
+            root.muted = false;
+            root.volume = Math.max(0, Math.min(100, root.volume + 5 * step));
+        } else if (row.adjusts === "brightness") {
+            root.brightness = Math.max(0, Math.min(100, root.brightness + 5 * step));
+        } else {
+            root.setChange(root.changeKey(root.pageName, row), Math.max(0, Math.min(1, row.level + 0.05 * step)));
+        }
     }
 
     // Enter: open the focused station, or act on the selected row.
@@ -254,6 +336,12 @@ ShellRoot {
         const row = root.pageRows[root.selectedIndex];
         if (row.opens) {
             root.changeStack(root.pageStack.concat([row.opens]), root.selectionStack.concat([0]));
+        } else if (row.does === "inputEnglish") {
+            root.inputJapanese = false;
+        } else if (row.does === "inputJapanese") {
+            root.inputJapanese = true;
+        } else if (row.kind === "switch" && row.does === undefined) {
+            root.flipSwitch(row);
         } else if (row.does === "back") {
             root.back();
         } else if (row.does === "lock") {
@@ -283,11 +371,31 @@ ShellRoot {
         root.selectionStack = root.selectionStack.slice(0, -1).concat([index]);
     }
 
+    // Move the selection one row up or down, passing over notes, which are
+    // only there to be read. It stays put when there is no row that way.
     function moveSelection(step: int): void {
-        if (!root.dived || root.stackPending || root.pageRows.length === 0)
+        if (!root.dived || root.stackPending)
             return;
-        const last = root.pageRows.length - 1;
-        root.select(Math.max(0, Math.min(last, root.selectedIndex + step)));
+        let index = root.selectedIndex + step;
+        while (index >= 0 && index < root.pageRows.length) {
+            if (root.pageRows[index].kind !== "note") {
+                root.select(index);
+                return;
+            }
+            index += step;
+        }
+    }
+
+    // If the selection is on a note, move it to the first row that is not.
+    function selectReadable(): void {
+        if (!root.dived || root.pageRows.length === 0 || root.pageRows[root.selectedIndex].kind !== "note")
+            return;
+        for (let index = 0; index < root.pageRows.length; index++) {
+            if (root.pageRows[index].kind !== "note") {
+                root.select(index);
+                return;
+            }
+        }
     }
 
     // --- The text field of the innermost page ---
@@ -335,11 +443,22 @@ ShellRoot {
         root.cursor = Math.max(0, Math.min(root.query.length, position));
     }
 
-    // Open the ring straight at one page, as a key binding would.
+    // Turn the ring the short way round until this station is focused.
+    function focusStation(station: int): void {
+        const count = root.stations.length;
+        // The difference from the focused one, from -count/2 to count/2.
+        const ahead = ((station - root.focusedIndex) % count + count) % count;
+        root.turns += ahead > count / 2 ? ahead - count : ahead;
+    }
+
+    // Open the ring straight at one page, as a key binding would. The ring
+    // turns to the station the page belongs to.
     function openPage(pageName: string): void {
         if (root.pages[pageName] === undefined)
             return;
+        root.closeMonitor();
         root.ringOpen = true;
+        root.focusStation(SampleData.pageStation[pageName]);
         root.changeStack([pageName], [0]);
     }
 
@@ -394,6 +513,13 @@ ShellRoot {
         root.showReadout("volume");
     }
 
+    // The wheel over the bar's volume: one step up or down.
+    function changeVolume(step: int): void {
+        root.muted = false;
+        root.volume = Math.max(0, Math.min(100, root.volume + 5 * step));
+        root.showReadout("volume");
+    }
+
     function toggleMute(): void {
         root.muted = !root.muted;
         root.showReadout("volume");
@@ -444,16 +570,39 @@ ShellRoot {
         root.nextToast = (root.nextToast + 1) % SampleData.toasts.length;
     }
 
-    // Dismiss the newest notification on screen by hand. It is wiped away
-    // and no longer counts as waiting.
-    function dismissToast(): void {
+    // Dismiss a notification by hand, by its serial number. It is wiped
+    // away and no longer counts as waiting.
+    function dismissToast(serial: int): void {
+        root.dismissedSerial = serial;
+        root.unreadCount = Math.max(0, root.unreadCount - 1);
+    }
+
+    // Dismiss the newest notification on screen, if there is one.
+    function dismissNewestToast(): void {
         let newest = 0;
         for (let index = 0; index < toastModel.count; index++)
             newest = Math.max(newest, toastModel.get(index).serial);
-        if (newest === 0 || newest === root.dismissedSerial)
-            return;
-        root.dismissedSerial = newest;
-        root.unreadCount = Math.max(0, root.unreadCount - 1);
+        if (newest > 0 && newest !== root.dismissedSerial)
+            root.dismissToast(newest);
+    }
+
+    // The highest free place above this one in the stack, or -1.
+    function freePlaceAbove(place: int): int {
+        for (let candidate = 0; candidate < place; candidate++) {
+            if (!root.toastPlaceTaken(candidate))
+                return candidate;
+        }
+        return -1;
+    }
+
+    // Give a notification on screen a different place in the stack.
+    function moveToast(serial: int, place: int): void {
+        for (let index = 0; index < toastModel.count; index++) {
+            if (toastModel.get(index).serial === serial) {
+                toastModel.setProperty(index, "place", place);
+                return;
+            }
+        }
     }
 
     // Take a notification off the screen, by its serial number.
@@ -635,6 +784,14 @@ ShellRoot {
             root.typeText(text);
         }
 
+        function adjust(step: int): void {
+            root.adjust(step);
+        }
+
+        function input(): void {
+            root.inputJapanese = !root.inputJapanese;
+        }
+
         function cursor(step: int): void {
             root.placeCursor(root.cursor + step);
         }
@@ -679,7 +836,7 @@ ShellRoot {
         }
 
         function dismiss(): void {
-            root.dismissToast();
+            root.dismissNewestToast();
         }
 
         function quiet(): void {
@@ -759,7 +916,7 @@ ShellRoot {
             spacing: 2 * Theme.cellWidth
 
             Repeater {
-                model: [["ring", () => root.toggleRing()], ["monitor", () => root.toggleMonitor()], ["vol", () => root.bumpVolume()], ["mute", () => root.toggleMute()], ["mic", () => root.toggleMicrophoneMute()], ["bright", () => root.bumpBrightness()], ["notify", () => root.showToast()], ["dismiss", () => root.dismissToast()], ["quiet", () => root.quiet = !root.quiet], ["workspace", () => root.nextWorkspace()], ["states", () => root.cycleStates()], ["rebuild", () => root.startRebuild()], ["calendar", () => root.toggleCalendar()], ["lock", () => root.lockShown = true], ["password", () => root.showDialog("authenticate")], ["idle", () => root.showDialog("lockSoon")], ["battery", () => root.showDialog("batteryCritical")], ["privacy", () => root.cyclePrivacy()], ["caps", () => root.capsLock = !root.capsLock], ["desktop", () => root.desktopShown = !root.desktopShown]]
+                model: [["ring", () => root.toggleRing()], ["monitor", () => root.toggleMonitor()], ["vol", () => root.bumpVolume()], ["mute", () => root.toggleMute()], ["mic", () => root.toggleMicrophoneMute()], ["bright", () => root.bumpBrightness()], ["notify", () => root.showToast()], ["dismiss", () => root.dismissNewestToast()], ["quiet", () => root.quiet = !root.quiet], ["workspace", () => root.nextWorkspace()], ["states", () => root.cycleStates()], ["rebuild", () => root.startRebuild()], ["calendar", () => root.toggleCalendar()], ["lock", () => root.lockShown = true], ["password", () => root.showDialog("authenticate")], ["idle", () => root.showDialog("lockSoon")], ["battery", () => root.showDialog("batteryCritical")], ["privacy", () => root.cyclePrivacy()], ["caps", () => root.capsLock = !root.capsLock], ["input", () => root.inputJapanese = !root.inputJapanese], ["desktop", () => root.desktopShown = !root.desktopShown]]
 
                 Label {
                     id: button

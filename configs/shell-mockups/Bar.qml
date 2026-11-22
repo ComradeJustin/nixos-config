@@ -8,7 +8,8 @@ import Quickshell.Wayland
 // Left: workspaces, the focused window, the playing track, then whatever
 // is going on right now: waiting notifications, do not disturb, the
 // microphone, camera or screen being used, caps lock, a system rebuild.
-// Centre: date and time. Right: network with its signal, volume, battery.
+// Centre: date and time. Right: the input method, network with its signal,
+// volume, battery.
 // A halftone shadow falls under it.
 // One bar is made for each screen (shell.qml).
 //
@@ -18,6 +19,12 @@ import Quickshell.Wayland
 //
 // Trouble is shown in the alert colour together with a word or mark: no
 // network, muted sound, a low battery, something recording.
+//
+// Most segments answer to the mouse (Segment.qml): a workspace switches to
+// it, the track opens Media, the bell opens the Inbox, the clock opens the
+// calendar, the input method switches language, the network opens Network,
+// the volume mutes on a click and moves with the wheel, the battery opens
+// the monitor.
 // Sample values, except the clock and whatever the buttons at the bottom of
 // the screen change.
 PanelWindow {
@@ -152,6 +159,14 @@ PanelWindow {
                                 color: parent.focused ? Theme.slab : (parent.occupied ? Theme.ink : Theme.line)
                             }
 
+                            HoverHandler {
+                                cursorShape: Qt.PointingHandCursor
+                            }
+
+                            TapHandler {
+                                onTapped: bar.shell.workspace = parent.index
+                            }
+
                             Timer {
                                 id: focusFlash
 
@@ -180,12 +195,16 @@ PanelWindow {
 
                     Divider {}
 
-                    Key {
-                        text: "♪ "
-                    }
+                    Segment {
+                        onTapped: bar.shell.openPage("media")
 
-                    Label {
-                        text: "Shelter"
+                        Key {
+                            text: "♪ "
+                        }
+
+                        Label {
+                            text: "Shelter"
+                        }
                     }
                 }
 
@@ -199,13 +218,17 @@ PanelWindow {
 
                         Divider {}
 
-                        // The font's bell icon.
-                        Key {
-                            text: "\uf0f3 "
-                        }
+                        Segment {
+                            onTapped: bar.shell.openPage("inbox")
 
-                        Value {
-                            text: bar.shell.unreadCount
+                            // The font's bell icon.
+                            Key {
+                                text: "\uf0f3 "
+                            }
+
+                            Value {
+                                text: bar.shell.unreadCount
+                            }
                         }
                     }
 
@@ -279,12 +302,13 @@ PanelWindow {
             }
 
             // --- Centre: date and time ---
-            Row {
+            Segment {
                 id: clockRow
 
                 y: Theme.barTextY
                 // On a whole cell, so the text stays sharp.
                 x: Theme.snapX((parent.width - width) / 2)
+                onTapped: bar.shell.toggleCalendar()
 
                 Label {
                     text: Qt.formatDateTime(bar.shell.now, "ddd d MMM") + "  "
@@ -297,76 +321,105 @@ PanelWindow {
                 }
             }
 
-            // --- Right: network, volume, battery ---
+            // --- Right: input method, network, volume, battery ---
             Row {
                 y: Theme.barTextY
                 x: parent.width - width - Theme.cellWidth
 
-                Key {
-                    text: "net "
-                }
+                // The input method: English, or Japanese in the accent
+                // colour. It flashes when it changes.
+                Segment {
+                    onTapped: bar.shell.inputJapanese = !bar.shell.inputJapanese
 
-                SignalBars {
-                    level: bar.shell.online ? 0.75 : 0
-                }
-
-                Label {
-                    text: bar.shell.online ? " Home-5G" : " offline"
-                    color: bar.shell.online ? Theme.inkSoft : Theme.alert
-                }
-
-                // The exit node traffic leaves through.
-                Label {
-                    visible: bar.shell.online
-                    text: " → nixpc"
-                    color: Theme.inkDim
+                    Value {
+                        text: bar.shell.inputJapanese ? "ja" : "en"
+                        smallCaps: true
+                        restColor: bar.shell.inputJapanese ? Theme.accent : Theme.inkSoft
+                    }
                 }
 
                 Divider {
                     pointsLeft: true
                 }
 
-                Key {
-                    text: "vol "
-                }
+                Segment {
+                    onTapped: bar.shell.openPage("network")
 
-                Level {
-                    level: bar.shell.muted ? 0 : bar.shell.volume / 100
-                    cells: 10
-                }
+                    Key {
+                        text: "net "
+                    }
 
-                Label {
-                    text: " "
-                }
+                    SignalBars {
+                        level: bar.shell.online ? 0.75 : 0
+                    }
 
-                Value {
-                    text: bar.shell.muted ? "mute" : bar.shell.volume + "%"
-                    restColor: bar.shell.muted ? Theme.alert : Theme.ink
+                    Label {
+                        text: bar.shell.online ? " Home-5G" : " offline"
+                        color: bar.shell.online ? Theme.inkSoft : Theme.alert
+                    }
+
+                    // The exit node traffic leaves through.
+                    Label {
+                        visible: bar.shell.online
+                        text: " → nixpc"
+                        color: Theme.inkDim
+                    }
                 }
 
                 Divider {
                     pointsLeft: true
                 }
 
-                Key {
-                    text: "bat "
+                Segment {
+                    onTapped: bar.shell.toggleMute()
+                    onWheelTurned: step => bar.shell.changeVolume(step)
+
+                    Key {
+                        text: "vol "
+                    }
+
+                    Level {
+                        level: bar.shell.muted ? 0 : bar.shell.volume / 100
+                        cells: 10
+                    }
+
+                    Label {
+                        text: " "
+                    }
+
+                    Value {
+                        text: bar.shell.muted ? "mute" : bar.shell.volume + "%"
+                        restColor: bar.shell.muted ? Theme.alert : Theme.ink
+                    }
                 }
 
-                Level {
-                    level: bar.shell.battery
-                    cells: 10
-                    fillColor: bar.batteryLow ? Theme.alert : Theme.accent
+                Divider {
+                    pointsLeft: true
                 }
 
-                // An arrow while charging.
-                Label {
-                    text: bar.shell.charging ? " ↑" : " "
-                    color: Theme.accent
-                }
+                Segment {
+                    onTapped: bar.shell.toggleMonitor()
 
-                Value {
-                    text: Math.round(bar.shell.battery * 100) + "%" + (bar.batteryLow ? " !" : "")
-                    restColor: bar.batteryLow ? Theme.alert : Theme.ink
+                    Key {
+                        text: "bat "
+                    }
+
+                    Level {
+                        level: bar.shell.battery
+                        cells: 10
+                        fillColor: bar.batteryLow ? Theme.alert : Theme.accent
+                    }
+
+                    // An arrow while charging.
+                    Label {
+                        text: bar.shell.charging ? " ↑" : " "
+                        color: Theme.accent
+                    }
+
+                    Value {
+                        text: Math.round(bar.shell.battery * 100) + "%" + (bar.batteryLow ? " !" : "")
+                        restColor: bar.batteryLow ? Theme.alert : Theme.ink
+                    }
                 }
             }
         }

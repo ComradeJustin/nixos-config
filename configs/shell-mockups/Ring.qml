@@ -26,7 +26,13 @@ PanelWindow {
     readonly property var stations: shell.stations
     readonly property int stationCount: stations.length
     readonly property real stepDegrees: 360 / stationCount
-    readonly property string focusedName: stations[shell.focusedIndex].name
+    // How many letters the longest station name has.
+    readonly property int longestName: {
+        let longest = 0;
+        for (const station of stations)
+            longest = Math.max(longest, station.name.length);
+        return longest;
+    }
 
     // --- The four animated values ---
     // Each runs at a steady rate with no easing. They are chained so that
@@ -258,15 +264,35 @@ PanelWindow {
                 return;
             }
 
-            // Without one, the letters move too.
+            // Without one, the letters move too. On a level, left and
+            // right move the level; anywhere else they go back and act.
+            const left = key === Qt.Key_H || key === Qt.Key_Left;
+            const right = key === Qt.Key_L || key === Qt.Key_Right;
+            const onLevel = shell.pageRows.length > 0 && shell.pageRows[shell.selectedIndex].kind === "level";
             if (key === Qt.Key_J)
                 shell.moveSelection(1);
             else if (key === Qt.Key_K)
                 shell.moveSelection(-1);
-            else if (key === Qt.Key_H || key === Qt.Key_Left)
+            else if (left && onLevel)
+                shell.adjust(-1);
+            else if (right && onLevel)
+                shell.adjust(1);
+            else if (left)
                 shell.back();
-            else if (key === Qt.Key_L || key === Qt.Key_Right)
+            else if (right)
                 shell.act();
+        }
+
+        // --- The mouse on the empty part of the ring ---
+        // A click beside everything goes back one step, like esc. The
+        // wheel turns the ring while its names are showing.
+        MouseArea {
+            anchors.fill: parent
+            onClicked: ring.shell.back()
+            onWheel: wheel => {
+                if (!ring.shell.dived)
+                    ring.shell.rotate(wheel.angleDelta.y > 0 ? -1 : 1);
+            }
         }
 
         // --- The orbit ---
@@ -385,17 +411,38 @@ PanelWindow {
                         scaleFactor: 2
                         color: station.focused ? Theme.slab : Theme.inkSoft
                     }
+
+                    // A click opens the focused name, and turns the ring
+                    // to any other.
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (station.focused)
+                                ring.shell.act();
+                            else
+                                ring.shell.focusStation(station.index);
+                        }
+                    }
                 }
             }
+        }
+
+        // A click on the page itself, outside its rows, does nothing: it
+        // must not reach the empty part of the ring and go back.
+        MouseArea {
+            anchors.fill: page
+            visible: page.visible
         }
 
         // --- The open page, wiped in where the focused name was ---
         Panel {
             id: page
 
-            // Starts where the focused name's block started, moved left
-            // as far as it takes to stay on the screen.
-            x: Math.min(ring.centerX + ring.orbitRadius - Theme.snapX(ring.focusedName.length * Theme.cellWidth) - 2 * Theme.cellWidth, Theme.snapX(parent.width - implicitWidth - Theme.cellWidth))
+            // Always in the same place whichever station is open: where
+            // the block of the longest name starts, moved left as far as
+            // it takes to stay on the screen.
+            x: Math.min(ring.centerX + ring.orbitRadius - ring.longestName * Theme.cellWidth - 2 * Theme.cellWidth, Theme.snapX(parent.width - implicitWidth - Theme.cellWidth))
             y: ring.centerY - Theme.cellHeight
             visible: ring.panelOpen
             page: ring.shell.page
@@ -404,6 +451,20 @@ PanelWindow {
             query: ring.shell.query
             cursor: ring.shell.cursor
             shown: ring.dive
+            // The mouse selects the row it is over, a click acts on it,
+            // and the wheel moves the selection.
+            interactive: true
+            onRowEntered: entryIndex => {
+                if (!ring.shell.stackPending)
+                    ring.shell.select(entryIndex);
+            }
+            onRowClicked: entryIndex => {
+                if (ring.shell.stackPending)
+                    return;
+                ring.shell.select(entryIndex);
+                ring.shell.act();
+            }
+            onWheelTurned: step => ring.shell.moveSelection(step)
         }
 
         // --- A picture of the selected row, when it has one ---

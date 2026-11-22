@@ -5,7 +5,8 @@ import Quickshell.Wayland
 // The calendar: a month as a grid, with today in reverse video and the
 // weather above it. It drops out of the bar under the clock and takes the
 // keyboard while it is open: h and l or the arrows change the month, t goes
-// back to today, esc closes it. Changing month wipes the panel away and
+// back to today, esc closes it. The wheel changes the month too. Changing
+// month wipes the panel away and
 // wipes the new month in. The dates are real; the weather is sample text.
 PanelWindow {
     id: calendar
@@ -73,6 +74,10 @@ PanelWindow {
         footer: "←→ month  t today"
         shown: calendar.shown
         focus: true
+
+        WheelHandler {
+            onWheel: event => calendar.shell.calendarOffset += event.angleDelta.y > 0 ? -1 : 1
+        }
 
         Keys.onPressed: event => {
             const shell = calendar.shell;

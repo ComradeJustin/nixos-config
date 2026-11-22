@@ -1,61 +1,42 @@
 import QtQuick
 
 // A level drawn as a framed progress bar: an outline with a solid fill
-// inside it, one cell per segment. Used for volume, brightness, battery and
-// signal.
+// inside it. Used for volume, brightness, battery and signal.
 //
-// It is made of the font's six progress-bar characters: a left end, a
-// middle and a right end, each in an empty and a filled version. The font
-// has no half-filled piece, so half a cell is shown as a filled piece in a
-// muted colour: the bar moves in half cells.
-Row {
+// The outline is the font's three empty progress-bar characters: a left
+// end, a middle and a right end. The fill is drawn inside it, so it can
+// stop at any pixel and the outline stays one colour.
+Item {
     id: root
 
     // How full the bar is, from 0 to 1.
     property real level: 0
-    // Width of the bar in character cells.
+    // Width of the bar in character cells. Two at least.
     property int cells: 10
     property color fillColor: Theme.accent
-    property color emptyColor: Theme.line
-    // Half way between the fill and the background.
-    readonly property color halfColor: Qt.rgba((fillColor.r + Theme.slab.r) / 2, (fillColor.g + Theme.slab.g) / 2, (fillColor.b + Theme.slab.b) / 2, 1)
+    property color frameColor: Theme.line
 
-    readonly property int filledHalves: Math.round(Math.max(0, Math.min(1, level)) * cells * 2)
-    readonly property int fullCells: Math.floor(filledHalves / 2)
-    // The cell after the full ones is the half-filled one, if there is one.
-    readonly property int halfCells: filledHalves % 2
+    // Where the inside of the outline is, measured on the font's
+    // characters at 11 px: the fill starts 4 px in from the left, stops
+    // 2 px short of the right, and covers rows 3 to 10 of the 14.
+    readonly property int fillX: 4 * Theme.scale
+    readonly property int fillY: 3 * Theme.scale
+    readonly property int fillHeight: 8 * Theme.scale
+    readonly property int fillRoom: width - 6 * Theme.scale
 
-    // The cells from `first` up to but not including `last`, as text, all
-    // filled or all empty. The first and last cells of the whole bar are
-    // the end pieces.
-    function part(first: int, last: int, filled: bool): string {
-        const leftEnd = filled ? "\uee03" : "\uee00";
-        const middle = filled ? "\uee04" : "\uee01";
-        const rightEnd = filled ? "\uee05" : "\uee02";
-        let text = "";
-        for (let cell = first; cell < last; cell++) {
-            if (cell === 0)
-                text += leftEnd;
-            else if (cell === root.cells - 1)
-                text += rightEnd;
-            else
-                text += middle;
-        }
-        return text;
-    }
+    width: cells * Theme.cellWidth
+    height: Theme.cellHeight
 
     Label {
-        text: root.part(0, root.fullCells, true)
+        text: "\uee00" + "\uee01".repeat(root.cells - 2) + "\uee02"
+        color: root.frameColor
+    }
+
+    Rectangle {
+        x: root.fillX
+        y: root.fillY
+        width: Math.round(Math.max(0, Math.min(1, root.level)) * root.fillRoom)
+        height: root.fillHeight
         color: root.fillColor
-    }
-
-    Label {
-        text: root.part(root.fullCells, root.fullCells + root.halfCells, true)
-        color: root.halfColor
-    }
-
-    Label {
-        text: root.part(root.fullCells + root.halfCells, root.cells, false)
-        color: root.emptyColor
     }
 }

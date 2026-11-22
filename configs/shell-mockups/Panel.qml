@@ -14,6 +14,14 @@ Box {
     // Its rows, after any filtering by the text field.
     property var entries: []
     property int selectedIndex: 0
+    // Whether the mouse can be used on the rows. A panel that is only
+    // looked at, such as a tile, leaves this off.
+    property bool interactive: false
+    // The mouse moved over a row, clicked one, or the wheel turned.
+    signal rowEntered(int entryIndex)
+    signal rowClicked(int entryIndex)
+    signal wheelTurned(int step)
+
     // What has been typed into the text field, and where the cursor is in
     // it, counted in characters from the start.
     property string query: ""
@@ -46,11 +54,37 @@ Box {
         return lines.join("\n");
     }
 
+    // The selected entry, or null when nothing is selected.
+    readonly property var selectedEntry: selectedIndex >= 0 && selectedIndex < entries.length ? entries[selectedIndex] : null
+
+    // What enter or left and right would do to the selected row, or "".
+    function actionHint(): string {
+        const entry = panel.selectedEntry;
+        if (entry === null)
+            return "";
+        if (entry.opens)
+            return "↵ open";
+        if (entry.kind === "switch")
+            return "↵ switch";
+        if (entry.kind === "level")
+            return "←→ adjust";
+        if (entry.does)
+            return "↵ go";
+        return "";
+    }
+
+    // The keys that do something here, and no others.
     function footerText(): string {
-        const keys = panel.hasField ? "↑↓ select  ↵ act  esc back" : "↑↓ jk select  ↵ act  esc back";
-        if (!panel.scrolls)
-            return keys;
-        return keys + "  " + (panel.selectedIndex + 1) + "/" + panel.entries.length;
+        if (panel.entries.length === 0)
+            return "esc back";
+        let keys = panel.hasField ? "↑↓ select" : "↑↓ jk select";
+        const action = panel.actionHint();
+        if (action !== "")
+            keys += "  " + action;
+        keys += "  esc back";
+        if (panel.scrolls)
+            keys += "  " + (panel.selectedIndex + 1) + "/" + panel.entries.length;
+        return keys;
     }
 
     columns: 52
@@ -126,8 +160,9 @@ Box {
             readonly property string kind: entry ? entry.kind : ""
             readonly property bool selected: entry !== null && entryIndex === panel.selectedIndex
             readonly property bool alert: entry !== null && entry.alert === true
-            // A "line" entry is text across the whole width.
-            readonly property bool wholeLine: kind === "line"
+            // A "line" entry is text across the whole width, and so is a
+            // "note", which is only there to be read.
+            readonly property bool wholeLine: kind === "line" || kind === "note"
             // A level and a graph end with their value at the right edge.
             readonly property bool endsWithValue: kind === "level" || kind === "graph"
             // The short text at the right edge: "›" for a row that opens a
@@ -175,8 +210,20 @@ Box {
                 x: 2 * Theme.cellWidth
                 width: (line.wholeLine ? panel.contentColumns - 3 - line.endCells : panel.valueColumn - 3) * Theme.cellWidth
                 text: line.entry ? line.entry.label : ""
-                color: line.selected ? Theme.slab : Theme.ink
+                color: line.selected ? Theme.slab : (line.kind === "note" ? Theme.inkSoft : Theme.ink)
                 elide: Text.ElideRight
+            }
+
+            // The mouse: moving over a row selects it, a click acts on it.
+            // Only movement counts, so a pointer that happens to be resting
+            // where the page opens does not take the selection.
+            MouseArea {
+                anchors.fill: parent
+                enabled: panel.interactive && line.entry !== null && line.kind !== "note"
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onPositionChanged: panel.rowEntered(line.entryIndex)
+                onClicked: panel.rowClicked(line.entryIndex)
             }
 
             Level {
@@ -233,6 +280,12 @@ Box {
                 }
             }
         }
+    }
+
+    // The wheel anywhere on the panel.
+    WheelHandler {
+        enabled: panel.interactive
+        onWheel: event => panel.wheelTurned(event.angleDelta.y > 0 ? -1 : 1)
     }
 
     // --- Where the visible rows sit in the whole list ---
