@@ -6,7 +6,8 @@ import Quickshell.Wayland
 // dim Powerline arrows that point away from the centre, levels drawn as
 // framed progress bars.
 // Left: this screen's workspaces, the focused window, the playing track,
-// then how many notifications are waiting and whether do not disturb is on.
+// then how many notifications are waiting, and whether do not disturb or
+// keep awake is on.
 // Centre: date and time. Right: the input method, network with its
 // signal, volume, battery.
 // A halftone shadow falls under it.
@@ -60,6 +61,13 @@ PanelWindow {
     color: "transparent"
     WlrLayershell.namespace: "shell"
     WlrLayershell.layer: WlrLayer.Top
+
+    // While "keep awake" is on, this window asks the compositor not to
+    // count the machine as idle, so nothing dims or locks.
+    IdleInhibitor {
+        window: bar
+        enabled: bar.shell.keepAwake
+    }
 
     // The divider between segments: a thin Powerline arrow. On the left
     // half of the bar it points right, on the right half it points left.
@@ -258,6 +266,16 @@ PanelWindow {
 
                         Flag {
                             word: "quiet"
+                            blockColor: Theme.inkDim
+                        }
+                    }
+
+                    // Kept awake: nothing dims or locks by itself.
+                    Passing {
+                        active: bar.shell.keepAwake
+
+                        Flag {
+                            word: "awake"
                             blockColor: Theme.inkDim
                         }
                     }

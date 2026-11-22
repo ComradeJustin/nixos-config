@@ -4,6 +4,7 @@ import Quickshell.Bluetooth
 import Quickshell.Io
 import Quickshell.Networking
 import Quickshell.Services.Mpris
+import Quickshell.Services.Pipewire
 import Quickshell.Services.SystemTray
 
 // The ring's stations and every page that can open inside it, made from
@@ -78,7 +79,9 @@ Scope {
             launch: 0,
             clipboard: 1,
             system: 2,
+            mixer: 2,
             tray: 2,
+            trayMenu: 2,
             wallpaper: 2,
             network: 3,
             wifi: 3,
@@ -103,6 +106,7 @@ Scope {
     // What was last picked on the way into a page that is about one thing.
     property int openNotificationId: 0
     property var wifiTarget: null
+    property var trayTarget: null
 
     // --- Launch: open windows, then apps ---
     readonly property var launch: launchPage()
@@ -224,11 +228,31 @@ Scope {
                     toggle: () => pages.shell.toggleMicrophoneMute()
                 },
                 {
+                    label: "Mixer",
+                    kind: "text",
+                    value: pages.playingStreams.length + " playing",
+                    opens: "mixer"
+                },
+                {
                     label: "Brightness",
                     kind: "level",
                     value: String(pages.shell.brightness),
                     level: pages.shell.brightness / 100,
                     adjust: step => pages.shell.changeBrightness(step, false)
+                },
+                {
+                    label: "Night light",
+                    kind: "switch",
+                    value: "warm from 19:00 to 07:00",
+                    on: pages.shell.nightLight,
+                    toggle: () => pages.shell.nightLight = !pages.shell.nightLight
+                },
+                {
+                    label: "Keep awake",
+                    kind: "switch",
+                    value: pages.shell.keepAwake ? "no dimming, no idle lock" : "off",
+                    on: pages.shell.keepAwake,
+                    toggle: () => pages.shell.keepAwake = !pages.shell.keepAwake
                 },
                 {
                     label: "Do not disturb",
@@ -265,26 +289,129 @@ Scope {
             ]
         })
 
-    // The app tray: apps that keep running without a window. Enter does
-    // what a click on the app's tray icon would.
+    // --- Mixer: the volume of each app that is playing sound ---
+    // The apps playing are whatever is connected to the speakers: each
+    // connection's source is one app's stream.
+    PwNodeLinkTracker {
+        id: speakerLinks
+
+        node: pages.shell.soundOutput
+    }
+
+    readonly property var playingStreams: {
+        const streams = [];
+        for (const link of speakerLinks.linkGroups)
+            streams.push(link.source);
+        return streams;
+    }
+
+    // Keeps those streams bound, so their volume can be read and set.
+    PwObjectTracker {
+        objects: pages.playingStreams
+    }
+
+    readonly property var mixer: mixerPage()
+
+    function mixerPage(): var {
+        const rows = [];
+        for (const stream of pages.playingStreams) {
+            // A stream has no volume to read until it has been bound.
+            if (stream.audio === null)
+                continue;
+            const appName = stream.properties["application.name"];
+            rows.push({
+                label: appName !== undefined ? appName : stream.name,
+                kind: "level",
+                value: String(Math.round(stream.audio.volume * 100)),
+                level: stream.audio.volume,
+                adjust: step => stream.audio.volume = Math.max(0, Math.min(1, stream.audio.volume + 0.05 * step))
+            });
+        }
+        return {
+            title: "Mixer",
+            empty: "no app is playing sound",
+            rows: rows
+        };
+    }
+
+    // The app tray: apps that keep running without a window. Enter opens an
+    // app's menu, or, for an app without one, does what a click on its tray
+    // icon would.
     readonly property var tray: trayPage()
 
     function trayPage(): var {
         const rows = [];
         for (const item of SystemTray.items.values) {
-            rows.push({
+            const row = {
                 label: item.title !== "" ? item.title : item.id,
                 kind: "text",
-                value: item.tooltipTitle,
-                act: () => item.activate(),
-                closes: true
-            });
+                value: item.tooltipTitle
+            };
+            if (item.hasMenu) {
+                row.act = () => pages.trayTarget = item;
+                row.opens = "trayMenu";
+            } else {
+                row.act = () => item.activate();
+                row.closes = true;
+            }
+            rows.push(row);
         }
         return {
             title: "Background apps",
             empty: "nothing is running in the background",
             rows: rows
         };
+    }
+
+    // One app's tray menu, as the app gives it. Lines that divide the menu
+    // are left out, and so are entries that would open a further menu.
+    readonly property var trayMenu: trayMenuPage()
+
+    function trayMenuPage(): var {
+        const item = pages.trayTarget;
+        if (item === null) {
+            return {
+                title: "Menu",
+                empty: "the app has gone",
+                rows: []
+            };
+        }
+        const rows = [
+            {
+                label: "Open",
+                kind: "text",
+                value: "",
+                act: () => item.activate(),
+                closes: true
+            }
+        ];
+        for (const entry of trayMenuOpener.children.values) {
+            if (entry.isSeparator || entry.hasChildren || entry.text === "")
+                continue;
+            if (!entry.enabled) {
+                rows.push({
+                    label: entry.text,
+                    kind: "note"
+                });
+                continue;
+            }
+            rows.push({
+                label: entry.text,
+                kind: "line",
+                act: () => entry.triggered(),
+                closes: true
+            });
+        }
+        return {
+            title: item.title !== "" ? item.title : item.id,
+            rows: rows
+        };
+    }
+
+    QsMenuOpener {
+        id: trayMenuOpener
+
+        menu: pages.trayTarget !== null ? pages.trayTarget.menu : null
     }
 
     // --- Wallpaper: the pictures in the repository's wallpaper folder ---

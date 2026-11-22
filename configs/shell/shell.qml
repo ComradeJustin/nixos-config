@@ -51,6 +51,7 @@ import Quickshell.Wayland
 //   input method   fcitx5, through its tray item
 //   notifications  what apps send, kept until dismissed
 //   brightness     brightnessctl, asked only when a key changes it
+//   night light    wlsunset, run while it is switched on
 //
 // Keys reach it through IPC, from niri's key bindings (configs/niri):
 //   qs -p ~/nixos-config/configs/shell ipc call shell <name>
@@ -456,6 +457,19 @@ ShellRoot {
                     root.showReadout("brightness");
             }
         }
+    }
+
+    // --- Night light and staying awake ---
+    // Night light warms the screen's colours in the evening. It is
+    // wlsunset, kept running while this is on, with fixed times.
+    property bool nightLight: false
+    // Staying awake stops the screen dimming and the idle lock. The bar
+    // holds the idle inhibitor (Bar.qml).
+    property bool keepAwake: false
+
+    Process {
+        command: ["wlsunset", "-S", "07:00", "-s", "19:00", "-t", "4000", "-T", "6500"]
+        running: root.nightLight
     }
 
     // --- The readout ---

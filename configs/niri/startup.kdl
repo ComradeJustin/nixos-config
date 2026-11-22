@@ -5,8 +5,10 @@ environment {
  XDG_CURRENT_DESKTOP "GNOME"
 }
 //spawn-at-startup "waybar"
-// Spawning quickshell
-spawn-at-startup "quickshell"
+// The desktop shell (configs/shell): the bar, notifications, the lock
+// screen, the ring. Started as a unit that comes back if it ever crashes,
+// because the lock screen lives in it.
+spawn-at-startup "systemd-run" "--user" "--unit=shell" "--collect" "-p" "Restart=on-failure" "quickshell" "-p" "/home/justin/nixos-config/configs/shell"
 // spawn-at-startup "quickshell" "-p" "/home/justin/nixos-config/configs/quick-shell-v2"
 // ags-shell now runs as a supervised systemd user service (ags.nix)
 // sway-audio-idle-inhibit runs as a supervised systemd user service (niri.nix)
