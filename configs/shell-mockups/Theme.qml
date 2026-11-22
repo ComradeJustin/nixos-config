@@ -2,7 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 
-// Colours, fonts and sizes shared by every mock layout. The palette comes
+// Colours, type and motion shared by the whole mockup. The palette comes
 // from the BASE00–BASE0F environment variables (modules/desktop/theme.nix).
 Singleton {
     readonly property color base00: Quickshell.env("BASE00") || "#241d1a"
@@ -15,7 +15,6 @@ Singleton {
     readonly property color base0F: Quickshell.env("BASE0F") || "#f1ae97"
 
     // What each colour is for.
-    // Opaque on purpose: text behind a panel must never show through it.
     readonly property color surface: base00
     readonly property color raised: base01
     readonly property color stroke: base02
@@ -24,13 +23,23 @@ Singleton {
     readonly property color textDim: base04
     readonly property color textFaint: base03
     readonly property color accent: base0F
-    readonly property color accentSoft: Qt.rgba(base0F.r, base0F.g, base0F.b, 0.16)
-    readonly property color accentStrong: Qt.rgba(base0F.r, base0F.g, base0F.b, 0.3)
 
-    readonly property string fontUi: "Hanken Grotesk"
-    readonly property string fontMono: "Maple Mono NF"
-    readonly property string fontDisplay: "Fraunces"
+    // Recursive is one variable font: weight, monospace and "casual" are
+    // axes of the same family (see Label.qml). It is not installed
+    // system-wide yet, so it is loaded from the link next to this file.
+    readonly property string fontFamily: recursive.status === FontLoader.Ready ? recursive.name : "Recursive"
 
-    readonly property int radiusPanel: 12
-    readonly property int radiusControl: 8
+    // Motion. Everything moves on springs: they overshoot once and keep their
+    // velocity when retargeted, so repeated key presses carry momentum.
+    // Nothing runs while idle.
+    readonly property real ringSpring: 3.0
+    readonly property real ringDamping: 0.26
+    readonly property real panelSpring: 3.6
+    readonly property real panelDamping: 0.38
+
+    FontLoader {
+        id: recursive
+
+        source: Qt.resolvedUrl("recursive-font/share/fonts/truetype/Recursive_VF_1.085.ttf")
+    }
 }
