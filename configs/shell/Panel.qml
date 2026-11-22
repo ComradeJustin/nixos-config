@@ -68,6 +68,17 @@ Box {
         return lines.join("\n");
     }
 
+    // Several levels side by side, such as the processor's cores: one
+    // block for each, taller the fuller it is. They stand a cell apart
+    // while there is room for that.
+    function barsText(levels: var): string {
+        const blocks = "▁▂▃▄▅▆▇█";
+        const blocksShown = [];
+        for (const level of levels)
+            blocksShown.push(blocks.charAt(Math.round(Math.max(0, Math.min(1, level)) * 7)));
+        return blocksShown.join(levels.length * 2 <= panel.levelCells ? " " : "");
+    }
+
     // The selected entry, or null when nothing is selected.
     readonly property var selectedEntry: selectedIndex >= 0 && selectedIndex < entries.length ? entries[selectedIndex] : null
 
@@ -185,7 +196,7 @@ Box {
             // "note", which is only there to be read.
             readonly property bool wholeLine: kind === "line" || kind === "note"
             // A level and a graph end with their value at the right edge.
-            readonly property bool endsWithValue: kind === "level" || kind === "graph"
+            readonly property bool endsWithValue: kind === "level" || kind === "graph" || kind === "bars"
             // The short text at the right edge: "›" for a row that opens a
             // page, a level's or graph's value, or the row's note.
             readonly property string endText: {
@@ -266,6 +277,16 @@ Box {
                 visible: line.kind === "graph"
                 samples: line.kind === "graph" ? line.entry.samples : []
                 cells: panel.levelCells
+                // One row of a taller graph draws only its band of the scale.
+                low: line.kind === "graph" && line.entry.low !== undefined ? line.entry.low : 0
+                high: line.kind === "graph" && line.entry.high !== undefined ? line.entry.high : 1
+            }
+
+            Label {
+                x: panel.valueColumn * Theme.cellWidth
+                visible: line.kind === "bars"
+                text: line.kind === "bars" ? panel.barsText(line.entry.levels) : ""
+                color: Theme.accent
             }
 
             SignalBars {

@@ -2,76 +2,64 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// The monitor: a second summoned layer, beside the ring. A grid of applets
-// sits in the middle of the screen, each a small panel with four lines of
-// summary: the system rebuild, processor, memory, network and so on. h j k
-// l move between them, and enter expands the focused one into a full view
-// in the same place. Esc collapses it, then closes the monitor.
+// The monitor: the other summoned layer, beside the ring. It is one
+// dashboard in the middle of the screen: bands of panels, with every
+// reading showing at once and graphs several rows tall for what changes
+// over time. There is nothing to select or expand: esc, or a click beside
+// it, closes it.
 //
-// An applet's tile (Tile.qml) and its expanded view are both a Panel, at
-// two sizes, so they use the same rows as the ring's pages. What they hold
-// comes from MonitorData.qml. An applet in trouble, such as a failed
-// service or a nearly full disk, is drawn in the alert colour.
+// Each panel is a Panel, so it is made of the same rows as the ring's
+// pages. What the panels hold, and which sit side by side in a band, comes
+// from MonitorData.qml. A panel in trouble, such as a nearly full disk or a
+// failed service, is drawn in the alert colour.
 //
-// It moves the way the ring does. The tiles are wiped in one after another,
-// in reading order; expanding wipes them away and then wipes the full view
-// in; and everything leaves the way it came.
+// It moves the way the ring does. The panels are wiped in one after
+// another, in reading order, and leave the way they came.
 PanelWindow {
     id: monitor
 
     // The shell root (shell.qml), which holds the state.
     required property var shell
 
-    readonly property var applets: shell.applets
-    readonly property int appletCount: applets.length
+    // The bands, top to bottom: each a list of panels { title, alert, rows }.
+    readonly property var bands: shell.monitorBands
+    readonly property int panelCount: panelsBefore(bands.length)
 
-    // --- The three animated values, chained as in Ring.qml ---
-    // How much of the monitor is showing: 0 = closed, 1 = open. It stays
-    // open until an expanded view has been wiped away.
-    property real openness: shell.monitorOpen || viewOpen ? 1 : 0
-    // 0 = the tiles are showing. 1 = they are wiped away, to make room for
-    // an expanded view or because the monitor is closing.
-    property real aside: !shell.monitorOpen || shell.monitorExpanded || viewOpen ? 1 : 0
-    // How much of the expanded view is showing. It starts only once the
-    // tiles have been wiped away.
-    property real dive: shell.monitorExpanded && aside === 1 ? 1 : 0
-
-    // How much of the tiles is showing, from 0 to 1.
-    readonly property real tilesShown: Math.min(openness, 1 - aside)
-    // The last tile starts to wipe in when the tiles are this far shown.
+    // How much of the monitor is showing: 0 = closed, 1 = open.
+    property real openness: shell.monitorOpen ? 1 : 0
+    // The last panel starts to wipe in when the monitor is this far shown.
     readonly property real sweepShare: 0.7
-    // True from when a view starts to wipe in until it has been wiped away.
-    readonly property bool viewOpen: dive > 0
 
     Behavior on openness {
         NumberAnimation {
             duration: Theme.wipeMs
         }
     }
-    Behavior on aside {
-        NumberAnimation {
-            duration: Theme.wipeMs
-        }
-    }
-    Behavior on dive {
-        NumberAnimation {
-            duration: Theme.wipeMs
-        }
-    }
 
     // --- Geometry, in cells ---
-    // A tile, and the space each one takes with the gap to the next.
-    readonly property int tileColumns: 40
-    readonly property int tileRows: 4
-    readonly property int tilePitchX: (tileColumns + 2) * Theme.cellWidth
-    readonly property int tilePitchY: (tileRows + 3) * Theme.cellHeight
-    // The grid is this many tiles wide.
-    readonly property int gridColumns: shell.monitorColumns
-    readonly property int gridRows: Math.ceil(appletCount / gridColumns)
-    readonly property real gridX: Theme.snapX((width - gridColumns * tilePitchX) / 2) + Theme.cellWidth
-    readonly property real gridY: Theme.snapY((height - gridRows * tilePitchY) / 2)
-    // The expanded view.
-    readonly property int viewColumns: 76
+    // Every band is this wide. Its panels share that, two cells apart.
+    readonly property int totalColumns: 130
+    readonly property int totalRows: rowsAbove(bands.length) - 1
+    readonly property real gridX: Theme.snapX((width - totalColumns * Theme.cellWidth) / 2)
+    readonly property real gridY: Theme.snapY((height - totalRows * Theme.cellHeight) / 2)
+
+    // How many panels come before this band, for wiping them in in order.
+    function panelsBefore(bandIndex: int): int {
+        let count = 0;
+        for (let index = 0; index < bandIndex; index++)
+            count += monitor.bands[index].length;
+        return count;
+    }
+
+    // How many rows of cells lie above this band. Each band above takes
+    // its rows, its two border lines and a line of space. The panels of a
+    // band are all the same height (MonitorData.qml).
+    function rowsAbove(bandIndex: int): int {
+        let rows = 0;
+        for (let index = 0; index < bandIndex; index++)
+            rows += monitor.bands[index][0].rows.length + 3;
+        return rows;
+    }
 
     function clamp01(value: real): real {
         return Math.max(0, Math.min(1, value));
@@ -108,161 +96,94 @@ PanelWindow {
         focus: true
 
         Keys.onPressed: event => {
-            const shell = monitor.shell;
-            const key = event.key;
-            const left = key === Qt.Key_H || key === Qt.Key_Left;
-            const right = key === Qt.Key_L || key === Qt.Key_Right;
-            const down = key === Qt.Key_J || key === Qt.Key_Down;
-            const up = key === Qt.Key_K || key === Qt.Key_Up;
             event.accepted = true;
-
-            if (key === Qt.Key_Escape) {
-                shell.monitorBack();
-                return;
-            }
-
-            // An applet is expanded: scroll its rows, or go back.
-            if (shell.monitorExpanded) {
-                if (down)
-                    shell.monitorScroll(1);
-                else if (up)
-                    shell.monitorScroll(-1);
-                else if (left)
-                    shell.monitorBack();
-                return;
-            }
-
-            // The tiles are showing: move between them, or expand one.
-            if (key === Qt.Key_Return || key === Qt.Key_Enter || key === Qt.Key_Space)
-                shell.expandApplet();
-            else if (left)
-                shell.moveApplet(-1);
-            else if (right)
-                shell.moveApplet(1);
-            else if (down)
-                shell.moveApplet(shell.monitorColumns);
-            else if (up)
-                shell.moveApplet(-shell.monitorColumns);
+            if (event.key === Qt.Key_Escape)
+                monitor.shell.closeMonitor();
         }
 
-        // --- The mouse on the empty part of the monitor ---
-        // A click beside everything goes back one step, like esc.
+        // A click beside the panels closes the monitor.
         MouseArea {
             anchors.fill: parent
-            onClicked: monitor.shell.monitorBack()
+            onClicked: monitor.shell.closeMonitor()
         }
 
-        // --- The tiles ---
+        // --- The bands, and the panels of each ---
+        // The models are counts, not the lists themselves: the lists are
+        // made afresh with every reading, and a panel should live on.
         Repeater {
-            model: monitor.appletCount
+            model: monitor.bands.length
 
-            Tile {
-                id: tile
+            Item {
+                id: band
 
                 required property int index
 
-                readonly property bool focused: index === monitor.shell.monitorIndex
+                readonly property var panels: monitor.bands[index]
+                // Two panels in a band are wide ones, with longer bars and
+                // graphs; three are narrow.
+                readonly property bool wide: panels.length === 2
+                readonly property int panelColumns: (monitor.totalColumns - 2 * (panels.length - 1)) / panels.length
 
-                x: monitor.gridX + (index % monitor.gridColumns) * monitor.tilePitchX
-                y: monitor.gridY + Math.floor(index / monitor.gridColumns) * monitor.tilePitchY
-                columns: monitor.tileColumns
-                applet: monitor.applets[index]
-                footer: focused ? "↵ expand" : ""
-                // The focused tile has its border in the accent colour, and
-                // flashes bright for a moment as it takes focus. An applet
-                // in trouble keeps the alert colour unless it is focused.
-                lineColor: focusFlash.running ? Theme.ink : (focused ? Theme.accent : (inTrouble ? Theme.alert : Theme.line))
-                titleColor: inTrouble ? Theme.alert : (focused ? Theme.accent : Theme.ink)
-                // Tiles wipe in one after another, in reading order.
-                shown: monitor.clamp01((monitor.tilesShown - monitor.sweepShare * index / monitor.appletCount) / (1 - monitor.sweepShare))
-                visible: shown > 0
+                Repeater {
+                    model: band.panels.length
 
-                onFocusedChanged: {
-                    if (focused)
-                        focusFlash.restart();
-                }
+                    Panel {
+                        required property int index
 
-                Timer {
-                    id: focusFlash
+                        readonly property var panel: band.panels[index]
+                        readonly property bool inTrouble: panel.alert === true
+                        // Where this panel comes in reading order.
+                        readonly property int order: monitor.panelsBefore(band.index) + index
 
-                    interval: Theme.flashMs
-                }
+                        x: monitor.gridX + index * (band.panelColumns + 2) * Theme.cellWidth
+                        y: monitor.gridY + monitor.rowsAbove(band.index) * Theme.cellHeight
+                        columns: band.panelColumns
+                        // A panel can ask for more room for its labels.
+                        valueColumn: panel.valueColumn !== undefined ? panel.valueColumn : (band.wide ? 12 : 10)
+                        levelCells: panel.levelCells !== undefined ? panel.levelCells : (band.wide ? 34 : 14)
+                        // Every row shows; nothing scrolls.
+                        maxListRows: panel.rows.length
+                        page: panel
+                        entries: panel.rows
+                        // Nothing here is selected.
+                        selectedIndex: -1
+                        footer: ""
+                        titleColor: inTrouble ? Theme.alert : Theme.ink
+                        lineColor: inTrouble ? Theme.alert : Theme.line
+                        // Panels wipe in one after another, in reading order.
+                        shown: monitor.clamp01((monitor.openness - monitor.sweepShare * order / monitor.panelCount) / (1 - monitor.sweepShare))
+                        visible: shown > 0
 
-                // The mouse focuses the tile it moves over; a click expands it.
-                MouseArea {
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onPositionChanged: monitor.shell.moveApplet(tile.index - monitor.shell.monitorIndex)
-                    onClicked: {
-                        monitor.shell.moveApplet(tile.index - monitor.shell.monitorIndex);
-                        monitor.shell.expandApplet();
+                        // A click on a panel must not reach the empty part
+                        // of the monitor and close it.
+                        MouseArea {
+                            anchors.fill: parent
+                        }
                     }
                 }
             }
         }
 
-        // A click on the expanded view itself must not reach the empty
-        // part of the monitor and go back.
-        MouseArea {
-            anchors.fill: view
-            visible: view.visible
-        }
-
-        // --- The expanded view of the focused applet ---
-        Panel {
-            id: view
-
-            readonly property var applet: monitor.applets[monitor.shell.monitorIndex]
-
-            x: Theme.snapX((parent.width - panelWidth) / 2)
-            y: Theme.snapY((parent.height - panelHeight) / 2)
-            columns: monitor.viewColumns
-            valueColumn: 30
-            levelCells: 28
-            maxListRows: 14
-            page: applet
-            entries: applet.rows
-            selectedIndex: monitor.shell.monitorSelected
-            footer: "↑↓ scroll  esc back"
-            titleColor: applet.alert === true ? Theme.alert : Theme.ink
-            lineColor: applet.alert === true ? Theme.alert : Theme.line
-            shown: monitor.dive
-            visible: monitor.viewOpen
-            // The mouse selects the row it is over; the wheel scrolls.
-            interactive: true
-            onRowEntered: entryIndex => monitor.shell.monitorScroll(entryIndex - monitor.shell.monitorSelected)
-            onWheelTurned: step => monitor.shell.monitorScroll(step)
-        }
-
-        // --- Key hints for the tiles; an expanded view carries its own ---
+        // --- The key hint ---
         Row {
             x: Theme.snapX((parent.width - width) / 2)
             y: Theme.snapY(parent.height - 2 * Theme.cellHeight)
-            visible: monitor.tilesShown > 0
+            visible: monitor.openness > 0
             // Drawn through the dither only while it is changing.
-            layer.enabled: monitor.tilesShown < 1
+            layer.enabled: monitor.openness < 1
             layer.effect: DitherFade {
-                amount: monitor.tilesShown
+                amount: monitor.openness
                 spread: Theme.wipeFront
             }
 
-            Repeater {
-                model: [["←↓↑→", " move    "], ["↵", " expand    "], ["esc", " close"]]
+            Label {
+                text: "esc"
+                color: Theme.ink
+            }
 
-                Row {
-                    required property var modelData
-
-                    Label {
-                        text: parent.modelData[0]
-                        color: Theme.ink
-                    }
-
-                    Label {
-                        text: parent.modelData[1]
-                        color: Theme.inkDim
-                    }
-                }
+            Label {
+                text: " close"
+                color: Theme.inkDim
             }
         }
     }

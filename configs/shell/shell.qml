@@ -31,8 +31,8 @@ import Quickshell.Wayland
 //   PageView       the Panel that shows whichever page is open
 //   Drop           a panel that drops out of the bar under what was clicked
 //                  and shows a page there: inbox, tray, network, sound, power
-//   Monitor        the other summoned layer: a grid of applets (processor,
-//                  memory, disks, ...) that each expand to a full view
+//   Monitor        the other summoned layer: one dashboard of panels
+//                  (processor, memory, network, disks, ...) with graphs
 //   MonitorData    reads the system for it while it is open
 //                  (system-readings.sh)
 //   Calendar       a month that drops out of the bar's clock
@@ -629,14 +629,8 @@ ShellRoot {
 
     // --- The monitor ---
     property bool monitorOpen: false
-    // Which applet is focused, and whether it is expanded.
-    property int monitorIndex: 0
-    property bool monitorExpanded: false
-    // The selected row of the expanded applet.
-    property int monitorSelected: 0
-    // How many applets sit side by side in the grid.
-    readonly property int monitorColumns: 3
-    readonly property var applets: monitorData.applets
+    // Its panels, in bands from top to bottom (MonitorData.qml).
+    readonly property var monitorBands: monitorData.bands
 
     function toggleMonitor(): void {
         if (root.monitorOpen) {
@@ -649,35 +643,6 @@ ShellRoot {
 
     function closeMonitor(): void {
         root.monitorOpen = false;
-        root.monitorExpanded = false;
-    }
-
-    // Move the focus by this many applets, if there is one there.
-    function moveApplet(step: int): void {
-        const target = root.monitorIndex + step;
-        if (root.monitorExpanded || target < 0 || target >= root.applets.length)
-            return;
-        root.monitorIndex = target;
-    }
-
-    function expandApplet(): void {
-        root.monitorSelected = 0;
-        root.monitorExpanded = true;
-    }
-
-    // Esc: collapse the expanded applet, then close the monitor.
-    function monitorBack(): void {
-        if (root.monitorExpanded)
-            root.monitorExpanded = false;
-        else
-            root.monitorOpen = false;
-    }
-
-    function monitorScroll(step: int): void {
-        if (!root.monitorExpanded)
-            return;
-        const last = root.applets[root.monitorIndex].rows.length - 1;
-        root.monitorSelected = Math.max(0, Math.min(last, root.monitorSelected + step));
     }
 
     // --- The tray ---

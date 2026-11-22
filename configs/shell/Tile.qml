@@ -1,8 +1,8 @@
 import QtQuick
 
 // One applet's tile: a small panel with the applet's title and its four
-// lines of summary. Used in the monitor's grid and on the desktop. An
-// applet in trouble has its border and title in the alert colour.
+// lines of summary. Used on the desktop, for the playing track. An applet
+// in trouble has its border and title in the alert colour.
 Panel {
     // The applet shown: { title, summary, alert }.
     property var applet: null

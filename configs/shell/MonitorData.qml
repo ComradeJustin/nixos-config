@@ -4,13 +4,20 @@ import Quickshell.Io
 
 // What the monitor shows. While the monitor is open, and only then, it
 // reads the system every two seconds (system-readings.sh) and lays the
-// readings out as the monitor's applets. Processor use and network speed
-// are worked out from the difference between two readings.
+// readings out as the monitor's panels. Processor use and network speed
+// are worked out from the difference between two readings, and those and
+// the memory in use are kept for a couple of minutes for the graphs.
 //
-// An applet is { title, alert, summary, rows }: four summary rows for its
-// tile and the rows of its expanded view. The rows are the kinds Pages.qml
-// describes. A tile's labels have room for seven characters and its values
-// for about ten.
+// A panel is { title, alert, rows }, and may ask for its own `valueColumn`
+// and `levelCells`. The rows are the kinds Pages.qml describes, and three
+// more that only the monitor uses:
+//   kind "graph"  a history (`samples`, each 0 to 1), then `value`. With
+//                 `low` and `high` it draws only that band of the scale,
+//                 which is how a graph gets to be several rows tall.
+//   kind "bars"   several levels side by side (`levels`), then `value`
+//   kind "busy"   a spinner, then `value`
+// A wide panel's labels have room for nine characters and a narrow one's
+// for seven.
 Scope {
     id: readings
 
@@ -26,16 +33,22 @@ Scope {
     property real processorUse: 0
     property var coreUse: []
     property var processorHistory: []
+    // The share of memory in use, over the same time.
+    property var memoryHistory: []
     // Bytes a second down and up, and their recent history.
     property real downRate: 0
     property real upRate: 0
     property var downHistory: []
     property var upHistory: []
+    // Bytes received and sent since the machine started.
+    property real receivedTotal: 0
+    property real sentTotal: 0
     // The counters of the reading before, to take differences from.
     property var earlierCores: []
     property var earlierNetwork: null
 
-    readonly property int historyLength: 60
+    // Two samples for each cell of the widest graph (Monitor.qml).
+    readonly property int historyLength: 68
 
     Process {
         id: reader
@@ -68,6 +81,9 @@ Scope {
         }
         readings.sections = sections;
         readings.takeProcessor(sections.processor || []);
+        const memoryTotal = readings.memory("MemTotal");
+        if (memoryTotal > 0)
+            readings.memoryHistory = readings.extended(readings.memoryHistory, 1 - readings.memory("MemAvailable") / memoryTotal);
         readings.takeNetwork(sections.network || []);
     }
 
@@ -127,6 +143,8 @@ Scope {
             received += counters[0];
             sent += counters[8];
         }
+        readings.receivedTotal = received;
+        readings.sentTotal = sent;
         const now = Date.now();
         const earlier = readings.earlierNetwork;
         readings.earlierNetwork = {
@@ -200,181 +218,153 @@ Scope {
         return 0;
     }
 
-    // Exactly four rows for a tile: the first four, or blank lines added
-    // to make four, so every tile is the same height.
-    function tileRows(rows: var): var {
-        const four = rows.slice(0, 4);
-        while (four.length < 4)
-            four.push({
+    // The same rows with blank lines added to make this many.
+    function padded(rows: var, count: int): var {
+        const longer = rows.slice();
+        while (longer.length < count)
+            longer.push({
                 label: "",
                 kind: "note"
             });
-        return four;
+        return longer;
     }
 
-    // --- The applets, in the order they sit in the grid ---
-    // The power applet is also the top of the panel that drops out of the
-    // bar's battery (Pages.qml).
-    readonly property var power: powerApplet()
-    readonly property var applets: [buildApplet(), processorApplet(), memoryApplet(), networkApplet(), storageApplet(), processesApplet(), power, servicesApplet(), systemApplet()]
-
-    // The system's generation number, out of a link named "system-287-link".
-    function generation(): string {
-        const link = readings.section("generation")[0] || "";
-        const parts = link.split("-");
-        return parts.length >= 2 ? parts[1] : "";
+    // A graph several rows tall: one "graph" row for each band of the
+    // scale, the highest first. The first row carries the label and value.
+    function tallGraph(label: string, value: string, samples: var, rowCount: int): var {
+        const rows = [];
+        for (let row = 0; row < rowCount; row++) {
+            const band = rowCount - 1 - row;
+            rows.push({
+                label: row === 0 ? label : "",
+                kind: "graph",
+                value: row === 0 ? value : "",
+                samples: samples,
+                low: band / rowCount,
+                high: (band + 1) / rowCount
+            });
+        }
+        return rows;
     }
 
-    function buildApplet(): var {
-        const builders = Number(readings.section("builders")[0] || 0);
-        const building = builders > 0;
-        const state = {
-            label: "Status",
-            kind: building ? "busy" : "text",
-            value: building ? builders + " build processes" : "idle"
-        };
-        return {
-            title: "Build",
-            alert: false,
-            summary: readings.tileRows([state,
-                {
-                    label: "System",
-                    kind: "text",
-                    value: "generation " + readings.generation()
-                }
-            ]),
-            rows: [state,
-                {
-                    label: "System generation",
-                    kind: "text",
-                    value: readings.generation()
-                }
-            ]
-        };
+    // --- The panels ---
+    // The monitor is bands of panels, top to bottom. The panels of a band
+    // sit side by side: two wide ones or three narrow ones.
+    // The power panel's rows are also the top of the panel that drops out
+    // of the bar's battery (Pages.qml).
+    readonly property var power: powerPanel()
+    readonly property var bands: [band([processorPanel(), memoryPanel()]), band([networkPanel(), processesPanel()]), band([storagePanel(), power, systemPanel()])]
+
+    // These panels with blank rows added, so that all are as tall as the
+    // tallest of them.
+    function band(panels: var): var {
+        let tallest = 0;
+        for (const panel of panels)
+            tallest = Math.max(tallest, panel.rows.length);
+        const even = [];
+        for (const panel of panels) {
+            even.push({
+                title: panel.title,
+                alert: panel.alert,
+                valueColumn: panel.valueColumn,
+                levelCells: panel.levelCells,
+                rows: readings.padded(panel.rows, tallest)
+            });
+        }
+        return even;
     }
 
-    function processorApplet(): var {
+    function processorPanel(): var {
         const load = (readings.section("load")[0] || "").split(" ").slice(0, 3).join(" ");
         const degrees = Number(readings.section("temperature")[0] || 0) / 1000;
         const hot = degrees >= 90;
-        const heat = {
+        const rows = readings.tallGraph("Use", readings.percent(readings.processorUse), readings.processorHistory, 3);
+        rows.push({
+            label: "Cores",
+            kind: "bars",
+            value: String(readings.coreUse.length),
+            levels: readings.coreUse
+        });
+        rows.push({
+            label: "Load",
+            kind: "text",
+            value: load + "  over 1, 5 and 15 minutes"
+        });
+        rows.push({
             label: "Heat",
             kind: "level",
             value: Math.round(degrees) + "°",
             level: degrees / 100,
             alert: hot
-        };
-        const rows = [
-            {
-                label: "All cores",
-                kind: "graph",
-                value: readings.percent(readings.processorUse),
-                samples: readings.processorHistory
-            }
-        ];
-        for (let core = 0; core < readings.coreUse.length; core++) {
-            rows.push({
-                label: "Core " + (core + 1),
-                kind: "level",
-                value: readings.percent(readings.coreUse[core]),
-                level: readings.coreUse[core]
-            });
-        }
-        rows.push({
-            label: "Load average",
-            kind: "text",
-            value: load
         });
-        rows.push(heat);
         return {
             title: "Processor",
             alert: hot,
-            summary: [
-                {
-                    label: "Load",
-                    kind: "graph",
-                    value: readings.percent(readings.processorUse),
-                    samples: readings.processorHistory
-                },
-                {
-                    label: "Cores",
-                    kind: "text",
-                    value: String(readings.coreUse.length)
-                },
-                {
-                    label: "Average",
-                    kind: "text",
-                    value: load
-                },
-                heat],
             rows: rows
         };
     }
 
-    function memoryApplet(): var {
+    function memoryPanel(): var {
         const total = readings.memory("MemTotal");
-        const used = total - readings.memory("MemAvailable");
+        const available = readings.memory("MemAvailable");
+        const used = total - available;
         const cached = readings.memory("Cached");
         const swapTotal = readings.memory("SwapTotal");
         const swapUsed = swapTotal - readings.memory("SwapFree");
-        const rows = [
-            {
-                label: "Used",
-                kind: "level",
-                value: readings.size(used) + " of " + readings.size(total),
-                level: total > 0 ? used / total : 0
-            },
-            {
-                label: "Cache",
-                kind: "level",
-                value: readings.size(cached),
-                level: total > 0 ? cached / total : 0
-            },
-            {
-                label: "Swap",
-                kind: "level",
-                value: readings.size(swapUsed) + " of " + readings.size(swapTotal),
-                level: swapTotal > 0 ? swapUsed / swapTotal : 0
-            }
-        ];
-        const top = readings.processRows(1);
+        const rows = readings.tallGraph("Used", readings.size(used) + " of " + readings.size(total), readings.memoryHistory, 3);
+        rows.push({
+            label: "Cache",
+            kind: "level",
+            value: readings.size(cached),
+            level: total > 0 ? cached / total : 0
+        });
+        rows.push({
+            label: "Swap",
+            kind: "level",
+            value: readings.size(swapUsed) + " of " + readings.size(swapTotal),
+            level: swapTotal > 0 ? swapUsed / swapTotal : 0
+        });
+        rows.push({
+            label: "Free",
+            kind: "text",
+            value: readings.size(available)
+        });
         return {
             title: "Memory",
             alert: false,
-            summary: [
-                {
-                    label: "Used",
-                    kind: "level",
-                    value: readings.size(used),
-                    level: total > 0 ? used / total : 0
-                },
-                {
-                    label: "Cache",
-                    kind: "level",
-                    value: readings.size(cached),
-                    level: total > 0 ? cached / total : 0
-                },
-                {
-                    label: "Swap",
-                    kind: "level",
-                    value: readings.size(swapUsed),
-                    level: swapTotal > 0 ? swapUsed / swapTotal : 0
-                },
-                {
-                    label: "Top",
-                    kind: "text",
-                    value: top.length > 0 ? top[0].label : ""
-                }
-            ],
-            rows: rows.concat(readings.processRows(8))
+            rows: rows
         };
     }
 
-    // The processes using the most memory, as level rows.
-    function processRows(count: int): var {
+    function networkPanel(): var {
+        const online = readings.shell.online;
+        const down = readings.tallGraph("Down", readings.rate(readings.downRate), readings.scaled(readings.downHistory), 2);
+        const up = readings.tallGraph("Up", readings.rate(readings.upRate), readings.scaled(readings.upHistory), 2);
+        const rows = down.concat(up);
+        rows.push({
+            label: "Wi-Fi",
+            kind: "signal",
+            value: readings.shell.networkName,
+            level: readings.shell.networkSignal,
+            alert: !online
+        });
+        rows.push({
+            label: "Total",
+            kind: "text",
+            value: readings.size(readings.receivedTotal / 1024) + " down, " + readings.size(readings.sentTotal / 1024) + " up since it started"
+        });
+        return {
+            title: "Network",
+            alert: !online,
+            rows: rows
+        };
+    }
+
+    // The processes using the most memory.
+    function processesPanel(): var {
         const total = readings.memory("MemTotal");
         const rows = [];
-        for (const line of readings.section("processes").slice(0, count)) {
+        for (const line of readings.section("processes").slice(0, 6)) {
             // The name may hold spaces; the number is the last field.
             const lastSpace = line.lastIndexOf(" ");
             const kilobytes = Number(line.slice(lastSpace + 1));
@@ -385,43 +375,23 @@ Scope {
                 level: total > 0 ? kilobytes / total : 0
             });
         }
-        return rows;
-    }
-
-    function networkApplet(): var {
-        const online = readings.shell.online;
-        const rows = [
-            {
-                label: "Down",
-                kind: "graph",
-                value: readings.rate(readings.downRate),
-                samples: readings.scaled(readings.downHistory)
-            },
-            {
-                label: "Up",
-                kind: "graph",
-                value: readings.rate(readings.upRate),
-                samples: readings.scaled(readings.upHistory)
-            },
-            {
-                label: "Wi-Fi",
-                kind: "signal",
-                value: readings.shell.networkName,
-                level: readings.shell.networkSignal,
-                alert: !online
-            }
-        ];
+        rows.push({
+            label: "Running",
+            kind: "text",
+            value: (readings.section("processCount")[0] || "0") + " processes"
+        });
         return {
-            title: "Network",
-            alert: !online,
-            summary: readings.tileRows(rows),
+            title: "Processes",
+            alert: false,
+            // Process names are long.
+            valueColumn: 22,
+            levelCells: 26,
             rows: rows
         };
     }
 
-    function storageApplet(): var {
+    function storagePanel(): var {
         const rows = [];
-        const summary = [];
         let full = false;
         for (const line of readings.section("storage")) {
             const fields = line.split(" ");
@@ -436,53 +406,28 @@ Scope {
                 level: share,
                 alert: nearlyFull
             });
-            summary.push({
-                label: fields[2],
-                kind: "level",
-                value: readings.percent(share),
-                level: share,
-                alert: nearlyFull
-            });
         }
         return {
             title: "Storage",
             alert: full,
-            summary: readings.tileRows(summary),
             rows: rows
         };
     }
 
-    function processesApplet(): var {
-        const rows = readings.processRows(12);
-        rows.push({
-            label: "Running",
-            kind: "text",
-            value: (readings.section("processCount")[0] || "0") + " processes"
-        });
-        return {
-            title: "Processes",
-            alert: false,
-            summary: readings.processRows(4),
-            rows: rows
-        };
-    }
-
-    function powerApplet(): var {
+    function powerPanel(): var {
         const shell = readings.shell;
         const device = shell.batteryDevice;
         if (!shell.batteryPresent) {
-            const mains = [
-                {
-                    label: "Power",
-                    kind: "text",
-                    value: "from the mains, no battery"
-                }
-            ];
             return {
                 title: "Power",
                 alert: false,
-                summary: readings.tileRows(mains),
-                rows: mains
+                rows: [
+                    {
+                        label: "Power",
+                        kind: "text",
+                        value: "from the mains, no battery"
+                    }
+                ]
             };
         }
         const low = shell.battery <= 0.2 && !shell.charging;
@@ -517,76 +462,60 @@ Scope {
         return {
             title: "Power",
             alert: low,
-            summary: readings.tileRows(rows),
             rows: rows
         };
     }
 
-    function servicesApplet(): var {
-        const failed = readings.section("failed");
-        const running = readings.section("running");
-        const rows = [
-            {
-                label: "Failed",
-                kind: "text",
-                value: failed.length === 0 ? "none" : failed.length + " units",
-                alert: failed.length > 0
-            },
-            {
-                label: "System",
-                kind: "text",
-                value: (running[0] || "0") + " running"
-            },
-            {
-                label: "Yours",
-                kind: "text",
-                value: (running[1] || "0") + " running"
-            }
-        ];
-        for (const unit of failed) {
-            rows.push({
-                label: unit,
-                kind: "line",
-                note: "failed"
-            });
-        }
-        return {
-            title: "Services",
-            alert: failed.length > 0,
-            summary: readings.tileRows(rows),
-            rows: rows
-        };
-    }
-
-    function systemApplet(): var {
+    // The machine itself, what is being built, and its services.
+    function systemPanel(): var {
         const uptime = Number((readings.section("uptime")[0] || "0").split(" ")[0]);
-        const rows = [
-            {
-                label: "Host",
-                kind: "text",
-                value: readings.section("host")[0] || ""
-            },
-            {
-                label: "Up",
-                kind: "text",
-                value: readings.duration(uptime)
-            },
-            {
-                label: "Kernel",
-                kind: "text",
-                value: "Linux " + (readings.section("kernel")[0] || "")
-            },
-            {
-                label: "System",
-                kind: "text",
-                value: "generation " + readings.generation()
-            }
-        ];
+        // The system's generation number, out of a link named "system-287-link".
+        const link = (readings.section("generation")[0] || "").split("-");
+        const generation = link.length >= 2 ? link[1] : "";
+        const builders = Number(readings.section("builders")[0] || 0);
+        const running = readings.section("running");
+        const failed = readings.section("failed");
         return {
             title: "System",
-            alert: false,
-            summary: rows,
-            rows: rows
+            alert: failed.length > 0,
+            rows: [
+                {
+                    label: "Host",
+                    kind: "text",
+                    value: readings.section("host")[0] || ""
+                },
+                {
+                    label: "Up",
+                    kind: "text",
+                    value: readings.duration(uptime)
+                },
+                {
+                    label: "Kernel",
+                    kind: "text",
+                    value: "Linux " + (readings.section("kernel")[0] || "")
+                },
+                {
+                    label: "System",
+                    kind: "text",
+                    value: "generation " + generation
+                },
+                {
+                    label: "Build",
+                    kind: builders > 0 ? "busy" : "text",
+                    value: builders > 0 ? builders + " build processes" : "idle"
+                },
+                {
+                    label: "Running",
+                    kind: "text",
+                    value: (running[0] || "0") + " services, " + (running[1] || "0") + " yours"
+                },
+                {
+                    label: "Failed",
+                    kind: "text",
+                    value: failed.length === 0 ? "none" : failed.join(", "),
+                    alert: failed.length > 0
+                }
+            ]
         };
     }
 }
