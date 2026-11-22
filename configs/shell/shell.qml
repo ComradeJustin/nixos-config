@@ -15,17 +15,23 @@ import Quickshell.Wayland
 // fixed grid of character cells. The design was worked out in
 // configs/shell-mockups, which shows every screen with sample data; this
 // is the real one, built a piece at a time. So far it is the bar,
-// notifications, the volume, brightness and microphone keys, and the lock
-// screen.
+// notifications, the volume, brightness and microphone keys, the lock
+// screen, and the ring with its pages.
 //   Bar            a status line along the top edge of every screen
 //   Toasts         notifications, stacked under the bar's left end
 //   Readout        a panel that drops out of the bar when the volume,
 //                  brightness or microphone mute changes
 //   Lock           the lock screen (pam/password is its password rule)
+//   Ring           the summoned layer: station names on a braille orbit
+//                  around a clock; the focused one opens into pages
+//   Pages          the stations and what every page holds, from the system
+//   Panel          draws one page: a line of text input and a scrolling
+//                  list of rows
 //   Niri           workspaces and the focused window, from niri
 //   Theme          colours, the character grid, motion
-//   Box, Label, Level, SignalBars, Value, Passing, Flag, Segment,
-//   DitherFade     what those are built from
+//   Box, Label, Level, SignalBars, Value, Passing, Flag, Segment, Dim,
+//   Graph, Spinner, DitherFade, DitherImage
+//                  what those are built from
 //
 // This file gathers what they show from the system and holds what they
 // can do. Everything arrives as it changes; nothing polls. The shell is
@@ -45,7 +51,15 @@ import Quickshell.Wayland
 //   where <name> is one of: volumeUp, volumeDown, volumeMute,
 //   microphoneMute, brightnessUp, brightnessDown, quiet, dismissAll,
 //   lock, lockPractice (a lock that also lets go by itself after a minute),
-//   lockWake (ask the fingerprint reader again, after a suspend)
+//   lockWake (ask the fingerprint reader again, after a suspend),
+//   ring (open or close the ring), page <name> (open the ring at a page:
+//   launch, clipboard, system, network, media, inbox, session, ...),
+//   and, for driving the ring without the keyboard: turn <steps>, open,
+//   select <steps>, adjust <step>, back, type <text>
+// In the ring: h l turn, enter opens or acts, j k or the arrows select,
+// left and right move a level, esc backs out. In a page with a text
+// field, letters type, up and down select, and left, right, home, end,
+// backspace, delete and ctrl+u edit the text. The mouse works too.
 // The lock is also reached through swayidle (configs/niri/startup.kdl),
 // which calls it when the session is asked to lock: after sitting idle,
 // before a suspend, and by "loginctl lock-session".
@@ -66,6 +80,227 @@ ShellRoot {
     // Whether the focused window is fullscreen. niri covers the bar then,
     // so the bar dithers away.
     readonly property bool fullscreen: ToplevelManager.activeToplevel ? ToplevelManager.activeToplevel.fullscreen : false
+
+    // --- The ring ---
+    property bool ringOpen: false
+    // How many steps the ring has been turned. Never wraps (see Ring.qml).
+    property int turns: 0
+    readonly property var stations: pageSource.stations
+    readonly property int focusedIndex: ((turns % stations.length) + stations.length) % stations.length
+
+    // The pages open inside the focused station, innermost last. Empty
+    // while the ring shows its names.
+    property var pageStack: []
+    // The selected row of each of those pages.
+    property var selectionStack: []
+    // What has been typed into the innermost page's text field, and where
+    // the text cursor is in it, counted in characters from the start.
+    property string query: ""
+    property int cursor: 0
+    // A change of page waits here while the page on screen is wiped away.
+    // Ring.qml calls commitStack() once it has gone.
+    property bool stackPending: false
+    property var nextPageStack: []
+    property var nextSelectionStack: []
+
+    readonly property bool dived: pageStack.length > 0
+    readonly property string pageName: dived ? pageStack[pageStack.length - 1] : ""
+    readonly property var page: dived ? pageSource.named(pageName) : null
+    readonly property int selectedIndex: dived && selectionStack.length > 0 ? selectionStack[selectionStack.length - 1] : 0
+    // The innermost page's rows, narrowed by what has been typed.
+    readonly property var pageRows: page ? matchingRows(page, query) : []
+    // Whether there is a text field to type into right now.
+    readonly property bool fieldOpen: page !== null && page.field !== undefined && !stackPending
+
+    function toggleRing(): void {
+        if (root.ringOpen)
+            root.closeRing();
+        else
+            root.ringOpen = true;
+    }
+
+    function closeRing(): void {
+        root.ringOpen = false;
+        if (root.dived)
+            root.changeStack([], []);
+    }
+
+    function rotate(step: int): void {
+        if (!root.dived)
+            root.turns += step;
+    }
+
+    // Turn the ring the short way round until this station is focused.
+    function focusStation(station: int): void {
+        const count = root.stations.length;
+        // The difference from the focused one, from -count/2 to count/2.
+        const ahead = ((station - root.focusedIndex) % count + count) % count;
+        root.turns += ahead > count / 2 ? ahead - count : ahead;
+    }
+
+    // Open the ring straight at one page, as a key binding does. The ring
+    // turns to the station the page belongs to. Asking for the page that
+    // is already open closes the ring, so one key opens and closes it.
+    function openPage(name: string): void {
+        if (pageSource.named(name) === null)
+            return;
+        if (root.ringOpen && root.pageName === name) {
+            root.closeRing();
+            return;
+        }
+        root.ringOpen = true;
+        root.focusStation(pageSource.pageStation[name]);
+        root.changeStack([name], [0]);
+    }
+
+    // The rows of a page that contain what has been typed. A page without a
+    // filtering text field always shows all of its rows.
+    function matchingRows(page: var, typed: string): var {
+        if (!page.field || !page.field.filters || typed === "")
+            return page.rows;
+        const wanted = typed.toLowerCase();
+        const matches = [];
+        for (const row of page.rows) {
+            const text = (row.label + " " + (row.value || "")).toLowerCase();
+            if (text.includes(wanted))
+                matches.push(row);
+        }
+        return matches;
+    }
+
+    // Ask for a different set of open pages. It takes effect once the page
+    // on screen has been wiped away.
+    function changeStack(pageNames: var, selections: var): void {
+        root.nextPageStack = pageNames;
+        root.nextSelectionStack = selections;
+        root.stackPending = true;
+    }
+
+    function commitStack(): void {
+        root.pageStack = root.nextPageStack;
+        root.selectionStack = root.nextSelectionStack;
+        root.query = "";
+        root.cursor = 0;
+        root.stackPending = false;
+        root.selectReadable();
+    }
+
+    // Enter: open the focused station, or act on the selected row. A row
+    // does its own thing first, then opens its page if it has one.
+    function act(): void {
+        if (root.stackPending)
+            return;
+        if (!root.dived) {
+            root.changeStack([root.stations[root.focusedIndex].page], [0]);
+            return;
+        }
+        if (root.pageRows.length === 0)
+            return;
+        const row = root.pageRows[root.selectedIndex];
+        if (row.act)
+            row.act();
+        if (row.toggle)
+            row.toggle();
+        if (row.opens)
+            root.changeStack(root.pageStack.concat([row.opens]), root.selectionStack.concat([0]));
+        if (row.closes)
+            root.closeRing();
+    }
+
+    // Left and right on a level move it one step.
+    function adjust(step: int): void {
+        if (!root.dived || root.stackPending || root.pageRows.length === 0)
+            return;
+        const row = root.pageRows[root.selectedIndex];
+        if (row.adjust)
+            row.adjust(step);
+    }
+
+    // Esc: leave the innermost page, then close the ring.
+    function back(): void {
+        if (root.stackPending)
+            return;
+        if (root.dived)
+            root.changeStack(root.pageStack.slice(0, -1), root.selectionStack.slice(0, -1));
+        else
+            root.ringOpen = false;
+    }
+
+    function select(index: int): void {
+        root.selectionStack = root.selectionStack.slice(0, -1).concat([index]);
+    }
+
+    // Move the selection one row up or down, passing over notes, which are
+    // only there to be read. It stays put when there is no row that way.
+    function moveSelection(step: int): void {
+        if (!root.dived || root.stackPending)
+            return;
+        let index = root.selectedIndex + step;
+        while (index >= 0 && index < root.pageRows.length) {
+            if (root.pageRows[index].kind !== "note") {
+                root.select(index);
+                return;
+            }
+            index += step;
+        }
+    }
+
+    // If the selection is on a note, move it to the first row that is not.
+    function selectReadable(): void {
+        if (!root.dived || root.pageRows.length === 0 || root.pageRows[root.selectedIndex].kind !== "note")
+            return;
+        for (let index = 0; index < root.pageRows.length; index++) {
+            if (root.pageRows[index].kind !== "note") {
+                root.select(index);
+                return;
+            }
+        }
+    }
+
+    // Typing puts the text in at the cursor. The first match is selected.
+    function typeText(text: string): void {
+        if (!root.fieldOpen)
+            return;
+        root.query = root.query.slice(0, root.cursor) + text + root.query.slice(root.cursor);
+        root.cursor += text.length;
+        root.select(0);
+    }
+
+    // Backspace: take out the character before the cursor.
+    function eraseText(): void {
+        if (!root.fieldOpen || root.cursor === 0)
+            return;
+        root.query = root.query.slice(0, root.cursor - 1) + root.query.slice(root.cursor);
+        root.cursor -= 1;
+        root.select(0);
+    }
+
+    // Delete: take out the character under the cursor.
+    function deleteText(): void {
+        if (!root.fieldOpen || root.cursor >= root.query.length)
+            return;
+        root.query = root.query.slice(0, root.cursor) + root.query.slice(root.cursor + 1);
+        root.select(0);
+    }
+
+    function clearText(): void {
+        if (!root.fieldOpen)
+            return;
+        root.query = "";
+        root.cursor = 0;
+        root.select(0);
+    }
+
+    // Move the cursor to this position, kept inside the text.
+    function placeCursor(position: int): void {
+        if (!root.fieldOpen)
+            return;
+        root.cursor = Math.max(0, Math.min(root.query.length, position));
+    }
+
+    function lock(): void {
+        lockScreen.engage(false);
+    }
 
     // --- Sound ---
     // The speakers or headphones sound goes to. It has no volume to read
@@ -101,29 +336,37 @@ ShellRoot {
     }
 
     // --- Screen brightness ---
-    // From 0 to 100, as it was after the last change made from here. It is
-    // only shown in the readout, right after such a change.
+    // From 0 to 100, as it was when the shell started or after the last
+    // change made from here. A change made some other way is not seen.
     property int brightness: 0
+    // Whether the change being made should show the readout: a key does,
+    // the level in the System page does not.
+    property bool brightnessReadout: false
 
-    // One step up or down. brightnessctl prints the new state as one line
-    // of comma-separated fields; the fourth is the percentage.
-    function changeBrightness(step: int): void {
-        if (brightnessChange.running)
+    // One step up or down. brightnessctl prints the state as one line of
+    // comma-separated fields; the fourth is the percentage.
+    function changeBrightness(step: int, showReadout: bool): void {
+        if (brightnessCommand.running)
             return;
-        brightnessChange.command = ["brightnessctl", "--machine-readable", "set", step > 0 ? "5%+" : "5%-"];
-        brightnessChange.running = true;
+        root.brightnessReadout = showReadout;
+        brightnessCommand.command = ["brightnessctl", "--machine-readable", "set", step > 0 ? "5%+" : "5%-"];
+        brightnessCommand.running = true;
     }
 
     Process {
-        id: brightnessChange
+        id: brightnessCommand
 
+        // The first run only reads the brightness.
+        command: ["brightnessctl", "--machine-readable"]
+        running: true
         stdout: StdioCollector {
             onStreamFinished: {
                 const fields = text.trim().split(",");
                 if (fields.length < 4)
                     return;
                 root.brightness = parseInt(fields[3]);
-                root.showReadout("brightness");
+                if (root.brightnessReadout)
+                    root.showReadout("brightness");
             }
         }
     }
@@ -258,14 +501,15 @@ ShellRoot {
     }
 
     // A click on a notification: do its first action, the one an app means
-    // by default, and dismiss it.
+    // by default, which also closes it. One with no action is dismissed.
     function actOnNotification(id: int): void {
         const notification = root.notificationWithId(id);
         if (notification === null)
             return;
         if (notification.actions.length > 0)
             notification.actions[0].invoke();
-        notification.dismiss();
+        else
+            notification.dismiss();
     }
 
     // Show every waiting notification again.
@@ -412,6 +656,16 @@ ShellRoot {
         shell: root
     }
 
+    Pages {
+        id: pageSource
+
+        shell: root
+    }
+
+    Ring {
+        shell: root
+    }
+
     // What niri's key bindings call.
     IpcHandler {
         target: "shell"
@@ -437,11 +691,11 @@ ShellRoot {
         }
 
         function brightnessUp(): void {
-            root.changeBrightness(1);
+            root.changeBrightness(1, true);
         }
 
         function brightnessDown(): void {
-            root.changeBrightness(-1);
+            root.changeBrightness(-1, true);
         }
 
         function quiet(): void {
@@ -453,7 +707,7 @@ ShellRoot {
         }
 
         function lock(): void {
-            lockScreen.engage(false);
+            root.lock();
         }
 
         function lockPractice(): void {
@@ -462,6 +716,38 @@ ShellRoot {
 
         function lockWake(): void {
             lockScreen.wake();
+        }
+
+        function ring(): void {
+            root.toggleRing();
+        }
+
+        function page(name: string): void {
+            root.openPage(name);
+        }
+
+        function turn(steps: int): void {
+            root.rotate(steps);
+        }
+
+        function open(): void {
+            root.act();
+        }
+
+        function select(steps: int): void {
+            root.moveSelection(steps);
+        }
+
+        function adjust(step: int): void {
+            root.adjust(step);
+        }
+
+        function back(): void {
+            root.back();
+        }
+
+        function type(text: string): void {
+            root.typeText(text);
         }
     }
 }

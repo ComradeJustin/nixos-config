@@ -2,10 +2,10 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// What niri knows that the shell shows: the workspaces, and the window that
-// has the keyboard. It reads niri's event stream, which niri sends as
-// things happen, so nothing polls. It can also ask niri to switch
-// workspace.
+// What niri knows that the shell shows: the workspaces, the open windows,
+// and the window that has the keyboard. It reads niri's event stream, which
+// niri sends as things happen, so nothing polls. It can also ask niri to
+// switch workspace or window.
 //
 // Each line of the stream is one JSON object with a single key naming the
 // event. On connecting niri sends the whole state (WorkspacesChanged,
@@ -20,9 +20,11 @@ Scope {
     property var workspaces: []
     // The title of the window that has the keyboard, or "" for none.
     property string focusedTitle: ""
+    // Every open window: { id, app, title }.
+    property var windows: []
 
     // niri's own records, by id. Plain bookkeeping: after every event the
-    // two properties above are worked out again from these.
+    // three properties above are worked out again from these.
     property var workspaceById: ({})
     property var windowById: ({})
 
@@ -44,13 +46,13 @@ Scope {
             const window = event.WindowOpenedOrChanged.window;
             // A window that arrives with the keyboard takes it from the rest.
             if (window.is_focused)
-                niri.focusWindow(window.id);
+                niri.markFocused(window.id);
             niri.windowById[window.id] = window;
         } else if (event.WindowClosed) {
             delete niri.windowById[event.WindowClosed.id];
         } else if (event.WindowFocusChanged) {
             // The id is null when no window has the keyboard.
-            niri.focusWindow(event.WindowFocusChanged.id);
+            niri.markFocused(event.WindowFocusChanged.id);
         } else {
             // Some other event: nothing here depends on it.
             return;
@@ -76,7 +78,8 @@ Scope {
             activated.is_focused = true;
     }
 
-    function focusWindow(id: var): void {
+    // Record which window has the keyboard; null for none.
+    function markFocused(id: var): void {
         for (const otherId in niri.windowById)
             niri.windowById[otherId].is_focused = false;
         if (id !== null && niri.windowById[id] !== undefined)
@@ -86,12 +89,18 @@ Scope {
     // Work out what the shell shows from niri's records.
     function summarise(): void {
         const occupied = {};
+        const windows = [];
         let title = "";
         for (const windowId in niri.windowById) {
             const window = niri.windowById[windowId];
             occupied[window.workspace_id] = true;
             if (window.is_focused)
                 title = window.title || "";
+            windows.push({
+                id: window.id,
+                app: window.app_id || "",
+                title: window.title || ""
+            });
         }
 
         const summary = [];
@@ -109,11 +118,17 @@ Scope {
 
         niri.workspaces = summary;
         niri.focusedTitle = title;
+        niri.windows = windows;
     }
 
     // Switch to a workspace by its number.
     function focusWorkspace(index: int): void {
         Quickshell.execDetached(["niri", "msg", "action", "focus-workspace", String(index)]);
+    }
+
+    // Switch to a window by niri's id for it.
+    function focusWindow(id: int): void {
+        Quickshell.execDetached(["niri", "msg", "action", "focus-window", "--id", String(id)]);
     }
 
     Process {
