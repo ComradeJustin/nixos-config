@@ -43,8 +43,10 @@ Singleton {
     // added in the same cell: progress-bar pieces (Level.qml), a spinner
     // (Spinner.qml), braille (Graph.qml), Powerline arrows (the bar's
     // dividers) and icons.
-    // It is not installed system-wide yet, so it is loaded from the link
-    // next to this file.
+    // The system installs it (modules/desktop/fonts.nix). Until the system
+    // has been rebuilt with that, it is loaded from a link made by hand
+    // next to this file; after the rebuild the loader at the end of this
+    // file and the link can go, and the family name alone finds it.
     readonly property string fontFamily: departureMono.status === FontLoader.Ready ? departureMono.name : "DepartureMono Nerd Font Mono"
     readonly property int fontSize: 11 * scale
     readonly property int cellWidth: 7 * scale

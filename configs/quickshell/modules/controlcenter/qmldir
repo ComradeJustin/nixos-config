@@ -1,3 +1,0 @@
-module ControlCenterTabs
-NotificationsTab 1.0 NotificationsTab.qml
-VolumeTab 1.0 VolumeTab.qml

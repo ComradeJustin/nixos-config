@@ -8,9 +8,11 @@ environment {
 // The desktop shell (configs/shell): the bar, notifications, the lock
 // screen, the ring. Started as a unit that comes back if it ever crashes,
 // because the lock screen lives in it.
+// Once the system has been rebuilt with modules/desktop/shell.nix, the user
+// service "shell" starts it instead, and this line can go: until then it is
+// the only thing that does. (With the service in place this line fails
+// harmlessly, because a unit of that name already exists.)
 spawn-at-startup "systemd-run" "--user" "--unit=shell" "--collect" "-p" "Restart=on-failure" "quickshell" "-p" "/home/justin/nixos-config/configs/shell"
-// spawn-at-startup "quickshell" "-p" "/home/justin/nixos-config/configs/quick-shell-v2"
-// ags-shell now runs as a supervised systemd user service (ags.nix)
 // sway-audio-idle-inhibit runs as a supervised systemd user service (niri.nix)
 // spawn-at-startup "swaync"
 // Idle and sleep. After 150 s the screen dims and the shell warns that it
@@ -23,5 +25,4 @@ spawn-at-startup "systemd-run" "--user" "--unit=shell" "--collect" "-p" "Restart
 spawn-at-startup "swayidle" "-w" "timeout" "150" "brightnessctl -s set 10%; qs -p /home/justin/nixos-config/configs/shell ipc call shell idleWarning" "resume" "brightnessctl -r; qs -p /home/justin/nixos-config/configs/shell ipc call shell idleResume" "timeout" "180" "loginctl lock-session" "resume" "qs -p /home/justin/nixos-config/configs/shell ipc call shell lockWake" "timeout" "1800" "systemctl suspend" "before-sleep" "loginctl lock-session" "after-resume" "sleep 1; qs -p /home/justin/nixos-config/configs/shell ipc call shell lockWake" "lock" "qs -p /home/justin/nixos-config/configs/shell ipc call shell lock"
 spawn-at-startup "awww-daemon"
 spawn-at-startup "awww" "restore"
-// polkit-gnome agent starts via systemd user service (see portals.nix)
 spawn-at-startup "wl-paste" "--watch" "cliphist" "store"

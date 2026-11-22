@@ -37,10 +37,6 @@ in
       source = link "${repository}/configs/niri";
       recursive = true;
     };
-    "quickshell" = {
-      source = link "${repository}/configs/quickshell";
-      recursive = true;
-    };
   };
 
   gtk = {

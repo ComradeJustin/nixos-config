@@ -6,8 +6,8 @@
     ibm-plex
     jetbrains-mono
     maple-mono.NF
-    fraunces # display serif — QuickShell lock clock, Spotlight, headers
-    hanken-grotesk # UI / body sans — QuickShell panels
+    fraunces # display serif, for configs/fabric
+    hanken-grotesk # UI and body sans, for configs/fabric
 
     noto-fonts-cjk-sans
     sarasa-gothic
@@ -15,6 +15,7 @@
     nerd-fonts.jetbrains-mono
     nerd-fonts.fira-code
     nerd-fonts.hack
+    nerd-fonts.departure-mono # the shell's pixel font (configs/shell)
 
     cozette
   ];

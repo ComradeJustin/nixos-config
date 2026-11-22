@@ -1,4 +1,4 @@
-# The graphical desktop: niri, the shell widgets, audio, fonts, theme, and
+# The graphical desktop: niri, the shell, audio, fonts, theme, and
 # the desktop Home Manager profile.
 # Importing this directory gives a machine the whole desktop.
 {
@@ -11,8 +11,7 @@
     ./theme.nix
     ./input-method.nix
     ./niri.nix
-    ./quickshell.nix
-    ./ags.nix
+    ./shell.nix
     ./programs.nix
   ];
 

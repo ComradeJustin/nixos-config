@@ -19,7 +19,6 @@ binds {
     Mod+M { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "monitor"; }
     // The ring of the new shell (configs/shell). The keys below open it at one page.
     Mod+Space { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "ring"; }
-    // Previous overlay: qs -p .../quick-shell-v2 ipc call quickshell-v2 toggle
     Mod+P { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "page" "wallpaper"; }
     Mod+Escape { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "page" "session"; }
     Mod+N { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "page" "system"; }

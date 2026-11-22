@@ -35,7 +35,7 @@
     login.fprintAuth = true;
     sudo.fprintAuth = true;
     polkit-1.fprintAuth = true;
-    # The lock screen's PAM service is created in modules/desktop/quickshell.nix.
+    # The lock screen's PAM service is created in modules/desktop/shell.nix.
     quickshell-bar = {
       fprintAuth = true;
       rules.auth.fprintd.args = [

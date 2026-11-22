@@ -14,11 +14,7 @@ import Quickshell.Wayland
 // The desktop shell. Entry point.
 //
 // It is drawn like a terminal UI, in the pixel font Departure Mono on a
-// fixed grid of character cells. The design was worked out in
-// configs/shell-mockups, which shows every screen with sample data; this
-// is the real one, built a piece at a time. So far it is the bar,
-// notifications, the volume, brightness and microphone keys, the lock
-// screen, and the ring with its pages.
+// fixed grid of character cells. These are its parts:
 //   Bar            a status line along the top edge of every screen
 //   Toasts         notifications, stacked under the bar's left end
 //   Readout        a panel that drops out of the bar when the volume,
@@ -90,14 +86,12 @@ import Quickshell.Wayland
 // which calls it when the session is asked to lock: after sitting idle,
 // before a suspend, and by "loginctl lock-session".
 //
-// One-time setup (the font is not installed system-wide yet):
-//   nix build nixpkgs#nerd-fonts.departure-mono -o ~/nixos-config/configs/shell/departure-mono-font
-// Start:  systemd-run --user --unit=shell --collect -p Restart=on-failure quickshell -p ~/nixos-config/configs/shell
-// Stop:   systemctl --user stop shell
-// After changing a file, stop and start it again. It does not reload by
-// itself, and it is started so that it comes back if it ever crashes:
-// the lock screen lives in here, and a locked session whose lock screen
-// has gone shows nothing to unlock it with. (Lock.qml puts the lock
+// It runs as the user service "shell", and its font and the programs it
+// calls are installed by the system (modules/desktop/shell.nix, fonts.nix).
+// After changing a file:  systemctl --user restart shell
+// It does not reload by itself, and the service brings it back if it ever
+// crashes: the lock screen lives in here, and a locked session whose lock
+// screen has gone shows nothing to unlock it with. (Lock.qml puts the lock
 // screen back whenever the shell starts on a locked session.)
 ShellRoot {
     id: root

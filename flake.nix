@@ -25,22 +25,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Runs the desktop shell (modules/desktop/shell.nix).
     quickshell = {
       url = "git+https://git.outfoxxed.me/outfoxxed/quickshell";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    qml-niri = {
-      url = "github:imiric/qml-niri/main";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.quickshell.follows = "quickshell";
-    };
-
-    # Desktop shell (TypeScript/GTK4 on Astal). Eventual successor to the
-    # quickshell bar. nixpkgs ships ags 2.x; the flake is v3 (gnim JSX, GTK4),
-    # which is what the docs describe.
-    ags = {
-      url = "github:aylur/ags";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
