@@ -34,113 +34,137 @@ PanelWindow {
         color: Theme.inkDim
     }
 
-    // --- Left: workspaces, focused window ---
-    Row {
-        x: Theme.cellWidth
-        y: Theme.barTextY
+    // How much of the bar's line is typed in. It is erased when the focused
+    // window goes fullscreen, because niri covers the bar then, and typed
+    // back when it leaves.
+    property real typed: shell.fullscreen ? 0 : 1
 
-        Repeater {
-            model: 5
+    Behavior on typed {
+        NumberAnimation {
+            duration: Theme.typeMs
+        }
+    }
 
-            // Focused: reverse video. Occupied: normal. Empty: dim.
-            Rectangle {
-                required property int index
+    // A window onto the bar's line that widens and narrows by whole characters.
+    Item {
+        width: Theme.snapX(bar.typed * bar.width)
+        height: bar.height
+        clip: true
 
-                readonly property bool focused: index === 1
-                readonly property bool occupied: index < 3
+        // The line itself, always full width so nothing shifts as it is typed.
+        Item {
+            width: bar.width
+            height: bar.height
 
-                width: 3 * Theme.cellWidth
-                height: Theme.cellHeight
-                color: focused ? Theme.accent : "transparent"
+            // --- Left: workspaces, focused window ---
+            Row {
+                x: Theme.cellWidth
+                y: Theme.barTextY
+
+                Repeater {
+                    model: 5
+
+                    // Focused: reverse video. Occupied: normal. Empty: dim.
+                    Rectangle {
+                        required property int index
+
+                        readonly property bool focused: index === 1
+                        readonly property bool occupied: index < 3
+
+                        width: 3 * Theme.cellWidth
+                        height: Theme.cellHeight
+                        color: focused ? Theme.accent : "transparent"
+
+                        Label {
+                            x: Theme.cellWidth
+                            text: parent.index + 1
+                            color: parent.focused ? Theme.slab : (parent.occupied ? Theme.ink : Theme.line)
+                        }
+                    }
+                }
+
+                Divider {}
 
                 Label {
-                    x: Theme.cellWidth
-                    text: parent.index + 1
-                    color: parent.focused ? Theme.slab : (parent.occupied ? Theme.ink : Theme.line)
+                    text: "Cursor — nixos-config"
                 }
             }
-        }
 
-        Divider {}
+            // --- Centre: date and time ---
+            Row {
+                y: Theme.barTextY
+                // Rounded so the text lands on whole pixels and stays sharp.
+                x: Math.round((parent.width - width) / 2)
 
-        Label {
-            text: "Cursor — nixos-config"
-        }
-    }
+                Key {
+                    text: Qt.formatDateTime(bar.shell.now, "ddd d MMM") + "  "
+                }
 
-    // --- Centre: date and time ---
-    Row {
-        y: Theme.barTextY
-        // Rounded so the text lands on whole pixels and stays sharp.
-        x: Math.round((parent.width - width) / 2)
+                Label {
+                    text: Qt.formatDateTime(bar.shell.now, "hh:mm")
+                    color: Theme.ink
+                }
+            }
 
-        Key {
-            text: Qt.formatDateTime(bar.shell.now, "ddd d MMM") + "  "
-        }
+            // --- Right: track, network, volume, battery ---
+            Row {
+                y: Theme.barTextY
+                x: parent.width - width - Theme.cellWidth
 
-        Label {
-            text: Qt.formatDateTime(bar.shell.now, "hh:mm")
-            color: Theme.ink
-        }
-    }
+                Key {
+                    text: "♪ "
+                }
 
-    // --- Right: track, network, volume, battery ---
-    Row {
-        y: Theme.barTextY
-        x: parent.width - width - Theme.cellWidth
+                Label {
+                    text: "Shelter"
+                }
 
-        Key {
-            text: "♪ "
-        }
+                Divider {}
 
-        Label {
-            text: "Shelter"
-        }
+                Key {
+                    text: "net "
+                }
 
-        Divider {}
+                Label {
+                    text: "Home-5G"
+                }
 
-        Key {
-            text: "net "
-        }
+                Key {
+                    text: " via nixpc"
+                }
 
-        Label {
-            text: "Home-5G"
-        }
+                Divider {}
 
-        Key {
-            text: " via nixpc"
-        }
+                Key {
+                    text: "vol "
+                }
 
-        Divider {}
+                Level {
+                    level: bar.shell.volume / 100
+                    cells: 8
+                }
 
-        Key {
-            text: "vol "
-        }
+                Label {
+                    text: " " + bar.shell.volume + "%"
+                    color: Theme.ink
+                }
 
-        Level {
-            level: bar.shell.volume / 100
-            cells: 8
-        }
+                Divider {}
 
-        Label {
-            text: " " + bar.shell.volume + "%"
-            color: Theme.ink
-        }
+                Key {
+                    text: "bat "
+                }
 
-        Divider {}
+                Level {
+                    level: 0.28
+                    cells: 8
+                }
 
-        Key {
-            text: "bat "
-        }
-
-        Level {
-            level: 0.28
-            cells: 8
-        }
-
-        Label {
-            text: " 28%"
-            color: Theme.ink
+                Label {
+                    text: " 28%"
+                    color: Theme.ink
+                }
+            }
         }
     }
 }
