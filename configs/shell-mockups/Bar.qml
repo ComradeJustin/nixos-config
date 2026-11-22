@@ -34,9 +34,13 @@ PanelWindow {
         color: Theme.line
     }
 
-    // A dim key in front of a value, e.g. "vol".
+    // A dim key in front of a value, e.g. "vol", set in the font's small
+    // capitals so it reads as a label and not as part of the value.
     component Key: Label {
         color: Theme.inkDim
+        font.features: {
+            "smcp": 1
+        }
     }
 
     // How much of the bar is showing: 1 normally, 0 while the focused window
@@ -116,8 +120,9 @@ PanelWindow {
             // Rounded so the text lands on whole pixels and stays sharp.
             x: Math.round((parent.width - width) / 2)
 
-            Key {
+            Label {
                 text: Qt.formatDateTime(bar.shell.now, "ddd d MMM") + "  "
+                color: Theme.inkDim
             }
 
             Label {
@@ -151,8 +156,9 @@ PanelWindow {
                 text: "Home-5G"
             }
 
-            Key {
+            Label {
                 text: " → nixpc"
+                color: Theme.inkDim
             }
 
             Divider {
