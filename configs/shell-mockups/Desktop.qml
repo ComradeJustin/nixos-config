@@ -4,9 +4,15 @@ import Quickshell.Wayland
 import "sample-data.js" as SampleData
 
 // Desktop widgets: a clock and a few tiles in the bottom left corner of the
-// desktop, on top of the wallpaper and under every window. The tiles are
-// the same ones the monitor uses: what is playing, today, and the system
-// rebuild, which follows a rebuild while one runs.
+// desktop. The tiles are the same ones the monitor uses: what is playing,
+// today, and the system rebuild, which follows a rebuild while one runs.
+//
+// They show only while the focused workspace has no windows. When a window
+// appears they are wiped away, and when the last one goes they are wiped
+// back in. They sit on the layer above the windows, which niri keeps still:
+// on the layer under the windows niri would slide them along with the
+// workspace every time it changed, and a window would just cover them.
+// Clicks go straight through them.
 PanelWindow {
     id: desktop
 
@@ -22,7 +28,7 @@ PanelWindow {
     readonly property int clockRows: 6
 
     // 0 = nothing showing, 1 = everything.
-    property real shown: shell.desktopShown ? 1 : 0
+    property real shown: shell.desktopShown && shell.workspaceEmpty ? 1 : 0
 
     Behavior on shown {
         NumberAnimation {
@@ -31,7 +37,7 @@ PanelWindow {
     }
 
     // Stay mapped until everything has been wiped away.
-    visible: shell.desktopShown || shown > 0
+    visible: shown > 0
     anchors {
         bottom: true
         left: true
@@ -43,7 +49,9 @@ PanelWindow {
     implicitHeight: clockRows * Theme.cellHeight + widgets.length * tilePitch
     color: "transparent"
     WlrLayershell.namespace: "shell-mockup"
-    WlrLayershell.layer: WlrLayer.Bottom
+    WlrLayershell.layer: WlrLayer.Top
+    // An empty region: no part of the widgets takes clicks.
+    mask: Region {}
 
     // The time at four times size, the date under it.
     Item {

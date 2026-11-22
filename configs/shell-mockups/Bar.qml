@@ -6,8 +6,8 @@ import Quickshell.Wayland
 // dim Powerline arrows that point away from the centre, levels drawn as
 // framed progress bars.
 // Left: workspaces, the focused window, the playing track, then whatever
-// is going on right now: waiting notifications, the microphone, camera or
-// screen being used, caps lock, a system rebuild.
+// is going on right now: waiting notifications, do not disturb, the
+// microphone, camera or screen being used, caps lock, a system rebuild.
 // Centre: date and time. Right: network with its signal, volume, battery.
 // A halftone shadow falls under it.
 // One bar is made for each screen (shell.qml).
@@ -205,6 +205,16 @@ PanelWindow {
 
                         Value {
                             text: bar.shell.unreadCount
+                        }
+                    }
+
+                    // Do not disturb: notifications are counted, not shown.
+                    Passing {
+                        active: bar.shell.quiet
+
+                        Flag {
+                            word: "quiet"
+                            blockColor: Theme.inkDim
                         }
                     }
 

@@ -22,7 +22,8 @@
 //     note    dim text at the right edge, e.g. an age
 //     opens   the name of the page that enter opens (shown as "›")
 //     does    what enter does instead of opening a page: "back", "lock",
-//             "monitor" (open the monitor) or "dismissAll" (empty the inbox)
+//             "monitor" (open the monitor), "dismissAll" (empty the inbox)
+//             or "toggleQuiet" (turn do not disturb on or off)
 //     image   a picture to preview beside the page while the row is selected
 //     alert   true when something is wrong; the value is in the alert colour
 
@@ -37,7 +38,8 @@ var stations = [
     { name: "Session", page: "session" },
 ];
 
-// The notifications the "notify" button cycles through.
+// The notifications the "notify" button cycles through. An `alert` one is
+// urgent: it stays on screen until it is dismissed.
 var toasts = [
     { app: "Vesktop", title: "Mara", body: "are you still coming tonight?", actions: "reply · mark read", alert: false },
     { app: "nh", title: "Rebuild finished", body: "nixlaptop is on generation 412", actions: "show log", alert: false },
@@ -80,7 +82,8 @@ function wallpaperRows() {
 
 // Every page, by name. `state` holds the few values the mockup's buttons
 // change: { volume, muted, brightness, battery, charging, online, trouble,
-// inboxEmpty }. `trouble` is the sample state in which things have gone
+// inboxEmpty, quiet }. `quiet` is do not disturb. `trouble` is the sample
+// state in which things have gone
 // wrong: no network, Bluetooth off, a failed build.
 function pages(state) {
     var batteryPercent = Math.round(state.battery * 100) + "%";
@@ -146,7 +149,7 @@ function pages(state) {
                 { label: "Brightness", kind: "level", value: String(state.brightness), level: state.brightness / 100 },
                 { label: "Power profile", kind: "text", value: "balanced", opens: "powerProfile" },
                 { label: "Night light", kind: "switch", value: "until 07:00", on: true },
-                { label: "Do not disturb", kind: "switch", value: "off", on: false },
+                { label: "Do not disturb", kind: "switch", value: state.quiet ? "notifications are held" : "off", on: state.quiet, does: "toggleQuiet" },
                 { label: "Keep awake", kind: "switch", value: "off", on: false },
                 { label: "Background apps", kind: "text", value: "4 running", opens: "tray" },
                 { label: "Settings", kind: "text", value: "", opens: "settings" },
@@ -203,6 +206,7 @@ function pages(state) {
             rows: [
                 { label: "Wallpaper", kind: "text", value: "forest-mist.png", opens: "wallpaper" },
                 { label: "Bar", kind: "text", value: "8 segments shown", opens: "barSegments" },
+                { label: "Displays", kind: "text", value: "2 connected", opens: "displays" },
                 { label: "Key bindings", kind: "text", value: "", opens: "keys" },
                 { label: "Notifications", kind: "text", value: "shown for 4.5 s" },
                 { label: "Lock", kind: "text", value: "after 3 min idle" },
@@ -211,6 +215,35 @@ function pages(state) {
                 { label: "Keyboard", kind: "text", value: "us, caps lock is escape" },
                 { label: "Font", kind: "text", value: "Departure Mono, 11 px" },
                 { label: "About", kind: "text", value: "nixlaptop · NixOS 26.11" },
+            ],
+        },
+
+        // The screens, then a drawing of how they are arranged, side by
+        // side and to scale.
+        displays: {
+            title: "Displays",
+            rows: [
+                { label: "DP-2", kind: "text", value: "2560 × 1440, 144 Hz", opens: "display" },
+                { label: "eDP-1", kind: "text", value: "1920 × 1080, 60 Hz", opens: "display" },
+                { label: "Mirror", kind: "switch", value: "off", on: false },
+                { label: "Lid closed", kind: "text", value: "use DP-2 only" },
+                { label: "┌──────────────────┐┌────────────┐", kind: "line", note: "" },
+                { label: "│       DP-2       ││   eDP-1    │", kind: "line", note: "" },
+                { label: "│   2560 × 1440    ││ 1920 × 1080│", kind: "line", note: "" },
+                { label: "└──────────────────┘└────────────┘", kind: "line", note: "" },
+            ],
+        },
+
+        display: {
+            title: "DP-2",
+            rows: [
+                { label: "Enabled", kind: "switch", value: "", on: true },
+                { label: "Resolution", kind: "text", value: "2560 × 1440" },
+                { label: "Refresh", kind: "text", value: "144 Hz" },
+                { label: "Scale", kind: "text", value: "1" },
+                { label: "Position", kind: "text", value: "left of eDP-1" },
+                { label: "Rotation", kind: "text", value: "none" },
+                { label: "Variable refresh", kind: "switch", value: "on demand", on: true },
             ],
         },
 
@@ -275,9 +308,22 @@ function pages(state) {
             rows: [
                 { label: "Wi-Fi", kind: "signal", value: state.online ? "Home-5G" : "not connected", level: state.online ? 0.75 : 0, opens: "wifi", alert: !state.online },
                 { label: "Bluetooth", kind: "text", value: state.trouble ? "off" : "2 devices connected", opens: "bluetooth" },
-                { label: "Exit node", kind: "switch", value: "nixpc", on: state.online },
+                { label: "Exit node", kind: "text", value: state.online ? "nixpc" : "none", opens: "exitNode" },
                 { label: "Tailnet", kind: "text", value: state.online ? "4 devices online" : "unreachable", alert: !state.online },
             ],
+        },
+
+        // Which tailnet device traffic leaves through. One is on at a time.
+        exitNode: {
+            title: "Exit node",
+            empty: "no device on the tailnet offers an exit node",
+            rows: state.online ? [
+                { label: "None", kind: "switch", value: "leave directly", on: false },
+                { label: "nixpc", kind: "switch", value: "home", on: true, note: "4 ms" },
+                { label: "vps-fra", kind: "switch", value: "Frankfurt", on: false, note: "31 ms" },
+                { label: "phone", kind: "switch", value: "offline", on: false },
+                { label: "Local network", kind: "switch", value: "still reachable", on: true },
+            ] : [],
         },
 
         wifi: {
@@ -319,7 +365,19 @@ function pages(state) {
                 { label: "MX Master 3", kind: "text", value: "connected", note: "55%" },
                 { label: "Keychron K2", kind: "text", value: "paired" },
                 { label: "Pixel 9", kind: "text", value: "paired" },
+                { label: "Galaxy Buds", kind: "text", value: "found, not paired", opens: "bluetoothPair" },
                 { label: "Find devices", kind: "busy", value: "scanning" },
+            ],
+        },
+
+        // Pairing: the device shows a code, and both sides confirm it.
+        bluetoothPair: {
+            title: "Pair Galaxy Buds?",
+            rows: [
+                { label: "Code", kind: "text", value: "482 913" },
+                { label: "Check that the device shows the same code", kind: "line", note: "" },
+                { label: "Pair", kind: "text", value: "", does: "back" },
+                { label: "Cancel", kind: "text", value: "", does: "back" },
             ],
         },
 
@@ -339,14 +397,37 @@ function pages(state) {
             title: "Inbox",
             empty: "no notifications",
             rows: state.inboxEmpty ? [] : [
-                { label: "Mara", kind: "text", value: "are you still coming tonight?", note: "2m" },
+                { label: "Mara", kind: "text", value: "are you still coming tonight?", opens: "notification" },
                 { label: "nh", kind: "busy", value: "Rebuilding nixlaptop" },
                 { label: "Vesktop", kind: "text", value: "3 new messages in #general", note: "14m" },
                 { label: "Tailscale", kind: "text", value: "nixpc came online", note: "1h" },
                 { label: "Battery", kind: "text", value: "12% left", note: "2h", alert: true },
                 { label: "Firefox", kind: "text", value: "Download finished", note: "3h" },
-                { label: "Do not disturb", kind: "switch", value: "off", on: false },
+                { label: "Do not disturb", kind: "switch", value: state.quiet ? "notifications are held" : "off", on: state.quiet, does: "toggleQuiet" },
                 { label: "Dismiss all", kind: "text", value: "", does: "dismissAll" },
+            ],
+        },
+
+        // One notification, opened from the inbox: all of it, then what
+        // can be done with it.
+        notification: {
+            title: "Vesktop",
+            rows: [
+                { label: "From", kind: "text", value: "Mara", note: "2m" },
+                { label: "are you still coming tonight?", kind: "line", note: "" },
+                { label: "Reply", kind: "text", value: "", opens: "notificationReply" },
+                { label: "Mark read", kind: "text", value: "", does: "back" },
+                { label: "Open Vesktop", kind: "text", value: "", does: "back" },
+                { label: "Dismiss", kind: "text", value: "", does: "back" },
+            ],
+        },
+
+        notificationReply: {
+            title: "Reply to Mara",
+            field: { hint: "your reply", filters: false, secret: false },
+            rows: [
+                { label: "Send", kind: "text", value: "", does: "back" },
+                { label: "Cancel", kind: "text", value: "", does: "back" },
             ],
         },
 

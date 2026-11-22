@@ -26,13 +26,15 @@ import "sample-data.js" as SampleData
 //                  that the screen is about to lock, a nearly empty battery
 //   Desktop        tiles that sit on the desktop under the windows
 //   Tile           one applet's summary, used by the monitor and the desktop
+//   NiriWindows    tells the desktop widgets when the workspace is empty
 //   Box, Level     the panel frame and the bar they are all built from
 //   Graph, Spinner a braille history graph and a busy mark, used in pages
 //   SignalBars     Wi-Fi strength as four rising bars
 //   DitherFade     the dithered wipe everything appears and disappears with
 //
-// The motion is real. The content is sample data (sample-data.js); only the
-// clock and the calendar are live and nothing is wired to the system.
+// The motion is real. The content is sample data (sample-data.js). The
+// only live things are the clock, the calendar, and whether the focused
+// workspace has windows; nothing else is wired to the system.
 //
 // One-time setup (the font is not installed system-wide yet):
 //   nix build nixpkgs#nerd-fonts.departure-mono -o ~/nixos-config/configs/shell-mockups/departure-mono-font
@@ -42,8 +44,9 @@ import "sample-data.js" as SampleData
 //   qs -p ~/nixos-config/configs/shell-mockups ipc call shell-mockup <name>
 //   where <name> is one of: ring, turn 1, open, select 1, back, type abc,
 //   cursor -1, page clipboard, monitor, applet 2, expand, scroll 1,
-//   volume, mute, brightness, toast, workspace, states, rebuild, calendar,
-//   month 1, lock, dialog authenticate, privacy, caps, desktop
+//   volume, mute, microphone, brightness, toast, dismiss, quiet,
+//   workspace, states, rebuild, calendar, month 1, lock, finger,
+//   dialog authenticate, privacy, caps, desktop
 // In the ring: h l turn, enter opens, j k or the arrows select, esc backs
 // out. In a page with a text field, letters type, up and down select, and
 // left, right, home, end, backspace, delete and ctrl+u edit the text.
@@ -94,7 +97,10 @@ ShellRoot {
     property int volume: 35
     property bool muted: false
     property int brightness: 60
-    // Which of the two the drop-down readout is showing: "volume" or "brightness".
+    property int microphoneLevel: 60
+    property bool microphoneMuted: false
+    // Which of the three the drop-down readout is showing: "volume",
+    // "brightness" or "microphone".
     property string readoutKind: "volume"
     property bool readoutShown: false
     property real battery: 0.28
@@ -128,7 +134,16 @@ ShellRoot {
     property int calendarOffset: 0
     // Whether "Dismiss all" has emptied the inbox.
     property bool inboxEmpty: false
+    // Do not disturb: notifications are counted but not shown.
+    property bool quiet: false
+    // The serial number of the notification that was last dismissed by hand.
+    property int dismissedSerial: 0
+    // Which fingerprint sample the lock screen shows: 0 waiting, 1 reading,
+    // 2 not recognised.
+    property int fingerprintStep: 0
     property bool desktopShown: true
+    // Whether the focused workspace has no windows, from niri.
+    readonly property bool workspaceEmpty: niriWindows.focusedWorkspaceEmpty
 
     // --- Dialogs ---
     // The name of the dialog that is up, or "" for none.
@@ -163,7 +178,8 @@ ShellRoot {
         charging: root.charging,
         online: root.online,
         trouble: root.statePreset === 1,
-        inboxEmpty: root.inboxEmpty
+        inboxEmpty: root.inboxEmpty,
+        quiet: root.quiet
     })
 
     // The monitor's applets, in grid order.
@@ -248,6 +264,8 @@ ShellRoot {
         } else if (row.does === "dismissAll") {
             root.inboxEmpty = true;
             root.unreadCount = 0;
+        } else if (row.does === "toggleQuiet") {
+            root.quiet = !root.quiet;
         }
     }
 
@@ -381,6 +399,11 @@ ShellRoot {
         root.showReadout("volume");
     }
 
+    function toggleMicrophoneMute(): void {
+        root.microphoneMuted = !root.microphoneMuted;
+        root.showReadout("microphone");
+    }
+
     function bumpBrightness(): void {
         root.brightness = root.brightness >= 100 ? 10 : root.brightness + 10;
         root.showReadout("brightness");
@@ -402,8 +425,13 @@ ShellRoot {
     }
 
     // Pretend a notification arrived. It takes the highest free place in
-    // the stack and keeps it until it leaves, so nothing ever moves.
+    // the stack and keeps it until it leaves, so nothing ever moves. With
+    // do not disturb on it is only counted.
     function showToast(): void {
+        root.unreadCount += 1;
+        root.inboxEmpty = false;
+        if (root.quiet)
+            return;
         let place = 0;
         while (root.toastPlaceTaken(place))
             place += 1;
@@ -414,8 +442,18 @@ ShellRoot {
             place: place
         });
         root.nextToast = (root.nextToast + 1) % SampleData.toasts.length;
-        root.unreadCount += 1;
-        root.inboxEmpty = false;
+    }
+
+    // Dismiss the newest notification on screen by hand. It is wiped away
+    // and no longer counts as waiting.
+    function dismissToast(): void {
+        let newest = 0;
+        for (let index = 0; index < toastModel.count; index++)
+            newest = Math.max(newest, toastModel.get(index).serial);
+        if (newest === 0 || newest === root.dismissedSerial)
+            return;
+        root.dismissedSerial = newest;
+        root.unreadCount = Math.max(0, root.unreadCount - 1);
     }
 
     // Take a notification off the screen, by its serial number.
@@ -478,6 +516,10 @@ ShellRoot {
 
     ListModel {
         id: toastModel
+    }
+
+    NiriWindows {
+        id: niriWindows
     }
 
     SystemClock {
@@ -628,8 +670,24 @@ ShellRoot {
             root.toggleMute();
         }
 
+        function microphone(): void {
+            root.toggleMicrophoneMute();
+        }
+
         function brightness(): void {
             root.bumpBrightness();
+        }
+
+        function dismiss(): void {
+            root.dismissToast();
+        }
+
+        function quiet(): void {
+            root.quiet = !root.quiet;
+        }
+
+        function finger(): void {
+            root.fingerprintStep = (root.fingerprintStep + 1) % 3;
         }
 
         function toast(): void {
@@ -701,7 +759,7 @@ ShellRoot {
             spacing: 2 * Theme.cellWidth
 
             Repeater {
-                model: [["ring", () => root.toggleRing()], ["monitor", () => root.toggleMonitor()], ["vol", () => root.bumpVolume()], ["mute", () => root.toggleMute()], ["bright", () => root.bumpBrightness()], ["notify", () => root.showToast()], ["workspace", () => root.nextWorkspace()], ["states", () => root.cycleStates()], ["rebuild", () => root.startRebuild()], ["calendar", () => root.toggleCalendar()], ["lock", () => root.lockShown = true], ["password", () => root.showDialog("authenticate")], ["idle", () => root.showDialog("lockSoon")], ["battery", () => root.showDialog("batteryCritical")], ["privacy", () => root.cyclePrivacy()], ["caps", () => root.capsLock = !root.capsLock], ["desktop", () => root.desktopShown = !root.desktopShown]]
+                model: [["ring", () => root.toggleRing()], ["monitor", () => root.toggleMonitor()], ["vol", () => root.bumpVolume()], ["mute", () => root.toggleMute()], ["mic", () => root.toggleMicrophoneMute()], ["bright", () => root.bumpBrightness()], ["notify", () => root.showToast()], ["dismiss", () => root.dismissToast()], ["quiet", () => root.quiet = !root.quiet], ["workspace", () => root.nextWorkspace()], ["states", () => root.cycleStates()], ["rebuild", () => root.startRebuild()], ["calendar", () => root.toggleCalendar()], ["lock", () => root.lockShown = true], ["password", () => root.showDialog("authenticate")], ["idle", () => root.showDialog("lockSoon")], ["battery", () => root.showDialog("batteryCritical")], ["privacy", () => root.cyclePrivacy()], ["caps", () => root.capsLock = !root.capsLock], ["desktop", () => root.desktopShown = !root.desktopShown]]
 
                 Label {
                     id: button

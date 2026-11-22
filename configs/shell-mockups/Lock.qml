@@ -7,8 +7,9 @@ import Quickshell.Wayland
 //
 // This is a picture of a lock screen, not a lock: it does not use the
 // session-lock protocol and it checks nothing. Enter with something typed
-// closes it; enter with nothing typed shows the "wrong password" state. It
-// only counts the keys pressed and never keeps what was typed.
+// closes it; enter with nothing typed shows the "wrong password" state.
+// Tab steps the fingerprint reader through waiting, reading and not
+// recognised. It only counts the keys pressed and never keeps what was typed.
 PanelWindow {
     id: lock
 
@@ -47,6 +48,7 @@ PanelWindow {
         if (visible) {
             lock.typedCount = 0;
             lock.refused = false;
+            lock.shell.fingerprintStep = 0;
             stage.forceActiveFocus();
         }
     }
@@ -79,6 +81,8 @@ PanelWindow {
             } else if (event.key === Qt.Key_Escape) {
                 lock.typedCount = 0;
                 lock.refused = false;
+            } else if (event.key === Qt.Key_Tab) {
+                lock.shell.fingerprintStep = (lock.shell.fingerprintStep + 1) % 3;
             } else if (event.key === Qt.Key_Backspace) {
                 lock.typedCount = Math.max(0, lock.typedCount - 1);
             } else if (event.text.length === 1 && event.text >= " ") {
@@ -115,10 +119,10 @@ PanelWindow {
             x: stage.centerX - Theme.snapX(panelWidth / 2)
             y: stage.centerY - Theme.cellHeight
             columns: 40
-            rows: 2
+            rows: 3
             title: "locked"
             titleColor: lock.refused ? Theme.alert : Theme.ink
-            footer: "↵ unlock  esc clear"
+            footer: "↵ unlock  esc clear  tab finger"
 
             // The password field: a prompt, one dot per character, a block cursor.
             Row {
@@ -149,13 +153,33 @@ PanelWindow {
                 }
                 color: lock.refused || lock.shell.capsLock ? Theme.alert : Theme.inkDim
             }
+
+            // The fingerprint reader: waiting, reading, or not recognised.
+            Row {
+                y: 2 * Theme.cellHeight
+
+                Spinner {
+                    visible: lock.shell.fingerprintStep === 1
+                }
+
+                Label {
+                    text: {
+                        if (lock.shell.fingerprintStep === 1)
+                            return " reading fingerprint";
+                        if (lock.shell.fingerprintStep === 2)
+                            return "fingerprint not recognised, try again";
+                        return "or touch the fingerprint reader";
+                    }
+                    color: lock.shell.fingerprintStep === 2 ? Theme.alert : Theme.inkDim
+                }
+            }
         }
 
         // Who and what is locked, and the battery, at the foot of the screen.
         Label {
             x: stage.centerX - Theme.snapX(width / 2)
             y: Theme.snapY(parent.height - 3 * Theme.cellHeight)
-            text: "nixlaptop  ·  battery " + Math.round(lock.shell.battery * 100) + "%  ·  or touch the fingerprint reader"
+            text: "nixlaptop  ·  battery " + Math.round(lock.shell.battery * 100) + "%"
             color: Theme.inkDim
         }
     }
