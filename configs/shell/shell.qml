@@ -15,11 +15,13 @@ import Quickshell.Wayland
 // fixed grid of character cells. The design was worked out in
 // configs/shell-mockups, which shows every screen with sample data; this
 // is the real one, built a piece at a time. So far it is the bar,
-// notifications, and the volume, brightness and microphone keys.
+// notifications, the volume, brightness and microphone keys, and the lock
+// screen.
 //   Bar            a status line along the top edge of every screen
 //   Toasts         notifications, stacked under the bar's left end
 //   Readout        a panel that drops out of the bar when the volume,
 //                  brightness or microphone mute changes
+//   Lock           the lock screen (pam/password is its password rule)
 //   Niri           workspaces and the focused window, from niri
 //   Theme          colours, the character grid, motion
 //   Box, Label, Level, SignalBars, Value, Passing, Flag, Segment,
@@ -41,7 +43,8 @@ import Quickshell.Wayland
 // Keys reach it through IPC, from niri's key bindings (configs/niri):
 //   qs -p ~/nixos-config/configs/shell ipc call shell <name>
 //   where <name> is one of: volumeUp, volumeDown, volumeMute,
-//   microphoneMute, brightnessUp, brightnessDown, quiet, dismissAll
+//   microphoneMute, brightnessUp, brightnessDown, quiet, dismissAll,
+//   lock, lockPractice (a lock that also lets go by itself after a minute)
 //
 // One-time setup (the font is not installed system-wide yet):
 //   nix build nixpkgs#nerd-fonts.departure-mono -o ~/nixos-config/configs/shell/departure-mono-font
@@ -399,6 +402,12 @@ ShellRoot {
         shell: root
     }
 
+    Lock {
+        id: lockScreen
+
+        shell: root
+    }
+
     // What niri's key bindings call.
     IpcHandler {
         target: "shell"
@@ -437,6 +446,14 @@ ShellRoot {
 
         function dismissAll(): void {
             root.dismissAll();
+        }
+
+        function lock(): void {
+            lockScreen.engage(false);
+        }
+
+        function lockPractice(): void {
+            lockScreen.engage(true);
         }
     }
 }
