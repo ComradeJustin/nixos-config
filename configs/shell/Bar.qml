@@ -5,7 +5,8 @@ import Quickshell.Wayland
 // The bar: a terminal status line. One row of cells, segments separated by
 // dim Powerline arrows that point away from the centre, levels drawn as
 // framed progress bars.
-// Left: this screen's workspaces, the focused window, the playing track.
+// Left: this screen's workspaces, the focused window, the playing track,
+// then how many notifications are waiting and whether do not disturb is on.
 // Centre: date and time. Right: the input method, network with its
 // signal, volume, battery.
 // A halftone shadow falls under it.
@@ -20,8 +21,9 @@ import Quickshell.Wayland
 // network, muted sound, a low battery.
 //
 // With the mouse: a workspace switches to it, the track pauses it, the
-// input method switches language, and the volume mutes on a click and
-// moves with the wheel.
+// bell shows the waiting notifications again (a right click dismisses
+// them all), the input method switches language, and the volume mutes on a
+// click and moves with the wheel.
 PanelWindow {
     id: bar
 
@@ -78,7 +80,7 @@ PanelWindow {
     // Where the left half has to end, and what is left of that for the
     // window title once the workspaces have taken their place.
     readonly property real leftLimit: clockRow.x - 2 * Theme.cellWidth
-    readonly property real titleRoom: leftLimit - leftRow.x - workspaceRow.width - firstDivider.width
+    readonly property real titleRoom: leftLimit - leftRow.x - workspaceRow.width - firstDivider.width - passingRow.width
     // The title is worth showing in this many cells or more.
     readonly property real titleEnough: 12 * Theme.cellWidth
     readonly property bool trackFits: titleRoom - trackRow.width >= titleEnough
@@ -219,6 +221,43 @@ PanelWindow {
 
                         Label {
                             text: bar.shell.trackTitle
+                        }
+                    }
+                }
+
+                // Whatever is going on right now.
+                Row {
+                    id: passingRow
+
+                    // Notifications that have not been dismissed. A click
+                    // shows them again; a right click dismisses them all.
+                    Passing {
+                        active: bar.shell.unreadCount > 0
+
+                        Divider {}
+
+                        Segment {
+                            onTapped: bar.shell.showWaiting()
+                            onRightTapped: bar.shell.dismissAll()
+
+                            // The font's bell icon.
+                            Key {
+                                text: "\uf0f3 "
+                            }
+
+                            Value {
+                                text: bar.shell.unreadCount
+                            }
+                        }
+                    }
+
+                    // Do not disturb: notifications are counted, not shown.
+                    Passing {
+                        active: bar.shell.quiet
+
+                        Flag {
+                            word: "quiet"
+                            blockColor: Theme.inkDim
                         }
                     }
                 }
