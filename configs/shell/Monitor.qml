@@ -3,7 +3,8 @@ import Quickshell
 import Quickshell.Wayland
 
 // The monitor: the other summoned layer, beside the ring. It is one
-// dashboard in the middle of the screen: bands of panels, with every
+// dashboard in the middle of the screen: bands of panels (a rebuild of the
+// system across the top, then the machine's readings), with every
 // reading showing at once and graphs several rows tall for what changes
 // over time. There is nothing to select or expand: esc, or a click beside
 // it, closes it.
@@ -119,9 +120,9 @@ PanelWindow {
                 required property int index
 
                 readonly property var panels: monitor.bands[index]
-                // Two panels in a band are wide ones, with longer bars and
-                // graphs; three are narrow.
-                readonly property bool wide: panels.length === 2
+                // One or two panels in a band are wide ones, with longer
+                // bars and graphs; three are narrow.
+                readonly property bool wide: panels.length <= 2
                 readonly property int panelColumns: (monitor.totalColumns - 2 * (panels.length - 1)) / panels.length
 
                 Repeater {

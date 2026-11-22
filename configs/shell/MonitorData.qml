@@ -249,11 +249,12 @@ Scope {
 
     // --- The panels ---
     // The monitor is bands of panels, top to bottom. The panels of a band
-    // sit side by side: two wide ones or three narrow ones.
+    // sit side by side: one across the whole width, two wide ones or three
+    // narrow ones.
     // The power panel's rows are also the top of the panel that drops out
     // of the bar's battery (Pages.qml).
     readonly property var power: powerPanel()
-    readonly property var bands: [band([processorPanel(), memoryPanel()]), band([networkPanel(), processesPanel()]), band([storagePanel(), power, systemPanel()])]
+    readonly property var bands: [band([buildPanel()]), band([processorPanel(), memoryPanel()]), band([networkPanel(), processesPanel()]), band([storagePanel(), power, systemPanel()])]
 
     // These panels with blank rows added, so that all are as tall as the
     // tallest of them.
@@ -272,6 +273,66 @@ Scope {
             });
         }
         return even;
+    }
+
+    // A rebuild of the system, as scripts/rebuild.sh reports it to the
+    // shell. Always three rows, so the panels below never move: what it is
+    // doing, how far it has got or how the last one ended, and what is
+    // being built right now.
+    function buildPanel(): var {
+        const shell = readings.shell;
+        // Nix's build processes, counted in the reading. They also show a
+        // build that was not started with the rebuild script.
+        const builders = Number(readings.section("builders")[0] || 0);
+        const phases = {
+            evaluating: "working out what to build",
+            building: "building",
+            finishing: "everything is made: your answer, then the switch",
+            copying: "copying the new system to the cache"
+        };
+        const rows = [];
+        if (shell.building) {
+            rows.push({
+                label: "Status",
+                kind: "busy",
+                value: phases[shell.buildPhase] + ", " + shell.buildMinutes + " min so far"
+            });
+            rows.push({
+                label: "Made",
+                kind: "level",
+                value: shell.buildMade + "/" + shell.buildTotal,
+                level: shell.buildTotal > 0 ? shell.buildMade / shell.buildTotal : 0
+            });
+        } else {
+            rows.push({
+                label: "Status",
+                kind: "text",
+                value: "no rebuild is running"
+            });
+            rows.push({
+                label: "Last",
+                kind: "text",
+                value: shell.buildLast !== "" ? shell.buildLast : "none since the shell started",
+                alert: shell.buildLastFailed
+            });
+        }
+        let now = "nothing is being built";
+        if (shell.buildNow !== "")
+            now = shell.buildNow;
+        else if (builders > 0)
+            now = builders + " build processes";
+        rows.push({
+            label: "Now",
+            kind: "text",
+            value: now
+        });
+        return {
+            title: "Build",
+            alert: !shell.building && shell.buildLastFailed,
+            // One bar across the panel.
+            levelCells: 100,
+            rows: rows
+        };
     }
 
     function processorPanel(): var {
@@ -466,13 +527,12 @@ Scope {
         };
     }
 
-    // The machine itself, what is being built, and its services.
+    // The machine itself and its services.
     function systemPanel(): var {
         const uptime = Number((readings.section("uptime")[0] || "0").split(" ")[0]);
         // The system's generation number, out of a link named "system-287-link".
         const link = (readings.section("generation")[0] || "").split("-");
         const generation = link.length >= 2 ? link[1] : "";
-        const builders = Number(readings.section("builders")[0] || 0);
         const running = readings.section("running");
         const failed = readings.section("failed");
         return {
@@ -498,11 +558,6 @@ Scope {
                     label: "System",
                     kind: "text",
                     value: "generation " + generation
-                },
-                {
-                    label: "Build",
-                    kind: builders > 0 ? "busy" : "text",
-                    value: builders > 0 ? builders + " build processes" : "idle"
                 },
                 {
                     label: "Running",

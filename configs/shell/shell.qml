@@ -53,6 +53,7 @@ import Quickshell.Wayland
 //   tailscale      "tailscale status", asked at the start, when the
 //                  Network page opens and after a change
 //   camera         inotifywait on the camera's device files
+//   rebuild        scripts/rebuild.sh, which tells the shell how it is going
 //   playing track  MPRIS
 //   input method   fcitx5, through its tray item
 //   notifications  what apps send, kept until dismissed
@@ -74,6 +75,8 @@ import Quickshell.Wayland
 //   out of the bar), drop <name> (drop another page there: inbox, network,
 //   sound, power), search,
 //   idleWarning and idleResume (swayidle calls these before the idle lock),
+//   build <phase> <made> <total> <names> (scripts/rebuild.sh reports a
+//   rebuild's progress with this),
 //   and, for driving the ring without the keyboard: turn <steps>, open,
 //   select <steps>, adjust <step>, back, type <text>
 // In the ring: h l turn, enter opens or acts, j k or the arrows select,
@@ -664,6 +667,59 @@ ShellRoot {
 
     function closeMonitor(): void {
         root.monitorOpen = false;
+    }
+
+    // --- Rebuild ---
+    // How a rebuild of the system is going. scripts/rebuild.sh reports
+    // every change through "shell-call build ..." (reportBuild below); the
+    // shell watches nothing itself.
+    // What the rebuild is doing: "evaluating" (working out what to build),
+    // "building", "finishing" (waiting for the answer, then switching) or
+    // "copying" (to the cache). "" when none is running.
+    property string buildPhase: ""
+    // How many of the store paths it has to make exist so far.
+    property int buildMade: 0
+    property int buildTotal: 0
+    // The names of what is being built right now, separated by commas.
+    property string buildNow: ""
+    property var buildStarted: null
+    // How the last rebuild ended, in words, and whether it failed. "" until
+    // one has ended since the shell started.
+    property string buildLast: ""
+    property bool buildLastFailed: false
+    readonly property bool building: buildPhase !== ""
+    // Whole minutes since the rebuild started.
+    readonly property int buildMinutes: building ? Math.max(0, Math.floor((now - buildStarted) / 60000)) : 0
+
+    function reportBuild(phase: string, made: int, total: int, current: string): void {
+        if (phase === "done" || phase === "failed") {
+            root.finishBuild(phase === "failed");
+            return;
+        }
+        if (!root.building)
+            root.buildStarted = new Date();
+        root.buildPhase = phase;
+        root.buildMade = made;
+        root.buildTotal = total;
+        root.buildNow = current;
+    }
+
+    // Note how the rebuild ended and say so in a notification.
+    function finishBuild(failed: bool): void {
+        // The end of a rebuild that this shell never saw start.
+        if (!root.building)
+            return;
+        const ended = new Date();
+        const seconds = Math.round((ended - root.buildStarted) / 1000);
+        const took = seconds >= 60 ? Math.round(seconds / 60) + " min" : seconds + " s";
+        root.buildLast = (failed ? "failed at " : "finished at ") + Qt.formatDateTime(ended, "hh:mm") + ", took " + took;
+        root.buildLastFailed = failed;
+        root.buildPhase = "";
+        root.buildNow = "";
+        if (failed)
+            Quickshell.execDetached(["notify-send", "--urgency=critical", "--app-name=Rebuild", "Rebuild failed", "after " + took + "; the terminal has the error"]);
+        else
+            Quickshell.execDetached(["notify-send", "--app-name=Rebuild", "Rebuild finished", "took " + took]);
     }
 
     // --- The tray ---
@@ -1329,6 +1385,10 @@ ShellRoot {
 
         function search(): void {
             root.searching = true;
+        }
+
+        function build(phase: string, made: int, total: int, current: string): void {
+            root.reportBuild(phase, made, total, current);
         }
 
         function idleWarning(): void {

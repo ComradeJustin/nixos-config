@@ -6,7 +6,8 @@ import Quickshell.Wayland
 // dim Powerline arrows that point away from the centre, levels drawn as
 // framed progress bars.
 // Left: this screen's workspaces, the focused window, the playing track,
-// then how many notifications are waiting, whether do not disturb is on,
+// then how many notifications are waiting, how far a rebuild has got,
+// whether do not disturb is on,
 // whether the microphone or camera is in use or the screen is being
 // shared, whether a Tailscale exit node is in use, and whether keep awake
 // is on.
@@ -261,6 +262,30 @@ PanelWindow {
 
                             Value {
                                 text: bar.shell.unreadCount
+                            }
+                        }
+                    }
+
+                    // A rebuild of the system is running: how far it has
+                    // got. A click opens the monitor, which says more.
+                    Passing {
+                        active: bar.shell.building
+
+                        Divider {}
+
+                        Segment {
+                            onTapped: bar.shell.toggleMonitor()
+
+                            Spinner {}
+
+                            Key {
+                                text: " build "
+                            }
+
+                            // The count once there is one; until then,
+                            // what the rebuild is doing.
+                            Value {
+                                text: bar.shell.buildTotal > 0 ? bar.shell.buildMade + "/" + bar.shell.buildTotal : bar.shell.buildPhase
                             }
                         }
                     }
