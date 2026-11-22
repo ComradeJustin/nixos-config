@@ -17,6 +17,7 @@ Item {
     property string title: ""
     property string footer: ""
     property color titleColor: Theme.ink
+    property color lineColor: Theme.line
     // How much of the panel is showing, from 0 to 1.
     property real shown: 1
     default property alias content: inner.data
@@ -66,7 +67,7 @@ Item {
     // Top edge, with the title in its gap.
     Label {
         text: box.edge("╭", "╮", box.title)
-        color: Theme.line
+        color: box.lineColor
     }
 
     Label {
@@ -80,21 +81,21 @@ Item {
     Label {
         y: Theme.cellHeight
         text: Array(box.rows).fill("│").join("\n")
-        color: Theme.line
+        color: box.lineColor
     }
 
     Label {
         x: (box.columns - 1) * Theme.cellWidth
         y: Theme.cellHeight
         text: Array(box.rows).fill("│").join("\n")
-        color: Theme.line
+        color: box.lineColor
     }
 
     // Bottom edge, with the hints in its gap.
     Label {
         y: (box.rows + 1) * Theme.cellHeight
         text: box.edge("╰", "╯", box.footer)
-        color: Theme.line
+        color: box.lineColor
     }
 
     Label {

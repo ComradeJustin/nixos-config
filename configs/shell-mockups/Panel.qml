@@ -17,10 +17,11 @@ Box {
     // What has been typed into the text field.
     property string query: ""
 
-    // Layout, in cells.
-    readonly property int valueColumn: 18
-    readonly property int levelCells: 20
-    readonly property int maxListRows: 10
+    // Layout, in cells: where values start, how long a level or graph is,
+    // and how many rows show before the list scrolls. Set `columns` to match.
+    property int valueColumn: 18
+    property int levelCells: 20
+    property int maxListRows: 10
 
     readonly property bool hasField: page !== null && page.field !== undefined
     readonly property int fieldRows: hasField ? 1 : 0

@@ -15,6 +15,8 @@ import "sample-data.js" as SampleData
 //                  around a clock; the focused one opens into pages
 //   Panel          one page inside the ring: a line of text input and a
 //                  scrolling list of rows that can open further pages
+//   Monitor        the other summoned layer: a grid of applets (rebuild,
+//                  processor, memory, ...) that each expand to a full view
 //   Readout        a panel that drops out of the bar when the volume or
 //                  brightness changes
 //   Toasts         notifications, stacked under the bar's left end
@@ -35,10 +37,11 @@ import "sample-data.js" as SampleData
 // Drive:  the buttons at the bottom of the screen, or
 //   qs -p ~/nixos-config/configs/shell-mockups ipc call shell-mockup <name>
 //   where <name> is one of: ring, turn 1, open, select 1, back, type abc,
-//   page clipboard, volume, mute, brightness, toast, workspace, states,
-//   rebuild, calendar, lock
+//   page clipboard, monitor, applet 2, expand, scroll 1, volume, mute,
+//   brightness, toast, workspace, states, rebuild, calendar, lock
 // In the ring: h l turn, enter opens, j k or the arrows select, esc backs
 // out. In a page with a text field, letters type and the arrows select.
+// In the monitor: h j k l move between applets, enter expands, esc backs out.
 // Files reload on save.
 ShellRoot {
     id: root
@@ -68,6 +71,16 @@ ShellRoot {
     readonly property int selectedIndex: dived && selectionStack.length > 0 ? selectionStack[selectionStack.length - 1] : 0
     // The innermost page's rows, narrowed by what has been typed.
     readonly property var pageRows: page ? matchingRows(page, query) : []
+
+    // --- The monitor ---
+    property bool monitorOpen: false
+    // Which applet is focused, and whether it is expanded.
+    property int monitorIndex: 0
+    property bool monitorExpanded: false
+    // The selected row of the expanded applet.
+    property int monitorSelected: 0
+    // How many applets sit side by side in the grid.
+    readonly property int monitorColumns: 3
 
     // --- Sample state that the buttons change ---
     property int volume: 35
@@ -116,13 +129,24 @@ ShellRoot {
         online: root.online
     })
 
+    // The monitor's applets, in grid order.
+    readonly property var applets: SampleData.applets({
+        rebuilding: root.rebuilding,
+        rebuildProgress: root.rebuildProgress,
+        battery: root.battery,
+        charging: root.charging,
+        online: root.online
+    })
+
     // --- The ring: what the keys, the buttons and IPC all call ---
+    // Only one of the ring and the monitor is open at a time.
     function toggleRing(): void {
         if (root.ringOpen) {
             root.ringOpen = false;
             if (root.dived)
                 root.changeStack([], []);
         } else {
+            root.closeMonitor();
             root.ringOpen = true;
         }
     }
@@ -225,6 +249,50 @@ ShellRoot {
             return;
         root.ringOpen = true;
         root.changeStack([pageName], [0]);
+    }
+
+    // --- The monitor ---
+    function toggleMonitor(): void {
+        if (root.monitorOpen) {
+            root.closeMonitor();
+            return;
+        }
+        if (root.ringOpen)
+            root.toggleRing();
+        root.monitorOpen = true;
+    }
+
+    function closeMonitor(): void {
+        root.monitorOpen = false;
+        root.monitorExpanded = false;
+    }
+
+    // Move the focus by this many applets, if there is one there.
+    function moveApplet(step: int): void {
+        const target = root.monitorIndex + step;
+        if (root.monitorExpanded || target < 0 || target >= root.applets.length)
+            return;
+        root.monitorIndex = target;
+    }
+
+    function expandApplet(): void {
+        root.monitorSelected = 0;
+        root.monitorExpanded = true;
+    }
+
+    // Esc: collapse the expanded applet, then close the monitor.
+    function monitorBack(): void {
+        if (root.monitorExpanded)
+            root.monitorExpanded = false;
+        else
+            root.monitorOpen = false;
+    }
+
+    function monitorScroll(step: int): void {
+        if (!root.monitorExpanded)
+            return;
+        const last = root.applets[root.monitorIndex].rows.length - 1;
+        root.monitorSelected = Math.max(0, Math.min(last, root.monitorSelected + step));
     }
 
     // --- Pretend keys and events ---
@@ -338,6 +406,10 @@ ShellRoot {
         shell: root
     }
 
+    Monitor {
+        shell: root
+    }
+
     Readout {
         shell: root
     }
@@ -383,6 +455,25 @@ ShellRoot {
 
         function page(pageName: string): void {
             root.openPage(pageName);
+        }
+
+        function monitor(): void {
+            root.toggleMonitor();
+        }
+
+        function applet(index: int): void {
+            root.moveApplet(index - root.monitorIndex);
+        }
+
+        function expand(): void {
+            if (root.monitorExpanded)
+                root.monitorBack();
+            else
+                root.expandApplet();
+        }
+
+        function scroll(step: int): void {
+            root.monitorScroll(step);
         }
 
         function volume(): void {
@@ -441,7 +532,7 @@ ShellRoot {
             spacing: 2 * Theme.cellWidth
 
             Repeater {
-                model: [["ring", () => root.toggleRing()], ["vol", () => root.bumpVolume()], ["mute", () => root.toggleMute()], ["bright", () => root.bumpBrightness()], ["notify", () => root.showToast()], ["workspace", () => root.nextWorkspace()], ["states", () => root.cycleStates()], ["rebuild", () => root.startRebuild()], ["calendar", () => root.calendarShown = !root.calendarShown], ["lock", () => root.lockShown = true]]
+                model: [["ring", () => root.toggleRing()], ["monitor", () => root.toggleMonitor()], ["vol", () => root.bumpVolume()], ["mute", () => root.toggleMute()], ["bright", () => root.bumpBrightness()], ["notify", () => root.showToast()], ["workspace", () => root.nextWorkspace()], ["states", () => root.cycleStates()], ["rebuild", () => root.startRebuild()], ["calendar", () => root.calendarShown = !root.calendarShown], ["lock", () => root.lockShown = true]]
 
                 Label {
                     id: button
