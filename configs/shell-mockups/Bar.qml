@@ -3,7 +3,8 @@ import Quickshell
 import Quickshell.Wayland
 
 // The bar: a terminal status line. One row of cells, segments separated by
-// a dim "│", bars drawn with block characters.
+// dim Powerline arrows that point away from the centre, levels drawn as
+// framed progress bars.
 // Left: workspaces and the focused window. Centre: date and time.
 // Right: the playing track, network, volume, battery.
 // Sample values, except the clock, and the volume and the focused workspace,
@@ -24,9 +25,12 @@ PanelWindow {
     WlrLayershell.namespace: "shell-mockup"
     WlrLayershell.layer: WlrLayer.Top
 
-    // The divider between segments.
+    // The divider between segments: a thin Powerline arrow. On the left
+    // half of the bar it points right, on the right half it points left.
     component Divider: Label {
-        text: " │ "
+        property bool pointsLeft: false
+
+        text: pointsLeft ? " \ue0b3 " : " \ue0b1 "
         color: Theme.line
     }
 
@@ -135,7 +139,9 @@ PanelWindow {
                 text: "Shelter"
             }
 
-            Divider {}
+            Divider {
+                pointsLeft: true
+            }
 
             Key {
                 text: "net "
@@ -149,7 +155,9 @@ PanelWindow {
                 text: " → nixpc"
             }
 
-            Divider {}
+            Divider {
+                pointsLeft: true
+            }
 
             Key {
                 text: "vol "
@@ -168,7 +176,9 @@ PanelWindow {
                 text: bar.shell.volume + "%"
             }
 
-            Divider {}
+            Divider {
+                pointsLeft: true
+            }
 
             Key {
                 text: "bat "

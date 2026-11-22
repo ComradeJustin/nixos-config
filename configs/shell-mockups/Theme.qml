@@ -30,8 +30,9 @@ Singleton {
     // Departure Mono is a pixel font: it is only sharp at 11 px and whole
     // multiples of it. At 11 px every character is exactly one cell.
     // This is its Nerd Font build, which is the same font with more symbols
-    // added in the same cell: progress-bar pieces (used by Level.qml), a
-    // spinner, braille and icons.
+    // added in the same cell: progress-bar pieces (Level.qml), a spinner
+    // (Spinner.qml), braille (Graph.qml), Powerline arrows (the bar's
+    // dividers) and icons.
     // It is not installed system-wide yet, so it is loaded from the link
     // next to this file.
     readonly property string fontFamily: departureMono.status === FontLoader.Ready ? departureMono.name : "DepartureMono Nerd Font Mono"
@@ -57,6 +58,9 @@ Singleton {
     // A value that has just changed, or a thing that has just taken focus,
     // shows in bright reverse video for this long.
     readonly property int flashMs: 80
+    // A spinner (Spinner.qml) moves on one step this often, while something
+    // is in progress and on screen.
+    readonly property int spinMs: 100
     // Nothing runs while idle.
 
     // Panels cast a halftone shadow this far to the right and below.

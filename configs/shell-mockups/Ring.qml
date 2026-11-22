@@ -304,6 +304,11 @@ PanelWindow {
 
                             readonly property bool selected: station.focused && index === ring.shell.fanIndex
                             readonly property color nameColor: selected ? Theme.slab : Theme.ink
+                            readonly property string kind: modelData.kind
+                            // A level and a graph both end with a number at the right edge.
+                            readonly property bool endsWithNumber: kind === "level" || kind === "graph"
+                            // Where the value's text starts, in cells. A busy line has its spinner first.
+                            readonly property int textColumn: ring.valueColumn + (kind === "busy" ? 2 : 0)
 
                             y: index * Theme.cellHeight
                             width: panel.contentColumns * Theme.cellWidth
@@ -330,25 +335,39 @@ PanelWindow {
                             // A level: a bar, then its number at the right edge.
                             Level {
                                 x: ring.valueColumn * Theme.cellWidth
-                                visible: row.modelData.kind === "level"
-                                level: row.modelData.kind === "level" ? row.modelData.level : 0
+                                visible: row.kind === "level"
+                                level: row.kind === "level" ? row.modelData.level : 0
+                                cells: 22
+                            }
+
+                            // A graph: its history, then its number at the right edge.
+                            Graph {
+                                x: ring.valueColumn * Theme.cellWidth
+                                visible: row.kind === "graph"
+                                samples: row.kind === "graph" ? row.modelData.samples : []
                                 cells: 22
                             }
 
                             Label {
                                 anchors.right: parent.right
                                 anchors.rightMargin: Theme.cellWidth
-                                visible: row.modelData.kind === "level"
+                                visible: row.endsWithNumber
                                 text: row.modelData.value
                                 color: Theme.ink
                             }
 
+                            // Something in progress: a spinner in front of its text.
+                            Spinner {
+                                x: ring.valueColumn * Theme.cellWidth
+                                visible: row.kind === "busy"
+                            }
+
                             // A switch: a filled or empty square, then its state. Anything else: just its value.
                             Label {
-                                x: ring.valueColumn * Theme.cellWidth
-                                width: (panel.contentColumns - ring.valueColumn - 1) * Theme.cellWidth
-                                visible: row.modelData.kind !== "level"
-                                text: row.modelData.kind === "switch" ? (row.modelData.on ? "■ " : "□ ") + row.modelData.value : row.modelData.value
+                                x: row.textColumn * Theme.cellWidth
+                                width: (panel.contentColumns - row.textColumn - 1) * Theme.cellWidth
+                                visible: !row.endsWithNumber
+                                text: row.kind === "switch" ? (row.modelData.on ? "■ " : "□ ") + row.modelData.value : row.modelData.value
                                 color: Theme.inkSoft
                                 elide: Text.ElideRight
                             }

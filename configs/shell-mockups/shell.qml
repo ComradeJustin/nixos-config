@@ -15,6 +15,7 @@ import Quickshell.Wayland
 //   VolumeReadout  a panel that drops out of the bar on a volume change
 //   Toast          a panel that drops out of the bar for a notification
 //   Box, Level     the panel frame and the bar they are all built from
+//   Graph, Spinner a braille history graph and a busy mark, used in panels
 //   DitherFade     the dithered wipe everything appears and disappears with
 //
 // The motion is real. The content is sample data; only the clock is live and
@@ -55,8 +56,9 @@ ShellRoot {
     readonly property var now: clock.date
 
     // --- Sample content: the six stations and the settings inside each ---
-    // kind "level" has a bar (level 0 to 1) and a number; "switch" is on or
-    // off; "text" is just a value.
+    // kind "level" has a bar (level 0 to 1) and a number; "graph" has a
+    // history (samples 0 to 1) and a number; "switch" is on or off; "busy"
+    // is something in progress; "text" is just a value.
     readonly property var stations: [
         {
             name: "Launch",
@@ -104,6 +106,12 @@ ShellRoot {
                     level: 0.6
                 },
                 {
+                    label: "CPU",
+                    kind: "graph",
+                    value: "12%",
+                    samples: root.sampleHistory(44, 3)
+                },
+                {
                     label: "Night light",
                     kind: "switch",
                     value: "until 07:00",
@@ -131,6 +139,12 @@ ShellRoot {
                     kind: "level",
                     value: "Home-5G",
                     level: 0.75
+                },
+                {
+                    label: "Traffic",
+                    kind: "graph",
+                    value: "1.2M/s",
+                    samples: root.sampleHistory(44, 5)
                 },
                 {
                     label: "Exit node",
@@ -187,8 +201,8 @@ ShellRoot {
                 },
                 {
                     label: "nh",
-                    kind: "text",
-                    value: "Rebuild finished"
+                    kind: "busy",
+                    value: "Rebuilding nixlaptop"
                 },
                 {
                     label: "Dismiss all",
@@ -228,6 +242,15 @@ ShellRoot {
             ]
         }
     ]
+
+    // A made-up history for a graph: `count` samples from 0 to 1 in a wave
+    // that takes about `period` samples to rise and fall.
+    function sampleHistory(count: int, period: real): var {
+        const samples = [];
+        for (let index = 0; index < count; index++)
+            samples.push(0.5 + 0.5 * Math.sin(index / period) * Math.cos(index / (period * 2.7)));
+        return samples;
+    }
 
     // --- What the keys, the control words and IPC all call ---
     function toggleRing(): void {
