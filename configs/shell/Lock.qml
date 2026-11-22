@@ -54,6 +54,15 @@ Scope {
         fingerprintCheck.start();
     }
 
+    // The machine woke up, or was touched after sitting idle. The reader's
+    // check does not survive a suspend, so it is started again.
+    function wake(): void {
+        if (!sessionLock.locked || fingerprintCheck.active)
+            return;
+        lock.fingerRefused = false;
+        fingerprintCheck.start();
+    }
+
     // Enter: check what has been typed.
     function submit(): void {
         if (lock.typed === "" || passwordCheck.active)

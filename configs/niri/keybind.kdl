@@ -22,7 +22,7 @@ binds {
     Mod+P { spawn "qs"  "ipc" "call" "quickshell-bar" "wallpaper"; }
     Mod+Escape { spawn "qs"  "ipc" "call" "quickshell-bar" "powermenu"; }
     Mod+N { spawn "qs"  "ipc" "call" "quickshell-bar" "controlcenter"; }
-    Super+Alt+L hotkey-overlay-title="Lock the Screen" {spawn "qs" "ipc" "call" "quickshell-bar" "lockscreen";}
+    Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "lock"; }
     //Alt+Tab {spawn "~/.config/niri/hotkeyscripts/alttab.sh";} 
     Mod+B hotkey-overlay-title="Run firefox" { spawn "firefox";}
     //Mod+M hotkey-overlay-title="Search for anime" {spawn "ani-cli" "--rofi";}

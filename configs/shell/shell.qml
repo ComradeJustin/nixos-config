@@ -44,7 +44,11 @@ import Quickshell.Wayland
 //   qs -p ~/nixos-config/configs/shell ipc call shell <name>
 //   where <name> is one of: volumeUp, volumeDown, volumeMute,
 //   microphoneMute, brightnessUp, brightnessDown, quiet, dismissAll,
-//   lock, lockPractice (a lock that also lets go by itself after a minute)
+//   lock, lockPractice (a lock that also lets go by itself after a minute),
+//   lockWake (ask the fingerprint reader again, after a suspend)
+// The lock is also reached through swayidle (configs/niri/startup.kdl),
+// which calls it when the session is asked to lock: after sitting idle,
+// before a suspend, and by "loginctl lock-session".
 //
 // One-time setup (the font is not installed system-wide yet):
 //   nix build nixpkgs#nerd-fonts.departure-mono -o ~/nixos-config/configs/shell/departure-mono-font
@@ -454,6 +458,10 @@ ShellRoot {
 
         function lockPractice(): void {
             lockScreen.engage(true);
+        }
+
+        function lockWake(): void {
+            lockScreen.wake();
         }
     }
 }
