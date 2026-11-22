@@ -647,6 +647,7 @@ Scope {
             "page system": "System settings",
             "page wallpaper": "Wallpaper",
             "page session": "Session",
+            "page keys": "Key bindings",
             "volumeUp": "Volume up",
             "volumeDown": "Volume down",
             "volumeMute": "Mute",

@@ -32,11 +32,13 @@ window-rule {
 
 
 
-// Rounded corners for every window. Blur is NOT global: behind an opaque
-// window it is invisible but still costs the iGPU a 3-pass blur per frame,
-// which made the whole desktop sluggish on battery.
+// Square corners for every window, like the shell's panels: anything a
+// window draws outside its own rectangle, such as rounded corners or its
+// own shadow, is cut off.
+// Blur is NOT global: behind an opaque window it is invisible but still
+// costs the iGPU a 3-pass blur per frame, which made the whole desktop
+// sluggish on battery.
 window-rule {
-    geometry-corner-radius 10
     clip-to-geometry true
 }
 
@@ -63,99 +65,6 @@ layer-rule {
  	place-within-backdrop true
 }
 
-// Glass for the desktop widgets. Each widget is its own sized layer surface
-// (namespace quickshell-widgets), so niri's blur scopes to each widget instead
-// of the whole backdrop. They sit on the bottom layer over only the wallpaper,
-// so xray (blur wallpaper, ignore windows) is exactly right here.
-layer-rule {
-	match namespace="^quickshell-widgets$"
-	background-effect {
-		blur true
-		xray true
-		noise 0.02
-		saturation 1.25
-	}
-	// Round the surface so the blur follows the widget's rounded corners
-	// instead of leaving blurred-wallpaper triangles in them.
-	geometry-corner-radius 8
-}
-
-// ── Glass blur toggle ──────────────────────────────────────────
-// niri's background-effect blur has a visible reconfigure delay and
-// re-runs whenever a layer surface resizes. The bar, Control Center
-// and Spotlight are all affected, so their blur rules are DISABLED BY
-// DEFAULT with KDL slashdash (`/-`): the `/-` comments out the node
-// that follows it. Delete the leading `/-` on a rule to turn that
-// surface's blur back on. The desktop widgets and the OSD don't
-// resize, so they stay enabled.
-// ───────────────────────────────────────────────────────────────
-
-// Frosted glass for the top bar. It overlays windows, so xray must be FALSE
-// (blur the actual content behind it, not the wallpaper). Flat/edge-to-edge
-// bar → no corner rounding.  DISABLED by default (see toggle note above).
-/-layer-rule {
-	match namespace="^quickshell-bar$"
-	background-effect {
-		// xray false: blur the ACTUAL content behind the bar so it stays in
-		// sync with what's underneath when scrolling (xray true showed static
-		// wallpaper, so scrolling windows/tabs "disappeared" under the bar) and
-		// so it never sees through to wallpaper over a fullscreen program.
-		blur true
-		xray false
-		noise 0.02
-		saturation 1.25
-	}
-	// Round the surface so a floating bar's blur follows its rounded corners
-	// (harmless ~8px rounding on a flat, edge-to-edge bar).
-	geometry-corner-radius 8
-}
-
-// Frosted glass for the OSD (volume / brightness / device popup). It overlays
-// content, so xray false. Rounded to match osdRadius.
-layer-rule {
-	match namespace="^quickshell-osd$"
-	background-effect {
-		blur true
-		xray false
-		noise 0.02
-		saturation 1.25
-	}
-	geometry-corner-radius 16
-}
-
-// Frosted glass for the Control Center card. Overlays content → xray false.
-// The surface is sized to the card, so round it to the card's radius.
-// DISABLED by default (see toggle note above).
-/-layer-rule {
-	match namespace="^quickshell-cc$"
-	background-effect {
-		blur true
-		xray false
-		noise 0.02
-		saturation 1.25
-	}
-	geometry-corner-radius 8
-}
-
-// Focus blur for the Spotlight launcher. Unlike the bar/CC, the surface is
-// INTENTIONALLY full-screen here, so the blur frosts the whole desktop behind
-// the launcher — exactly the focus effect we want. xray false so it blurs the
-// real windows/wallpaper underneath. No corner radius (it spans the screen);
-// the translucent centered box on top reads as frosted glass over the frost.
-// DISABLED by default (see toggle note above).
-// Focus blur for the v2 vim launcher. Full-screen surface, same as old
-// Spotlight. Disabled by default (see toggle note above); delete `/-` to
-// frost the desktop behind the card.
-/-layer-rule {
-	match namespace="^quickshell-v2$"
-	background-effect {
-		blur true
-		xray false
-		noise 0.02
-		saturation 1.25
-	}
-}
-
 /-layer-rule {
 	match namespace="^fabric-shell$"
 	background-effect {
@@ -166,15 +75,4 @@ layer-rule {
 	}
 	geometry-corner-radius 12
 }
-
-/-layer-rule {
-	match namespace="^quickshell-spotlight$"
-	background-effect {
-		blur true
-		xray false
-		noise 0.02
-		saturation 1.25
-	}
-}
-
 

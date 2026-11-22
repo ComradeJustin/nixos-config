@@ -10,8 +10,8 @@ binds {
     // `niri msg action do-something`.
 
     // Mod-Shift-/, which is usually the same as Mod-?,
-    // shows a list of important hotkeys.
-    Mod+Shift+Slash { show-hotkey-overlay; }
+    // shows the list of keys, in the shell.
+    Mod+Shift+Slash { spawn "qs" "-p" "/home/justin/nixos-config/configs/shell" "ipc" "call" "shell" "page" "keys"; }
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
     Mod+Return hotkey-overlay-title="Open a Terminal: ghostty" { spawn "ghostty" "+new-window"; }

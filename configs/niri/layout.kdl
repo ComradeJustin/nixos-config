@@ -1,8 +1,12 @@
 layout {
 
     background-color "transparent"
-    // Set gaps around windows in logical pixels.
-    gaps 16
+    // The look follows the desktop shell (configs/shell/Theme.qml): thin
+    // square borders in its line colour, its accent for what is focused,
+    // and a hard shadow down and to the right, as its panels have.
+
+    // Gaps around windows: one row of the shell's character grid.
+    gaps 14
 
     // When to center a column when changing focus, options are:
     // - "never", default behavior, focusing an off-screen column will keep at the left
@@ -45,13 +49,14 @@ layout {
 	
     // You can also add a border. It's similar to the focus ring, but always visible.
     border {
-	off
-        width 2
-        active-color "#b1b1b1"
-        inactive-color "#252525"
-
-        // Muted red for urgent (matches theme base08)
-        urgent-color "#8c5454"
+        // One pixel, like the lines of the shell's panels: its accent on
+        // the focused window, its line colour on the rest, and its alert
+        // colour on a window that wants attention.
+        on
+        width 1
+        active-color "#f1ae97"
+        inactive-color "#594740"
+        urgent-color "#ffc37a"
 
 
         // Gradients can use a few different interpolation color spaces.
@@ -62,13 +67,30 @@ layout {
 
     // You can enable drop shadows for windows.
     shadow {
-        // Harder brutalist shadows
+        // A hard-edged copy of the window, one character cell down and to
+        // the right. The shell's panels cast a halftone of this colour;
+        // niri cannot dither a shadow, so it is at half strength instead.
         on
         draw-behind-window false
-        softness 8
-        spread 1
-        offset x=0 y=2
-        color "#0a0a0a"
+        softness 0
+        spread 0
+        offset x=7 y=7
+        color "#120e0d80"
+    }
+
+    // Where a dragged window would land.
+    insert-hint {
+        color "#f1ae9780"
+    }
+
+    // The marks beside a column whose windows are tabs (Mod+Q).
+    tab-indicator {
+        width 2
+        gap 5
+        corner-radius 0
+        active-color "#f1ae97"
+        inactive-color "#594740"
+        urgent-color "#ffc37a"
     }
 
     struts {

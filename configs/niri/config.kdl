@@ -11,7 +11,9 @@ include "keybind.kdl"
 include "startup.kdl"
 include "alt-tab.kdl"
 include "window-rule.kdl"
-include "glide.kdl"
+// How windows open, close and move. glide.kdl and unravel.kdl are other
+// sets, not in use.
+include "wipe.kdl"
 
 prefer-no-csd
 
@@ -20,8 +22,10 @@ cursor {
     xcursor-size 24
 }
 
+// niri's own list of keys is not shown: the shell has one in its own
+// style (Mod+Shift+/, or System > Key bindings).
 hotkey-overlay {
-    // skip-at-startup
+    skip-at-startup
 }
 
 screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"

@@ -1,0 +1,124 @@
+// How windows move, in the style of the desktop shell (configs/shell).
+//
+// A window appears and disappears the way everything in the shell does: a
+// dithered front wipes across it from the left, and wipes back to take it
+// away. Every pixel is either kept or dropped, so nothing is ever half
+// transparent, and it runs at a steady rate for as long as the shell's own
+// wipe (Theme.qml: wipeMs, wipeFront, dotSize).
+//
+// Scrolling between columns and workspaces has to move, so it does, but
+// quickly and without any bounce.
+//
+// The dither is the same ordered (Bayer) pattern as the shell's
+// shaders/dither-fade.frag. Its two helper functions are written out in
+// both shaders, because each shader is compiled on its own.
+
+animations {
+    window-open {
+        duration-ms 140
+        curve "linear"
+
+        custom-shader r"
+            // The 2x2 Bayer pattern (0, 1/2, 3/4, 1/4) from a dot's coordinates.
+            float bayer2(vec2 cell) {
+                cell = floor(cell);
+                return fract(cell.x / 2.0 + cell.y * cell.y * 0.75);
+            }
+
+            // The 4x4 pattern: sixteen thresholds from 0 to 15/16.
+            float bayer4(vec2 cell) {
+                return bayer2(0.5 * cell) * 0.25 + bayer2(cell);
+            }
+
+            vec4 open_color(vec3 coords_geo, vec3 size_geo) {
+                // A dither dot is two pixels square.
+                vec2 cell = floor(coords_geo.xy * size_geo.xy / 2.0);
+                // The front is this wide, as a share of the window's width.
+                float front = 0.35;
+                // How much of the window shows at this pixel, from 0 to 1.
+                float shown = clamp((niri_clamped_progress * (1.0 + front) - coords_geo.x) / front, 0.0, 1.0);
+                // Keep the pixel if that beats this dot's threshold. The half
+                // step keeps 0 fully gone and 1 fully shown.
+                float keep = step(bayer4(cell) + 1.0 / 32.0, shown);
+
+                vec3 coords_tex = niri_geo_to_tex * coords_geo;
+                return texture2D(niri_tex, coords_tex.st) * keep;
+            }
+        "
+    }
+
+    window-close {
+        duration-ms 140
+        curve "linear"
+
+        custom-shader r"
+            float bayer2(vec2 cell) {
+                cell = floor(cell);
+                return fract(cell.x / 2.0 + cell.y * cell.y * 0.75);
+            }
+
+            float bayer4(vec2 cell) {
+                return bayer2(0.5 * cell) * 0.25 + bayer2(cell);
+            }
+
+            // The same wipe run backwards: the front goes back to the left.
+            vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+                vec2 cell = floor(coords_geo.xy * size_geo.xy / 2.0);
+                float front = 0.35;
+                float shown = clamp(((1.0 - niri_clamped_progress) * (1.0 + front) - coords_geo.x) / front, 0.0, 1.0);
+                float keep = step(bayer4(cell) + 1.0 / 32.0, shown);
+
+                vec3 coords_tex = niri_geo_to_tex * coords_geo;
+                return texture2D(niri_tex, coords_tex.st) * keep;
+            }
+        "
+    }
+
+    window-resize {
+        spring damping-ratio=1.0 stiffness=1000 epsilon=0.0001
+
+        // Show the window at its new size straight away, stretched to the
+        // size it has reached so far, in place of niri's cross-fade.
+        custom-shader r"
+            vec4 resize_color(vec3 coords_curr_geo, vec3 size_curr_geo) {
+                vec3 coords_tex_next = niri_geo_to_tex_next * coords_curr_geo;
+                return texture2D(niri_tex_next, coords_tex_next.st);
+            }
+        "
+    }
+
+    // Movement: stiff springs with no bounce. Springs, so that a touchpad
+    // swipe carries on at the speed it was let go.
+    workspace-switch {
+        spring damping-ratio=1.0 stiffness=1000 epsilon=0.0001
+    }
+
+    horizontal-view-movement {
+        spring damping-ratio=1.0 stiffness=1000 epsilon=0.0001
+    }
+
+    window-movement {
+        spring damping-ratio=1.0 stiffness=1000 epsilon=0.0001
+    }
+
+    overview-open-close {
+        spring damping-ratio=1.0 stiffness=1000 epsilon=0.0001
+    }
+
+    recent-windows-close {
+        spring damping-ratio=1.0 stiffness=1000 epsilon=0.001
+    }
+
+    config-notification-open-close {
+        spring damping-ratio=1.0 stiffness=1000 epsilon=0.001
+    }
+
+    exit-confirmation-open-close {
+        spring damping-ratio=1.0 stiffness=1000 epsilon=0.01
+    }
+
+    screenshot-ui-open {
+        duration-ms 140
+        curve "linear"
+    }
+}

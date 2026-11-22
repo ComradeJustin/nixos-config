@@ -6,9 +6,10 @@ recent-windows {
     open-delay-ms 150
 
     highlight {
-        active-color "#bdae93"
-        urgent-color "#ea6962"
-        padding 30
+        // The shell's accent and alert colours.
+        active-color "#f1ae97"
+        urgent-color "#ffc37a"
+        padding 14
         corner-radius 0
     }
 
