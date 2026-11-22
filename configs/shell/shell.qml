@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Bluetooth
 import Quickshell.Io
 import Quickshell.Networking
 import Quickshell.Services.Mpris
@@ -52,13 +53,18 @@ import Quickshell.Wayland
 //   windows        niri's event stream (Niri.qml) and the window list
 //   sound          PipeWire
 //   battery        UPower
-//   network        NetworkManager
+//   network        NetworkManager, and BlueZ for airplane mode
+//   tailscale      "tailscale status", asked at the start, when the
+//                  Network page opens and after a change
+//   camera         inotifywait on the camera's device files
 //   playing track  MPRIS
 //   input method   fcitx5, through its tray item
 //   notifications  what apps send, kept until dismissed
 //   brightness     brightnessctl, asked only when a key changes it
 //   night light    wlsunset, run while it is switched on
 //   admin rights   polkit: the shell is the agent that asks for the password
+// Night light, keep awake and do not disturb are remembered across a
+// restart, in a small file in the shell's state folder.
 //
 // Keys reach it through IPC, from niri's key bindings (configs/niri):
 //   qs -p ~/nixos-config/configs/shell ipc call shell <name>
@@ -99,6 +105,27 @@ ShellRoot {
     // Reloading while the session is locked destroys the lock screen in a
     // way the compositor refuses, which takes the whole shell down.
     settings.watchFiles: false
+
+    // --- What is remembered ---
+    // The switches that come back as they were left when the shell or the
+    // machine restarts. They are kept in ~/.local/state/quickshell, in a
+    // file that is written again whenever one of them changes.
+    FileView {
+        path: Quickshell.statePath("state.json")
+        // Read before anything uses the values.
+        blockLoading: true
+        // There is no file the first time.
+        printErrors: false
+        onAdapterUpdated: writeAdapter()
+
+        JsonAdapter {
+            id: remembered
+
+            property bool nightLight: false
+            property bool keepAwake: false
+            property bool quiet: false
+        }
+    }
 
     // --- Time ---
     readonly property var now: clock.date
@@ -751,10 +778,10 @@ ShellRoot {
     // --- Night light and staying awake ---
     // Night light warms the screen's colours in the evening. It is
     // wlsunset, kept running while this is on, with fixed times.
-    property bool nightLight: false
+    property alias nightLight: remembered.nightLight
     // Staying awake stops the screen dimming and the idle lock. The bar
     // holds the idle inhibitor (Bar.qml).
-    property bool keepAwake: false
+    property alias keepAwake: remembered.keepAwake
 
     Process {
         command: ["wlsunset", "-S", "07:00", "-s", "19:00", "-t", "4000", "-T", "6500"]
@@ -786,7 +813,7 @@ ShellRoot {
     readonly property int unreadCount: waitingNotifications.length
     // Do not disturb: notifications are kept and counted but not shown,
     // except urgent ones.
-    property bool quiet: false
+    property alias quiet: remembered.quiet
     // The notifications on screen now: for each its id, its place in the
     // stack, and its words as they were when it arrived.
     readonly property alias toastList: toastModel
@@ -994,9 +1021,122 @@ ShellRoot {
         return false;
     }
     readonly property bool online: wifiNetwork !== null || wired
-    readonly property string networkName: wifiNetwork !== null ? wifiNetwork.name : (wired ? "wired" : "offline")
+    // Airplane mode is every radio off: Wi-Fi and Bluetooth.
+    readonly property var bluetoothAdapter: Bluetooth.defaultAdapter
+    readonly property bool airplane: !Networking.wifiEnabled && (bluetoothAdapter === null || !bluetoothAdapter.enabled)
+    // The network in use, or why there is none.
+    readonly property string networkName: {
+        if (wifiNetwork !== null)
+            return wifiNetwork.name;
+        if (wired)
+            return "wired";
+        if (airplane)
+            return "airplane";
+        return Networking.wifiEnabled ? "offline" : "wi-fi off";
+    }
+
+    // Turn every radio off, or back on.
+    function toggleAirplane(): void {
+        const radiosOn = root.airplane;
+        Networking.wifiEnabled = radiosOn;
+        if (root.bluetoothAdapter !== null)
+            root.bluetoothAdapter.enabled = radiosOn;
+    }
     // Wi-Fi signal strength from 0 to 1. A cable counts as full.
     readonly property real networkSignal: wifiNetwork !== null ? wifiNetwork.signalStrength : (wired ? 1 : 0)
+
+    // --- Tailscale ---
+    // Whether the tailnet is up, and the machines on it that offer to
+    // carry this one's traffic: { name, inUse }. Nothing polls: the state
+    // is read when the shell starts, when the Network page opens
+    // (Pages.qml) and after each change made from here.
+    property bool tailscaleRunning: false
+    property var exitNodes: []
+    readonly property bool exitNodeInUse: {
+        for (const node of exitNodes) {
+            if (node.inUse)
+                return true;
+        }
+        return false;
+    }
+
+    function checkTailscale(): void {
+        tailscaleStatus.running = true;
+    }
+
+    // "tailscale status --json" gives BackendState, and Peer: one entry
+    // for each other machine, with HostName, ExitNodeOption (it offers to
+    // be an exit node) and ExitNode (it is the one in use).
+    function readTailscale(text: string): void {
+        if (text === "")
+            return;
+        const status = JSON.parse(text);
+        root.tailscaleRunning = status.BackendState === "Running";
+        const peers = status.Peer || {};
+        const nodes = [];
+        for (const key in peers) {
+            const peer = peers[key];
+            if (peer.ExitNodeOption)
+                nodes.push({
+                    name: peer.HostName,
+                    inUse: peer.ExitNode === true
+                });
+        }
+        root.exitNodes = nodes;
+    }
+
+    // Run tailscale with these arguments, then read its state again. If
+    // it refuses, say why in a notification.
+    function tailscale(arguments: var): void {
+        tailscaleCommand.command = ["tailscale"].concat(arguments);
+        tailscaleCommand.running = true;
+    }
+
+    Process {
+        id: tailscaleStatus
+
+        command: ["tailscale", "status", "--json"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: root.readTailscale(text)
+        }
+    }
+
+    Process {
+        id: tailscaleCommand
+
+        stderr: StdioCollector {
+            id: tailscaleRefusal
+        }
+        onExited: exitCode => {
+            if (exitCode !== 0)
+                Quickshell.execDetached(["notify-send", "--app-name=Tailscale", "Tailscale refused", tailscaleRefusal.text.trim()]);
+            root.checkTailscale();
+        }
+    }
+
+    // --- Camera ---
+    // Whether something has the camera open. inotifywait reports each open
+    // and close of the camera's device files as it happens, and the camera
+    // is in use while more have been opened than closed. A camera that was
+    // already open when the shell started is not counted.
+    property int cameraOpens: 0
+    readonly property bool cameraInUse: cameraOpens > 0
+
+    Process {
+        // Through sh for the "*": one device file for each of the camera's streams.
+        command: ["sh", "-c", "exec inotifywait --monitor --quiet --event open --event close --format %e /dev/video*"]
+        running: true
+        stdout: SplitParser {
+            // A line is OPEN, or the kind of close.
+            onRead: line => {
+                if (line.startsWith("OPEN"))
+                    root.cameraOpens += 1;
+                else
+                    root.cameraOpens = Math.max(0, root.cameraOpens - 1);
+            }
+        }
+    }
 
     // --- Playing track ---
     // The first media player that is playing, or null.

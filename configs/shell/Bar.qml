@@ -7,8 +7,9 @@ import Quickshell.Wayland
 // framed progress bars.
 // Left: this screen's workspaces, the focused window, the playing track,
 // then how many notifications are waiting, whether do not disturb is on,
-// whether the microphone is in use or the screen is being shared, and
-// whether keep awake is on.
+// whether the microphone or camera is in use or the screen is being
+// shared, whether a Tailscale exit node is in use, and whether keep awake
+// is on.
 // Centre: date and time. Right: the tray, the input method, network with
 // its signal, volume, battery.
 // A halftone shadow falls under it.
@@ -284,10 +285,28 @@ PanelWindow {
                     }
 
                     Passing {
+                        active: bar.shell.cameraInUse
+
+                        Flag {
+                            word: "camera"
+                        }
+                    }
+
+                    Passing {
                         active: bar.shell.niri.screenShared
 
                         Flag {
                             word: "screen"
+                        }
+                    }
+
+                    // All traffic is going out through another machine.
+                    Passing {
+                        active: bar.shell.exitNodeInUse
+
+                        Flag {
+                            word: "exit node"
+                            blockColor: Theme.inkDim
                         }
                     }
 

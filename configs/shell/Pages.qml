@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Bluetooth
 import Quickshell.Io
 import Quickshell.Networking
 import Quickshell.Services.Mpris
@@ -89,6 +88,7 @@ Scope {
             clipboard: 1,
             system: 2,
             sound: 2,
+            soundDevices: 2,
             power: 2,
             keys: 2,
             tray: 2,
@@ -302,7 +302,80 @@ Scope {
             on: !pages.shell.microphoneMuted,
             toggle: () => pages.shell.toggleMicrophoneMute()
         });
+        rows.push({
+            label: "Devices",
+            kind: "text",
+            value: pages.deviceName(pages.shell.soundOutput) + ", " + pages.deviceName(pages.shell.soundInput),
+            opens: "soundDevices"
+        });
         return rows;
+    }
+
+    // --- Sound devices: where sound goes to and comes from ---
+    // What a speaker or microphone is called: its short name, such as
+    // "Speaker" or "HDMI 1", or else its long one.
+    function deviceName(device: var): string {
+        if (device === null)
+            return "none";
+        return device.nickname !== "" ? device.nickname : device.description;
+    }
+
+    readonly property var soundDevices: soundDevicesPage()
+
+    // The outputs, then the inputs. Enter on a device keeps sound on it
+    // whenever it is there. "Automatic" lets the system choose again, which
+    // is what follows headphones and screens as they are plugged in.
+    function soundDevicesPage(): var {
+        const outputs = [
+            {
+                label: "── Output ──",
+                kind: "note"
+            },
+            {
+                label: "Automatic",
+                kind: "text",
+                value: Pipewire.preferredDefaultAudioSink === null ? "on" : "",
+                act: () => Pipewire.preferredDefaultAudioSink = null
+            }
+        ];
+        const inputs = [
+            {
+                label: "── Input ──",
+                kind: "note"
+            },
+            {
+                label: "Automatic",
+                kind: "text",
+                value: Pipewire.preferredDefaultAudioSource === null ? "on" : "",
+                act: () => Pipewire.preferredDefaultAudioSource = null
+            }
+        ];
+        for (const node of Pipewire.nodes.values) {
+            // Devices, not the streams of apps, and only those for sound.
+            if (node.isStream || node.audio === null)
+                continue;
+            if (node.isSink) {
+                outputs.push({
+                    label: pages.deviceName(node),
+                    kind: "text",
+                    value: node === pages.shell.soundOutput ? "in use" : "",
+                    act: () => Pipewire.preferredDefaultAudioSink = node
+                });
+            } else {
+                inputs.push({
+                    label: pages.deviceName(node),
+                    kind: "text",
+                    value: node === pages.shell.soundInput ? "in use" : "",
+                    act: () => Pipewire.preferredDefaultAudioSource = node
+                });
+            }
+        }
+        return {
+            title: "Sound devices",
+            // Device names are long.
+            valueColumn: 24,
+            rows: outputs.concat(inputs)
+        };
     }
 
     readonly property var sound: ({
@@ -723,7 +796,7 @@ Scope {
         }
         return null;
     }
-    readonly property var bluetoothAdapter: Bluetooth.defaultAdapter
+    readonly property var bluetoothAdapter: pages.shell.bluetoothAdapter
 
     function bluetoothSummary(): string {
         if (pages.bluetoothAdapter === null)
@@ -738,10 +811,10 @@ Scope {
         return connected + " connected";
     }
 
-    // Bluetooth, then the Wi-Fi networks in range: the one in use first,
-    // then the saved ones, then the rest, each group strongest first. Enter
-    // joins one: a network that is saved or open straight away, any other
-    // after its password.
+    // The radios and Tailscale, then the Wi-Fi networks in range: the one
+    // in use first, then the saved ones, then the rest, each group
+    // strongest first. Enter joins one: a network that is saved or open
+    // straight away, any other after its password.
     readonly property var network: networkPage()
 
     // Where a network goes in the list: lower comes first.
@@ -752,15 +825,48 @@ Scope {
     }
 
     function networkPage(): var {
+        const shell = pages.shell;
         const rows = [
+            {
+                label: "Wi-Fi",
+                kind: "switch",
+                on: Networking.wifiEnabled,
+                toggle: () => Networking.wifiEnabled = !Networking.wifiEnabled
+            },
             {
                 label: "Bluetooth",
                 kind: "text",
                 value: pages.bluetoothSummary(),
                 opens: "bluetooth"
+            },
+            {
+                label: "Airplane mode",
+                kind: "switch",
+                on: shell.airplane,
+                toggle: () => shell.toggleAirplane()
+            },
+            {
+                label: "Tailscale",
+                kind: "switch",
+                on: shell.tailscaleRunning,
+                toggle: () => shell.tailscale([shell.tailscaleRunning ? "down" : "up"])
             }
         ];
-        if (pages.wifiDevice !== null) {
+        // While the tailnet is up, a switch for each machine on it that
+        // offers to carry all of this one's traffic.
+        if (shell.tailscaleRunning) {
+            for (const node of shell.exitNodes) {
+                rows.push({
+                    label: "Exit through " + node.name,
+                    kind: "switch",
+                    note: "all traffic",
+                    on: node.inUse,
+                    toggle: () => shell.tailscale(["set", "--exit-node=" + (node.inUse ? "" : node.name)])
+                });
+            }
+        }
+        const rowsBeforeNetworks = rows.length;
+        if (pages.wifiDevice !== null && Networking.wifiEnabled) {
             const networks = pages.wifiDevice.networks.values.slice();
             networks.sort((first, second) => {
                 const rankDifference = pages.wifiRank(first) - pages.wifiRank(second);
@@ -792,9 +898,9 @@ Scope {
                 rows.push(row);
             }
         }
-        if (rows.length === 1) {
+        if (rows.length === rowsBeforeNetworks) {
             rows.push({
-                label: "no Wi-Fi networks in range",
+                label: Networking.wifiEnabled ? "no Wi-Fi networks in range" : "Wi-Fi is off",
                 kind: "note"
             });
         }
@@ -1094,6 +1200,8 @@ Scope {
                 wallpaperList.running = true;
             else if (pages.shell.pageName === "keys")
                 keyBindingList.running = true;
+            else if (pages.shell.pageName === "network")
+                pages.shell.checkTailscale();
         }
     }
 }
