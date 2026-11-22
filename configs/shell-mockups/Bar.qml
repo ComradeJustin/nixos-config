@@ -18,8 +18,7 @@ PanelWindow {
         left: true
         right: true
     }
-    // One row of text with four pixels above and below.
-    implicitHeight: Theme.cellHeight + 8
+    implicitHeight: Theme.barHeight
     color: Theme.slab
     WlrLayershell.namespace: "shell-mockup"
     WlrLayershell.layer: WlrLayer.Top
@@ -38,7 +37,7 @@ PanelWindow {
     // --- Left: workspaces, focused window ---
     Row {
         x: Theme.cellWidth
-        y: 4
+        y: Theme.barTextY
 
         Repeater {
             model: 5
@@ -71,7 +70,7 @@ PanelWindow {
 
     // --- Centre: date and time ---
     Row {
-        y: 4
+        y: Theme.barTextY
         // Rounded so the text lands on whole pixels and stays sharp.
         x: Math.round((parent.width - width) / 2)
 
@@ -87,7 +86,7 @@ PanelWindow {
 
     // --- Right: track, network, volume, battery ---
     Row {
-        y: 4
+        y: Theme.barTextY
         x: parent.width - width - Theme.cellWidth
 
         Key {

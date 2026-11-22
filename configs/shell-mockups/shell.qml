@@ -331,7 +331,7 @@ ShellRoot {
         margins.bottom: 10
         exclusionMode: ExclusionMode.Ignore
         implicitWidth: controls.width + 4 * Theme.cellWidth
-        implicitHeight: Theme.cellHeight + 8
+        implicitHeight: Theme.barHeight
         color: Theme.slab
         WlrLayershell.namespace: "shell-mockup"
         WlrLayershell.layer: WlrLayer.Top
@@ -340,7 +340,7 @@ ShellRoot {
             id: controls
 
             x: 2 * Theme.cellWidth
-            y: 4
+            y: Theme.barTextY
             spacing: 2 * Theme.cellWidth
 
             Repeater {

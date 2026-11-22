@@ -36,20 +36,29 @@ Singleton {
     readonly property int cellWidth: 7
     readonly property int cellHeight: 14
 
-    // Motion. Springs, so repeated key presses carry momentum, tuned to
-    // settle fast (measured): turning the ring about 130 ms with a slight
-    // overshoot, opening a station about 145 ms, bar drop-downs about 115 ms.
-    // Nothing runs while idle.
-    readonly property real turnSpring: 8
-    readonly property real turnDamping: 0.5
-    readonly property real openSpring: 10
-    readonly property real openDamping: 0.6
-    readonly property real dropSpring: 14
-    readonly property real dropDamping: 0.7
+    // The bar is two cells tall, with its one row of text centred in it.
+    readonly property int barHeight: 2 * cellHeight
+    readonly property int barTextY: cellHeight / 2
 
-    // A colour partway between two others. amount 0 gives `from`, 1 gives `to`.
-    function mix(from: color, to: color, amount: real): color {
-        return Qt.rgba(from.r + (to.r - from.r) * amount, from.g + (to.g - from.g) * amount, from.b + (to.b - from.b) * amount, 1);
+    // Motion, the way a terminal redraws. Nothing glides, fades or
+    // overshoots: things jump in whole cells at a steady rate, and panels
+    // print one row at a time. Nothing runs while idle.
+    // Turning the ring one place takes this long, drawn as this many jumps.
+    readonly property int turnMs: 96
+    readonly property int turnSteps: 6
+    // The ring opens out from the centre in this many jumps.
+    readonly property int ringOpenMs: 64
+    readonly property int ringOpenSteps: 4
+    // A panel prints or erases one row in this long.
+    readonly property int rowMs: 16
+
+    // Snap a distance in pixels to whole cells, so text never sits between them.
+    function snapX(pixels: real): real {
+        return Math.round(pixels / cellWidth) * cellWidth;
+    }
+
+    function snapY(pixels: real): real {
+        return Math.round(pixels / cellHeight) * cellHeight;
     }
 
     FontLoader {
