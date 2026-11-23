@@ -1,5 +1,5 @@
 # Login screen: greetd with tuigreet, which starts niri.
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 {
   services.xserver = {
     enable = true;
@@ -22,6 +22,11 @@
     };
   };
   systemd.services.greetd.serviceConfig = {
+    # NixOS starts greetd as an "idle" service, which systemd holds back for
+    # up to five seconds so that boot messages do not write over a text
+    # greeter. The boot's text is hidden behind the splash, so the wait only
+    # leaves the screen black after it.
+    Type = lib.mkForce "simple";
     StandardInput = "tty";
     StandardOutput = "tty";
     StandardError = "journal";
