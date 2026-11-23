@@ -78,7 +78,9 @@ PanelWindow {
                 shell.cancelDialog();
                 return;
             }
-            if (event.key === Qt.Key_Escape)
+            if (event.key === Qt.Key_CapsLock)
+                shell.capsLockPressed();
+            else if (event.key === Qt.Key_Escape)
                 shell.cancelDialog();
             else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
                 shell.submitDialog();

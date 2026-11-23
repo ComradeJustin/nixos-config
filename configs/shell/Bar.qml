@@ -256,7 +256,7 @@ PanelWindow {
                         Segment {
                             id: bellTab
 
-                            onTapped: bar.shell.openDrop("inbox", bellTab.mapToItem(slab, 0, 0).x)
+                            onTapped: bar.shell.openDrop("inbox", bellTab.mapToItem(slab, 0, 0).x, bar.screen)
                             onRightTapped: bar.shell.dismissAll()
 
                             // The font's bell icon.
@@ -339,13 +339,22 @@ PanelWindow {
                         }
                     }
 
-                    // The machine does not go to sleep by itself, even
-                    // with the lid shut.
+                    // The machine does not go to sleep when it sits idle.
                     Passing {
                         active: !bar.shell.sleepsItself
 
                         Flag {
                             word: "no sleep"
+                            blockColor: Theme.inkDim
+                        }
+                    }
+
+                    // It keeps running with the lid shut.
+                    Passing {
+                        active: !bar.shell.sleepsOnLid
+
+                        Flag {
+                            word: "lid stays on"
                             blockColor: Theme.inkDim
                         }
                     }
@@ -370,7 +379,7 @@ PanelWindow {
                 y: Theme.barTextY
                 // On a whole cell, so the text stays sharp.
                 x: Theme.snapX((parent.width - width) / 2)
-                onTapped: bar.shell.toggleCalendar()
+                onTapped: bar.shell.toggleCalendar(bar.screen)
 
                 Label {
                     text: Qt.formatDateTime(bar.shell.now, "ddd d MMM") + "  "
@@ -403,7 +412,7 @@ PanelWindow {
                     id: trayTab
 
                     visible: bar.shell.trayCount > 0 && bar.shell.barShows("tray")
-                    onTapped: bar.shell.openDrop("tray", bar.shell.trayTabX)
+                    onTapped: bar.shell.openDrop("tray", bar.shell.trayTabX, bar.screen)
 
                     Key {
                         text: "tray "
@@ -440,7 +449,7 @@ PanelWindow {
                     id: networkTab
 
                     visible: bar.shell.barShows("network")
-                    onTapped: bar.shell.openDrop("network", networkTab.mapToItem(slab, 0, 0).x)
+                    onTapped: bar.shell.openDrop("network", networkTab.mapToItem(slab, 0, 0).x, bar.screen)
 
                     Key {
                         text: "net "
@@ -464,7 +473,7 @@ PanelWindow {
                     id: soundTab
 
                     visible: bar.shell.barShows("volume")
-                    onTapped: bar.shell.openDrop("sound", soundTab.mapToItem(slab, 0, 0).x)
+                    onTapped: bar.shell.openDrop("sound", soundTab.mapToItem(slab, 0, 0).x, bar.screen)
                     onRightTapped: bar.shell.toggleMute()
                     onWheelTurned: step => bar.shell.changeVolume(step)
 
@@ -492,7 +501,7 @@ PanelWindow {
                     id: powerTab
 
                     visible: bar.shell.batteryPresent && bar.shell.barShows("battery")
-                    onTapped: bar.shell.openDrop("power", powerTab.mapToItem(slab, 0, 0).x)
+                    onTapped: bar.shell.openDrop("power", powerTab.mapToItem(slab, 0, 0).x, bar.screen)
 
                     Divider {
                         pointsLeft: true

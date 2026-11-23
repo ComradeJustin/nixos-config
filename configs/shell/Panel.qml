@@ -206,7 +206,7 @@ Box {
                 if (entry.opens)
                     return entry.note ? entry.note + " ›" : "›";
                 if (endsWithValue)
-                    return entry.value;
+                    return entry.value !== undefined ? entry.value : "";
                 return entry.note || "";
             }
             // The cells it takes, with one cell of space before it.

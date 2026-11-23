@@ -91,6 +91,7 @@ Scope {
             soundDevices: 2,
             power: 2,
             bar: 2,
+            weatherPlace: 2,
             displays: 2,
             display: 2,
             displayModes: 2,
@@ -436,6 +437,16 @@ Scope {
         };
     }
 
+    function lidRow(): var {
+        return {
+            label: "Sleep on lid",
+            kind: "switch",
+            note: pages.shell.sleepsOnLid ? "shutting it sleeps" : "it stays on, locked",
+            on: pages.shell.sleepsOnLid,
+            toggle: () => pages.shell.sleepsOnLid = !pages.shell.sleepsOnLid
+        };
+    }
+
     function monitorRow(): var {
         return {
             label: "Monitor",
@@ -452,11 +463,27 @@ Scope {
                 {
                     label: "Night light",
                     kind: "switch",
-                    note: "warm from 19:00 to 07:00",
+                    note: "warm in the evening",
                     on: pages.shell.nightLight,
                     toggle: () => pages.shell.nightLight = !pages.shell.nightLight
                 },
-                pages.quietRow(),
+                // Its two times, hung under it, half an hour a step: it
+                // starts between noon and midnight and ends before noon.
+                {
+                    label: "├ from",
+                    kind: "level",
+                    value: pages.shell.timeOfDay(pages.shell.nightLightStart),
+                    level: pages.shell.nightLightStart / 1440,
+                    adjust: step => pages.shell.nightLightStart = Math.max(720, Math.min(1410, pages.shell.nightLightStart + 30 * step))
+                },
+                {
+                    label: "└ until",
+                    kind: "level",
+                    value: pages.shell.timeOfDay(pages.shell.nightLightEnd),
+                    level: pages.shell.nightLightEnd / 1440,
+                    adjust: step => pages.shell.nightLightEnd = Math.max(0, Math.min(690, pages.shell.nightLightEnd + 30 * step))
+                },
+                pages.quietRow(), pages.lidRow(),
                 {
                     label: "Japanese input",
                     kind: "switch",
@@ -467,10 +494,16 @@ Scope {
                 {
                     label: "Power",
                     kind: "text",
-                    value: pages.shell.sleepsItself ? "locks after " + pages.shell.lockMinutes + " min, sleeps after " + pages.shell.sleepMinutes : "locks after " + pages.shell.lockMinutes + " min, never sleeps",
+                    value: pages.shell.sleepsItself ? "locks after " + pages.shell.lockMinutes + " min, sleeps after " + pages.shell.sleepMinutes : "locks after " + pages.shell.lockMinutes + " min, no idle sleep",
                     opens: "power"
                 },
                 pages.displaysRow(),
+                {
+                    label: "Weather",
+                    kind: "text",
+                    value: pages.shell.weatherPlace !== "" ? "for " + pages.shell.weatherPlace : "for where the network places you",
+                    opens: "weatherPlace"
+                },
                 {
                     label: "Bar",
                     kind: "text",
@@ -514,9 +547,8 @@ Scope {
                 adjust: step => shell.lockMinutes = Math.max(1, Math.min(30, shell.lockMinutes + step))
             },
             {
-                label: "Sleep",
+                label: "Sleep when idle",
                 kind: "switch",
-                note: "lid shut, or idle",
                 on: shell.sleepsItself,
                 toggle: () => shell.sleepsItself = !shell.sleepsItself
             }
@@ -534,15 +566,34 @@ Scope {
             rows.push({
                 label: "Sleep after",
                 kind: "text",
-                value: "never, lid shut or not"
+                value: "never"
             });
         }
+        rows.push(pages.lidRow());
         rows.push(pages.monitorRow());
         return {
             title: "Power",
             rows: rows
         };
     }
+
+    // --- Weather: the place it is for ---
+    // Enter keeps what was typed; entering nothing goes back to wherever
+    // the machine's network address places it.
+    readonly property var weatherPlace: ({
+            title: "Weather for",
+            field: {
+                hint: pages.shell.weatherPlace !== "" ? pages.shell.weatherPlace + " (enter nothing to clear)" : "a town or city",
+                filters: false,
+                secret: false,
+                submitHint: "keep",
+                submit: text => {
+                    pages.shell.weatherPlace = text.trim();
+                    pages.shell.back();
+                }
+            },
+            rows: []
+        })
 
     // --- Bar: which of its segments show ---
     // Each is { name, label }: the name is what Bar.qml asks the shell about.
@@ -657,8 +708,8 @@ Scope {
         };
     }
 
-    // One screen. Changes are made with "niri msg output" and last until
-    // niri next loads its configuration.
+    // One screen. Changes are made with "niri msg output", and the shell
+    // keeps them and makes them again (shell.qml); Reset forgets them.
     readonly property var display: displayPage()
 
     // niri's names for a screen's rotation, in the order enter steps
@@ -749,10 +800,14 @@ Scope {
             label: display.make + " " + display.model,
             kind: "note"
         });
-        rows.push({
-            label: "Changes last until niri reloads its configuration",
-            kind: "note"
-        });
+        if (shell.displayChanges[name] !== undefined) {
+            rows.push({
+                label: "Reset",
+                kind: "text",
+                value: "back to niri's own settings",
+                act: () => shell.resetDisplay(name)
+            });
+        }
         return {
             title: name,
             rows: rows
@@ -1479,11 +1534,14 @@ Scope {
                 label: pages.shell.plainText(notification.summary),
                 kind: "note"
             },
-            {
-                label: pages.shell.plainText(notification.body),
-                kind: "note"
-            }
         ];
+        // The text can be long: all of it, on as many lines as it takes.
+        for (const line of pages.shell.wrappedLines(pages.shell.plainText(notification.body), 46)) {
+            rows.push({
+                label: line,
+                kind: "note"
+            });
+        }
         if (notification.hasInlineReply) {
             rows.push({
                 label: "Reply",

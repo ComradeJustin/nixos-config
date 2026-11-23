@@ -48,6 +48,16 @@ Pass just the hostname to rebuild the machine you're on. Pass `user@ip` to build
 
 Shell aliases after rebuild: `rebuild`, `update`, `wake`, `infra-status`.
 
+## Desktop shell
+
+The laptop's bar, notifications, lock screen, launcher ("the ring"), system monitor and settings are one QuickShell program in `configs/shell/`, drawn like a terminal UI. `configs/shell/shell.qml` is the entry point, and its opening comment lists every part.
+
+- It runs as the user service `shell` (`modules/desktop/shell.nix`), straight from this checkout: after editing a file, `systemctl --user restart shell` applies it, with no rebuild.
+- Key bindings reach it with `shell-call <request>`, for example `shell-call ring` or `shell-call page clipboard` (`configs/niri/keybind.kdl`).
+- `rebuild` tells it how a rebuild is going, so the bar and the monitor show progress.
+- Its settings (night light, idle and sleep times, which bar segments show, and so on) are changed in the shell itself and kept in `~/.local/state/quickshell`.
+- niri's borders, shadows and animations follow the same look (`configs/niri/layout.kdl`, `wipe.kdl`); the colours come from the Stylix theme.
+
 ## Dev shells
 
 `ctf`, `rust` and `cuda` open development environments defined in `shells/` (the aliases run `nix develop ~/nixos-config#<name>`). They use this flake's lock file, so they get the same package versions as the systems.

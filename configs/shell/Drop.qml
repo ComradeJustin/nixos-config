@@ -42,6 +42,15 @@ PanelWindow {
         }
     }
 
+    // On the screen whose bar was clicked. Opened by a key, it is left to
+    // the compositor, which picks the screen in use.
+    Binding {
+        target: drop
+        property: "screen"
+        value: drop.shell.dropScreen
+        when: drop.shell.dropScreen !== null
+    }
+
     // Stay mapped until the panel has been wiped away.
     visible: shell.dropOpen || shown > 0
     anchors {

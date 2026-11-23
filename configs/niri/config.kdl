@@ -56,3 +56,9 @@ blur {
 
 
 
+
+// Shutting the lid locks the session. Whether the machine then goes to
+// sleep is a switch in the shell (System, "Sleep on lid").
+switch-events {
+    lid-close { spawn "loginctl" "lock-session"; }
+}

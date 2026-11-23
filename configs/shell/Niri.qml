@@ -37,8 +37,16 @@ Scope {
     property var workspaceById: ({})
     property var windowById: ({})
 
+    // niri has loaded its configuration: when the shell connects, and
+    // again every time the configuration changes.
+    signal configLoaded
+
     function handleEvent(line: string): void {
         const event = JSON.parse(line);
+        if (event.ConfigLoaded) {
+            niri.configLoaded();
+            return;
+        }
         if (event.WorkspacesChanged) {
             const workspaces = {};
             for (const workspace of event.WorkspacesChanged.workspaces)

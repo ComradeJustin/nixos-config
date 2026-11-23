@@ -42,6 +42,15 @@ PanelWindow {
             drawnOffset = shell.calendarOffset;
     }
 
+    // On the screen whose clock was clicked. Opened by a key, it is left
+    // to the compositor, which picks the screen in use.
+    Binding {
+        target: calendar
+        property: "screen"
+        value: calendar.shell.calendarScreen
+        when: calendar.shell.calendarScreen !== null
+    }
+
     // Stay mapped until the panel has been wiped away.
     visible: shell.calendarShown || shown > 0
     anchors.top: true

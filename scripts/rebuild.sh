@@ -86,6 +86,31 @@ watch_progress() {
     done
 }
 
+# Everything nh prints is also kept in this file, so that what a failure
+# came down to can be shown by the shell.
+LOG="$(mktemp --tmpdir rebuild-XXXXXX.log)"
+
+# Run nh with the arguments given. "script" gives it a terminal of its own
+# and copies what it prints to the log, so nh's display, its question and
+# sudo all work as they do without it. It runs the command through $SHELL,
+# which has to be bash for the quoting used here.
+run_nh() {
+    if command -v script >/dev/null; then
+        SHELL="$BASH" script --quiet --flush --return --command "$(printf '%q ' nh "$@")" "$LOG"
+    else
+        nh "$@"
+    fi
+}
+
+# What the last error in the log comes down to, as one line: the last of the
+# lines nix quotes under it (they start with ">"), or the "error:" line
+# itself when it quotes none. The terminal's colour codes are taken out.
+failure_line() {
+    sed -e 's/\x1b\[[0-9;?]*[A-Za-z]//g' -e 's/\r//g' "$LOG" |
+        awk '/^ *error:/ { block = "" } { block = block $0 "\n" } END { printf "%s", block }' |
+        grep -E '^ *(error:|>)' | tail -1 | sed -e 's/^ *>* *//' | cut -c1-200
+}
+
 # However this script ends, stop reporting and tell the shell how it went.
 finish() {
     local status=$?
@@ -93,8 +118,9 @@ finish() {
     if ((status == 0)); then
         report done 0 0 ""
     else
-        report failed 0 0 ""
+        report failed 0 0 "$(failure_line)"
     fi
+    rm -f "$LOG"
 }
 
 report evaluating 0 0 ""
@@ -105,10 +131,10 @@ trap finish EXIT
 
 if [[ -n "$TARGET" ]]; then
     echo "Building ${HOST} and deploying to ${TARGET}..."
-    nh os switch "$FLAKE_DIR" -H "$HOST" --ask --target-host "$TARGET" "${EXTRA_ARGS[@]}"
+    run_nh os switch "$FLAKE_DIR" -H "$HOST" --ask --target-host "$TARGET" "${EXTRA_ARGS[@]}"
 else
     echo "Building ${HOST} locally..."
-    nh os switch "$FLAKE_DIR" -H "$HOST" --ask "${EXTRA_ARGS[@]}"
+    run_nh os switch "$FLAKE_DIR" -H "$HOST" --ask "${EXTRA_ARGS[@]}"
     kill "$WATCHER" 2>/dev/null || true
 
     # Push the new system to nixpc's store so other machines can substitute it.

@@ -57,6 +57,7 @@ Scope {
         lock.refused = false;
         lock.fingerRefused = false;
         lock.practice = practice;
+        lock.shell.checkCapsLock();
         sessionLock.locked = true;
         fingerprintCheck.start();
     }
@@ -206,7 +207,9 @@ Scope {
 
                 Keys.onPressed: event => {
                     event.accepted = true;
-                    if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    if (event.key === Qt.Key_CapsLock) {
+                        lock.shell.capsLockPressed();
+                    } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                         lock.submit();
                     } else if (event.key === Qt.Key_Escape) {
                         lock.typed = "";
@@ -283,11 +286,13 @@ Scope {
                                 return "checking";
                             if (lock.refused)
                                 return "wrong password";
+                            if (lock.shell.capsLock)
+                                return "caps lock is on";
                             if (lock.practice)
                                 return "practice: unlocks by itself in a minute";
                             return "type your password";
                         }
-                        color: lock.refused ? Theme.alert : Theme.inkDim
+                        color: lock.refused || lock.shell.capsLock ? Theme.alert : Theme.inkDim
                     }
 
                     // The fingerprint reader, while it is waiting.

@@ -63,9 +63,10 @@ import Quickshell.Wayland
 //   brightness     brightnessctl, asked only when a key changes it
 //   night light    wlsunset, run while it is switched on
 //   admin rights   polkit: the shell is the agent that asks for the password
-// Night light, keep awake, do not disturb, the idle and sleep settings and
-// which bar segments show are remembered across a restart, in a small file
-// in the shell's state folder.
+// Every setting made in the shell (night light and its times, keep awake,
+// do not disturb, the idle and sleep settings, which bar segments show,
+// the weather's place, changes to the screens) is remembered across a
+// restart, in a small file in the shell's state folder.
 //
 // Keys reach it through IPC, from niri's key bindings (configs/niri):
 //   qs -p ~/nixos-config/configs/shell ipc call shell <name>
@@ -128,8 +129,19 @@ ShellRoot {
             // Whether the machine goes to sleep by itself, and after how
             // long sitting idle it locks and sleeps.
             property bool sleepsItself: true
+            property bool sleepsOnLid: true
             property int lockMinutes: 3
             property int sleepMinutes: 30
+            // When night light starts and ends, in minutes after midnight.
+            property int nightLightStart: 19 * 60
+            property int nightLightEnd: 7 * 60
+            // Where the weather is for. "" is wherever the machine's
+            // network address places it.
+            property string weatherPlace: ""
+            // Changes made to the screens, kept so that they can be made
+            // again: for each screen's name, by kind of change, the words
+            // given to "niri msg output".
+            property var displayChanges: ({})
             // The bar's segments that are switched off, by name.
             property var barHidden: []
         }
@@ -174,10 +186,14 @@ ShellRoot {
     // says which, and `dropX` where the panel hangs, in pixels from the
     // left of the screen. Like the pages, they change only once the page
     // on screen has been wiped away, so a change waits in the two below.
+    // `dropScreen` is the screen whose bar was clicked, or null when a key
+    // asked, and the compositor then picks the screen in use.
     property bool dropOpen: false
     property real dropX: 0
+    property var dropScreen: null
     property bool nextDropOpen: false
     property real nextDropX: 0
+    property var nextDropScreen: null
 
     readonly property bool dived: pageStack.length > 0
     readonly property string pageName: dived ? pageStack[pageStack.length - 1] : ""
@@ -250,7 +266,7 @@ ShellRoot {
     // Drop a page out of the bar, with the panel's left edge at `x`. Asking
     // for the one that is already there closes it, so one click or key
     // opens and closes it.
-    function openDrop(name: string, x: real): void {
+    function openDrop(name: string, x: real, screen: var): void {
         if (pageSource.named(name) === null)
             return;
         if (root.dropOpen && root.pageStack[0] === name) {
@@ -262,6 +278,7 @@ ShellRoot {
         root.ringOpen = false;
         root.nextDropOpen = true;
         root.nextDropX = x;
+        root.nextDropScreen = screen;
         root.changeStack([name], [0]);
     }
 
@@ -294,6 +311,7 @@ ShellRoot {
         root.dropOpen = root.nextDropOpen && root.nextPageStack.length > 0;
         root.nextDropOpen = root.dropOpen;
         root.dropX = root.nextDropX;
+        root.dropScreen = root.nextDropScreen;
         root.pageStack = root.nextPageStack;
         root.selectionStack = root.nextSelectionStack;
         root.query = "";
@@ -547,7 +565,11 @@ ShellRoot {
     // it has been handed over.
     property string dialogTyped: ""
 
-    onAuthRequestChanged: root.dialogTyped = ""
+    onAuthRequestChanged: {
+        root.dialogTyped = "";
+        if (root.authRequest !== null)
+            root.checkCapsLock();
+    }
 
     // The warning before the idle lock: swayidle says when the machine has
     // sat idle and when it is touched again (see "Idle and sleep").
@@ -621,6 +643,12 @@ ShellRoot {
                 label: line,
                 kind: "note",
                 alert: request.supplementaryIsError
+            });
+        if (root.capsLock)
+            rows.push({
+                label: "caps lock is on",
+                kind: "note",
+                alert: true
             });
         const page = {
             title: "Authenticate",
@@ -713,7 +741,7 @@ ShellRoot {
 
     function reportBuild(phase: string, made: int, total: int, current: string): void {
         if (phase === "done" || phase === "failed") {
-            root.finishBuild(phase === "failed");
+            root.finishBuild(phase === "failed", current);
             return;
         }
         if (!root.building) {
@@ -728,8 +756,9 @@ ShellRoot {
         root.buildNow = current;
     }
 
-    // Note how the rebuild ended and say so in a notification.
-    function finishBuild(failed: bool): void {
+    // Note how the rebuild ended and say so in a notification. A failed
+    // one comes with the last line of its error.
+    function finishBuild(failed: bool, errorLine: string): void {
         // The end of a rebuild that this shell never saw start.
         if (!root.building)
             return;
@@ -743,7 +772,7 @@ ShellRoot {
         root.buildPhase = "";
         root.buildNow = "";
         if (failed)
-            Quickshell.execDetached(["notify-send", "--urgency=critical", "--app-name=Rebuild", "Rebuild failed", "after " + took + "; the terminal has the error"]);
+            Quickshell.execDetached(["notify-send", "--urgency=critical", "--app-name=Rebuild", "Rebuild failed after " + took, errorLine !== "" ? errorLine : "the terminal has the error"]);
         else
             Quickshell.execDetached(["notify-send", "--app-name=Rebuild", "Rebuild finished", "took " + took]);
     }
@@ -761,7 +790,11 @@ ShellRoot {
     // Which month it shows, counted in months from this one.
     property int calendarOffset: 0
 
-    function toggleCalendar(): void {
+    // The screen whose clock was clicked, or null when a key asked.
+    property var calendarScreen: null
+
+    function toggleCalendar(screen: var): void {
+        root.calendarScreen = screen;
         if (root.dropOpen)
             root.closePages();
         root.calendarOffset = 0;
@@ -771,8 +804,9 @@ ShellRoot {
     }
 
     // --- Weather ---
-    // Today's weather where the machine is, from wttr.in, which places the
-    // machine by its network address. It is asked for only when something
+    // Today's weather, from wttr.in: for the place that has been given
+    // (the Weather page), or else wherever the machine's network address
+    // places it. It is asked for only when something
     // that shows it comes on screen (the desktop's Today tile, the
     // calendar) and the last answer is more than half an hour old.
     // { temperature, description, low, high, sunrise, sunset, place }, or
@@ -781,10 +815,20 @@ ShellRoot {
     // When it was last asked for, in milliseconds.
     property real weatherAsked: 0
 
+    property alias weatherPlace: remembered.weatherPlace
+
+    // A new place: ask again straight away.
+    onWeatherPlaceChanged: {
+        root.weatherAsked = 0;
+        root.wantWeather();
+    }
+
     function wantWeather(): void {
         if (Date.now() - root.weatherAsked < 30 * 60 * 1000)
             return;
         root.weatherAsked = Date.now();
+        // The place goes in the address; with none, wttr.in works it out.
+        weatherReader.command = ["curl", "--silent", "--max-time", "15", "https://wttr.in/" + encodeURIComponent(root.weatherPlace) + "?format=j1"];
         weatherReader.running = true;
     }
 
@@ -818,14 +862,14 @@ ShellRoot {
             high: today.maxtempC + "°",
             sunrise: root.clockTime(today.astronomy[0].sunrise),
             sunset: root.clockTime(today.astronomy[0].sunset),
-            place: answer.nearest_area[0].areaName[0].value
+            // The place that was given, or else the one wttr.in worked out.
+            place: root.weatherPlace !== "" ? root.weatherPlace : answer.nearest_area[0].areaName[0].value
         };
     }
 
     Process {
         id: weatherReader
 
-        command: ["curl", "--silent", "--max-time", "15", "https://wttr.in/?format=j1"]
         stdout: StdioCollector {
             onStreamFinished: root.readWeather(text)
         }
@@ -926,15 +970,45 @@ ShellRoot {
 
     // --- Night light and staying awake ---
     // Night light warms the screen's colours in the evening. It is
-    // wlsunset, kept running while this is on, with fixed times.
+    // wlsunset, kept running while this is on, and started again when one
+    // of its times is changed.
     property alias nightLight: remembered.nightLight
+    property alias nightLightStart: remembered.nightLightStart
+    property alias nightLightEnd: remembered.nightLightEnd
+
+    // Minutes after midnight as a time of day: 1140 is "19:00".
+    function timeOfDay(minutes: int): string {
+        const hour = Math.floor(minutes / 60);
+        const minute = minutes % 60;
+        return (hour < 10 ? "0" : "") + hour + ":" + (minute < 10 ? "0" : "") + minute;
+    }
+
+    // wlsunset is given when the day begins (-S) and ends (-s), and how
+    // warm the screen is by night and by day.
+    readonly property var nightLightCommand: ["wlsunset", "-S", root.timeOfDay(root.nightLightEnd), "-s", root.timeOfDay(root.nightLightStart), "-t", "4000", "-T", "6500"]
+
+    onNightLightChanged: nightLightProcess.running = root.nightLight
+    onNightLightCommandChanged: {
+        nightLightProcess.running = false;
+        nightLightStarter.restart();
+    }
+
+    // Starts it when the shell starts, and again a moment after new times.
+    Timer {
+        id: nightLightStarter
+
+        interval: 300
+        running: true
+        onTriggered: nightLightProcess.running = root.nightLight
+    }
     // Staying awake stops the screen dimming and the idle lock. The bar
     // holds the idle inhibitor (Bar.qml).
     property alias keepAwake: remembered.keepAwake
 
     Process {
-        command: ["wlsunset", "-S", "07:00", "-s", "19:00", "-t", "4000", "-T", "6500"]
-        running: root.nightLight
+        id: nightLightProcess
+
+        command: root.nightLightCommand
     }
 
     // --- Idle and sleep ---
@@ -944,10 +1018,12 @@ ShellRoot {
     // again whenever one changes.
     property alias lockMinutes: remembered.lockMinutes
     property alias sleepMinutes: remembered.sleepMinutes
-    // Whether the machine goes to sleep by itself: after sitting idle, and
-    // when the lid is shut. Switched off, it keeps running with the lid
-    // shut; the screen still dims and locks.
+    // Whether the machine goes to sleep after sitting idle, and whether it
+    // does when the lid is shut. With the second switched off it keeps
+    // running with the lid shut. Either way the screen still dims and
+    // locks, and shutting the lid locks the session (configs/niri).
     property alias sleepsItself: remembered.sleepsItself
+    property alias sleepsOnLid: remembered.sleepsOnLid
 
     // swayidle's arguments: each "timeout" is seconds of idleness and what
     // to run then, with "resume" for when the machine is touched again.
@@ -984,11 +1060,44 @@ ShellRoot {
         command: ["sh", "-c", "pkill -x swayidle; exec swayidle -w \"$@\"", "sh"].concat(root.idleWatcherArguments)
     }
 
-    // While the machine is not to sleep by itself, shutting the lid must
-    // not put it to sleep either: this holds the system's lid switch off.
+    // While the machine is to keep running with the lid shut, this holds
+    // the system's lid switch off.
     Process {
-        command: ["systemd-inhibit", "--what=handle-lid-switch", "--who=Desktop shell", "--why=Sleep is switched off", "sleep", "infinity"]
-        running: !root.sleepsItself
+        command: ["systemd-inhibit", "--what=handle-lid-switch", "--who=Desktop shell", "--why=Sleep on lid is switched off", "sleep", "infinity"]
+        running: !root.sleepsOnLid
+    }
+
+    // --- Caps lock ---
+    // Whether caps lock is on, for the two places a password is typed: the
+    // lock screen and the password prompt. It is read from the keyboard's
+    // light when one of them comes up and just after the caps lock key is
+    // pressed there, and at no other time.
+    property bool capsLock: false
+
+    function checkCapsLock(): void {
+        capsLockReader.running = true;
+    }
+
+    // The light changes a moment after the key.
+    function capsLockPressed(): void {
+        capsLockDelay.restart();
+    }
+
+    Timer {
+        id: capsLockDelay
+
+        interval: 150
+        onTriggered: root.checkCapsLock()
+    }
+
+    Process {
+        id: capsLockReader
+
+        // One line for each keyboard's light: 1 when it is lit.
+        command: ["sh", "-c", "cat /sys/class/leds/*::capslock/brightness"]
+        stdout: StdioCollector {
+            onStreamFinished: root.capsLock = text.split("\n").includes("1")
+        }
     }
 
     // --- The bar's segments ---
@@ -1015,14 +1124,52 @@ ShellRoot {
     // modes, the one in use, its scale and rotation. Read when the System
     // page or a display's page opens and after each change (Pages.qml).
     property var displays: ({})
+    // niri forgets a change when it loads its configuration, so each one
+    // is kept here and made again whenever it has (Niri.qml says when,
+    // which includes the moment the shell starts).
+    property alias displayChanges: remembered.displayChanges
+
+    Connections {
+        target: niriState
+
+        function onConfigLoaded(): void {
+            for (const name in root.displayChanges) {
+                for (const kind in root.displayChanges[name])
+                    Quickshell.execDetached(["niri", "msg", "output", name].concat(root.displayChanges[name][kind]));
+            }
+        }
+    }
+
+    // Forget what was changed on a screen, and have niri load its
+    // configuration again, which puts the screen back as that has it.
+    function resetDisplay(name: string): void {
+        const kept = {};
+        for (const other in root.displayChanges) {
+            if (other !== name)
+                kept[other] = root.displayChanges[other];
+        }
+        root.displayChanges = kept;
+        displayChange.command = ["niri", "msg", "action", "load-config-file"];
+        displayChange.running = true;
+    }
 
     function readDisplays(): void {
         displayReader.running = true;
     }
 
     // Change a display with "niri msg output <name> ...", then read them
-    // again. The change lasts until niri next loads its configuration.
+    // again. The first word of the change is its kind: scale, mode,
+    // transform, vrr, off or on. Switching a screen off or on is not kept.
     function changeDisplay(name: string, change: var): void {
+        const kind = change[0];
+        if (kind !== "off" && kind !== "on") {
+            // A copy, so that the remembered value is seen to change.
+            const changes = JSON.parse(JSON.stringify(root.displayChanges));
+            if (changes[name] === undefined)
+                changes[name] = {};
+            changes[name][kind] = change;
+            root.displayChanges = changes;
+        }
         displayChange.command = ["niri", "msg", "output", name].concat(change);
         displayChange.running = true;
     }
@@ -1653,15 +1800,15 @@ ShellRoot {
         }
 
         function calendar(): void {
-            root.toggleCalendar();
+            root.toggleCalendar(null);
         }
 
         function tray(): void {
-            root.openDrop("tray", root.trayTabX);
+            root.openDrop("tray", root.trayTabX, null);
         }
 
         function drop(name: string): void {
-            root.openDrop(name, root.trayTabX);
+            root.openDrop(name, root.trayTabX, null);
         }
 
         function search(): void {
