@@ -12,8 +12,8 @@ import Quickshell.Wayland
 // shell's lock screen: the time, the date, and a panel to type the password
 // into.
 //
-// greetd, the login service, starts it in a niri of its own, which paints
-// the same background from its first frame, and takes the password from it:
+// greetd, the login service, starts it in a sway of its own, which paints
+// the same background, and takes the password from it:
 //   - it asks greetd to log the one user in, and greetd asks for a password
 //   - enter hands over what was typed; a wrong one says so and asks again
 //   - a right one wipes the panel away and starts the session

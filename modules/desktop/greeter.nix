@@ -1,5 +1,5 @@
 # Login screen: greetd showing a greeter in the style of the desktop shell
-# (configs/greeter), which starts niri. The greeter is QuickShell, in a niri
+# (configs/greeter), which starts niri. The greeter is QuickShell, in a sway
 # of its own; if it ever fails to start, the text greeter takes over.
 {
   config,
@@ -26,42 +26,42 @@ let
   # console's colours, which Stylix sets from the palette.
   textGreeter = "${pkgs.tuigreet}/bin/tuigreet --time --cmd niri-session --theme 'border=darkgray;text=gray;time=gray;container=black;title=white;greet=gray;prompt=red;input=white;action=darkgray;button=red'";
 
-  # The niri the greeter runs in: nothing but the theme's background, which
-  # it paints from its first frame, so the screen is the same plain colour
-  # the boot splash ends on until the greeter has drawn. When the greeter
-  # ends, so does this niri; a mark is left if the greeter ended well.
-  greeterNiri = pkgs.writeText "greeter-niri.kdl" ''
-    // Written by modules/desktop/greeter.nix.
-    // The screens' scale, as in the desktop's own niri.
-    include "${../../configs/niri/screen.kdl}"
-    prefer-no-csd
-    hotkey-overlay {
-        skip-at-startup
-    }
-    xwayland-satellite {
-        off
-    }
-    // The pointer has nothing to click here: it goes as soon as it is still.
-    cursor {
-        hide-when-typing
-        hide-after-inactive-ms 1
-    }
-    animations {
-        off
-    }
-    layout {
-        background-color "#${colours.base00}"
-    }
-    // No key does anything here but type the password.
-    binds {
-    }
-    spawn-at-startup "sh" "-c" "${lib.getExe quickshell} -p ${greeterConfig} && touch \"$XDG_RUNTIME_DIR/greeter-launched\"; ${lib.getExe pkgs.niri} msg action quit --skip-confirmation"
+  # What runs inside the greeter's sway: the greeter, a mark left behind if
+  # it ended well, and then the end of that sway.
+  greeterInSway = pkgs.writeShellScript "greeter-in-sway" ''
+    if ${lib.getExe quickshell} -p ${greeterConfig}; then
+      touch "$XDG_RUNTIME_DIR/greeter-launched"
+    fi
+    ${pkgs.sway-unwrapped}/bin/swaymsg exit
   '';
 
-  # Building the system fails if niri would not accept that configuration.
-  checkedGreeterNiri = pkgs.runCommand "greeter-niri-checked.kdl" { } ''
-    ${lib.getExe pkgs.niri} validate --config ${greeterNiri}
-    cp ${greeterNiri} $out
+  # The sway the greeter runs in: nothing but the theme's background, the
+  # same plain colour the boot splash ends on, until the greeter has drawn.
+  # It is sway and not niri, the desktop's own compositor, because niri
+  # switches the screen off as it exits, and the two seconds the screen
+  # takes to come back are spent before the desktop can start.
+  greeterSway = pkgs.writeText "greeter-sway.conf" ''
+    # Written by modules/desktop/greeter.nix.
+    swaybg_command ${lib.getExe pkgs.swaybg}
+    output * bg #${colours.base00} solid_color
+    # The pointer has nothing to click here: it goes as soon as sway lets
+    # it, a tenth of a second after it was last moved.
+    seat * hide_cursor 100
+    seat * hide_cursor when-typing enable
+    xwayland disable
+    # No key is bound: none does anything here but type the password.
+    exec ${greeterInSway}
+  '';
+
+  # Building the system fails if sway would not accept that configuration.
+  checkedGreeterSway = pkgs.runCommand "greeter-sway-checked.conf" { } ''
+    # sway sets itself up before it reads a configuration, even when it is
+    # only asked to check one: here with no screen and no graphics card.
+    export XDG_RUNTIME_DIR=$TMPDIR
+    export WLR_BACKENDS=headless
+    export WLR_RENDERER=pixman
+    ${pkgs.sway-unwrapped}/bin/sway --validate --config ${greeterSway}
+    cp ${greeterSway} $out
   '';
 
   greeter = pkgs.writeShellScript "greeter" ''
@@ -82,7 +82,7 @@ let
     # the first start is slow.
     export XDG_CACHE_HOME=/var/cache/greeter
     export XDG_STATE_HOME=/var/cache/greeter/state
-    # What niri and the greeter print goes to a file, with the time each
+    # What sway and the greeter print goes to a file, with the time each
     # step began. Left on the terminal it would be the first thing seen
     # whenever the text console shows through, between the splash, the
     # greeter and the desktop.
@@ -92,8 +92,8 @@ let
     # hand over to the text greeter, so that a mistake in the greeter never
     # locks anyone out.
     rm -f "$XDG_RUNTIME_DIR/greeter-launched"
-    ${lib.getExe pkgs.niri} --config ${checkedGreeterNiri} >> "$log" 2>&1
-    echo "$(date +%T.%3N) greeter's niri ended" >> "$log"
+    ${pkgs.sway-unwrapped}/bin/sway --config ${checkedGreeterSway} >> "$log" 2>&1
+    echo "$(date +%T.%3N) greeter's sway ended" >> "$log"
     [ -e "$XDG_RUNTIME_DIR/greeter-launched" ] || exec ${textGreeter}
   '';
 in
@@ -128,7 +128,7 @@ in
   };
 
   # The greeter's caches and its log. The log is readable by everyone: it
-  # holds what niri and the greeter print, and nothing that is typed.
+  # holds what sway and the greeter print, and nothing that is typed.
   systemd.tmpfiles.rules = [ "d /var/cache/greeter 0755 greeter greeter -" ];
 
   # The boot splash is given a moment to finish wiping itself away before
