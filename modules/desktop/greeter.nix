@@ -41,9 +41,10 @@ let
     xwayland-satellite {
         off
     }
+    // The pointer has nothing to click here: it goes as soon as it is still.
     cursor {
         hide-when-typing
-        hide-after-inactive-ms 1000
+        hide-after-inactive-ms 1
     }
     animations {
         off
@@ -81,11 +82,18 @@ let
     # the first start is slow.
     export XDG_CACHE_HOME=/var/cache/greeter
     export XDG_STATE_HOME=/var/cache/greeter/state
+    # What niri and the greeter print goes to a file, with the time each
+    # step began. Left on the terminal it would be the first thing seen
+    # whenever the text console shows through, between the splash, the
+    # greeter and the desktop.
+    log=/var/cache/greeter/greeter.log
+    echo "$(date +%T.%3N) greeter starting" > "$log"
     # If the greeter did not end well (it could not start, or it crashed),
     # hand over to the text greeter, so that a mistake in the greeter never
     # locks anyone out.
     rm -f "$XDG_RUNTIME_DIR/greeter-launched"
-    ${lib.getExe pkgs.niri} --config ${checkedGreeterNiri}
+    ${lib.getExe pkgs.niri} --config ${checkedGreeterNiri} >> "$log" 2>&1
+    echo "$(date +%T.%3N) greeter's niri ended" >> "$log"
     [ -e "$XDG_RUNTIME_DIR/greeter-launched" ] || exec ${textGreeter}
   '';
 in
@@ -119,7 +127,9 @@ in
     TTYVTDisallocate = true;
   };
 
-  systemd.tmpfiles.rules = [ "d /var/cache/greeter 0700 greeter greeter -" ];
+  # The greeter's caches and its log. The log is readable by everyone: it
+  # holds what niri and the greeter print, and nothing that is typed.
+  systemd.tmpfiles.rules = [ "d /var/cache/greeter 0755 greeter greeter -" ];
 
   # The boot splash is given a moment to finish wiping itself away before
   # it is told to quit (the wipe starts as this service does and takes a
