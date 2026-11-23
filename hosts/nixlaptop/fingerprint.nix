@@ -32,7 +32,10 @@
   };
 
   security.pam.services = {
-    login.fprintAuth = true;
+    # Logging in takes the password, not a finger: the password is what
+    # unlocks the keyring, which otherwise asks for it later in a window of
+    # its own. Everything after login still takes the finger.
+    login.fprintAuth = false;
     sudo.fprintAuth = true;
     polkit-1.fprintAuth = true;
     # The lock screen's PAM service is created in modules/desktop/shell.nix.
