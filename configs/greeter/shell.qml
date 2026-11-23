@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Greetd
+import Quickshell.Wayland
 
 // The login screen. Entry point.
 //
@@ -11,8 +12,8 @@ import Quickshell.Services.Greetd
 // shell's lock screen: the time, the date, and a panel to type the password
 // into.
 //
-// greetd, the login service, starts it full screen in cage and takes the
-// password from it:
+// greetd, the login service, starts it in a niri of its own, which paints
+// the same background from its first frame, and takes the password from it:
 //   - it asks greetd to log the one user in, and greetd asks for a password
 //   - enter hands over what was typed; a wrong one says so and asks again
 //   - a right one wipes the panel away and starts the session
@@ -144,9 +145,19 @@ ShellRoot {
         precision: SystemClock.Minutes
     }
 
-    // cage shows this one window over the whole screen.
-    FloatingWindow {
+    // One layer over the whole screen, holding the keyboard.
+    PanelWindow {
+        anchors {
+            top: true
+            bottom: true
+            left: true
+            right: true
+        }
+        exclusionMode: ExclusionMode.Ignore
         color: Theme.slab
+        WlrLayershell.namespace: "greeter"
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
         Item {
             id: stage

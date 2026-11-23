@@ -77,6 +77,12 @@ in
               urgent-color "#${colours.base0A}"
           }
       }
+      // What shows behind everything until the wallpaper is up, which is
+      // the first second after logging in: the same background colour the
+      // login screen has.
+      overview {
+          backdrop-color "#${colours.base00}"
+      }
       cursor {
           xcursor-theme "${osConfig.stylix.cursor.name}"
           xcursor-size ${toString osConfig.stylix.cursor.size}

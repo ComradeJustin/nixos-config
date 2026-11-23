@@ -95,6 +95,9 @@ in
     "quiet"
     "udev.log_level=3"
     "systemd.show_status=auto"
+    # No blinking cursor in the moment the text console shows between the
+    # splash and the greeter.
+    "vt.global_cursor_default=0"
   ];
   boot.consoleLogLevel = 3;
 }
