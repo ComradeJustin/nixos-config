@@ -6,6 +6,7 @@
     ./audio.nix
     ./fonts.nix
     ./greeter.nix
+    ./splash.nix
     ./services.nix
     ./portals.nix
     ./theme.nix

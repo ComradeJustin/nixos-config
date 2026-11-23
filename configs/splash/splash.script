@@ -1,0 +1,370 @@
+# The boot splash, in the style of the desktop shell (configs/shell): one
+# panel of text in the shell's pixel font on a grid of character cells, over
+# a dither pattern that fills the screen as the boot goes on.
+#
+# What happens, in order:
+#   1. the panel's frame draws itself, a character at a time
+#   2. the hostname settles into place out of random characters, and a line
+#      about the system is typed under it
+#   3. the stages of the boot are listed; each shows a spinner while it is
+#      the one in hand and "ok" once reached, and a line under them names
+#      what systemd is starting right now
+#   4. behind the panel the dither pattern grows denser with the boot's
+#      progress; just before the end, a dithered front wipes everything away
+# On the way down (power off, restart) the same panel says which it is.
+#
+# This file is the last third of the script Plymouth runs. In front of it
+# come settings.script (the hostname, the system line, the stages and the
+# background colour, written by modules/desktop/splash.nix) and
+# glyphs.script (where each character is in the glyph pictures, written by
+# make-images.py, which also draws every picture used here).
+#
+# Plymouth calls refresh () fifty times a second. A variable set inside a
+# function is local to it unless it already exists outside, so everything
+# shared is set up here first, and what is meant to be local is marked so.
+
+CELL_WIDTH = 7;
+CELL_HEIGHT = 14;
+# The hostname is drawn at this many times the size.
+BIG = 4;
+# The panel, in cells, borders included.
+COLUMNS = 60;
+ROWS = 16;
+# Rows of the panel.
+ROW_HOSTNAME = 2;
+ROW_FACTS = 7;
+ROW_STAGES = 9;
+ROW_STREAM = 14;
+# The column text starts in.
+COLUMN_TEXT = 3;
+COLUMN_STATE = 16;
+
+# When things happen, in refreshes (fifty a second).
+TRACE_TICKS = 30;
+HOSTNAME_START = 30;
+# The first letter settles this long after the hostname starts, and each
+# later letter this much after the one before.
+SETTLE_FIRST = 8;
+SETTLE_EACH = 4;
+# The spinner moves on a frame this often.
+SPIN_TICKS = 5;
+# The wipe at the end crosses the screen in this many refreshes.
+WIPE_TICKS = 14;
+# The wipe starts when the boot is this far along.
+WIPE_AT = 0.93;
+
+# What is drawn over what.
+Z_FIELD = 1;
+Z_SHADOW = 5;
+Z_SLAB = 6;
+Z_TEXT = 10;
+Z_CURTAIN = 100;
+
+Window.SetBackgroundTopColor (BACKGROUND_RED, BACKGROUND_GREEN, BACKGROUND_BLUE);
+Window.SetBackgroundBottomColor (BACKGROUND_RED, BACKGROUND_GREEN, BACKGROUND_BLUE);
+
+screen_width = Window.GetWidth ();
+screen_height = Window.GetHeight ();
+# The panel sits in the middle, on a whole cell.
+panel_x = Math.Int ((screen_width - COLUMNS * CELL_WIDTH) / 2 / CELL_WIDTH) * CELL_WIDTH;
+panel_y = Math.Int ((screen_height - ROWS * CELL_HEIGHT) / 2 / CELL_HEIGHT) * CELL_HEIGHT;
+
+# The glyph pictures, by colour.
+atlas = [];
+atlas["line"] = Image ("glyphs-line.png");
+atlas["dim"] = Image ("glyphs-dim.png");
+atlas["soft"] = Image ("glyphs-soft.png");
+atlas["ink"] = Image ("glyphs-ink.png");
+atlas["accent"] = Image ("glyphs-accent.png");
+atlas["alert"] = Image ("glyphs-alert.png");
+atlas_big = Image ("glyphs-big.png");
+
+# --- State ---
+mode = Plymouth.GetMode ();
+tick = 0;
+# A sprite for each cell of the panel that has been drawn in, by its number.
+cell = [];
+# A sprite for each letter of the hostname, and whether it has settled.
+hostname_sprite = [];
+hostname_settled = [];
+hostname_length = String (HOSTNAME).Length ();
+# What is typed under the hostname: about the system on the way up, what is
+# happening on the way down.
+facts = FACTS;
+if (mode == "shutdown") facts = "powering off";
+if (mode == "reboot") facts = "restarting";
+if (mode != "boot" && mode != "shutdown" && mode != "reboot") facts = "working";
+facts_length = String (facts).Length ();
+facts_start = HOSTNAME_START + SETTLE_FIRST + hostname_length * SETTLE_EACH;
+stages_start = facts_start + facts_length / 2 + 5;
+# How many of the stages have been reached.
+stages_reached = 0;
+stages_drawn = 0;
+# What systemd is starting, and how much of it has been typed.
+stream = "";
+stream_typed = 0;
+stream_drawn = -1;
+# How far the boot is, from 0 to 1, and the field's level drawn for it.
+progress = 0;
+field_level = -1;
+field_sprite = Sprite ();
+field_sprite.SetPosition (0, 0, Z_FIELD);
+# The wipe at the end: -1 until it starts, then the refreshes since.
+wipe_tick = -1;
+curtain_front = Sprite ();
+curtain_solid = Sprite ();
+
+# --- Drawing in cells ---
+fun glyph_image (colour, index)
+{
+    return atlas[colour].Crop (index * CELL_WIDTH, 0, CELL_WIDTH, CELL_HEIGHT);
+}
+
+fun put_glyph (column, row, colour, index)
+{
+    local.key = row * COLUMNS + column;
+    if (!cell[key]) {
+        cell[key] = Sprite ();
+        cell[key].SetPosition (panel_x + column * CELL_WIDTH, panel_y + row * CELL_HEIGHT, Z_TEXT);
+    }
+    cell[key].SetImage (glyph_image (colour, index));
+}
+
+# Text, starting at a cell. A character the font pictures do not have is
+# shown as a question mark.
+fun put_text (column, row, colour, text)
+{
+    local.string = String (text);
+    local.length = string.Length ();
+    local.position = 0;
+    while (position < length) {
+        local.character = string.CharAt (position);
+        if (glyph_known[character]) put_glyph (column + position, row, colour, glyph_index[character]);
+        else put_glyph (column + position, row, colour, glyph_index["?"]);
+        position++;
+    }
+}
+
+fun put_blanks (column, row, count)
+{
+    local.position = 0;
+    while (position < count) {
+        put_glyph (column + position, row, "ink", 0);
+        position++;
+    }
+}
+
+# --- 1. The frame ---
+# The cells of the border are numbered the way round they are drawn: along
+# the top, down the right side, back along the bottom, up the left side.
+FRAME_CELLS = 2 * COLUMNS + 2 * ROWS - 4;
+# The title set into the top edge says which way the machine is going.
+TITLE = " boot ";
+if (mode == "shutdown") TITLE = " power off ";
+if (mode == "reboot") TITLE = " restart ";
+TITLE_COLUMN = 2;
+
+fun draw_frame_cell (number)
+{
+    if (number < COLUMNS) {
+        # The top edge, with the title set into it.
+        local.column = number;
+        if (column == 0) put_glyph (0, 0, "line", GLYPH_TOP_LEFT);
+        else if (column == COLUMNS - 1) put_glyph (column, 0, "line", GLYPH_TOP_RIGHT);
+        else if (column >= TITLE_COLUMN && column < TITLE_COLUMN + String (TITLE).Length ())
+            put_text (column, 0, "ink", String (TITLE).CharAt (column - TITLE_COLUMN));
+        else put_glyph (column, 0, "line", GLYPH_HORIZONTAL);
+    } else if (number < COLUMNS + ROWS - 2) {
+        put_glyph (COLUMNS - 1, number - COLUMNS + 1, "line", GLYPH_VERTICAL);
+    } else if (number < 2 * COLUMNS + ROWS - 2) {
+        local.column = COLUMNS - 1 - (number - (COLUMNS + ROWS - 2));
+        if (column == 0) put_glyph (0, ROWS - 1, "line", GLYPH_BOTTOM_LEFT);
+        else if (column == COLUMNS - 1) put_glyph (column, ROWS - 1, "line", GLYPH_BOTTOM_RIGHT);
+        else put_glyph (column, ROWS - 1, "line", GLYPH_HORIZONTAL);
+    } else {
+        put_glyph (0, ROWS - 2 - (number - (2 * COLUMNS + ROWS - 2)), "line", GLYPH_VERTICAL);
+    }
+}
+
+frame_drawn = 0;
+
+fun draw_frame ()
+{
+    local.wanted = Math.Int (FRAME_CELLS * tick / TRACE_TICKS);
+    if (wanted > FRAME_CELLS) wanted = FRAME_CELLS;
+    while (frame_drawn < wanted) {
+        draw_frame_cell (frame_drawn);
+        frame_drawn++;
+    }
+}
+
+# The panel's own background and its halftone shadow are there from the
+# start, so that the field's dots never show through the panel.
+slab_sprite = Sprite (Image ("solid.png").Scale (COLUMNS * CELL_WIDTH, ROWS * CELL_HEIGHT));
+slab_sprite.SetPosition (panel_x, panel_y, Z_SLAB);
+shadow_sprite = Sprite (Image ("shadow.png").Tile (COLUMNS * CELL_WIDTH, ROWS * CELL_HEIGHT));
+shadow_sprite.SetPosition (panel_x + CELL_WIDTH, panel_y + CELL_WIDTH, Z_SHADOW);
+
+# --- 2. The hostname and the line under it ---
+fun big_glyph (index)
+{
+    return atlas_big.Crop (index * CELL_WIDTH * BIG, 0, CELL_WIDTH * BIG, CELL_HEIGHT * BIG);
+}
+
+# Each letter shows random characters, changing every other refresh, until
+# its turn comes to settle; the letters settle from the left.
+fun draw_hostname ()
+{
+    local.since = tick - HOSTNAME_START;
+    local.position = 0;
+    while (position < hostname_length) {
+        if (!hostname_sprite[position]) {
+            hostname_sprite[position] = Sprite ();
+            hostname_sprite[position].SetPosition (panel_x + (COLUMN_TEXT + position * BIG) * CELL_WIDTH, panel_y + ROW_HOSTNAME * CELL_HEIGHT, Z_TEXT);
+        }
+        if (!hostname_settled[position]) {
+            if (since >= SETTLE_FIRST + position * SETTLE_EACH) {
+                local.character = String (HOSTNAME).CharAt (position);
+                hostname_sprite[position].SetImage (big_glyph (glyph_index[character]));
+                hostname_settled[position] = 1;
+            } else if (since % 2 == 0) {
+                # Any of the printable characters but the space.
+                hostname_sprite[position].SetImage (big_glyph (1 + Math.Int (Math.Random () * 93)));
+            }
+        }
+        position++;
+    }
+}
+
+# Typed two characters a refresh behind a block cursor, which goes when the
+# line is complete.
+facts_drawn = -1;
+
+fun draw_facts ()
+{
+    local.typed = (tick - facts_start) * 2;
+    if (typed > facts_length) typed = facts_length;
+    if (typed == facts_drawn) return;
+    facts_drawn = typed;
+    put_text (COLUMN_TEXT, ROW_FACTS, "soft", String (facts).SubString (0, typed));
+    if (typed < facts_length) put_glyph (COLUMN_TEXT + typed, ROW_FACTS, "accent", GLYPH_BLOCK);
+    else put_blanks (COLUMN_TEXT + typed, ROW_FACTS, 1);
+}
+
+# --- 3. The stages, and what systemd is starting ---
+# A stage that has been reached says "ok"; the first that has not shows the
+# spinner; the ones after it a dot.
+fun draw_stages ()
+{
+    local.frame = Math.Int (tick / SPIN_TICKS) % 6;
+    local.number = 0;
+    while (number < STAGE_COUNT) {
+        local.row = ROW_STAGES + number;
+        if (!stages_drawn) put_text (COLUMN_TEXT, row, "soft", stage_name[number]);
+        if (number < stages_reached) {
+            put_text (COLUMN_STATE, row, "accent", "ok");
+        } else if (number == stages_reached) {
+            put_glyph (COLUMN_STATE, row, "accent", GLYPH_SPIN_0 + frame);
+            put_blanks (COLUMN_STATE + 1, row, 1);
+        } else {
+            put_glyph (COLUMN_STATE, row, "line", GLYPH_DOT);
+            put_blanks (COLUMN_STATE + 1, row, 1);
+        }
+        number++;
+    }
+    stages_drawn = 1;
+}
+
+# The line of what is starting: a prompt, then the unit's name typed three
+# characters a refresh, cut to the room there is.
+STREAM_ROOM = COLUMNS - COLUMN_TEXT - 5;
+
+fun draw_stream ()
+{
+    if (stream_typed < String (stream).Length ()) stream_typed += 3;
+    if (stream_typed > STREAM_ROOM) stream_typed = STREAM_ROOM;
+    if (stream_typed == stream_drawn) return;
+    stream_drawn = stream_typed;
+    put_glyph (COLUMN_TEXT, ROW_STREAM, "accent", GLYPH_PROMPT);
+    put_text (COLUMN_TEXT + 2, ROW_STREAM, "dim", String (stream).SubString (0, stream_typed));
+}
+
+# systemd names each unit as it comes up. A stage is reached when its unit
+# is named, and so are the stages before it.
+fun on_status (status)
+{
+    # Clear the old name before the new one is typed over it.
+    put_blanks (COLUMN_TEXT + 2, ROW_STREAM, STREAM_ROOM);
+    stream = status;
+    stream_typed = 0;
+    stream_drawn = -1;
+    local.number = 0;
+    while (number < STAGE_COUNT) {
+        if (stage_unit[number] == status && stages_reached < number + 1) stages_reached = number + 1;
+        number++;
+    }
+}
+
+# --- 4. The field, and the wipe at the end ---
+fun on_progress (duration, fraction)
+{
+    progress = fraction;
+}
+
+# The field has 33 levels, from empty to every other dot. The share of the
+# boot that is done is also written into the frame's bottom edge.
+fun draw_field ()
+{
+    local.level = Math.Int (progress * 32);
+    if (mode != "boot") level = 32;
+    if (level > 32) level = 32;
+    if (level == field_level) return;
+    field_level = level;
+    local.name = "field-" + level + ".png";
+    if (level < 10) name = "field-0" + level + ".png";
+    field_sprite.SetImage (Image (name).Tile (screen_width, screen_height));
+    if (mode == "boot" && frame_drawn == FRAME_CELLS)
+        put_text (COLUMNS - 8, ROWS - 1, "dim", " " + Math.Int (progress * 100) + "% ");
+}
+
+# A curtain of the background colour comes in from the right behind a
+# dithered front and covers everything, as a panel of the shell is wiped away.
+FRONT_WIDTH = 672;
+
+fun draw_wipe ()
+{
+    if (wipe_tick == 0) {
+        curtain_front.SetImage (Image ("curtain.png").Tile (FRONT_WIDTH, screen_height));
+        curtain_solid.SetImage (Image ("solid.png").Scale (screen_width, screen_height));
+    }
+    # From just off the right edge to where the solid part covers the screen.
+    local.x = screen_width - (screen_width + FRONT_WIDTH) * wipe_tick / WIPE_TICKS;
+    curtain_front.SetPosition (x, 0, Z_CURTAIN);
+    curtain_solid.SetPosition (x + FRONT_WIDTH, 0, Z_CURTAIN);
+    if (wipe_tick < WIPE_TICKS) wipe_tick++;
+}
+
+# --- Every refresh ---
+fun refresh ()
+{
+    if (tick <= TRACE_TICKS) draw_frame ();
+    if (tick >= HOSTNAME_START) draw_hostname ();
+    if (tick >= facts_start) draw_facts ();
+    if (mode == "boot" && tick >= stages_start) {
+        if (!stages_drawn || tick % SPIN_TICKS == 0) draw_stages ();
+        draw_stream ();
+    }
+    draw_field ();
+
+    # The end: when the boot is nearly done, or its last stage is reached.
+    if (mode == "boot" && wipe_tick < 0 && tick > stages_start + 10) {
+        if (progress >= WIPE_AT || stages_reached == STAGE_COUNT) wipe_tick = 0;
+    }
+    if (wipe_tick >= 0) draw_wipe ();
+
+    tick++;
+}
+
+Plymouth.SetRefreshFunction (refresh);
+Plymouth.SetBootProgressFunction (on_progress);
+Plymouth.SetUpdateStatusFunction (on_status);
