@@ -4,6 +4,7 @@
 {
   imports = [
     ./audio.nix
+    ./boot-menu.nix
     ./fonts.nix
     ./greeter.nix
     ./splash.nix
