@@ -73,12 +73,28 @@ let
     builtins.toJSON { extraPaths = [ "${notesPython}/${notesPython.sitePackages}" ]; }
   );
 
+  # What molten-nvim, which is written in Python, needs for itself.
+  moltenPythonPackages = [
+    "jupyter-client"
+    "nbformat"
+    "pillow"
+    "cairosvg"
+  ];
+
   # molten-nvim is a "remote plugin": Neovim only knows its commands from
   # a list that `:UpdateRemotePlugins` writes. Nothing writes that list for
-  # a Neovim built by Nix, so it is made here, by the finished Neovim.
+  # a Neovim built by Nix, so it is made here, by a bare Neovim that has
+  # only molten-nvim and the Python to load it with.
   remotePlugins = pkgs.runCommand "neovim-remote-plugins" { } ''
     export HOME=$TMPDIR
-    NVIM_RPLUGIN_MANIFEST=$out ${config.programs.nvf.finalPackage}/bin/nvim --headless +UpdateRemotePlugins +qa
+    NVIM_RPLUGIN_MANIFEST=$out ${config.programs.nvf.settings.vim.package}/bin/nvim -u NORC --headless \
+      --cmd "set runtimepath+=${pkgs.vimPlugins.molten-nvim}" \
+      --cmd "let g:python3_host_prog = '${
+        pkgs.python3.withPackages (
+          available: [ available.pynvim ] ++ map (name: available.${name}) moltenPythonPackages
+        )
+      }/bin/python'" \
+      +UpdateRemotePlugins +qa
   '';
 in
 {
@@ -95,9 +111,6 @@ in
     "L+ /home/justin/notes/pyrightconfig.json - - - - ${notesPyrightConfig}"
     "L+ /home/justin/notes/deno.json - - - - ${pkgs.writeText "deno.json" "{}"}"
   ];
-
-  # Where Neovim finds the list of remote plugins.
-  environment.variables.NVIM_RPLUGIN_MANIFEST = "${remotePlugins}";
 
   programs.nvf.settings.vim = {
     notes.obsidian = {
@@ -184,18 +197,15 @@ in
       }
     ];
 
-    # molten-nvim is written in Python, and runs code blocks in the kernels
-    # above. These are the packages it needs for itself.
+    # molten-nvim runs code blocks in the kernels above.
     extraPlugins.molten-nvim.package = pkgs.vimPlugins.molten-nvim;
     withPython3 = true;
-    python3Packages = [
-      "jupyter-client"
-      "nbformat"
-      "pillow"
-      "cairosvg"
-    ];
-    # Where molten-nvim finds the kernels.
-    luaConfigRC.notes-kernels = ''
+    python3Packages = moltenPythonPackages;
+    # Where Neovim finds the list of remote plugins, and molten-nvim the
+    # kernels. Both are set here, as Neovim starts, so that they hold in
+    # any terminal and change with the next start after a rebuild.
+    luaConfigRC.notes-molten = ''
+      vim.env.NVIM_RPLUGIN_MANIFEST = "${remotePlugins}"
       vim.env.JUPYTER_PATH = "${kernels}/share/jupyter"
     '';
     globals = {
