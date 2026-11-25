@@ -5,8 +5,10 @@
 #   - render-markdown.nvim: headings, tables and links drawn while editing
 #   - snacks.nvim: pictures and LaTeX formulas drawn in the text
 #   - img-clip.nvim: paste a screenshot from the clipboard into the note
-#   - molten-nvim: run a code block; its output, a plot included, is shown
-#     under it
+#   - molten-nvim: run a code block (Python, TypeScript, JavaScript); its
+#     output, a plot included, is shown under it
+#   - otter.nvim: completion inside code blocks and formulas, from the
+#     language servers for Python, TypeScript and LaTeX
 # The assistant (CodeCompanion) is set up in modules/editor.nix.
 #
 # Keys, all after the leader key and n:
@@ -19,17 +21,57 @@
   ...
 }:
 let
-  # What a code block in a note can import, and what molten-nvim itself
-  # needs (jupyter-client, ipykernel, nbformat, pillow, cairosvg).
-  pythonPackages = [
-    "jupyter-client"
-    "ipykernel"
-    "nbformat"
-    "pillow"
-    "cairosvg"
-    "numpy"
-    "matplotlib"
-  ];
+  # The Python that runs a note's Python code blocks. What is listed here
+  # is what a block can import; ipykernel is what lets it be run at all.
+  notesPython = pkgs.python3.withPackages (available: [
+    available.ipykernel
+    available.numpy
+    available.matplotlib
+  ]);
+
+  # The kernels a code block can be run with (a kernel is the program that
+  # runs the code and hands back what it printed or drew), each in a folder
+  # named as molten-nvim knows it. Each is started by its full path, so it
+  # does not matter which python or deno a shell would find first.
+  kernelCommands = {
+    python3 = [
+      "${notesPython}/bin/python"
+      "-m"
+      "ipykernel_launcher"
+      "-f"
+      "{connection_file}"
+    ];
+    # Deno runs TypeScript and JavaScript.
+    deno = [
+      "${pkgs.deno}/bin/deno"
+      "jupyter"
+      "--kernel"
+      "--conn"
+      "{connection_file}"
+    ];
+  };
+  kernels = pkgs.runCommand "notes-kernels" { } (
+    lib.concatStrings (
+      lib.mapAttrsToList (name: command: ''
+        mkdir -p $out/share/jupyter/kernels/${name}
+        cp ${
+          pkgs.writeText "kernel.json" (
+            builtins.toJSON {
+              argv = command;
+              display_name = name;
+              language = name;
+            }
+          )
+        } $out/share/jupyter/kernels/${name}/kernel.json
+      '') kernelCommands
+    )
+  );
+
+  # The Python language server, when it looks at a note's code blocks, is
+  # told where the packages a block can import are.
+  notesPyrightConfig = pkgs.writeText "pyrightconfig.json" (
+    builtins.toJSON { extraPaths = [ "${notesPython}/${notesPython.sitePackages}" ]; }
+  );
 
   # molten-nvim is a "remote plugin": Neovim only knows its commands from
   # a list that `:UpdateRemotePlugins` writes. Nothing writes that list for
@@ -47,6 +89,11 @@ in
     # the folder itself.
     "d /home/justin/.local/share/jupyter 0755 justin users -"
     "d /home/justin/.local/share/jupyter/runtime 0700 justin users -"
+    # Two files the language servers look for in the notes folder: where
+    # Python's packages are, and (empty) the mark without which Deno's
+    # language server does not answer for a folder at all.
+    "L+ /home/justin/notes/pyrightconfig.json - - - - ${notesPyrightConfig}"
+    "L+ /home/justin/notes/deno.json - - - - ${pkgs.writeText "deno.json" "{}"}"
   ];
 
   # Where Neovim finds the list of remote plugins.
@@ -94,8 +141,6 @@ in
         resolve = lib.mkForce null;
       };
     };
-    # snacks.nvim finds the formulas in a note with the LaTeX grammar.
-    treesitter.grammars = [ pkgs.vimPlugins.nvim-treesitter.builtGrammars.latex ];
     # What snacks.nvim needs to turn formulas and other pictures into ones
     # the terminal can show. tectonic fetches the LaTeX packages it needs
     # the first time a formula is drawn.
@@ -103,9 +148,6 @@ in
       pkgs.imagemagick
       pkgs.ghostscript
       pkgs.tectonic
-      # The kernel that runs code blocks is started as plain "python": this
-      # makes that the Python with the packages above.
-      (pkgs.python3.withPackages (available: map (name: available.${name}) pythonPackages))
     ];
 
     utility.images.img-clip = {
@@ -117,10 +159,45 @@ in
       };
     };
 
-    # molten-nvim is written in Python and talks to a Jupyter kernel.
+    # A note is Markdown to Neovim, code blocks and formulas included.
+    # otter.nvim hands each of those to the language server of its own
+    # language, which is where completion comes from. It is switched on
+    # whenever a Markdown file is opened.
+    lsp.otter-nvim.enable = true;
+    # This also brings the LaTeX grammar, which snacks.nvim needs to find
+    # the formulas in a note.
+    languages.tex.enable = true;
+    # otter.nvim gives a formula the file type "latex", which is added here
+    # to the ones the LaTeX language server already answers for.
+    lsp.servers.texlab.filetypes = [ "latex" ];
+    # Deno's own language server, to match the Deno that runs the blocks.
+    languages.typescript = {
+      enable = true;
+      lsp.servers = [ "deno" ];
+    };
+    autocmds = [
+      {
+        event = [ "FileType" ];
+        pattern = [ "markdown" ];
+        command = "OtterActivate";
+        desc = "Completion inside a note's code blocks and formulas";
+      }
+    ];
+
+    # molten-nvim is written in Python, and runs code blocks in the kernels
+    # above. These are the packages it needs for itself.
     extraPlugins.molten-nvim.package = pkgs.vimPlugins.molten-nvim;
     withPython3 = true;
-    python3Packages = pythonPackages;
+    python3Packages = [
+      "jupyter-client"
+      "nbformat"
+      "pillow"
+      "cairosvg"
+    ];
+    # Where molten-nvim finds the kernels.
+    luaConfigRC.notes-kernels = ''
+      vim.env.JUPYTER_PATH = "${kernels}/share/jupyter"
+    '';
     globals = {
       molten_image_provider = "snacks.nvim";
       # Output is written under the code block, not in a floating window.
@@ -185,22 +262,49 @@ in
               vim.notify("This code block is not closed")
               return
             end
-            local function run()
-              vim.fn.MoltenEvaluateRange(opening + 1, closing - 1)
-            end
-            if #vim.fn.MoltenRunningKernels(true) > 0 then
-              run()
+            -- The kernel that runs this block's language.
+            local kernel_for = {
+              python = "python3",
+              typescript = "deno",
+              ts = "deno",
+              javascript = "deno",
+              js = "deno",
+            }
+            local language = vim.fn.getline(opening):match("^```(%w+)")
+            local kernel = kernel_for[language]
+            if kernel == nil then
+              vim.notify("Blocks in " .. tostring(language) .. " cannot be run")
               return
             end
-            -- The first run in a note starts the Python kernel. A block
-            -- handed over before the kernel is ready is never run, so the
-            -- block waits for molten-nvim to say that it is.
+            -- A note's kernel is known by its name, or by its name and a
+            -- number when another note started the same one first.
+            local function is_this_kernel(id)
+              return id == kernel or vim.startswith(id, kernel .. "_")
+            end
+            for _, id in ipairs(vim.fn.MoltenRunningKernels(true)) do
+              if is_this_kernel(id) then
+                vim.fn.MoltenEvaluateRange(id, opening + 1, closing - 1)
+                return
+              end
+            end
+            -- The first run of a language in a note starts its kernel. A
+            -- block handed over before the kernel is ready is never run, so
+            -- the block waits for molten-nvim to say that it is.
             vim.api.nvim_create_autocmd("User", {
               pattern = "MoltenKernelReady",
-              once = true,
-              callback = vim.schedule_wrap(run),
+              callback = function(event)
+                local id = event.data.kernel_id
+                if not is_this_kernel(id) then
+                  return
+                end
+                vim.schedule(function()
+                  vim.fn.MoltenEvaluateRange(id, opening + 1, closing - 1)
+                end)
+                -- Returning true removes this autocommand: it is for one run.
+                return true
+              end,
             })
-            vim.cmd("MoltenInit python3")
+            vim.cmd("MoltenInit " .. kernel)
           end
         '';
       }
