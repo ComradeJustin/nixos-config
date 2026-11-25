@@ -13,6 +13,7 @@
     ./theme.nix
     ./input-method.nix
     ./niri.nix
+    ./notes.nix
     ./shell.nix
     ./programs.nix
   ];
