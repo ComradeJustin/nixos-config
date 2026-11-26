@@ -9,11 +9,15 @@
 #     output, a plot included, is shown under it
 #   - otter.nvim: completion inside code blocks and formulas, from the
 #     language servers for Python, TypeScript and LaTeX
+# A note with a lot of maths can be a Typst file (name.typ) in the same
+# folder instead: lighter syntax for formulas, and a preview of the whole
+# page, properly typeset, in a browser window beside the terminal.
 # The assistant (CodeCompanion) is set up in modules/editor.nix.
 #
 # Keys, all after the leader key and n:
 #   n new note    f find note    s search notes    d today's note
 #   b backlinks   p paste image  r run code block  x clear output
+#   v Typst preview on and off
 {
   config,
   lib,
@@ -220,6 +224,13 @@ in
     # otter.nvim gives a formula the file type "latex", which is added here
     # to the ones the LaTeX language server already answers for.
     lsp.servers.texlab.filetypes = [ "latex" ];
+    # Typst: its language server (completion for every symbol), and a
+    # preview that follows the text as it is typed. The preview opens in a
+    # browser window of its own, which niri puts beside the terminal.
+    languages.typst = {
+      enable = true;
+      extensions.typst-preview-nvim.setupOpts.open_cmd = "firefox --new-window %s";
+    };
     # Deno's own language server, to match the Deno that runs the blocks.
     languages.typescript = {
       enable = true;
@@ -396,6 +407,12 @@ in
         mode = "n";
         action = "<cmd>MoltenDelete<cr>";
         desc = "Clear output";
+      }
+      {
+        key = "<leader>nv";
+        mode = "n";
+        action = "<cmd>TypstPreviewToggle<cr>";
+        desc = "Typst preview";
       }
     ];
   };
