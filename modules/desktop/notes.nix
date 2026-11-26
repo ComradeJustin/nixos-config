@@ -142,7 +142,13 @@ in
     # when a note is opened.
     globals.vim_markdown_folding_disabled = 1;
 
-    languages.markdown.extensions.render-markdown-nvim.enable = true;
+    languages.markdown.extensions.render-markdown-nvim = {
+      enable = true;
+      # The note stays drawn while typing too; only the line the cursor is
+      # on shows its source. Otherwise every formula's source appears
+      # beside its picture each time insert mode is entered.
+      setupOpts.render_modes = true;
+    };
 
     utility.snacks-nvim = {
       enable = true;
@@ -152,6 +158,37 @@ in
         # the note is in. nvf would have obsidian.nvim look it up in one
         # folder for the whole vault, which misses "assets/name.png".
         resolve = lib.mkForce null;
+
+        # How a formula is turned into a picture. This is snacks.nvim's own
+        # LaTeX document with two changes, so that formulas come out at the
+        # size of the text around them:
+        #   - the size (snacks.nvim's own is nearly twice the text's)
+        #   - snacks.nvim writes every formula between \[ and \]. Here
+        #     those set it as one line that is at least a full line high
+        #     (\strut), whatever is in it. snacks.nvim fits a short formula
+        #     to the line of text it is in, so without this a lone x was
+        #     drawn as tall as a whole line and other formulas smaller.
+        # The picture is also no longer cut down to its ink (below), which
+        # would cut that height off again.
+        # The ''${...} parts are filled in by snacks.nvim.
+        math.latex = {
+          font_size = "footnotesize";
+          tpl = ''
+            \documentclass[preview,border=0pt,varwidth,12pt]{standalone}
+            \usepackage{''${packages}}
+            \begin{document}
+            ''${header}
+            { \''${font_size} \selectfont
+              \def\[{$\displaystyle\strut}\def\]{$}
+              \color[HTML]{''${color}}
+            ''${content}}
+            \end{document}'';
+        };
+        convert.magick.math = [
+          "-density"
+          192
+          "{src}[{page}]"
+        ];
       };
     };
     # What snacks.nvim needs to turn formulas and other pictures into ones
@@ -194,6 +231,42 @@ in
         pattern = [ "markdown" ];
         command = "OtterActivate";
         desc = "Completion inside a note's code blocks and formulas";
+      }
+      # snacks.nvim draws a formula again after every change to the text,
+      # so while one is being typed its picture keeps changing. These two
+      # make it wait: nothing is redrawn in insert mode, and everything is
+      # brought up to date on leaving it.
+      {
+        event = [ "FileType" ];
+        pattern = [ "markdown" ];
+        once = true;
+        desc = "Formulas are not redrawn while typing";
+        callback = lib.generators.mkLuaInline ''
+          function()
+            local pictures = require("snacks.image.doc")
+            local find_pictures = pictures.find_visible
+            pictures.find_visible = function(buffer, on_found)
+              if vim.fn.mode():sub(1, 1) == "i" then
+                return
+              end
+              find_pictures(buffer, on_found)
+            end
+          end
+        '';
+      }
+      {
+        event = [ "InsertLeave" ];
+        pattern = [ "*.md" ];
+        desc = "Formulas are redrawn after typing";
+        callback = lib.generators.mkLuaInline ''
+          function(event)
+            -- snacks.nvim redraws a buffer's pictures on this event of its own.
+            local group = "snacks.image.inline." .. event.buf
+            if vim.fn.exists("#" .. group) == 1 then
+              vim.api.nvim_exec_autocmds("BufWinEnter", { group = group, buffer = event.buf })
+            end
+          end
+        '';
       }
     ];
 
